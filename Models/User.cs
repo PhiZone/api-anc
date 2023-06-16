@@ -1,0 +1,40 @@
+﻿using Microsoft.AspNetCore.Identity;
+using System.ComponentModel.DataAnnotations;
+
+namespace PhiZoneApi.Models
+{
+    public class User : IdentityUser<int>
+    {
+        [Url]
+        public string? Avatar { get; set; }
+
+        [Required, Range(0, 2)]
+        public int Gender { get; set; }
+
+        [MaxLength(2000)]
+        public string? Biography { get; set; }
+
+        public double Experience { get; set; }
+
+        [MaxLength(16)]
+        public string? Tag { get; set; }
+
+        public double Rks { get; set; }
+
+        [Required, RegularExpression("^[a-z]{2}-[A-Z]{2}$")]
+        public required string Language { get; set; }
+
+        public DateTime? DateLastLoggedIn { get; set; }
+
+        public DateTime? DateLastModifiedUserName { get; set; }
+
+        public DateTime DateJoined { get; set; }
+
+        [DataType(DataType.Date)]
+        public DateTime? DateOfBirth { get; set; }
+
+        public ICollection<UserRelation>? Followers { get; set; }
+
+        public ICollection<UserRelation>? Followees { get; set; }
+    }
+}
