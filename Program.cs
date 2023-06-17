@@ -10,6 +10,7 @@ using PhiZoneApi.Data;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 using System.Text;
+using Microsoft.OpenApi.Models;
 using PhiZoneApi.Repositories;
 
 DotEnv.Load(".env");
@@ -38,7 +39,14 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v2", new OpenApiInfo
+    {
+        Version = "v2",
+        Title = "PhiZoneApi v2"
+    });
+});
 
 builder.Services.AddDbContext<DataContext>(options =>
 {
@@ -82,7 +90,10 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/swagger/v2/swagger.json", "PhiZone Api v2");
+    });
 }
 
 app.UseAuthentication();

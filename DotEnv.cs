@@ -1,6 +1,6 @@
 ﻿namespace PhiZoneApi
 {
-    public class DotEnv
+    public static class DotEnv
     {
         public static void Load(string fileName)
         {
