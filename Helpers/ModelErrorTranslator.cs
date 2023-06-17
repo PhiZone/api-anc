@@ -11,17 +11,13 @@ namespace PhiZoneApi.Helpers
             var list = new List<ModelErrorDto>();
             foreach (var key in modelState.Keys)
             {
-                var errors = modelState[key].Errors;
+                var errors = modelState[key];
                 if (errors == null)
                 {
                     continue;
                 }
-
-                var errorList = new List<string>();
-                foreach (var error in errors)
-                {
-                    errorList.Add(error.ErrorMessage);
-                }
+                
+                var errorList = errors.Errors.Select(error => error.ErrorMessage).ToList();
 
                 list.Add(new ModelErrorDto()
                 {
