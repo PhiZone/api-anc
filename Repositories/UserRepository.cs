@@ -20,12 +20,12 @@ namespace PhiZoneApi.Repository
 
         public User? GetUser(int id)
         {
-            return context.Users.Where(p => p.Id.Equals(id)).FirstOrDefault();
+            return context.Users.FirstOrDefault(p => p.Id.Equals(id));
         }
 
         public User? GetUser(string name)
         {
-            return context.Users.Where(p => p.UserName.Equals(name)).FirstOrDefault();
+            return context.Users.FirstOrDefault(p => p.UserName.Equals(name));
         }
 
         public bool UserExists(int id)
