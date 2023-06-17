@@ -75,32 +75,35 @@ namespace PhiZoneApi.Controllers
                 }
                 var userRoles = await userManager.GetRolesAsync(user);
 
-                var authClaims = new List<Claim>
+                if (user.Email != null)
+                {
+                    var authClaims = new List<Claim>
                     {
-                        new Claim(ClaimTypes.Email, user.Email),
-                        new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                        new(ClaimTypes.Email, user.Email!),
+                        new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                     };
 
-                foreach (var userRole in userRoles)
-                {
-                    authClaims.Add(new Claim(ClaimTypes.Role, userRole));
-                }
-
-                var token = GetToken(authClaims);
-                user.DateLastLoggedIn = DateTime.Now;
-                user.AccessFailedCount = 0;
-                await userManager.UpdateAsync(user);
-
-                return Ok(new ResponseDto<TokenDto>()
-                {
-                    Status = 0,
-                    Code = ResponseCodes.Ok,
-                    Data = new TokenDto()
+                    foreach (var userRole in userRoles)
                     {
-                        Token = new JwtSecurityTokenHandler().WriteToken(token),
-                        Expiration = token.ValidTo
+                        authClaims.Add(new Claim(ClaimTypes.Role, userRole));
                     }
-                });
+
+                    var token = GetToken(authClaims);
+                    user.DateLastLoggedIn = DateTime.Now;
+                    user.AccessFailedCount = 0;
+                    await userManager.UpdateAsync(user);
+
+                    return Ok(new ResponseDto<TokenDto>()
+                    {
+                        Status = 0,
+                        Code = ResponseCodes.Ok,
+                        Data = new TokenDto()
+                        {
+                            Token = new JwtSecurityTokenHandler().WriteToken(token),
+                            Expiration = token.ValidTo
+                        }
+                    });
+                }
             }
             return Unauthorized();
         }
@@ -180,7 +183,7 @@ namespace PhiZoneApi.Controllers
 
         private JwtSecurityToken GetToken(List<Claim> authClaims)
         {
-            var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JWT:Secret"]));
+            var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JWT:Secret"]!));
 
             var token = new JwtSecurityToken(
                 issuer: configuration["JWT:ValidIssuer"],
