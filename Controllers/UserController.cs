@@ -13,13 +13,13 @@ namespace PhiZoneApi.Controllers
     [ApiController]
     public class UserController : Controller
     {
-        private readonly IUserRepository userRepository;
-        private readonly IMapper mapper;
+        private readonly IUserRepository _userRepository;
+        private readonly IMapper _mapper;
 
         public UserController(IUserRepository userRepository, IMapper mapper)
         {
-            this.userRepository = userRepository;
-            this.mapper = mapper;
+            this._userRepository = userRepository;
+            this._mapper = mapper;
         }
 
         [HttpGet]
@@ -27,7 +27,7 @@ namespace PhiZoneApi.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
         public IActionResult GetUsers()
         {
-            var users = mapper.Map<List<UserDto>>(userRepository.GetUsers());
+            var users = _mapper.Map<List<UserDto>>(_userRepository.GetUsers());
             if (!ModelState.IsValid)
             {
                 return BadRequest(new ResponseDto<object>()
@@ -45,16 +45,16 @@ namespace PhiZoneApi.Controllers
             });
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("{id:int}")]
         [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<UserDto>))]
         [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
         public IActionResult GetUser(int id)
         {
-            if (!userRepository.UserExists(id))
+            if (!_userRepository.UserExists(id))
             {
                 return NotFound();
             }
-            var user = mapper.Map<UserDto>(userRepository.GetUser(id));
+            var user = _mapper.Map<UserDto>(_userRepository.GetUser(id));
             if (!ModelState.IsValid)
             {
                 return BadRequest(new ResponseDto<object>()
@@ -78,11 +78,11 @@ namespace PhiZoneApi.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
         public async Task<IActionResult> UpdateUser([FromRoute] int id, [FromForm] UserUpdateDto dto)
         {
-            if (!userRepository.UserExists(id))
+            if (!_userRepository.UserExists(id))
             {
                 return NotFound();
             }
-            var user = userRepository.GetUser(id);
+            var user = _userRepository.GetUser(id);
             if (user == null)
             {
                 return NotFound();
@@ -115,7 +115,7 @@ namespace PhiZoneApi.Controllers
                 user.Avatar = await FileUploader.Upload(user.UserName ?? "Avatar", dto.Avatar);
             }
 
-            if (!userRepository.UpdateUser(user))
+            if (!_userRepository.UpdateUser(user))
             {
                 return StatusCode(StatusCodes.Status500InternalServerError,
                     new ResponseDto<object>()

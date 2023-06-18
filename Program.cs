@@ -44,7 +44,7 @@ builder.Services.AddSwaggerGen(options =>
     options.SwaggerDoc("v2", new OpenApiInfo
     {
         Version = "v2",
-        Title = "PhiZoneApi v2"
+        Title = "PhiZone API v2"
     });
 });
 
@@ -92,7 +92,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI(options =>
     {
-        options.SwaggerEndpoint("/swagger/v2/swagger.json", "PhiZone Api v2");
+        options.SwaggerEndpoint("/swagger/v2/swagger.json", "PhiZone API v2");
     });
 }
 

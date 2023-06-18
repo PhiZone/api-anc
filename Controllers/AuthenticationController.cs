@@ -16,18 +16,18 @@ namespace PhiZoneApi.Controllers
     [ApiController]
     public class AuthenticationController : Controller
     {
-        private readonly UserManager<User> userManager;
-        private readonly RoleManager<Role> roleManager;
-        private readonly IConfiguration configuration;
+        private readonly UserManager<User> _userManager;
+        private readonly RoleManager<Role> _roleManager;
+        private readonly IConfiguration _configuration;
 
         public AuthenticationController(
             UserManager<User> userManager,
             RoleManager<Role> roleManager,
             IConfiguration configuration)
         {
-            this.userManager = userManager;
-            this.roleManager = roleManager;
-            this.configuration = configuration;
+            this._userManager = userManager;
+            this._roleManager = roleManager;
+            this._configuration = configuration;
         }
 
         [HttpPost]
@@ -36,7 +36,7 @@ namespace PhiZoneApi.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
         public async Task<IActionResult> Login([FromBody] UserLoginDto dto)
         {
-            var user = await userManager.FindByEmailAsync(dto.Email);
+            var user = await _userManager.FindByEmailAsync(dto.Email);
             if (user != null)
             {
                 if (user.LockoutEnabled)
@@ -63,17 +63,17 @@ namespace PhiZoneApi.Controllers
                     }
                 }
 
-                if (!await userManager.CheckPasswordAsync(user, dto.Password))
+                if (!await _userManager.CheckPasswordAsync(user, dto.Password))
                 {
                     user.AccessFailedCount++;
-                    await userManager.UpdateAsync(user);
+                    await _userManager.UpdateAsync(user);
                     return BadRequest(new ResponseDto<object>()
                     {
                         Status = 1,
                         Code = ResponseCodes.PasswordIncorrect
                     });
                 }
-                var userRoles = await userManager.GetRolesAsync(user);
+                var userRoles = await _userManager.GetRolesAsync(user);
 
                 if (user.Email != null)
                 {
@@ -91,7 +91,7 @@ namespace PhiZoneApi.Controllers
                     var token = GetToken(authClaims);
                     user.DateLastLoggedIn = DateTime.Now;
                     user.AccessFailedCount = 0;
-                    await userManager.UpdateAsync(user);
+                    await _userManager.UpdateAsync(user);
 
                     return Ok(new ResponseDto<TokenDto>()
                     {
@@ -114,7 +114,7 @@ namespace PhiZoneApi.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
         public async Task<IActionResult> Register([FromForm] UserRegistrationDto dto)
         {
-            var user = await userManager.FindByEmailAsync(dto.Email);
+            var user = await _userManager.FindByEmailAsync(dto.Email);
             if (user != null)
             {
                 return BadRequest(new ResponseDto<object>()
@@ -123,7 +123,7 @@ namespace PhiZoneApi.Controllers
                     Code = ResponseCodes.EmailOccupied
                 });
             }
-            user = await userManager.FindByNameAsync(dto.UserName);
+            user = await _userManager.FindByNameAsync(dto.UserName);
             if (user != null)
             {
                 return BadRequest(new ResponseDto<object>()
@@ -165,7 +165,7 @@ namespace PhiZoneApi.Controllers
 
             user.PasswordHash = passwordHasher.HashPassword(user, dto.Password);
 
-            var result = await userManager.CreateAsync(user, dto.Password);
+            var result = await _userManager.CreateAsync(user, dto.Password);
             if (!result.Succeeded)
             {
                 return BadRequest(new ResponseDto<object>()
@@ -176,18 +176,18 @@ namespace PhiZoneApi.Controllers
                 });
             }
 
-            await userManager.AddToRoleAsync(user, UserRoles.Member);
+            await _userManager.AddToRoleAsync(user, UserRoles.Member);
 
             return StatusCode(StatusCodes.Status201Created);
         }
 
         private JwtSecurityToken GetToken(List<Claim> authClaims)
         {
-            var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(configuration["JWT:Secret"]!));
+            var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JWT:Secret"]!));
 
             var token = new JwtSecurityToken(
-                issuer: configuration["JWT:ValidIssuer"],
-                audience: configuration["JWT:ValidAudience"],
+                issuer: _configuration["JWT:ValidIssuer"],
+                audience: _configuration["JWT:ValidAudience"],
                 expires: DateTime.Now.AddHours(3),
                 claims: authClaims,
                 signingCredentials: new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256)
