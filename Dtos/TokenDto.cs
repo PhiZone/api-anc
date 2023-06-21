@@ -1,8 +1,7 @@
-﻿namespace PhiZoneApi.Dtos
+﻿namespace PhiZoneApi.Dtos;
+
+public class TokenDto
 {
-    public class TokenDto
-    {
-        public required string Token;
-        public required DateTime Expiration;
-    }
+    public required DateTimeOffset Expiration;
+    public required string Token;
 }

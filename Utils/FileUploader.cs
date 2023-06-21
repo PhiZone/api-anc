@@ -1,0 +1,27 @@
+﻿using LeanCloud.Storage;
+
+namespace PhiZoneApi.Utils;
+
+public static class FileUploader
+{
+    private static async Task<string> Upload(string fileName, string extension, byte[] bytes)
+    {
+        var file = new LCFile(
+            string.Join("_", fileName, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()) + extension,
+            bytes
+        );
+        await file.Save();
+        return file.Url;
+    }
+
+    public static async Task<string> Upload(string fileName, IFormFile formFile)
+    {
+        using var memoryStream = new MemoryStream();
+        await formFile.CopyToAsync(memoryStream);
+        return await Upload(
+            fileName,
+            FileTypeResolver.GetFileExtension(FileTypeResolver.GetMimeType(formFile)),
+            memoryStream.ToArray()
+        );
+    }
+}

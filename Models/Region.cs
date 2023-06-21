@@ -1,13 +1,12 @@
-﻿namespace PhiZoneApi.Models
+﻿namespace PhiZoneApi.Models;
+
+public class Region
 {
-    public class Region
-    {
-        public int Id { get; set; }
+    public int Id { get; set; }
 
-        public required string Name { get; set; }
+    public required string Name { get; set; }
 
-        public string? Flag { get; set; }
+    public string? Flag { get; set; }
 
-        public ICollection<User>? Users { get; set; }
-    }
+    public ICollection<User>? Users { get; set; }
 }

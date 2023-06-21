@@ -1,3 +1,4 @@
+using System.Text;
 using LeanCloud;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -5,13 +6,14 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Versioning;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using PhiZoneApi;
+using PhiZoneApi.Configurations;
 using PhiZoneApi.Data;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
-using System.Text;
-using Microsoft.OpenApi.Models;
 using PhiZoneApi.Repositories;
+using PhiZoneApi.Services;
 
 DotEnv.Load(".env");
 
@@ -20,10 +22,8 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 
 builder.Services.AddControllers();
-builder.Services.Configure<ApiBehaviorOptions>(options =>
-{
-    options.SuppressModelStateInvalidFilter = true;
-});
+builder.Services.Configure<ApiBehaviorOptions>(options => { options.SuppressModelStateInvalidFilter = true; });
+builder.Services.Configure<MailSettings>(builder.Configuration.GetSection("MailSettings"));
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
 builder.Services.AddApiVersioning(options =>
@@ -35,6 +35,7 @@ builder.Services.AddApiVersioning(options =>
 });
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddTransient<IMailService, MailService>();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -66,7 +67,7 @@ builder.Services.AddAuthentication(options =>
 {
     options.SaveToken = true;
     options.RequireHttpsMetadata = false;
-    options.TokenValidationParameters = new TokenValidationParameters()
+    options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuer = true,
         ValidateAudience = true,
@@ -90,10 +91,7 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI(options =>
-    {
-        options.SwaggerEndpoint("/swagger/v2/swagger.json", "PhiZone API v2");
-    });
+    app.UseSwaggerUI(options => { options.SwaggerEndpoint("/swagger/v2/swagger.json", "PhiZone API v2"); });
 }
 
 app.UseAuthentication();

@@ -1,8 +1,7 @@
-﻿namespace PhiZoneApi.Dtos
+﻿namespace PhiZoneApi.Dtos;
+
+public class ModelErrorDto
 {
-    public class ModelErrorDto
-    {
-        public required string Field { get; set; }
-        public ICollection<string>? Errors { get; set; }
-    }
+    public required string Field { get; set; }
+    public ICollection<string>? Errors { get; set; }
 }

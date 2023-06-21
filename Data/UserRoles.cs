@@ -1,11 +1,9 @@
-﻿namespace PhiZoneApi.Data
+﻿namespace PhiZoneApi.Data;
+
+public class UserRoles
 {
-    public static class UserRoles
+    public static readonly List<string> Admin = new()
     {
-        public const string Admin = "Admin";
-        public const string Moderator = "Moderator";
-        public const string Volunteer = "Volunteer";
-        public const string Qualified = "Qualified";
-        public const string Member = "Member";
-    }
+        "Admin"
+    };
 }

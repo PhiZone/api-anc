@@ -1,26 +1,25 @@
-﻿namespace PhiZoneApi
+﻿namespace PhiZoneApi;
+
+public static class DotEnv
 {
-    public static class DotEnv
+    public static void Load(string fileName)
     {
-        public static void Load(string fileName)
+        var root = Directory.GetCurrentDirectory();
+        var filePath = Path.Combine(root, fileName);
+
+        if (!File.Exists(filePath))
+            return;
+
+        foreach (var line in File.ReadAllLines(filePath))
         {
-            var root = Directory.GetCurrentDirectory();
-            var filePath = Path.Combine(root, fileName);
+            var parts = line.Split(
+                '=',
+                StringSplitOptions.RemoveEmptyEntries);
 
-            if (!File.Exists(filePath))
-                return;
+            if (parts.Length != 2)
+                continue;
 
-            foreach (var line in File.ReadAllLines(filePath))
-            {
-                var parts = line.Split(
-                    '=',
-                    StringSplitOptions.RemoveEmptyEntries);
-
-                if (parts.Length != 2)
-                    continue;
-
-                Environment.SetEnvironmentVariable(parts[0], parts[1]);
-            }
+            Environment.SetEnvironmentVariable(parts[0], parts[1]);
         }
     }
 }

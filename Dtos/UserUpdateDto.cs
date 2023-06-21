@@ -1,24 +1,23 @@
-﻿using PhiZoneApi.Data;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
+using PhiZoneApi.Data;
 
-namespace PhiZoneApi.Dtos
+namespace PhiZoneApi.Dtos;
+
+public class UserUpdateDto
 {
-    public class UserUpdateDto
-    {
-        public string? UserName { get; set; }
+    public string? UserName { get; set; }
 
-        public IFormFile? Avatar { get; set; }
+    public IFormFile? Avatar { get; set; }
 
-        [Range(0, 2, ErrorMessage = ResponseCodes.ValueOutOfRange)]
-        public int? Gender { get; set; }
+    [Range(0, 2, ErrorMessage = ResponseCodes.ValueOutOfRange)]
+    public int? Gender { get; set; }
 
-        [MaxLength(2000, ErrorMessage = ResponseCodes.ValueTooLong)]
-        public string? Biography { get; set; }
+    [MaxLength(2000, ErrorMessage = ResponseCodes.ValueTooLong)]
+    public string? Biography { get; set; }
 
-        [RegularExpression(@"^[a-z]{2}-[A-Z]{2}$", ErrorMessage = ResponseCodes.InvalidLanguageCode)]
-        public string? Language { get; set; }
+    [RegularExpression(@"^[a-z]{2}-[A-Z]{2}$", ErrorMessage = ResponseCodes.InvalidLanguageCode)]
+    public string? Language { get; set; }
 
-        [DataType(DataType.Date, ErrorMessage = ResponseCodes.InvalidDate)]
-        public DateTime? DateOfBirth { get; set; }
-    }
+    [DataType(DataType.Date, ErrorMessage = ResponseCodes.InvalidDate)]
+    public DateTimeOffset? DateOfBirth { get; set; }
 }

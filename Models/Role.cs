@@ -1,8 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 
-namespace PhiZoneApi.Models
+namespace PhiZoneApi.Models;
+
+public class Role : IdentityRole<int>
 {
-    public class Role : IdentityRole<int>
-    {
-    }
 }
