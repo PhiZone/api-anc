@@ -2,114 +2,114 @@
 
 namespace PhiZoneApi.Data;
 
-public static class ResponseCodes
+public static class ResponseCode
 {
     /// <summary>
-    /// Process was successful.
+    ///     Process was successful.
     /// </summary>
     public const string Ok = "Ok";
 
     /// <summary>
-    /// Data validation has failed.
+    ///     Data validation has failed.
     /// </summary>
     public const string DataInvalid = "DataInvalid";
 
     /// <summary>
-    /// User's account has been temporarily (only when DateAvailable is present) / permanently locked.
+    ///     User's account has been temporarily (only when DateAvailable is present) / permanently locked.
     /// </summary>
     public const string AccountLocked = "AccountLocked";
 
     /// <summary>
-    /// User with this name already exists.
+    ///     User with this name already exists.
     /// </summary>
     public const string UserNameOccupied = "UserNameOccupied";
 
     /// <summary>
-    /// User cannot change their user name during cooldown.
+    ///     User cannot change their user name during cooldown.
     /// </summary>
     public const string UserNameCoolDown = "UserNameCoolDown";
 
     /// <summary>
-    /// User with this email address already exists.
+    ///     User with this email address already exists.
     /// </summary>
     public const string EmailOccupied = "EmailOccupied";
 
     /// <summary>
-    /// The password is incorrect.
+    ///     The password is incorrect.
     /// </summary>
     public const string PasswordIncorrect = "PasswordIncorrect";
 
     /**
      * <summary>
-     * The password should be at least 6 characters long,
-     * contain at least one non-alphanumeric character,
-     * have at least one lowercase letter, one uppercase letter, one digit,
-     * and can have a maximum length of 18 characters.
-     * <code>^(?=.*[^a-zA-Z0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9]).{6,18}$</code>
+     *     The password should be at least 6 characters long,
+     *     contain at least one non-alphanumeric character,
+     *     have at least one lowercase letter, one uppercase letter, one digit,
+     *     and can have a maximum length of 18 characters.
      * </summary>
+     * <code>^(?=.*[^a-zA-Z0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9]).{6,18}$</code>
      */
     public const string InvalidPassword = "InvalidPassword";
 
     /// <summary>
-    /// An internal server error has occurred.
+    ///     An internal server error has occurred.
     /// </summary>
     public const string InternalError = "InternalError";
 
     /// <summary>
-    /// No value is present on the field.
+    ///     No value is present on the field.
     /// </summary>
     public const string FieldEmpty = "FieldEmpty";
 
     /// <summary>
-    /// The input value is not a valid email address.
+    ///     The input value is not a valid email address.
     /// </summary>
     public const string InvalidEmailAddress = "InvalidEmailAddress";
 
     /// <summary>
-    /// The input value is not a valid URL.
+    ///     The input value is not a valid URL.
     /// </summary>
     public const string InvalidUrl = "InvalidUrl";
 
     /// <summary>
-    /// The input value is not a valid phone number.
+    ///     The input value is not a valid phone number.
     /// </summary>
     public const string InvalidPhoneNumber = "InvalidPhoneNumber";
 
     /// <summary>
-    /// The input value is not a valid date.
+    ///     The input value is not a valid date.
     /// </summary>
     public const string InvalidDate = "InvalidDate";
 
     /**
      * <summary>
-     * The input value is not a valid language code.
+     *     The input value is not a valid language code.
      * </summary>
-     * <code>^[a-z]{2}-[A-Z]{2}$</code>
+     * <code>^[a-z]{2}(?:-[A-Z]{2})?$</code>
      */
     public const string InvalidLanguageCode = "InvalidLanguageCode";
 
     /// <summary>
-    /// The input value is longer than the maximum length allowed.
+    ///     The input value is longer than the maximum length allowed.
     /// </summary>
     public const string ValueTooLong = "ValueTooLong";
 
     /// <summary>
-    /// The input value is shorter than the minimum length allowed.
+    ///     The input value is shorter than the minimum length allowed.
     /// </summary>
     public const string ValueTooShort = "ValueTooShort";
 
     /// <summary>
-    /// The input value is out of range.
+    ///     The input value is out of range.
     /// </summary>
     public const string ValueOutOfRange = "ValueOutOfRange";
 
     /// <summary>
-    /// The user is not logged in.
+    ///     The user is not logged in.
     /// </summary>
     public const string UserNotLoggedIn = "UserNotLoggedIn";
 
     /// <summary>
-    /// The user does not have enough permission to perform the action.
+    ///     The user does not have enough permission to perform the action.
     /// </summary>
     public const string InsufficientPermission = "InsufficientPermission";
 }

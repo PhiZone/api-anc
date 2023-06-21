@@ -4,5 +4,5 @@ namespace PhiZoneApi.Interfaces;
 
 public interface IMailService
 {
-    bool SendMail(MailDto mailDto);
+    void SendMail(MailDto mailDto);
 }

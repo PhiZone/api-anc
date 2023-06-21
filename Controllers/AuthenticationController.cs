@@ -18,6 +18,7 @@ namespace PhiZoneApi.Controllers;
 public class AuthenticationController : Controller
 {
     private readonly IConfiguration _configuration;
+    private readonly IFileStorageService _fileStorageService;
     private readonly IMailService _mailService;
     private readonly RoleManager<Role> _roleManager;
     private readonly UserManager<User> _userManager;
@@ -26,13 +27,14 @@ public class AuthenticationController : Controller
         UserManager<User> userManager,
         RoleManager<Role> roleManager,
         IConfiguration configuration,
-        IMailService mailService
-    )
+        IMailService mailService,
+        IFileStorageService fileStorageService)
     {
         _userManager = userManager;
         _roleManager = roleManager;
         _configuration = configuration;
         _mailService = mailService;
+        _fileStorageService = fileStorageService;
     }
 
     [HttpPost]
@@ -48,10 +50,10 @@ public class AuthenticationController : Controller
             if (user.LockoutEnd != null)
             {
                 if (user.LockoutEnd > DateTime.Now) // temporary
-                    return BadRequest(new CoolDownResponseDto
+                    return BadRequest(new ResponseDto<object>
                     {
-                        Status = 1,
-                        Code = ResponseCodes.AccountLocked,
+                        Status = ResponseStatus.ErrorNotYetAvailable,
+                        Code = ResponseCode.AccountLocked,
                         DateAvailable = user.LockoutEnd.Value.UtcDateTime
                     });
                 user.LockoutEnabled = false;
@@ -60,8 +62,8 @@ public class AuthenticationController : Controller
             {
                 return BadRequest(new ResponseDto<object>
                 {
-                    Status = 1,
-                    Code = ResponseCodes.AccountLocked
+                    Status = ResponseStatus.ErrorBrief,
+                    Code = ResponseCode.AccountLocked
                 });
             }
         }
@@ -72,8 +74,8 @@ public class AuthenticationController : Controller
             await _userManager.UpdateAsync(user);
             return BadRequest(new ResponseDto<object>
             {
-                Status = 1,
-                Code = ResponseCodes.PasswordIncorrect
+                Status = ResponseStatus.ErrorBrief,
+                Code = ResponseCode.PasswordIncorrect
             });
         }
 
@@ -97,7 +99,7 @@ public class AuthenticationController : Controller
             return Ok(new ResponseDto<TokenDto>
             {
                 Status = 0,
-                Code = ResponseCodes.Ok,
+                Code = ResponseCode.Ok,
                 Data = new TokenDto
                 {
                     Token = new JwtSecurityTokenHandler().WriteToken(token),
@@ -119,28 +121,28 @@ public class AuthenticationController : Controller
         if (user != null)
             return BadRequest(new ResponseDto<object>
             {
-                Status = 1,
-                Code = ResponseCodes.EmailOccupied
+                Status = ResponseStatus.ErrorBrief,
+                Code = ResponseCode.EmailOccupied
             });
 
         user = await _userManager.FindByNameAsync(dto.UserName);
         if (user != null)
             return BadRequest(new ResponseDto<object>
             {
-                Status = 1,
-                Code = ResponseCodes.UserNameOccupied
+                Status = ResponseStatus.ErrorBrief,
+                Code = ResponseCode.UserNameOccupied
             });
 
         if (!ModelState.IsValid)
             return BadRequest(new ResponseDto<object>
             {
-                Status = 2,
-                Code = ResponseCodes.DataInvalid,
+                Status = ResponseStatus.ErrorDetailed,
+                Code = ResponseCode.DataInvalid,
                 Errors = ModelErrorTranslator.Translate(ModelState)
             });
 
         string? avatarUrl = null;
-        if (dto.Avatar != null) avatarUrl = await FileUploader.Upload(dto.UserName, dto.Avatar);
+        if (dto.Avatar != null) avatarUrl = await _fileStorageService.Upload(dto.UserName, dto.Avatar);
 
         var passwordHasher = new PasswordHasher<User>();
 
@@ -167,19 +169,25 @@ public class AuthenticationController : Controller
             EmailBody = "Hello"
         };
 
-        if (!_mailService.SendMail(mailDto))
+        try
+        {
+            _mailService.SendMail(mailDto);
+        }
+        catch (Exception)
+        {
             return StatusCode(StatusCodes.Status500InternalServerError, new ResponseDto<object>
             {
-                Status = 1,
-                Code = ResponseCodes.InternalError
+                Status = ResponseStatus.ErrorBrief,
+                Code = ResponseCode.InternalError
             });
+        }
 
         var result = await _userManager.CreateAsync(user, dto.Password);
         if (!result.Succeeded)
             return BadRequest(new ResponseDto<object>
             {
-                Status = 2,
-                Code = ResponseCodes.DataInvalid,
+                Status = ResponseStatus.ErrorDetailed,
+                Code = ResponseCode.DataInvalid,
                 Errors = result.Errors.ToArray()
             });
 

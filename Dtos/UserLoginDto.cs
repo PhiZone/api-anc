@@ -5,10 +5,10 @@ namespace PhiZoneApi.Dtos;
 
 public class UserLoginDto
 {
-    [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
-    [EmailAddress(ErrorMessage = ResponseCodes.InvalidEmailAddress)]
+    [Required(ErrorMessage = ResponseCode.FieldEmpty)]
+    [EmailAddress(ErrorMessage = ResponseCode.InvalidEmailAddress)]
     public required string Email { get; set; }
 
-    [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
+    [Required(ErrorMessage = ResponseCode.FieldEmpty)]
     public required string Password { get; set; }
 }

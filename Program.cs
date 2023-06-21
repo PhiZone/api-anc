@@ -1,5 +1,4 @@
 using System.Text;
-using LeanCloud;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -7,24 +6,25 @@ using Microsoft.AspNetCore.Mvc.Versioning;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using PhiZoneApi;
 using PhiZoneApi.Configurations;
 using PhiZoneApi.Data;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 using PhiZoneApi.Repositories;
 using PhiZoneApi.Services;
-
-DotEnv.Load(".env");
+using StackExchange.Redis;
+using Role = PhiZoneApi.Models.Role;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
 builder.Services.AddControllers();
+builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+
 builder.Services.Configure<ApiBehaviorOptions>(options => { options.SuppressModelStateInvalidFilter = true; });
 builder.Services.Configure<MailSettings>(builder.Configuration.GetSection("MailSettings"));
-builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+builder.Services.Configure<FileStorageSettings>(builder.Configuration.GetSection("FileStorageSettings"));
 
 builder.Services.AddApiVersioning(options =>
 {
@@ -36,6 +36,9 @@ builder.Services.AddApiVersioning(options =>
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddTransient<IMailService, MailService>();
+builder.Services.AddSingleton<IFileStorageService, FileStorageService>();
+builder.Services.AddSingleton<IConnectionMultiplexer>(
+    ConnectionMultiplexer.Connect(builder.Configuration.GetValue<string>("RedisConnection") ?? "localhost"));
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -78,12 +81,6 @@ builder.Services.AddAuthentication(options =>
 });
 
 builder.Services.AddCoreAdmin();
-
-LCApplication.Initialize(
-    Environment.GetEnvironmentVariable("TAPOSS__CLIENT_ID"),
-    Environment.GetEnvironmentVariable("TAPOSS__CLIENT_TOKEN"),
-    Environment.GetEnvironmentVariable("TAPOSS__URL")
-);
 
 var app = builder.Build();
 

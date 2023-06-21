@@ -15,14 +15,20 @@ namespace PhiZoneApi.Controllers;
 [ApiController]
 public class UserController : Controller
 {
+    private readonly IFileStorageService _fileStorageService;
     private readonly IMapper _mapper;
     private readonly UserManager<User> _userManager;
     private readonly IUserRepository _userRepository;
 
-    public UserController(IUserRepository userRepository, UserManager<User> userManager, IMapper mapper)
+    public UserController(
+        IUserRepository userRepository,
+        UserManager<User> userManager,
+        IFileStorageService fileStorageService,
+        IMapper mapper)
     {
         _userRepository = userRepository;
         _userManager = userManager;
+        _fileStorageService = fileStorageService;
         _mapper = mapper;
     }
 
@@ -35,14 +41,14 @@ public class UserController : Controller
         if (!ModelState.IsValid)
             return BadRequest(new ResponseDto<object>
             {
-                Status = 2,
-                Code = ResponseCodes.DataInvalid,
+                Status = ResponseStatus.ErrorDetailed,
+                Code = ResponseCode.DataInvalid,
                 Errors = ModelErrorTranslator.Translate(ModelState)
             });
         return Ok(new ResponseDto<IEnumerable<UserDto>>
         {
-            Status = 0,
-            Code = ResponseCodes.Ok,
+            Status = ResponseStatus.Ok,
+            Code = ResponseCode.Ok,
             Data = users
         });
     }
@@ -57,14 +63,14 @@ public class UserController : Controller
         if (!ModelState.IsValid)
             return BadRequest(new ResponseDto<object>
             {
-                Status = 2,
-                Code = ResponseCodes.DataInvalid,
+                Status = ResponseStatus.ErrorDetailed,
+                Code = ResponseCode.DataInvalid,
                 Errors = ModelErrorTranslator.Translate(ModelState)
             });
         return Ok(new ResponseDto<UserDto>
         {
-            Status = 0,
-            Code = ResponseCodes.Ok,
+            Status = ResponseStatus.Ok,
+            Code = ResponseCode.Ok,
             Data = user
         });
     }
@@ -91,8 +97,8 @@ public class UserController : Controller
         if (!ModelState.IsValid)
             return BadRequest(new ResponseDto<object>
             {
-                Status = 2,
-                Code = ResponseCodes.DataInvalid,
+                Status = ResponseStatus.ErrorDetailed,
+                Code = ResponseCode.DataInvalid,
                 Errors = ModelErrorTranslator.Translate(ModelState)
             });
 
@@ -101,9 +107,10 @@ public class UserController : Controller
         {
             if (user.DateLastModifiedUserName != null
                 && DateTimeOffset.UtcNow - user.DateLastModifiedUserName < TimeSpan.FromDays(15))
-                return BadRequest(new CoolDownResponseDto
+                return BadRequest(new ResponseDto<object>
                 {
-                    Code = ResponseCodes.UserNameCoolDown,
+                    Status = ResponseStatus.ErrorNotYetAvailable,
+                    Code = ResponseCode.UserNameCoolDown,
                     DateAvailable = (DateTimeOffset)(user.DateLastModifiedUserName + TimeSpan.FromDays(15))
                 });
             user.UserName = dto.UserName;
@@ -111,15 +118,15 @@ public class UserController : Controller
         }
 
         // Update avatar
-        if (dto.Avatar != null) user.Avatar = await FileUploader.Upload(user.UserName ?? "Avatar", dto.Avatar);
+        if (dto.Avatar != null) user.Avatar = await _fileStorageService.Upload(user.UserName ?? "Avatar", dto.Avatar);
 
         // Save
         if (!_userRepository.UpdateUser(user))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object>
                 {
-                    Status = 1,
-                    Code = ResponseCodes.InternalError
+                    Status = ResponseStatus.ErrorBrief,
+                    Code = ResponseCode.InternalError
                 });
 
         return NoContent();
