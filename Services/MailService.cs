@@ -40,7 +40,6 @@ public class MailService : IMailService
             emailMessage.Body = emailBodyBuilder.ToMessageBody();
 
             using var mailClient = new SmtpClient();
-            Console.WriteLine("=========== CONNECTING WITH " + _mailSettings.UserName + " - " + _mailSettings.Password + " ===========");
             mailClient.Connect(_mailSettings.Server, _mailSettings.Port, SecureSocketOptions.SslOnConnect);
             mailClient.Authenticate(_mailSettings.UserName, _mailSettings.Password);
             mailClient.Send(emailMessage);

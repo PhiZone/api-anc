@@ -168,13 +168,11 @@ public class AuthenticationController : Controller
         };
 
         if (!_mailService.SendMail(mailDto))
-        {
             return StatusCode(StatusCodes.Status500InternalServerError, new ResponseDto<object>
             {
                 Status = 1,
                 Code = ResponseCodes.InternalError
             });
-        }
 
         var result = await _userManager.CreateAsync(user, dto.Password);
         if (!result.Succeeded)
@@ -184,7 +182,7 @@ public class AuthenticationController : Controller
                 Code = ResponseCodes.DataInvalid,
                 Errors = result.Errors.ToArray()
             });
-        
+
         var roles = new List<string>
         {
             "Member", "Qualified", "Volunteer", "Moderator", "Administrator"
@@ -196,7 +194,7 @@ public class AuthenticationController : Controller
                     Name = role
                 });
         await _userManager.AddToRoleAsync(user, "Member");
-        
+
         return StatusCode(StatusCodes.Status201Created);
     }
 
