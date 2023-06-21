@@ -22,6 +22,6 @@ public static class FileTypeResolver
             .Select(mapping => mapping.Key)
             .ToArray();
 
-        return extensions.Length > 0 ? extensions[0] : string.Empty;
+        return extensions.Length > 0 ? extensions[^1] : string.Empty;
     }
 }
