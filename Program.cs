@@ -25,6 +25,7 @@ builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 builder.Services.Configure<ApiBehaviorOptions>(options => { options.SuppressModelStateInvalidFilter = true; });
 builder.Services.Configure<MailSettings>(builder.Configuration.GetSection("MailSettings"));
 builder.Services.Configure<FileStorageSettings>(builder.Configuration.GetSection("FileStorageSettings"));
+builder.Services.Configure<LanguageSettings>(builder.Configuration.GetSection("LanguageSettings"));
 
 builder.Services.AddApiVersioning(options =>
 {
@@ -37,6 +38,7 @@ builder.Services.AddApiVersioning(options =>
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddTransient<IMailService, MailService>();
 builder.Services.AddSingleton<IFileStorageService, FileStorageService>();
+builder.Services.AddSingleton<ITemplateService, TemplateService>();
 builder.Services.AddSingleton<IConnectionMultiplexer>(
     ConnectionMultiplexer.Connect(builder.Configuration.GetValue<string>("RedisConnection") ?? "localhost"));
 

@@ -56,6 +56,16 @@ public static class ResponseCode
     public const string InternalError = "InternalError";
 
     /// <summary>
+    ///     A Redis error has occurred.
+    /// </summary>
+    public const string RedisError = "RedisError";
+
+    /// <summary>
+    ///     A mail service error has occurred.
+    /// </summary>
+    public const string MailError = "MailError";
+
+    /// <summary>
     ///     No value is present on the field.
     /// </summary>
     public const string FieldEmpty = "FieldEmpty";

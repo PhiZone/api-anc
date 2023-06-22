@@ -28,7 +28,8 @@ File `appsettings.Development.json` is ignored by git using `.gitignore`. You sh
     "ClientId": "yourid",
     "ClientToken": "yourtoken",
     "ServerUrl": "https://example.com"
-  }
+  },
+  "RedisConnection": "localhost:6379,password:yourpassword"
 }
 ```
 

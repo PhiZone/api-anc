@@ -9,6 +9,8 @@ using PhiZoneApi.Dtos;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 using PhiZoneApi.Utils;
+using StackExchange.Redis;
+using Role = PhiZoneApi.Models.Role;
 
 namespace PhiZoneApi.Controllers;
 
@@ -18,9 +20,11 @@ namespace PhiZoneApi.Controllers;
 public class AuthenticationController : Controller
 {
     private readonly IConfiguration _configuration;
+    private readonly IConnectionMultiplexer _redis;
     private readonly IFileStorageService _fileStorageService;
     private readonly IMailService _mailService;
     private readonly RoleManager<Role> _roleManager;
+    private readonly ITemplateService _templateService;
     private readonly UserManager<User> _userManager;
 
     public AuthenticationController(
@@ -28,13 +32,17 @@ public class AuthenticationController : Controller
         RoleManager<Role> roleManager,
         IConfiguration configuration,
         IMailService mailService,
-        IFileStorageService fileStorageService)
+        ITemplateService templateService,
+        IFileStorageService fileStorageService,
+        IConnectionMultiplexer redis)
     {
         _userManager = userManager;
         _roleManager = roleManager;
         _configuration = configuration;
         _mailService = mailService;
+        _templateService = templateService;
         _fileStorageService = fileStorageService;
+        _redis = redis;
     }
 
     [HttpPost]
@@ -144,8 +152,6 @@ public class AuthenticationController : Controller
         string? avatarUrl = null;
         if (dto.Avatar != null) avatarUrl = await _fileStorageService.Upload(dto.UserName, dto.Avatar);
 
-        var passwordHasher = new PasswordHasher<User>();
-
         user = new User
         {
             SecurityStamp = Guid.NewGuid().ToString(),
@@ -159,14 +165,38 @@ public class AuthenticationController : Controller
             DateJoined = DateTimeOffset.UtcNow
         };
 
+        var passwordHasher = new PasswordHasher<User>();
         user.PasswordHash = passwordHasher.HashPassword(user, dto.Password);
+
+        var code = "";
+        var random = new Random();
+        var db = _redis.GetDatabase();
+        do
+        {
+            code = random.Next(1000000, 2000000).ToString().Substring(1);
+        } while (await db.KeyExistsAsync($"ACTIVATION{code}"));
+
+        if (!await db.StringSetAsync($"ACTIVATION{code}", user.Id, TimeSpan.FromMinutes(5)))
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief,
+                Code = ResponseCode.RedisError
+            });
+        }
+
+        var template = _templateService.GetRegistrationEmailTemplate(user.Language);
 
         var mailDto = new MailDto
         {
             RecipientAddress = user.Email,
             RecipientName = user.UserName,
-            EmailSubject = "[PhiZone] Please confirm your email address",
-            EmailBody = "Hello"
+            EmailSubject = template["Subject"],
+            EmailBody = _templateService.ReplacePlaceholders(template["Body"], new Dictionary<string, string>
+            {
+                { "UserName", user.UserName },
+                { "Code", code }
+            })
         };
 
         try
@@ -178,7 +208,7 @@ public class AuthenticationController : Controller
             return StatusCode(StatusCodes.Status500InternalServerError, new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief,
-                Code = ResponseCode.InternalError
+                Code = ResponseCode.MailError
             });
         }
 
