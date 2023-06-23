@@ -2,7 +2,7 @@
 
 public class TokenDto
 {
-    public required DateTimeOffset Expiration;
+    public DateTimeOffset Expiration { get; set; }
 
-    public required string Token;
+    public string Token { get; set; } = null!;
 }

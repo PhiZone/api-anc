@@ -1,10 +1,22 @@
 ﻿namespace PhiZoneApi.Configurations;
 
+/// <summary>
+///     Stores secrets & settings for File Storage Service.
+/// </summary>
 public class FileStorageSettings
 {
-    public required string ClientId { get; set; }
+    /// <summary>
+    ///     Stores a Client ID, provided by TapTap.
+    /// </summary>
+    public string ClientId { get; set; } = null!;
 
-    public required string ClientToken { get; set; }
+    /// <summary>
+    ///     Stores a Client Token, provided by TapTap.
+    /// </summary>
+    public string ClientToken { get; set; } = null!;
 
-    public required string ServerUrl { get; set; }
+    /// <summary>
+    ///     Stores a URL, provided by TapTap at the moment.
+    /// </summary>
+    public string ServerUrl { get; set; } = null!;
 }

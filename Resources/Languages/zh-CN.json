@@ -1,6 +1,6 @@
 ﻿{
-  "RegistrationEmail": {
+  "ConfirmationEmail": {
     "Subject": "[PhiZone] 请确认你的邮件地址",
-    "Body": "敬爱的 {UserName}：\n\n　　你刚刚在 PhiZone 上创建了一个账户。\n\n　　请在验证页面输入框中输入代码 {Code} 来验证你的邮箱地址。该代码在 5 分钟内有效。\n\n　　如果你未预料到接收该封邮件，请忽略。\n\nPhiZone"
+    "Body": "敬爱的 {UserName}：\n\n　　请在验证页面输入框中输入代码 {Code} 来确认你的邮箱地址。该代码在 5 分钟内有效。\n\n　　如果你未预料到接收该封邮件，请忽略。\n\nPhiZone"
   }
 }

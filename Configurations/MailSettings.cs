@@ -1,16 +1,37 @@
 ﻿namespace PhiZoneApi.Configurations;
 
+/// <summary>
+///     Stores settings for Mail Service.
+/// </summary>
 public class MailSettings
 {
-    public required string Server { get; set; }
+    /// <summary>
+    ///     Stores the SMTP server host to connect to.
+    /// </summary>
+    public string Server { get; set; } = null!;
 
-    public required int Port { get; set; }
+    /// <summary>
+    ///     Stores the port number to connect to.
+    /// </summary>
+    public int Port { get; set; }
 
-    public required string SenderName { get; set; }
+    /// <summary>
+    ///     Determines the name of the sender.
+    /// </summary>
+    public string SenderName { get; set; } = null!;
 
-    public required string SenderAddress { get; set; }
+    /// <summary>
+    ///     Determines the address of the sender.
+    /// </summary>
+    public string SenderAddress { get; set; } = null!;
 
-    public required string UserName { get; set; }
+    /// <summary>
+    ///     Stores the email address of the sender.
+    /// </summary>
+    public string UserName { get; set; } = null!;
 
-    public required string Password { get; set; }
+    /// <summary>
+    ///     Stores the password of the sender.
+    /// </summary>
+    public string Password { get; set; } = null!;
 }

@@ -4,7 +4,7 @@ namespace PhiZoneApi.Interfaces;
 
 public interface IUserRepository
 {
-    ICollection<User> GetUsers();
+    ICollection<User> GetUsers(string order, bool desc, int position, int take);
     User GetUser(int id);
     User GetUser(string name);
     bool UserExists(int id);

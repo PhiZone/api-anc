@@ -2,11 +2,11 @@
 
 public class MailDto
 {
-    public required string RecipientAddress { get; init; }
+    public string RecipientAddress { get; init; } = string.Empty;
 
-    public required string RecipientName { get; init; }
+    public string RecipientName { get; init; } = string.Empty;
 
-    public required string EmailSubject { get; init; }
+    public string EmailSubject { get; init; } = string.Empty;
 
-    public required string EmailBody { get; init; }
+    public string EmailBody { get; init; } = string.Empty;
 }

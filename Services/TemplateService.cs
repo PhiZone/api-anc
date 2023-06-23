@@ -7,11 +7,11 @@ namespace PhiZoneApi.Services;
 
 public class TemplateService : ITemplateService
 {
-    private readonly Dictionary<string, Dictionary<string, string>> _registrationEmail;
+    private readonly Dictionary<string, Dictionary<string, string>> _ConfirmationEmail;
 
     public TemplateService(IOptions<LanguageSettings> settings)
     {
-        _registrationEmail = new Dictionary<string, Dictionary<string, string>>();
+        _ConfirmationEmail = new Dictionary<string, Dictionary<string, string>>();
 
         var languageDir = Path.Combine(Directory.GetCurrentDirectory(), settings.Value.DirectoryPath);
         foreach (var language in settings.Value.SupportedLanguages)
@@ -20,13 +20,13 @@ public class TemplateService : ITemplateService
             if (!File.Exists(languageFile)) continue;
             var fileContent = File.ReadAllText(languageFile);
             var json = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, string>>>(fileContent);
-            _registrationEmail[language] = json["RegistrationEmail"];
+            _ConfirmationEmail[language] = json["ConfirmationEmail"];
         }
     }
 
-    public Dictionary<string, string> GetRegistrationEmailTemplate(string language)
+    public Dictionary<string, string> GetConfirmationEmailTemplate(string language)
     {
-        return _registrationEmail[language];
+        return _ConfirmationEmail[language];
     }
 
     public string ReplacePlaceholders(string template, Dictionary<string, string> dictionary)

@@ -2,7 +2,7 @@
 
 public class ModelErrorDto
 {
-    public required string Field { get; set; }
+    public string Field { get; set; } = null!;
 
     public ICollection<string>? Errors { get; set; }
 }

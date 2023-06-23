@@ -2,6 +2,42 @@
 
 Based on ASP.NET Core.
 
+## Features
+
+1. Data Presentation
+    - [ ] Sorting
+    - [ ] Pagination
+    - [ ] Searching
+    - [ ] Filtering
+    - [ ] ETag
+2. Data Persistence
+    - [ ] Inheritance
+    - [ ] File Digest
+3. Authentication
+    - [x] Registration
+    - [x] Login
+    - [ ] Token Renewal
+    - [ ] Token Disposal
+    - [x] Email Confirmation
+    - [ ] Password Reset
+    - [ ] Two-factor Authentication
+    - [ ] Phone Number Confirmation
+4. User
+    - [x] Model Creation
+    - [ ] Retrieval
+    - [x] Update
+    - [ ] Deletion
+5. User Relation
+    - [x] Model Creation
+    - [ ] Retrieval
+    - [ ] Deletion
+    - [ ] Count
+6. Region
+    - [x] Model Creation
+    - [ ] Retrieval
+    - [ ] Update
+    - [ ] Deletion
+
 ## Configuration
 
 File `appsettings.Development.json` is ignored by git using `.gitignore`. You should create it yourself.

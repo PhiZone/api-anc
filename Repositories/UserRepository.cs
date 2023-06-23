@@ -1,6 +1,7 @@
 ﻿using PhiZoneApi.Data;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
+using PhiZoneApi.Utils;
 
 namespace PhiZoneApi.Repositories;
 
@@ -13,20 +14,14 @@ public class UserRepository : IUserRepository
         _context = context;
     }
 
-    public ICollection<User> GetUsers()
-    {
-        return _context.Users.OrderBy(p => p.Id).ToList();
-    }
-
     public User GetUser(int id)
     {
         return _context.Users.FirstOrDefault(p => p.Id.Equals(id)) ?? throw new KeyNotFoundException();
     }
 
-    public User GetUser(string name)
+    public User? GetUser(string name)
     {
-        return _context.Users.FirstOrDefault(p => p.UserName != null && p.UserName.Equals(name)) ??
-               throw new KeyNotFoundException();
+        return _context.Users.FirstOrDefault(p => p.UserName != null && p.UserName.Equals(name));
     }
 
     public bool UserExists(int id)
@@ -44,5 +39,11 @@ public class UserRepository : IUserRepository
     {
         _context.Update(user);
         return Save();
+    }
+
+    public ICollection<User> GetUsers(string order, bool desc, int position, int take)
+    {
+        // return _context.Users.OrderBy(p => p.Id).ToList();
+        return _context.Users.OrderBy(order, desc).Skip(position).Take(take).ToList();
     }
 }

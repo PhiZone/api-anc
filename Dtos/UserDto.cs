@@ -4,9 +4,9 @@ public class UserDto
 {
     public int Id { get; set; }
 
-    public required string UserName { get; set; }
+    public string UserName { get; set; } = null!;
 
-    public required string Avatar { get; set; }
+    public string Avatar { get; set; } = null!;
 
     public int Gender { get; set; }
 
@@ -18,7 +18,7 @@ public class UserDto
 
     public double Rks { get; set; }
 
-    public required string Language { get; set; }
+    public string Language { get; set; } = null!;
 
     public DateTimeOffset? DateLastLoggedIn { get; set; }
 

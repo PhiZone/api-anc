@@ -11,9 +11,9 @@ public class DataContext : IdentityDbContext<User, Role, int>
     {
     }
 
-    public DbSet<UserRelation> UserRelations { get; set; }
-    public DbSet<Region> Regions { get; set; }
-    public override DbSet<User> Users { get; set; }
+    public DbSet<UserRelation> UserRelations { get; set; } = null!;
+    public DbSet<Region> Regions { get; set; } = null!;
+    public override DbSet<User> Users { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

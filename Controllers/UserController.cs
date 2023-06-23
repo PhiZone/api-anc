@@ -2,6 +2,8 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
+using PhiZoneApi.Configurations;
 using PhiZoneApi.Data;
 using PhiZoneApi.Dtos;
 using PhiZoneApi.Interfaces;
@@ -10,12 +12,16 @@ using PhiZoneApi.Utils;
 
 namespace PhiZoneApi.Controllers;
 
+/// <summary>
+///     Provides user-related services.
+/// </summary>
 [Route("users")]
 [ApiVersion("2.0")]
 [ApiController]
 public class UserController : Controller
 {
     private readonly IFileStorageService _fileStorageService;
+    private readonly IOptions<DataSettings> _dataSettings;
     private readonly IMapper _mapper;
     private readonly UserManager<User> _userManager;
     private readonly IUserRepository _userRepository;
@@ -24,20 +30,32 @@ public class UserController : Controller
         IUserRepository userRepository,
         UserManager<User> userManager,
         IFileStorageService fileStorageService,
+        IOptions<DataSettings> dataSettings,
         IMapper mapper)
     {
         _userRepository = userRepository;
         _userManager = userManager;
         _fileStorageService = fileStorageService;
+        _dataSettings = dataSettings;
         _mapper = mapper;
     }
 
+    /// <summary>
+    /// Gets users.
+    /// </summary>
+    /// <param name="order">The field by which the result is sorted. Defaults to <code>id</code>.</param>
+    /// <param name="desc">Whether or not the result is sorted in descending order. Defaults to <code>false</code>.</param>
+    /// <param name="page">The page number. Defaults to <code>1</code>.</param>
+    /// <param name="perPage">How many entries are present in one page. Defaults to <code>DataSettings.PaginationPerPage</code>.</param>
+    /// <returns>An array containing users.</returns>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<UserDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
-    public IActionResult GetUsers()
+    public IActionResult GetUsers(string order = "id", bool desc = false, int page = 1, int perPage = 0)
     {
-        var users = _mapper.Map<List<UserDto>>(_userRepository.GetUsers());
+        perPage = perPage > 0 ? perPage : _dataSettings.Value.PaginationPerPage;
+        var position = perPage * (page - 1);
+        var users = _mapper.Map<List<UserDto>>(_userRepository.GetUsers(order, desc, position, perPage));
         if (!ModelState.IsValid)
             return BadRequest(new ResponseDto<object>
             {
@@ -49,10 +67,17 @@ public class UserController : Controller
         {
             Status = ResponseStatus.Ok,
             Code = ResponseCode.Ok,
+            PerPage = perPage,
+            
             Data = users
         });
     }
 
+    /// <summary>
+    /// Gets a specific user by ID.
+    /// </summary>
+    /// <param name="id">A user's ID.</param>
+    /// <returns>A user.</returns>
     [HttpGet("{id:int}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<UserDto>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
@@ -75,6 +100,12 @@ public class UserController : Controller
         });
     }
 
+    /// <summary>
+    /// Updates a user.
+    /// </summary>
+    /// <param name="id"></param>
+    /// <param name="dto"></param>
+    /// <returns>An empty body.</returns>
     [HttpPut("{id:int}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]

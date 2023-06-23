@@ -6,16 +6,16 @@ namespace PhiZoneApi.Dtos;
 public class UserRegistrationDto
 {
     [Required(ErrorMessage = ResponseCode.FieldEmpty)]
-    public required string UserName { get; set; }
+    public string UserName { get; set; } = null!;
 
     [Required(ErrorMessage = ResponseCode.FieldEmpty)]
     [EmailAddress(ErrorMessage = ResponseCode.InvalidEmailAddress)]
-    public required string Email { get; set; }
+    public string Email { get; set; } = null!;
 
     [Required(ErrorMessage = ResponseCode.FieldEmpty)]
     [RegularExpression(@"^(?=.*[^a-zA-Z0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9]).{6,18}$",
         ErrorMessage = ResponseCode.InvalidPassword)]
-    public required string Password { get; set; }
+    public string Password { get; set; } = null!;
 
     public IFormFile? Avatar { get; set; }
 
@@ -27,7 +27,7 @@ public class UserRegistrationDto
 
     [Required(ErrorMessage = ResponseCode.FieldEmpty)]
     [RegularExpression(@"^[a-z]{2}(?:-[A-Z]{2})?$", ErrorMessage = ResponseCode.InvalidLanguageCode)]
-    public required string Language { get; set; }
+    public string Language { get; set; } = null!;
 
     [DataType(DataType.Date, ErrorMessage = ResponseCode.InvalidDate)]
     public DateTimeOffset? DateOfBirth { get; set; }

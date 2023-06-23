@@ -7,8 +7,8 @@ public class UserLoginDto
 {
     [Required(ErrorMessage = ResponseCode.FieldEmpty)]
     [EmailAddress(ErrorMessage = ResponseCode.InvalidEmailAddress)]
-    public required string Email { get; set; }
+    public string Email { get; set; } = null!;
 
     [Required(ErrorMessage = ResponseCode.FieldEmpty)]
-    public required string Password { get; set; }
+    public string Password { get; set; } = null!;
 }

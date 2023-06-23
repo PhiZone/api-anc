@@ -2,6 +2,6 @@
 
 public interface ITemplateService
 {
-    Dictionary<string, string> GetRegistrationEmailTemplate(string language);
+    Dictionary<string, string> GetConfirmationEmailTemplate(string language);
     string ReplacePlaceholders(string template, Dictionary<string, string> dictionary);
 }

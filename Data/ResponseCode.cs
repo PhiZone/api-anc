@@ -119,7 +119,22 @@ public static class ResponseCode
     public const string UserNotLoggedIn = "UserNotLoggedIn";
 
     /// <summary>
+    ///     The specified user is not found.
+    /// </summary>
+    public const string UserNotFound = "UserNotFound";
+
+    /// <summary>
     ///     The user does not have enough permission to perform the action.
     /// </summary>
     public const string InsufficientPermission = "InsufficientPermission";
+
+    /// <summary>
+    ///     The input value is not found in the Redis database.
+    /// </summary>
+    public const string InvalidActivationCode = "InvalidActivationCode";
+
+    /// <summary>
+    ///     User has already confirmed their email address and activated their account.
+    /// </summary>
+    public const string AlreadyActivated = "AlreadyActivated";
 }
