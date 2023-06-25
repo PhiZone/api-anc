@@ -1,7 +1,7 @@
 ﻿namespace PhiZoneApi.Configurations;
 
 /// <summary>
-///     Stores secrets & settings for File Storage Service.
+///     Stores secrets and settings for File Storage Service.
 /// </summary>
 public class FileStorageSettings
 {
