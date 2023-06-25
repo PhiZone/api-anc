@@ -9,6 +9,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using PhiZoneApi.Configurations;
 using PhiZoneApi.Data;
+using PhiZoneApi.Filters;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 using PhiZoneApi.Repositories;
@@ -19,6 +20,8 @@ using Role = PhiZoneApi.Models.Role;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+
+builder.Services.AddMvc(options => { options.Filters.Add(typeof(ValidateModelFilter)); });
 
 builder.Services.AddControllers();
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());

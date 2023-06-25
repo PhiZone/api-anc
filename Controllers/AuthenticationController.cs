@@ -184,14 +184,6 @@ public class AuthenticationController : Controller
                 Code = ResponseCode.UserNameOccupied
             });
 
-        if (!ModelState.IsValid)
-            return BadRequest(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorDetailed,
-                Code = ResponseCode.DataInvalid,
-                Errors = ModelErrorTranslator.Translate(ModelState)
-            });
-
         string? avatarUrl = null;
         if (dto.Avatar != null) avatarUrl = await _fileStorageService.Upload(dto.UserName, dto.Avatar);
 

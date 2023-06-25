@@ -43,12 +43,12 @@ public class UserController : Controller
     /// <summary>
     /// Gets users.
     /// </summary>
-    /// <param name="order">The field by which the result is sorted. Defaults to <code>id</code>.</param>
-    /// <param name="desc">Whether or not the result is sorted in descending order. Defaults to <code>false</code>.</param>
-    /// <param name="page">The page number. Defaults to <code>1</code>.</param>
-    /// <param name="perPage">How many entries are present in one page. Defaults to <code>DataSettings.PaginationPerPage</code>.</param>
+    /// <param name="order">The field by which the result is sorted. Defaults to <c>id</c>.</param>
+    /// <param name="desc">Whether or not the result is sorted in descending order. Defaults to <c>false</c>.</param>
+    /// <param name="page">The page number. Defaults to 1.</param>
+    /// <param name="perPage">How many entries are present in one page. Defaults to DataSettings.PaginationPerPage.</param>
     /// <returns>An array containing users.</returns>
-    [HttpGet]
+    [HttpGet("")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<UserDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     public IActionResult GetUsers(string order = "id", bool desc = false, int page = 1, int perPage = 0)
@@ -56,19 +56,13 @@ public class UserController : Controller
         perPage = perPage > 0 ? perPage : _dataSettings.Value.PaginationPerPage;
         var position = perPage * (page - 1);
         var users = _mapper.Map<List<UserDto>>(_userRepository.GetUsers(order, desc, position, perPage));
-        if (!ModelState.IsValid)
-            return BadRequest(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorDetailed,
-                Code = ResponseCode.DataInvalid,
-                Errors = ModelErrorTranslator.Translate(ModelState)
-            });
+
         return Ok(new ResponseDto<IEnumerable<UserDto>>
         {
             Status = ResponseStatus.Ok,
             Code = ResponseCode.Ok,
             PerPage = perPage,
-            
+
             Data = users
         });
     }
@@ -85,13 +79,7 @@ public class UserController : Controller
     {
         if (!_userRepository.UserExists(id)) return NotFound();
         var user = _mapper.Map<UserDto>(_userRepository.GetUser(id));
-        if (!ModelState.IsValid)
-            return BadRequest(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorDetailed,
-                Code = ResponseCode.DataInvalid,
-                Errors = ModelErrorTranslator.Translate(ModelState)
-            });
+
         return Ok(new ResponseDto<UserDto>
         {
             Status = ResponseStatus.Ok,
@@ -123,15 +111,6 @@ public class UserController : Controller
 
         // Obtain user by id
         var user = _userRepository.GetUser(id);
-
-        // Check the validity of ModelState
-        if (!ModelState.IsValid)
-            return BadRequest(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorDetailed,
-                Code = ResponseCode.DataInvalid,
-                Errors = ModelErrorTranslator.Translate(ModelState)
-            });
 
         // Update user name
         if (dto.UserName != null)
