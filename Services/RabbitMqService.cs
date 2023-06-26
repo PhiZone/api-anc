@@ -11,7 +11,6 @@ public class RabbitMqService : IRabbitMqService
 
     public RabbitMqService(IOptions<RabbitMqSettings> options)
     {
-        Console.WriteLine("================= SAKUZYO BEAM =================");
         var settings = options.Value;
         var factory = new ConnectionFactory
         {
@@ -21,7 +20,6 @@ public class RabbitMqService : IRabbitMqService
             Password = settings.Password
         };
         _connection = factory.CreateConnection();
-        Console.WriteLine("================= BEAM SAKUZYO =================");
     }
 
     public IConnection GetConnection()
