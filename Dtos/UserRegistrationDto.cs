@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using PhiZoneApi.Data;
+using PhiZoneApi.Models;
 
 namespace PhiZoneApi.Dtos;
 
@@ -19,8 +20,11 @@ public class UserRegistrationDto
 
     public IFormFile? Avatar { get; set; }
 
-    [Range(0, 2, ErrorMessage = ResponseCode.ValueOutOfRange)] // 0 = Unset; 1 = Male; 2 = Female
-    public int Gender { get; set; }
+    /// <summary>
+    /// 0: Unset, 1: Male, 2: Female, 3: Other
+    /// </summary>
+    [Range(0, 3, ErrorMessage = ResponseCode.ValueOutOfRange)]
+    public Gender Gender { get; set; } = Gender.Unset;
 
     [MaxLength(2000, ErrorMessage = ResponseCode.ValueTooLong)]
     public string? Biography { get; set; }

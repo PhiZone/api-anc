@@ -194,7 +194,7 @@ public class AuthenticationController : Controller
             Email = dto.Email,
             Avatar = avatarUrl,
             Language = dto.Language,
-            Gender = dto.Gender,
+            Gender = (int)dto.Gender,
             Biography = dto.Biography,
             DateOfBirth = dto.DateOfBirth,
             DateJoined = DateTimeOffset.UtcNow
@@ -220,16 +220,16 @@ public class AuthenticationController : Controller
                 Errors = result.Errors.ToArray()
             });
 
-        var roles = new List<string>
-        {
-            "Member", "Qualified", "Volunteer", "Moderator", "Administrator"
-        };
-        foreach (var role in roles)
-            if (!await _roleManager.RoleExistsAsync(role))
-                await _roleManager.CreateAsync(new Role
-                {
-                    Name = role
-                });
+        // var roles = new List<string>
+        // {
+        //     "Member", "Qualified", "Volunteer", "Moderator", "Administrator"
+        // };
+        // foreach (var role in roles)
+        //     if (!await _roleManager.RoleExistsAsync(role))
+        //         await _roleManager.CreateAsync(new Role
+        //         {
+        //             Name = role
+        //         });
         await _userManager.AddToRoleAsync(user, "Member");
 
         return StatusCode(StatusCodes.Status201Created);
