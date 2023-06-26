@@ -11,7 +11,7 @@ using PhiZoneApi.Data;
 
 namespace PhiZoneApi.Migrations
 {
-    [DbContext(typeof(DataContext))]
+    [DbContext(typeof(ApplicationDbContext))]
     [Migration("20230617155838_InitialCreate")]
     partial class InitialCreate
     {

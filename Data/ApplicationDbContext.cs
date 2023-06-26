@@ -5,9 +5,9 @@ using PhiZoneApi.Models;
 
 namespace PhiZoneApi.Data;
 
-public class DataContext : IdentityDbContext<User, Role, int>
+public class ApplicationDbContext : IdentityDbContext<User, Role, int>
 {
-    public DataContext(DbContextOptions<DataContext> options) : base(options)
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
     {
     }
 

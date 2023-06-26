@@ -11,7 +11,7 @@ using PhiZoneApi.Data;
 
 namespace PhiZoneApi.Migrations
 {
-    [DbContext(typeof(DataContext))]
+    [DbContext(typeof(ApplicationDbContext))]
     [Migration("20230621083403_ModifyModels")]
     partial class ModifyModels
     {

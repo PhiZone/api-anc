@@ -7,9 +7,9 @@ namespace PhiZoneApi.Repositories;
 
 public class UserRepository : IUserRepository
 {
-    private readonly DataContext _context;
+    private readonly ApplicationDbContext _context;
 
-    public UserRepository(DataContext context)
+    public UserRepository(ApplicationDbContext context)
     {
         _context = context;
     }
