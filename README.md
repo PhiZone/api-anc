@@ -65,10 +65,17 @@ File `appsettings.Development.json` is ignored by git using `.gitignore`. You sh
     "ClientToken": "yourtoken",
     "ServerUrl": "https://example.com"
   },
+  "RabbitMQSettings": {
+    "HostName": "localhost",
+    "Port": 5672,
+    "UserName": "yourusername",
+    "Password": "yourpassword"
+   },
   "RedisConnection": "localhost:6379,password:yourpassword"
 }
 ```
 
-1. Database: Configure your PostgreSQL server before filling in `DefaultConnection`.
+1. Database: Configure your own PostgreSQL server before filling in `DefaultConnection`.
 2. File Storage: We use the file storage service provided by TapTap, courtesy of Phigrim. Ask anyone who has access to
-   the service for credentials.
+   the service for credentials before filling in `FileStorageSettings`.
+3. RabbitMQ: Setup your own RabbitMQ server before filling in `RabbitMQSettings`.
