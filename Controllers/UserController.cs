@@ -4,11 +4,11 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using PhiZoneApi.Configurations;
-using PhiZoneApi.Data;
+using PhiZoneApi.Constants;
 using PhiZoneApi.Dtos;
+using PhiZoneApi.Enums;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
-using PhiZoneApi.Utils;
 
 namespace PhiZoneApi.Controllers;
 
@@ -20,8 +20,8 @@ namespace PhiZoneApi.Controllers;
 [ApiController]
 public class UserController : Controller
 {
-    private readonly IFileStorageService _fileStorageService;
     private readonly IOptions<DataSettings> _dataSettings;
+    private readonly IFileStorageService _fileStorageService;
     private readonly IMapper _mapper;
     private readonly UserManager<User> _userManager;
     private readonly IUserRepository _userRepository;
@@ -41,7 +41,7 @@ public class UserController : Controller
     }
 
     /// <summary>
-    /// Gets users.
+    ///     Gets users.
     /// </summary>
     /// <param name="order">The field by which the result is sorted. Defaults to <c>id</c>.</param>
     /// <param name="desc">Whether or not the result is sorted in descending order. Defaults to <c>false</c>.</param>
@@ -68,10 +68,13 @@ public class UserController : Controller
     }
 
     /// <summary>
-    /// Gets a specific user by ID.
+    ///     Gets a specific user by ID.
     /// </summary>
     /// <param name="id">A user's ID.</param>
     /// <returns>A user.</returns>
+    /// <response code="200">Returns a user.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="404">When the specified user is not found.</response>
     [HttpGet("{id:int}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<UserDto>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
@@ -89,11 +92,15 @@ public class UserController : Controller
     }
 
     /// <summary>
-    /// Updates a user.
+    ///     Updates a user.
     /// </summary>
     /// <param name="id"></param>
     /// <param name="dto"></param>
     /// <returns>An empty body.</returns>
+    /// <response code="204">Returns an empty body.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="404">When the specified user is not found.</response>
+    /// <response code="500">When an internal server error occurs.</response>
     [HttpPut("{id:int}")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -119,7 +126,7 @@ public class UserController : Controller
                 && DateTimeOffset.UtcNow - user.DateLastModifiedUserName < TimeSpan.FromDays(15))
                 return BadRequest(new ResponseDto<object>
                 {
-                    Status = ResponseStatus.ErrorNotYetAvailable,
+                    Status = ResponseStatus.ErrorTemporarilyUnavailable,
                     Code = ResponseCode.UserNameCoolDown,
                     DateAvailable = (DateTimeOffset)(user.DateLastModifiedUserName + TimeSpan.FromDays(15))
                 });

@@ -1,16 +1,17 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using LC.Newtonsoft.Json;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
-using PhiZoneApi.Data;
+using PhiZoneApi.Constants;
 using PhiZoneApi.Dtos;
+using PhiZoneApi.Enums;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
-using PhiZoneApi.Utils;
+using RabbitMQ.Client;
 using StackExchange.Redis;
-using Role = PhiZoneApi.Models.Role;
 
 namespace PhiZoneApi.Controllers;
 
@@ -25,27 +26,27 @@ public class AuthenticationController : Controller
 {
     private readonly IConfiguration _configuration;
     private readonly IFileStorageService _fileStorageService;
-    private readonly IMailService _mailService;
+    private readonly IPasswordHasher<User> _passwordHasher;
+    private readonly IRabbitMqService _rabbitMqService;
     private readonly IConnectionMultiplexer _redis;
-    private readonly RoleManager<Role> _roleManager;
     private readonly ITemplateService _templateService;
     private readonly UserManager<User> _userManager;
 
     public AuthenticationController(
         UserManager<User> userManager,
-        RoleManager<Role> roleManager,
         IConfiguration configuration,
-        IMailService mailService,
         ITemplateService templateService,
         IFileStorageService fileStorageService,
+        IRabbitMqService rabbitMqService,
+        IPasswordHasher<User> passwordHasher,
         IConnectionMultiplexer redis)
     {
         _userManager = userManager;
-        _roleManager = roleManager;
         _configuration = configuration;
-        _mailService = mailService;
         _templateService = templateService;
         _fileStorageService = fileStorageService;
+        _rabbitMqService = rabbitMqService;
+        _passwordHasher = passwordHasher;
         _redis = redis;
     }
 
@@ -82,7 +83,7 @@ public class AuthenticationController : Controller
                 if (user.LockoutEnd > DateTimeOffset.UtcNow) // temporary
                     return StatusCode(StatusCodes.Status403Forbidden, new ResponseDto<object>
                     {
-                        Status = ResponseStatus.ErrorNotYetAvailable,
+                        Status = ResponseStatus.ErrorTemporarilyUnavailable,
                         Code = ResponseCode.AccountLocked,
                         DateAvailable = user.LockoutEnd.Value.UtcDateTime
                     });
@@ -200,8 +201,7 @@ public class AuthenticationController : Controller
             DateJoined = DateTimeOffset.UtcNow
         };
 
-        var passwordHasher = new PasswordHasher<User>();
-        user.PasswordHash = passwordHasher.HashPassword(user, dto.Password);
+        user.PasswordHash = _passwordHasher.HashPassword(user, dto.Password);
 
         var errorCode = await SendConfirmationEmail(user);
         if (!errorCode.Equals(string.Empty))
@@ -253,14 +253,16 @@ public class AuthenticationController : Controller
     public async Task<IActionResult> Activate([FromBody] UserActivationDto dto)
     {
         var db = _redis.GetDatabase();
-        if (!await db.KeyExistsAsync($"ACTIVATION{dto.Code}"))
+        var key = $"ACTIVATION{dto.Code}";
+        if (!await db.KeyExistsAsync(key))
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief,
                 Code = ResponseCode.InvalidActivationCode
             });
 
-        var id = await db.StringGetAsync($"ACTIVATION{dto.Code}");
+        var id = await db.StringGetAsync(key);
+        db.KeyDelete(key);
         var user = (await _userManager.FindByIdAsync(id!))!;
         if (user is { EmailConfirmed: true, LockoutEnabled: false })
             return BadRequest(new ResponseDto<object>
@@ -319,9 +321,12 @@ public class AuthenticationController : Controller
             })
         };
 
+        var body = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(mailDto));
+
         try
         {
-            _mailService.SendMail(mailDto);
+            using var channel = _rabbitMqService.GetConnection().CreateModel();
+            channel.BasicPublish("", "email", null, body);
         }
         catch (Exception)
         {

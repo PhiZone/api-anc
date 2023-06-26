@@ -1,11 +1,8 @@
 using System.Reflection;
-using System.Text;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Versioning;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using PhiZoneApi.Configurations;
 using PhiZoneApi.Data;
@@ -16,6 +13,8 @@ using PhiZoneApi.Repositories;
 using PhiZoneApi.Services;
 using StackExchange.Redis;
 using Role = PhiZoneApi.Models.Role;
+
+// using Microsoft.AspNetCore.Authentication.JwtBearer;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -31,6 +30,7 @@ builder.Services.Configure<DataSettings>(builder.Configuration.GetSection("DataS
 builder.Services.Configure<MailSettings>(builder.Configuration.GetSection("MailSettings"));
 builder.Services.Configure<FileStorageSettings>(builder.Configuration.GetSection("FileStorageSettings"));
 builder.Services.Configure<LanguageSettings>(builder.Configuration.GetSection("LanguageSettings"));
+builder.Services.Configure<RabbitMqSettings>(builder.Configuration.GetSection("RabbitMQSettings"));
 
 builder.Services.AddApiVersioning(options =>
 {
@@ -44,8 +44,14 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddTransient<IMailService, MailService>();
 builder.Services.AddSingleton<IFileStorageService, FileStorageService>();
 builder.Services.AddSingleton<ITemplateService, TemplateService>();
+builder.Services.AddSingleton<IRabbitMqService, RabbitMqService>();
 builder.Services.AddSingleton<IConnectionMultiplexer>(
     ConnectionMultiplexer.Connect(builder.Configuration.GetValue<string>("RedisConnection") ?? "localhost"));
+
+builder.Services.AddSingleton<IHostedService>(provider =>
+{
+    return new MailSenderService(provider.GetService<IMailService>()!, provider.GetService<IRabbitMqService>()!);
+});
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -66,30 +72,47 @@ builder.Services.AddSwaggerGen(options =>
 builder.Services.AddDbContext<DataContext>(options =>
 {
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
+    options.UseOpenIddict();
 });
 
 builder.Services.AddIdentity<User, Role>()
     .AddEntityFrameworkStores<DataContext>()
     .AddDefaultTokenProviders();
 
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-}).AddJwtBearer(options =>
-{
-    options.SaveToken = true;
-    options.RequireHttpsMetadata = false;
-    options.TokenValidationParameters = new TokenValidationParameters
+builder.Services.AddOpenIddict()
+    .AddCore(options => { options.UseEntityFrameworkCore().UseDbContext<DataContext>().ReplaceDefaultEntities<int>(); })
+    .AddServer(options =>
     {
-        ValidateIssuer = true,
-        ValidateAudience = true,
-        ValidAudience = builder.Configuration["JWT:ValidAudience"],
-        ValidIssuer = builder.Configuration["JWT:ValidIssuer"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JWT:Secret"]!))
-    };
-});
+        options.SetTokenEndpointUris("auth/token");
+        options.SetLogoutEndpointUris("auth/logout");
+        options.AllowClientCredentialsFlow();
+        options.AddDevelopmentEncryptionCertificate().AddDevelopmentSigningCertificate();
+        options.UseAspNetCore().EnableTokenEndpointPassthrough();
+    })
+    .AddValidation(options =>
+    {
+        options.UseLocalServer();
+        options.UseAspNetCore();
+    });
+
+// builder.Services.AddAuthentication(options =>
+// {
+//     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+//     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+//     options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+// }).AddJwtBearer(options =>
+// {
+//     options.SaveToken = true;
+//     options.RequireHttpsMetadata = false;
+//     options.TokenValidationParameters = new TokenValidationParameters
+//     {
+//         ValidateIssuer = true,
+//         ValidateAudience = true,
+//         ValidAudience = builder.Configuration["JWT:ValidAudience"],
+//         ValidIssuer = builder.Configuration["JWT:ValidIssuer"],
+//         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JWT:Secret"]!))
+//     };
+// });
 
 builder.Services.AddCoreAdmin();
 

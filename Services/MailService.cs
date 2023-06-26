@@ -10,17 +10,17 @@ namespace PhiZoneApi.Services;
 
 public class MailService : IMailService
 {
-    private readonly MailSettings _mailSettings;
+    private readonly MailSettings _settings;
 
     public MailService(IOptions<MailSettings> options)
     {
-        _mailSettings = options.Value;
+        _settings = options.Value;
     }
 
-    public void SendMail(MailDto mailDto)
+    public async Task SendMailAsync(MailDto mailDto)
     {
         using var emailMessage = new MimeMessage();
-        var emailFrom = new MailboxAddress(_mailSettings.SenderName, _mailSettings.SenderAddress);
+        var emailFrom = new MailboxAddress(_settings.SenderName, _settings.SenderAddress);
         emailMessage.From.Add(emailFrom);
         var emailTo = new MailboxAddress(mailDto.RecipientName, mailDto.RecipientAddress);
         emailMessage.To.Add(emailTo);
@@ -38,9 +38,9 @@ public class MailService : IMailService
         emailMessage.Body = emailBodyBuilder.ToMessageBody();
 
         using var mailClient = new SmtpClient();
-        mailClient.Connect(_mailSettings.Server, _mailSettings.Port, SecureSocketOptions.SslOnConnect);
-        mailClient.Authenticate(_mailSettings.UserName, _mailSettings.Password);
-        mailClient.Send(emailMessage);
-        mailClient.Disconnect(true);
+        await mailClient.ConnectAsync(_settings.Server, _settings.Port, SecureSocketOptions.SslOnConnect);
+        await mailClient.AuthenticateAsync(_settings.UserName, _settings.Password);
+        await mailClient.SendAsync(emailMessage);
+        await mailClient.DisconnectAsync(true);
     }
 }

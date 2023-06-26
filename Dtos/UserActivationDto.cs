@@ -1,5 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using PhiZoneApi.Data;
+using PhiZoneApi.Constants;
 
 namespace PhiZoneApi.Dtos;
 

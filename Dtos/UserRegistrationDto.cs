@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using PhiZoneApi.Data;
-using PhiZoneApi.Models;
+using PhiZoneApi.Constants;
+using PhiZoneApi.Enums;
 
 namespace PhiZoneApi.Dtos;
 
@@ -21,7 +21,7 @@ public class UserRegistrationDto
     public IFormFile? Avatar { get; set; }
 
     /// <summary>
-    /// 0: Unset, 1: Male, 2: Female, 3: Other
+    ///     0: Unset, 1: Male, 2: Female, 3: Other
     /// </summary>
     [Range(0, 3, ErrorMessage = ResponseCode.ValueOutOfRange)]
     public Gender Gender { get; set; } = Gender.Unset;

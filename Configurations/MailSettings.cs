@@ -1,7 +1,7 @@
 ﻿namespace PhiZoneApi.Configurations;
 
 /// <summary>
-///     Stores settings for Mail Service.
+///     Stores secrets and settings for Mail Service.
 /// </summary>
 public class MailSettings
 {

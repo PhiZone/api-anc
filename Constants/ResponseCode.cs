@@ -1,6 +1,6 @@
 ﻿// ReSharper disable UnusedMember.Global
 
-namespace PhiZoneApi.Data;
+namespace PhiZoneApi.Constants;
 
 public static class ResponseCode
 {
