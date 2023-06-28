@@ -5,8 +5,8 @@ Based on ASP.NET Core.
 ## Features
 
 1. Data Presentation
-    - [ ] Sorting
-    - [ ] Pagination
+    - [x] Sorting
+    - [x] Pagination
     - [ ] Searching
     - [ ] Filtering
     - [ ] ETag
@@ -16,9 +16,9 @@ Based on ASP.NET Core.
 3. Authentication
     - [x] Registration
     - [x] Login
-    - [ ] Token Renewal
+    - [x] Token Renewal
     - [ ] Token Disposal
-    - [x] Email Confirmation
+    - [ ] Email Confirmation
     - [ ] Password Reset
     - [ ] Two-factor Authentication
     - [ ] Phone Number Confirmation

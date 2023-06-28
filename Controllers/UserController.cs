@@ -1,14 +1,18 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using OpenIddict.Abstractions;
+using OpenIddict.Validation.AspNetCore;
 using PhiZoneApi.Configurations;
 using PhiZoneApi.Constants;
 using PhiZoneApi.Dtos;
 using PhiZoneApi.Enums;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
+using PhiZoneApi.Utils;
 
 namespace PhiZoneApi.Controllers;
 
@@ -46,7 +50,7 @@ public class UserController : Controller
     /// <param name="order">The field by which the result is sorted. Defaults to <c>id</c>.</param>
     /// <param name="desc">Whether or not the result is sorted in descending order. Defaults to <c>false</c>.</param>
     /// <param name="page">The page number. Defaults to 1.</param>
-    /// <param name="perPage">How many entries are present in one page. Defaults to DataSettings.PaginationPerPage.</param>
+    /// <param name="perPage">How many entries are present in one page. Defaults to DataSettings:PaginationPerPage.</param>
     /// <returns>An array containing users.</returns>
     [HttpGet("")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<UserDto>>))]
@@ -55,15 +59,14 @@ public class UserController : Controller
     {
         perPage = perPage > 0 ? perPage : _dataSettings.Value.PaginationPerPage;
         var position = perPage * (page - 1);
-        var users = _mapper.Map<List<UserDto>>(_userRepository.GetUsers(order, desc, position, perPage));
+        var data = _mapper.Map<List<UserDto>>(_userRepository.GetUsers(order, desc, position, perPage));
 
         return Ok(new ResponseDto<IEnumerable<UserDto>>
         {
             Status = ResponseStatus.Ok,
             Code = ResponseCode.Ok,
             PerPage = perPage,
-
-            Data = users
+            Data = data
         });
     }
 
@@ -78,49 +81,74 @@ public class UserController : Controller
     [HttpGet("{id:int}")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<UserDto>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
-    public IActionResult GetUser(int id)
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> GetUser([FromRoute] int id)
     {
-        if (!_userRepository.UserExists(id)) return NotFound();
-        var user = _mapper.Map<UserDto>(_userRepository.GetUser(id));
+        var user = await _userManager.FindByIdAsync(id.ToString());
+        if (user == null) return NotFound();
+        var data = _mapper.Map<UserDto>(user);
 
         return Ok(new ResponseDto<UserDto>
         {
             Status = ResponseStatus.Ok,
             Code = ResponseCode.Ok,
-            Data = user
+            Data = data
         });
     }
 
     /// <summary>
     ///     Updates a user.
     /// </summary>
-    /// <param name="id"></param>
-    /// <param name="dto"></param>
+    /// <param name="id">User's ID.</param>
+    /// <param name="patchDocument">A JSON Patch Document.</param>
     /// <returns>An empty body.</returns>
     /// <response code="204">Returns an empty body.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="404">When the specified user is not found.</response>
     /// <response code="500">When an internal server error occurs.</response>
-    [HttpPut("{id:int}")]
-    [Authorize]
+    [HttpPatch("{id:int}")]
+    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> UpdateUser([FromRoute] int id, [FromForm] UserUpdateDto dto)
+    public async Task<IActionResult> UpdateUser([FromRoute] int id,
+        [FromBody] JsonPatchDocument<UserUpdateDto> patchDocument)
     {
+        // Obtain user by id
+        var user = await _userManager.FindByIdAsync(id.ToString());
+
         // Check user's existence
-        if (!_userRepository.UserExists(id)) return NotFound();
+        if (user == null)
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief,
+                Code = ResponseCode.UserNotFound
+            });
 
         // Check permission
-        var currentUser = (User?)HttpContext.Items["User"];
-        if (currentUser != null && currentUser.Id != id && !await _userManager.IsInRoleAsync(currentUser, "Admin"))
-            return Forbid();
+        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        if (currentUser == null || (currentUser.Id != id && !await _userManager.IsInRoleAsync(currentUser, "Admin")))
+            return StatusCode(StatusCodes.Status403Forbidden, new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief,
+                Code = ResponseCode.InsufficientPermission
+            });
 
-        // Obtain user by id
-        var user = _userRepository.GetUser(id);
+        var dto = _mapper.Map<UserUpdateDto>(user);
+
+        patchDocument.ApplyTo(dto, ModelState);
+
+        if (!ModelState.IsValid)
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorDetailed,
+                Code = ResponseCode.DataInvalid,
+                Errors = ModelErrorTranslator.Translate(ModelState)
+            });
 
         // Update user name
-        if (dto.UserName != null)
+        if (patchDocument.Operations.FirstOrDefault(operation =>
+                operation.path == "/userName" && operation.op is "add" or "replace") != null)
         {
             if (user.DateLastModifiedUserName != null
                 && DateTimeOffset.UtcNow - user.DateLastModifiedUserName < TimeSpan.FromDays(15))
@@ -134,17 +162,20 @@ public class UserController : Controller
             user.DateLastModifiedUserName = DateTimeOffset.UtcNow;
         }
 
-        // Update avatar
-        if (dto.Avatar != null) user.Avatar = await _fileStorageService.Upload(user.UserName ?? "Avatar", dto.Avatar);
+        // Update date of birth
+        if (patchDocument.Operations.FirstOrDefault(operation =>
+                operation.path == "/dateOfBirth" && operation.op is "add" or "replace") != null)
+        {
+            var dateOfBirth = dto.DateOfBirth.GetValueOrDefault();
+            user.DateOfBirth = new DateTimeOffset(dateOfBirth.DateTime, TimeSpan.Zero);
+        }
+
+        user.Gender = dto.Gender;
+        user.Biography = dto.Biography;
+        user.Language = dto.Language;
 
         // Save
-        if (!_userRepository.UpdateUser(user))
-            return StatusCode(StatusCodes.Status500InternalServerError,
-                new ResponseDto<object>
-                {
-                    Status = ResponseStatus.ErrorBrief,
-                    Code = ResponseCode.InternalError
-                });
+        await _userManager.UpdateAsync(user);
 
         return NoContent();
     }

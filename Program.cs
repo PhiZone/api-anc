@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Versioning;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using OpenIddict.Abstractions;
 using PhiZoneApi.Configurations;
 using PhiZoneApi.Data;
 using PhiZoneApi.Filters;
@@ -22,15 +23,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddMvc(options => { options.Filters.Add(typeof(ValidateModelFilter)); });
 
-builder.Services.AddControllers();
+builder.Services.AddControllers().AddNewtonsoftJson();
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
-
-builder.Services.Configure<ApiBehaviorOptions>(options => { options.SuppressModelStateInvalidFilter = true; });
-builder.Services.Configure<DataSettings>(builder.Configuration.GetSection("DataSettings"));
-builder.Services.Configure<MailSettings>(builder.Configuration.GetSection("MailSettings"));
-builder.Services.Configure<FileStorageSettings>(builder.Configuration.GetSection("FileStorageSettings"));
-builder.Services.Configure<LanguageSettings>(builder.Configuration.GetSection("LanguageSettings"));
-builder.Services.Configure<RabbitMqSettings>(builder.Configuration.GetSection("RabbitMQSettings"));
 
 builder.Services.AddApiVersioning(options =>
 {
@@ -40,6 +34,52 @@ builder.Services.AddApiVersioning(options =>
     options.ApiVersionReader = new HeaderApiVersionReader("api-version");
 });
 
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+{
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
+    options.UseOpenIddict<int>();
+});
+
+builder.Services.AddOpenIddict()
+    .AddCore(options =>
+    {
+        options.UseEntityFrameworkCore().UseDbContext<ApplicationDbContext>().ReplaceDefaultEntities<int>();
+    })
+    .AddServer(options =>
+    {
+        options.SetTokenEndpointUris("/auth/token");
+        options.SetLogoutEndpointUris("/auth/logout");
+        options.AllowPasswordFlow();
+        options.AllowRefreshTokenFlow();
+        options.AcceptAnonymousClients();
+        options.UseReferenceAccessTokens();
+        options.UseReferenceRefreshTokens();
+        options.RegisterScopes(OpenIddictConstants.Permissions.Scopes.Email,
+            OpenIddictConstants.Permissions.Scopes.Profile,
+            OpenIddictConstants.Permissions.Scopes.Roles);
+        options.SetAccessTokenLifetime(TimeSpan.FromHours(18));
+        options.SetRefreshTokenLifetime(TimeSpan.FromDays(14));
+        options.AddDevelopmentEncryptionCertificate().AddDevelopmentSigningCertificate();
+        options.UseAspNetCore().EnableTokenEndpointPassthrough().DisableTransportSecurityRequirement();
+    })
+    .AddValidation(options =>
+    {
+        options.UseLocalServer();
+        options.UseAspNetCore();
+    });
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultScheme = OpenIddictConstants.Schemes.Bearer;
+    options.DefaultChallengeScheme = OpenIddictConstants.Schemes.Bearer;
+});
+
+builder.Services.AddIdentity<User, Role>()
+    .AddEntityFrameworkStores<ApplicationDbContext>()
+    .AddSignInManager()
+    .AddUserManager<UserManager<User>>()
+    .AddDefaultTokenProviders();
+
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddTransient<IMailService, MailService>();
 builder.Services.AddSingleton<IFileStorageService, FileStorageService>();
@@ -47,10 +87,23 @@ builder.Services.AddSingleton<ITemplateService, TemplateService>();
 builder.Services.AddSingleton<IRabbitMqService, RabbitMqService>();
 builder.Services.AddSingleton<IConnectionMultiplexer>(
     ConnectionMultiplexer.Connect(builder.Configuration.GetValue<string>("RedisConnection") ?? "localhost"));
-
 builder.Services.AddSingleton<IHostedService>(provider =>
+    new MailSenderService(provider.GetService<IMailService>()!, provider.GetService<IRabbitMqService>()!));
+builder.Services.AddHostedService<DatabaseSeeder>();
+
+builder.Services.Configure<ApiBehaviorOptions>(options => { options.SuppressModelStateInvalidFilter = true; });
+builder.Services.Configure<DataSettings>(builder.Configuration.GetSection("DataSettings"));
+builder.Services.Configure<MailSettings>(builder.Configuration.GetSection("MailSettings"));
+builder.Services.Configure<FileStorageSettings>(builder.Configuration.GetSection("FileStorageSettings"));
+builder.Services.Configure<LanguageSettings>(builder.Configuration.GetSection("LanguageSettings"));
+builder.Services.Configure<RabbitMqSettings>(builder.Configuration.GetSection("RabbitMQSettings"));
+builder.Services.Configure<IdentityOptions>(options =>
 {
-    return new MailSenderService(provider.GetService<IMailService>()!, provider.GetService<IRabbitMqService>()!);
+    options.ClaimsIdentity.UserNameClaimType = OpenIddictConstants.Claims.Name;
+    options.ClaimsIdentity.UserIdClaimType = OpenIddictConstants.Claims.Subject;
+    options.ClaimsIdentity.RoleClaimType = OpenIddictConstants.Claims.Role;
+    options.SignIn.RequireConfirmedEmail = true;
+    options.User.AllowedUserNameCharacters = string.Empty;
 });
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -68,54 +121,6 @@ builder.Services.AddSwaggerGen(options =>
     var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
     options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFilename));
 });
-
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-{
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
-    options.UseOpenIddict();
-});
-
-builder.Services.AddIdentity<User, Role>()
-    .AddEntityFrameworkStores<ApplicationDbContext>()
-    .AddDefaultTokenProviders();
-
-builder.Services.AddOpenIddict()
-    .AddCore(options =>
-    {
-        options.UseEntityFrameworkCore().UseDbContext<ApplicationDbContext>().ReplaceDefaultEntities<int>();
-    })
-    .AddServer(options =>
-    {
-        options.SetTokenEndpointUris("auth/token");
-        options.SetLogoutEndpointUris("auth/logout");
-        options.AllowClientCredentialsFlow();
-        options.AddDevelopmentEncryptionCertificate().AddDevelopmentSigningCertificate();
-        options.UseAspNetCore().EnableTokenEndpointPassthrough();
-    })
-    .AddValidation(options =>
-    {
-        options.UseLocalServer();
-        options.UseAspNetCore();
-    });
-
-// builder.Services.AddAuthentication(options =>
-// {
-//     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-//     options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-//     options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-// }).AddJwtBearer(options =>
-// {
-//     options.SaveToken = true;
-//     options.RequireHttpsMetadata = false;
-//     options.TokenValidationParameters = new TokenValidationParameters
-//     {
-//         ValidateIssuer = true,
-//         ValidateAudience = true,
-//         ValidAudience = builder.Configuration["JWT:ValidAudience"],
-//         ValidIssuer = builder.Configuration["JWT:ValidIssuer"],
-//         IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["JWT:Secret"]!))
-//     };
-// });
 
 builder.Services.AddCoreAdmin();
 

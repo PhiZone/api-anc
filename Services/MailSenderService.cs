@@ -1,5 +1,5 @@
 ﻿using System.Text;
-using LC.Newtonsoft.Json;
+using Newtonsoft.Json;
 using PhiZoneApi.Dtos;
 using PhiZoneApi.Interfaces;
 using RabbitMQ.Client;

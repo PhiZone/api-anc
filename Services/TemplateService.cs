@@ -1,5 +1,5 @@
-﻿using LC.Newtonsoft.Json;
-using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using PhiZoneApi.Configurations;
 using PhiZoneApi.Interfaces;
 
@@ -20,7 +20,7 @@ public class TemplateService : ITemplateService
             if (!File.Exists(languageFile)) continue;
             var fileContent = File.ReadAllText(languageFile);
             var json = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, string>>>(fileContent);
-            _confirmationEmail[language] = json["ConfirmationEmail"];
+            _confirmationEmail[language] = json!["ConfirmationEmail"];
         }
     }
 

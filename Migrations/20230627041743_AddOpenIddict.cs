@@ -1,5 +1,6 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
@@ -15,7 +16,8 @@ namespace PhiZoneApi.Migrations
                 name: "OpenIddictApplications",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "text", nullable: false),
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     ClientId = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     ClientSecret = table.Column<string>(type: "text", nullable: true),
                     ConcurrencyToken = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
@@ -38,7 +40,8 @@ namespace PhiZoneApi.Migrations
                 name: "OpenIddictScopes",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "text", nullable: false),
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     ConcurrencyToken = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
                     Description = table.Column<string>(type: "text", nullable: true),
                     Descriptions = table.Column<string>(type: "text", nullable: true),
@@ -57,8 +60,9 @@ namespace PhiZoneApi.Migrations
                 name: "OpenIddictAuthorizations",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "text", nullable: false),
-                    ApplicationId = table.Column<string>(type: "text", nullable: true),
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    ApplicationId = table.Column<int>(type: "integer", nullable: true),
                     ConcurrencyToken = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
                     CreationDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     Properties = table.Column<string>(type: "text", nullable: true),
@@ -81,9 +85,10 @@ namespace PhiZoneApi.Migrations
                 name: "OpenIddictTokens",
                 columns: table => new
                 {
-                    Id = table.Column<string>(type: "text", nullable: false),
-                    ApplicationId = table.Column<string>(type: "text", nullable: true),
-                    AuthorizationId = table.Column<string>(type: "text", nullable: true),
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    ApplicationId = table.Column<int>(type: "integer", nullable: true),
+                    AuthorizationId = table.Column<int>(type: "integer", nullable: true),
                     ConcurrencyToken = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true),
                     CreationDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     ExpirationDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),

@@ -1,10 +1,14 @@
-﻿using System.IdentityModel.Tokens.Jwt;
+﻿using System.Collections.Immutable;
 using System.Security.Claims;
 using System.Text;
-using LC.Newtonsoft.Json;
+using Microsoft.AspNetCore;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
+using Newtonsoft.Json;
+using OpenIddict.Abstractions;
+using OpenIddict.Server.AspNetCore;
 using PhiZoneApi.Constants;
 using PhiZoneApi.Dtos;
 using PhiZoneApi.Enums;
@@ -12,6 +16,8 @@ using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 using RabbitMQ.Client;
 using StackExchange.Redis;
+using static OpenIddict.Abstractions.OpenIddictConstants;
+using Role = PhiZoneApi.Models.Role;
 
 namespace PhiZoneApi.Controllers;
 
@@ -29,11 +35,13 @@ public class AuthenticationController : Controller
     private readonly IPasswordHasher<User> _passwordHasher;
     private readonly IRabbitMqService _rabbitMqService;
     private readonly IConnectionMultiplexer _redis;
+    private readonly RoleManager<Role> _roleManager;
     private readonly ITemplateService _templateService;
     private readonly UserManager<User> _userManager;
 
     public AuthenticationController(
         UserManager<User> userManager,
+        RoleManager<Role> roleManager,
         IConfiguration configuration,
         ITemplateService templateService,
         IFileStorageService fileStorageService,
@@ -42,6 +50,7 @@ public class AuthenticationController : Controller
         IConnectionMultiplexer redis)
     {
         _userManager = userManager;
+        _roleManager = roleManager;
         _configuration = configuration;
         _templateService = templateService;
         _fileStorageService = fileStorageService;
@@ -50,101 +59,120 @@ public class AuthenticationController : Controller
         _redis = redis;
     }
 
-    /// <summary>
-    ///     Authenticates the user's identity.
-    /// </summary>
-    /// <param name="dto">Email and Password.</param>
-    /// <returns>Authentication credentials, namely a token that expires in 18 hours and the expiry time.</returns>
-    /// <response code="200">Returns authentication credentials</response>
-    /// <response code="204">When the user has not yet confirmed their email address. Sends a confirmation email to the user.</response>
-    /// <response code="401">When the user has entered a wrong password.</response>
-    /// <response code="403">When the user was temporarily (in which case DateAvailable is present) / permanently locked out.</response>
-    /// <response code="404">When user with the specified email address is not found.</response>
-    /// <response code="500">When a Redis / Mail Service error has occurred.</response>
-    [HttpPost]
-    [Route("login")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<TokenDto>))]
-    [ProducesResponseType(StatusCodes.Status204NoContent, Type = typeof(ResponseDto<object>))]
-    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> Login([FromBody] UserLoginDto dto)
-    {
-        var user = await _userManager.FindByEmailAsync(dto.Email);
-        if (user == null)
-            return NotFound(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief,
-                Code = ResponseCode.UserNotFound
-            });
-        if (user.LockoutEnabled)
-        {
-            if (user.LockoutEnd != null)
-            {
-                if (user.LockoutEnd > DateTimeOffset.UtcNow) // temporary
-                    return StatusCode(StatusCodes.Status403Forbidden, new ResponseDto<object>
-                    {
-                        Status = ResponseStatus.ErrorTemporarilyUnavailable,
-                        Code = ResponseCode.AccountLocked,
-                        DateAvailable = user.LockoutEnd.Value.UtcDateTime
-                    });
-                user.LockoutEnabled = false;
-            }
-            else // permanent
-            {
-                if (user.EmailConfirmed)
-                    return StatusCode(StatusCodes.Status403Forbidden, new ResponseDto<object>
-                    {
-                        Status = ResponseStatus.ErrorBrief,
-                        Code = ResponseCode.AccountLocked
-                    });
 
-                var errorCode = await SendConfirmationEmail(user);
-                if (errorCode.Equals(string.Empty)) return NoContent();
-                return StatusCode(StatusCodes.Status500InternalServerError, new ResponseDto<object>
+    /// <summary>
+    ///     Retrieves authentication credentials using either email + password or <c>refresh_token</c>.
+    /// </summary>
+    /// <param name="client_id">The client's identifier, e.g. "regular".</param>
+    /// <param name="client_secret">The client's secret, e.g. "c29b1587-80f9-475f-b97b-dca1884eb0e3".</param>
+    /// <param name="grant_type">The grant type desired, either <c>password</c> or <c>refresh_token</c>.</param>
+    /// <param name="username">The user's email address, e.g. "contact@phi.zone", when the grant type is <c>password</c>.</param>
+    /// <param name="password">The user's password, when the grant type is <c>password</c>.</param>
+    /// <param name="refresh_token">The user's refresh token, when the grant type is <c>refresh_token</c>.</param>
+    /// <returns>Authentication credentials, e.g. <c>access_token</c>, <c>refresh_token</c>, etc.</returns>
+    /// <remarks>
+    ///     This is the only endpoint where all the fields are named in the underscore case, both in the request and in the
+    ///     response.
+    ///     It's also the only one that responds without following the <see cref="ResponseDto{T}" /> structure.
+    /// </remarks>
+    /// <response code="200">Returns authentication credentials.</response>
+    /// <response code="403">
+    ///     When the user
+    ///     1. has input an incorrect password (<c>invalid_grant</c>);
+    ///     2. is temporarily locked out (<c>temporarily_unavailable</c>);
+    ///     3. is permanently locked out (<c>access_denied</c>);
+    ///     4. has not yet confirmed their email address (<c>interaction_required</c>), in which case the client should direct
+    ///     the user to request a confirmation mail.
+    /// </response>
+    /// <response code="404">When the user has input an email address that does not match any existing user.</response>
+    [HttpPost("token")]
+    [IgnoreAntiforgeryToken]
+    [Consumes("application/x-www-form-urlencoded")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(OpenIddictTokenDto))]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(OpenIddictErrorDto))]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Exchange()
+    {
+        var request = HttpContext.GetOpenIddictServerRequest()!;
+
+        if (request.IsPasswordGrantType())
+        {
+            var user = await _userManager.FindByEmailAsync(request.Username!);
+            if (user == null) return NotFound();
+
+            var actionResult = CheckUserLockoutState(user);
+            if (actionResult != null) return actionResult;
+
+            if (!await _userManager.CheckPasswordAsync(user, request.Password!))
+            {
+                user.AccessFailedCount++;
+                await _userManager.UpdateAsync(user);
+
+                var properties = new AuthenticationProperties(new Dictionary<string, string>
+                {
+                    [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidGrant,
+                    [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = "The password is incorrect."
+                }!);
+
+                return Forbid(properties, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+            }
+
+            var identity = new ClaimsIdentity(
+                TokenValidationParameters.DefaultAuthenticationType, Claims.Name,
+                Claims.Role);
+
+            identity.AddClaim(Claims.Subject, user.Id.ToString(), Destinations.AccessToken);
+            identity.AddClaim(Claims.Username, user.UserName!, Destinations.AccessToken);
+
+            foreach (var role in await _userManager.GetRolesAsync(user))
+                identity.AddClaim(Claims.Role, role, Destinations.AccessToken);
+
+            var claimsPrincipal = new ClaimsPrincipal(identity);
+            claimsPrincipal.SetScopes(Scopes.Roles, Scopes.OfflineAccess, Scopes.Email, Scopes.Profile);
+
+            user.DateLastLoggedIn = DateTimeOffset.UtcNow;
+            user.AccessFailedCount = 0;
+            await _userManager.UpdateAsync(user);
+
+            return SignIn(claimsPrincipal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+        }
+
+        if (request.IsRefreshTokenGrantType())
+        {
+            var result = await HttpContext.AuthenticateAsync(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+
+            var user = await _userManager.FindByIdAsync(result.Principal!.GetClaim(Claims.Subject)!);
+            if (user == null)
+                return Unauthorized(new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief,
-                    Code = errorCode
+                    Code = ResponseCode.RefreshTokenOutdated
                 });
-            }
-        }
 
-        if (!await _userManager.CheckPasswordAsync(user, dto.Password))
-        {
-            user.AccessFailedCount++;
+            var actionResult = CheckUserLockoutState(user);
+            if (actionResult != null) return actionResult;
+
+            var identity = new ClaimsIdentity(result.Principal!.Claims,
+                TokenValidationParameters.DefaultAuthenticationType,
+                Claims.Name,
+                Claims.Role);
+
+            identity.SetClaim(Claims.Subject, await _userManager.GetUserIdAsync(user))
+                .SetClaim(Claims.Email, await _userManager.GetEmailAsync(user))
+                .SetClaim(Claims.Name, await _userManager.GetUserNameAsync(user))
+                .SetClaims(Claims.Role, (await _userManager.GetRolesAsync(user)).ToImmutableArray());
+
+            identity.SetDestinations(GetDestinations);
+
+            user.DateLastLoggedIn = DateTimeOffset.UtcNow;
+            user.AccessFailedCount = 0;
             await _userManager.UpdateAsync(user);
-            return Unauthorized(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief,
-                Code = ResponseCode.PasswordIncorrect
-            });
+
+            return SignIn(new ClaimsPrincipal(identity), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
         }
 
-        var userRoles = await _userManager.GetRolesAsync(user);
-
-        var authClaims = new List<Claim>
-        {
-            new(ClaimTypes.Email, user.Email!),
-            new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-        };
-
-        foreach (var userRole in userRoles)
-            authClaims.Add(new Claim(ClaimTypes.Role, userRole));
-
-        var token = GetToken(authClaims);
-        user.DateLastLoggedIn = DateTimeOffset.UtcNow;
-        user.AccessFailedCount = 0;
-        await _userManager.UpdateAsync(user);
-
-        return Ok(new ResponseDto<TokenDto>
-        {
-            Status = 0,
-            Code = ResponseCode.Ok,
-            Data = new TokenDto
-            {
-                Token = new JwtSecurityTokenHandler().WriteToken(token),
-                Expiration = token.ValidTo
-            }
-        });
+        throw new NotImplementedException("The specified grant type is not implemented.");
     }
 
     /// <summary>
@@ -162,8 +190,7 @@ public class AuthenticationController : Controller
     ///     2. one of the input fields has failed on data validation.
     /// </response>
     /// <response code="500">When a Redis / Mail Service error has occurred.</response>
-    [HttpPost]
-    [Route("register")]
+    [HttpPost("register")]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
@@ -201,8 +228,6 @@ public class AuthenticationController : Controller
             DateJoined = DateTimeOffset.UtcNow
         };
 
-        user.PasswordHash = _passwordHasher.HashPassword(user, dto.Password);
-
         var errorCode = await SendConfirmationEmail(user);
         if (!errorCode.Equals(string.Empty))
             return StatusCode(StatusCodes.Status500InternalServerError, new ResponseDto<object>
@@ -220,16 +245,6 @@ public class AuthenticationController : Controller
                 Errors = result.Errors.ToArray()
             });
 
-        // var roles = new List<string>
-        // {
-        //     "Member", "Qualified", "Volunteer", "Moderator", "Administrator"
-        // };
-        // foreach (var role in roles)
-        //     if (!await _roleManager.RoleExistsAsync(role))
-        //         await _roleManager.CreateAsync(new Role
-        //         {
-        //             Name = role
-        //         });
         await _userManager.AddToRoleAsync(user, "Member");
 
         return StatusCode(StatusCodes.Status201Created);
@@ -246,8 +261,7 @@ public class AuthenticationController : Controller
     ///     1. the input code is invalid;
     ///     2. the user has already been activated.
     /// </response>
-    [HttpPost]
-    [Route("activate")]
+    [HttpPost("activate")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> Activate([FromBody] UserActivationDto dto)
@@ -276,22 +290,7 @@ public class AuthenticationController : Controller
         return NoContent();
     }
 
-    private JwtSecurityToken GetToken(IEnumerable<Claim> authClaims)
-    {
-        var authSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JWT:Secret"]!));
-
-        var token = new JwtSecurityToken(
-            _configuration["JWT:ValidIssuer"],
-            _configuration["JWT:ValidAudience"],
-            expires: DateTime.UtcNow.AddHours(18),
-            claims: authClaims,
-            signingCredentials: new SigningCredentials(authSigningKey, SecurityAlgorithms.HmacSha256)
-        );
-
-        return token;
-    }
-
-    private async Task<string> SendConfirmationEmail(User user)
+    private async Task<MailDto> GenerateMail(User user)
     {
         if (user.Email == null || user.UserName == null)
             throw new ArgumentNullException(nameof(user));
@@ -305,11 +304,11 @@ public class AuthenticationController : Controller
         } while (await db.KeyExistsAsync($"ACTIVATION{code}"));
 
         if (!await db.StringSetAsync($"ACTIVATION{code}", user.Id, TimeSpan.FromMinutes(5)))
-            return ResponseCode.RedisError;
+            throw new RedisException("An error occurred whilst saving activation code.");
 
         var template = _templateService.GetConfirmationEmailTemplate(user.Language);
 
-        var mailDto = new MailDto
+        return new MailDto
         {
             RecipientAddress = user.Email,
             RecipientName = user.UserName,
@@ -320,8 +319,11 @@ public class AuthenticationController : Controller
                 { "Code", code }
             })
         };
+    }
 
-        var body = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(mailDto));
+    private async Task<string> SendConfirmationEmail(User user)
+    {
+        var body = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(await GenerateMail(user)));
 
         try
         {
@@ -334,5 +336,89 @@ public class AuthenticationController : Controller
         }
 
         return string.Empty;
+    }
+
+    private static IEnumerable<string> GetDestinations(Claim claim)
+    {
+        switch (claim.Type)
+        {
+            case Claims.Name:
+                yield return Destinations.AccessToken;
+
+                if (claim.Subject!.HasScope(Scopes.Profile))
+                    yield return Destinations.IdentityToken;
+
+                yield break;
+
+            case Claims.Email:
+                yield return Destinations.AccessToken;
+
+                if (claim.Subject!.HasScope(Scopes.Email))
+                    yield return Destinations.IdentityToken;
+
+                yield break;
+
+            case Claims.Role:
+                yield return Destinations.AccessToken;
+
+                if (claim.Subject!.HasScope(Scopes.Roles))
+                    yield return Destinations.IdentityToken;
+
+                yield break;
+
+            case "AspNet.Identity.SecurityStamp": yield break;
+
+            default:
+                yield return Destinations.AccessToken;
+                yield break;
+        }
+    }
+
+    private IActionResult? CheckUserLockoutState(User user)
+    {
+        if (!user.LockoutEnabled) return null;
+
+        if (user.LockoutEnd != null)
+        {
+            if (user.LockoutEnd > DateTimeOffset.UtcNow) // temporary
+            {
+                var properties = new AuthenticationProperties(new Dictionary<string, string>
+                {
+                    [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.TemporarilyUnavailable,
+                    [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
+                        $"Temporarily locked out until {user.LockoutEnd}."
+                }!);
+
+                return Forbid(properties, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+            }
+
+            user.LockoutEnabled = false;
+        }
+        else // permanent
+        {
+            if (user.EmailConfirmed)
+            {
+                var properties = new AuthenticationProperties(new Dictionary<string, string>
+                {
+                    [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.AccessDenied,
+                    [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = "Permanently locked out."
+                }!);
+
+                return Forbid(properties, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+            }
+            else
+            {
+                var properties = new AuthenticationProperties(new Dictionary<string, string>
+                {
+                    [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InteractionRequired,
+                    [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
+                        "Email confirmation is required."
+                }!);
+
+                return Forbid(properties, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+            }
+        }
+
+        return null;
     }
 }
