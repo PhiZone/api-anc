@@ -14,7 +14,6 @@ public class DatabaseSeeder : IHostedService
         _serviceProvider = serviceProvider;
     }
 
-
     public async Task StartAsync(CancellationToken cancellationToken)
     {
         await using var scope = _serviceProvider.CreateAsyncScope();
@@ -35,23 +34,21 @@ public class DatabaseSeeder : IHostedService
         var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<Role>>();
         var roles = new List<string>
         {
-            "Member", "Qualified", "Volunteer", "Moderator", "Administrator"
+            "Member",
+            "Qualified",
+            "Volunteer",
+            "Moderator",
+            "Administrator"
         };
         foreach (var role in roles)
             if (!await roleManager.RoleExistsAsync(role))
-                await roleManager.CreateAsync(new Role
-                {
-                    Name = role
-                });
+                await roleManager.CreateAsync(new Role { Name = role });
     }
 
     private async Task PopulateScopes(IServiceScope scope, CancellationToken cancellationToken)
     {
         var scopeManager = scope.ServiceProvider.GetRequiredService<IOpenIddictScopeManager>();
-        var scopeDescriptor = new OpenIddictScopeDescriptor
-        {
-            Name = "basic_access"
-        };
+        var scopeDescriptor = new OpenIddictScopeDescriptor { Name = "basic_access" };
         var scopeInstance = await scopeManager.FindByNameAsync(scopeDescriptor.Name, cancellationToken);
         if (scopeInstance == null)
             await scopeManager.CreateAsync(scopeDescriptor, cancellationToken);

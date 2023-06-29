@@ -15,11 +15,7 @@ public static class ModelErrorTranslator
 
             var errorList = errors.Errors.Select(error => error.ErrorMessage).ToList();
 
-            list.Add(new ModelErrorDto
-            {
-                Field = key,
-                Errors = errorList
-            });
+            list.Add(new ModelErrorDto { Field = key, Errors = errorList });
         }
 
         return list;

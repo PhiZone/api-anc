@@ -19,8 +19,7 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, int>
     {
         base.OnModelCreating(builder);
 
-        builder.Entity<UserRelation>()
-            .HasKey(rel => new { rel.FollowerId, rel.FolloweeId });
+        builder.Entity<UserRelation>().HasKey(rel => new { rel.FollowerId, rel.FolloweeId });
 
         builder.Entity<UserRelation>()
             .HasOne(rel => rel.Follower)

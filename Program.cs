@@ -111,12 +111,11 @@ builder.Services.AddEndpointsApiExplorer();
 
 builder.Services.AddSwaggerGen(options =>
 {
-    options.SwaggerDoc("v2", new OpenApiInfo
-    {
-        Version = "v2",
-        Title = "PhiZone API v2",
-        Description = "Backend of PhiZone, based on ASP.NET Core."
-    });
+    options.SwaggerDoc("v2",
+        new OpenApiInfo
+        {
+            Version = "v2", Title = "PhiZone API v2", Description = "Backend of PhiZone, based on ASP.NET Core."
+        });
 
     var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
     options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFilename));

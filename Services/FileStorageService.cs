@@ -20,9 +20,7 @@ public class FileStorageService : IFileStorageService
         await formFile.CopyToAsync(memoryStream);
         var file = new LCFile(
             string.Join("_", fileName, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()) +
-            FileTypeResolver.GetFileExtension(FileTypeResolver.GetMimeType(formFile)),
-            memoryStream.ToArray()
-        );
+            FileTypeResolver.GetFileExtension(FileTypeResolver.GetMimeType(formFile)), memoryStream.ToArray());
         await file.Save();
         return file.Url;
     }

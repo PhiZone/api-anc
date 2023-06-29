@@ -32,8 +32,7 @@ public static class LinqUtil
     {
         var properties = objType.GetProperties();
         var matchedProperty = properties.FirstOrDefault(p => p.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
-        if (matchedProperty == null)
-            throw new ArgumentException("No such property");
+        if (matchedProperty == null) throw new ArgumentException("No such property");
 
         return matchedProperty;
     }

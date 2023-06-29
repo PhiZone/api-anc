@@ -39,15 +39,9 @@ public class AuthenticationController : Controller
     private readonly ITemplateService _templateService;
     private readonly UserManager<User> _userManager;
 
-    public AuthenticationController(
-        UserManager<User> userManager,
-        RoleManager<Role> roleManager,
-        IConfiguration configuration,
-        ITemplateService templateService,
-        IFileStorageService fileStorageService,
-        IRabbitMqService rabbitMqService,
-        IPasswordHasher<User> passwordHasher,
-        IConnectionMultiplexer redis)
+    public AuthenticationController(UserManager<User> userManager, RoleManager<Role> roleManager,
+        IConfiguration configuration, ITemplateService templateService, IFileStorageService fileStorageService,
+        IRabbitMqService rabbitMqService, IPasswordHasher<User> passwordHasher, IConnectionMultiplexer redis)
     {
         _userManager = userManager;
         _roleManager = roleManager;
@@ -58,7 +52,6 @@ public class AuthenticationController : Controller
         _passwordHasher = passwordHasher;
         _redis = redis;
     }
-
 
     /// <summary>
     ///     Retrieves authentication credentials using either email + password or <c>refresh_token</c>.
@@ -118,8 +111,7 @@ public class AuthenticationController : Controller
                 return Forbid(properties, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
             }
 
-            var identity = new ClaimsIdentity(
-                TokenValidationParameters.DefaultAuthenticationType, Claims.Name,
+            var identity = new ClaimsIdentity(TokenValidationParameters.DefaultAuthenticationType, Claims.Name,
                 Claims.Role);
 
             identity.AddClaim(Claims.Subject, user.Id.ToString(), Destinations.AccessToken);
@@ -146,17 +138,14 @@ public class AuthenticationController : Controller
             if (user == null)
                 return Unauthorized(new ResponseDto<object>
                 {
-                    Status = ResponseStatus.ErrorBrief,
-                    Code = ResponseCode.RefreshTokenOutdated
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCode.RefreshTokenOutdated
                 });
 
             var actionResult = CheckUserLockoutState(user);
             if (actionResult != null) return actionResult;
 
             var identity = new ClaimsIdentity(result.Principal!.Claims,
-                TokenValidationParameters.DefaultAuthenticationType,
-                Claims.Name,
-                Claims.Role);
+                TokenValidationParameters.DefaultAuthenticationType, Claims.Name, Claims.Role);
 
             identity.SetClaim(Claims.Subject, await _userManager.GetUserIdAsync(user))
                 .SetClaim(Claims.Email, await _userManager.GetEmailAsync(user))
@@ -200,16 +189,14 @@ public class AuthenticationController : Controller
         if (user != null)
             return BadRequest(new ResponseDto<object>
             {
-                Status = ResponseStatus.ErrorBrief,
-                Code = ResponseCode.EmailOccupied
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCode.EmailOccupied
             });
 
         user = await _userManager.FindByNameAsync(dto.UserName);
         if (user != null)
             return BadRequest(new ResponseDto<object>
             {
-                Status = ResponseStatus.ErrorBrief,
-                Code = ResponseCode.UserNameOccupied
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCode.UserNameOccupied
             });
 
         string? avatarUrl = null;
@@ -230,11 +217,8 @@ public class AuthenticationController : Controller
 
         var errorCode = await SendConfirmationEmail(user);
         if (!errorCode.Equals(string.Empty))
-            return StatusCode(StatusCodes.Status500InternalServerError, new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief,
-                Code = errorCode
-            });
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = errorCode });
 
         var result = await _userManager.CreateAsync(user, dto.Password);
         if (!result.Succeeded) // TODO figure out in what circumstances can this statement be fired off.
@@ -271,8 +255,7 @@ public class AuthenticationController : Controller
         if (!await db.KeyExistsAsync(key))
             return BadRequest(new ResponseDto<object>
             {
-                Status = ResponseStatus.ErrorBrief,
-                Code = ResponseCode.InvalidActivationCode
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCode.InvalidActivationCode
             });
 
         var id = await db.StringGetAsync(key);
@@ -281,8 +264,7 @@ public class AuthenticationController : Controller
         if (user is { EmailConfirmed: true, LockoutEnabled: false })
             return BadRequest(new ResponseDto<object>
             {
-                Status = ResponseStatus.ErrorBrief,
-                Code = ResponseCode.AlreadyActivated
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCode.AlreadyActivated
             });
         user.EmailConfirmed = true;
         user.LockoutEnabled = false;
@@ -292,8 +274,7 @@ public class AuthenticationController : Controller
 
     private async Task<MailDto> GenerateMail(User user)
     {
-        if (user.Email == null || user.UserName == null)
-            throw new ArgumentNullException(nameof(user));
+        if (user.Email == null || user.UserName == null) throw new ArgumentNullException(nameof(user));
 
         string code;
         var random = new Random();
@@ -313,11 +294,8 @@ public class AuthenticationController : Controller
             RecipientAddress = user.Email,
             RecipientName = user.UserName,
             EmailSubject = template["Subject"],
-            EmailBody = _templateService.ReplacePlaceholders(template["Body"], new Dictionary<string, string>
-            {
-                { "UserName", user.UserName },
-                { "Code", code }
-            })
+            EmailBody = _templateService.ReplacePlaceholders(template["Body"],
+                new Dictionary<string, string> { { "UserName", user.UserName }, { "Code", code } })
         };
     }
 
@@ -345,28 +323,26 @@ public class AuthenticationController : Controller
             case Claims.Name:
                 yield return Destinations.AccessToken;
 
-                if (claim.Subject!.HasScope(Scopes.Profile))
-                    yield return Destinations.IdentityToken;
+                if (claim.Subject!.HasScope(Scopes.Profile)) yield return Destinations.IdentityToken;
 
                 yield break;
 
             case Claims.Email:
                 yield return Destinations.AccessToken;
 
-                if (claim.Subject!.HasScope(Scopes.Email))
-                    yield return Destinations.IdentityToken;
+                if (claim.Subject!.HasScope(Scopes.Email)) yield return Destinations.IdentityToken;
 
                 yield break;
 
             case Claims.Role:
                 yield return Destinations.AccessToken;
 
-                if (claim.Subject!.HasScope(Scopes.Roles))
-                    yield return Destinations.IdentityToken;
+                if (claim.Subject!.HasScope(Scopes.Roles)) yield return Destinations.IdentityToken;
 
                 yield break;
 
-            case "AspNet.Identity.SecurityStamp": yield break;
+            case "AspNet.Identity.SecurityStamp":
+                yield break;
 
             default:
                 yield return Destinations.AccessToken;

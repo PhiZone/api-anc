@@ -30,12 +30,8 @@ public class UserController : Controller
     private readonly UserManager<User> _userManager;
     private readonly IUserRepository _userRepository;
 
-    public UserController(
-        IUserRepository userRepository,
-        UserManager<User> userManager,
-        IFileStorageService fileStorageService,
-        IOptions<DataSettings> dataSettings,
-        IMapper mapper)
+    public UserController(IUserRepository userRepository, UserManager<User> userManager,
+        IFileStorageService fileStorageService, IOptions<DataSettings> dataSettings, IMapper mapper)
     {
         _userRepository = userRepository;
         _userManager = userManager;
@@ -63,10 +59,7 @@ public class UserController : Controller
 
         return Ok(new ResponseDto<IEnumerable<UserDto>>
         {
-            Status = ResponseStatus.Ok,
-            Code = ResponseCode.Ok,
-            PerPage = perPage,
-            Data = data
+            Status = ResponseStatus.Ok, Code = ResponseCode.Ok, PerPage = perPage, Data = data
         });
     }
 
@@ -88,12 +81,7 @@ public class UserController : Controller
         if (user == null) return NotFound();
         var data = _mapper.Map<UserDto>(user);
 
-        return Ok(new ResponseDto<UserDto>
-        {
-            Status = ResponseStatus.Ok,
-            Code = ResponseCode.Ok,
-            Data = data
-        });
+        return Ok(new ResponseDto<UserDto> { Status = ResponseStatus.Ok, Code = ResponseCode.Ok, Data = data });
     }
 
     /// <summary>
@@ -121,18 +109,17 @@ public class UserController : Controller
         if (user == null)
             return NotFound(new ResponseDto<object>
             {
-                Status = ResponseStatus.ErrorBrief,
-                Code = ResponseCode.UserNotFound
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCode.UserNotFound
             });
 
         // Check permission
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         if (currentUser == null || (currentUser.Id != id && !await _userManager.IsInRoleAsync(currentUser, "Admin")))
-            return StatusCode(StatusCodes.Status403Forbidden, new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief,
-                Code = ResponseCode.InsufficientPermission
-            });
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCode.InsufficientPermission
+                });
 
         var dto = _mapper.Map<UserUpdateDto>(user);
 
@@ -150,8 +137,8 @@ public class UserController : Controller
         if (patchDocument.Operations.FirstOrDefault(operation =>
                 operation.path == "/userName" && operation.op is "add" or "replace") != null)
         {
-            if (user.DateLastModifiedUserName != null
-                && DateTimeOffset.UtcNow - user.DateLastModifiedUserName < TimeSpan.FromDays(15))
+            if (user.DateLastModifiedUserName != null &&
+                DateTimeOffset.UtcNow - user.DateLastModifiedUserName < TimeSpan.FromDays(15))
                 return BadRequest(new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorTemporarilyUnavailable,

@@ -30,10 +30,7 @@ public class MailService : IMailService
 
         emailMessage.Subject = mailDto.EmailSubject;
 
-        var emailBodyBuilder = new BodyBuilder
-        {
-            TextBody = mailDto.EmailBody
-        };
+        var emailBodyBuilder = new BodyBuilder { TextBody = mailDto.EmailBody };
 
         emailMessage.Body = emailBodyBuilder.ToMessageBody();
 

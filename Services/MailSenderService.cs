@@ -20,11 +20,7 @@ public class MailSenderService : BackgroundService
 
     protected override Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _channel.QueueDeclare("email",
-            false,
-            false,
-            false,
-            null);
+        _channel.QueueDeclare("email", false, false, false, null);
 
         var consumer = new EventingBasicConsumer(_channel);
         consumer.Received += async (model, ea) =>
@@ -33,14 +29,12 @@ public class MailSenderService : BackgroundService
             var message = Encoding.UTF8.GetString(body);
             var mailDto = JsonConvert.DeserializeObject<MailDto>(message);
 
-            await _mailService.SendMailAsync(mailDto);
+            await _mailService.SendMailAsync(mailDto!);
 
             _channel.BasicAck(ea.DeliveryTag, false);
         };
 
-        _channel.BasicConsume("email",
-            false,
-            consumer);
+        _channel.BasicConsume("email", false, consumer);
 
         return Task.CompletedTask;
     }
