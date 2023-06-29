@@ -1,12 +1,10 @@
 ﻿using System.Collections.Immutable;
 using System.Security.Claims;
-using System.Text;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
-using Newtonsoft.Json;
 using OpenIddict.Abstractions;
 using OpenIddict.Server.AspNetCore;
 using PhiZoneApi.Constants;
@@ -14,10 +12,8 @@ using PhiZoneApi.Dtos;
 using PhiZoneApi.Enums;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
-using RabbitMQ.Client;
 using StackExchange.Redis;
 using static OpenIddict.Abstractions.OpenIddictConstants;
-using Role = PhiZoneApi.Models.Role;
 
 namespace PhiZoneApi.Controllers;
 
@@ -30,31 +26,20 @@ namespace PhiZoneApi.Controllers;
 [Produces("application/json")]
 public class AuthenticationController : Controller
 {
-    private readonly IConfiguration _configuration;
-    private readonly IFileStorageService _fileStorageService;
-    private readonly IPasswordHasher<User> _passwordHasher;
-    private readonly IRabbitMqService _rabbitMqService;
+    private readonly IMailService _mailService;
     private readonly IConnectionMultiplexer _redis;
-    private readonly RoleManager<Role> _roleManager;
-    private readonly ITemplateService _templateService;
     private readonly UserManager<User> _userManager;
 
-    public AuthenticationController(UserManager<User> userManager, RoleManager<Role> roleManager,
-        IConfiguration configuration, ITemplateService templateService, IFileStorageService fileStorageService,
-        IRabbitMqService rabbitMqService, IPasswordHasher<User> passwordHasher, IConnectionMultiplexer redis)
+    public AuthenticationController(UserManager<User> userManager, IConnectionMultiplexer redis,
+        IMailService mailService)
     {
         _userManager = userManager;
-        _roleManager = roleManager;
-        _configuration = configuration;
-        _templateService = templateService;
-        _fileStorageService = fileStorageService;
-        _rabbitMqService = rabbitMqService;
-        _passwordHasher = passwordHasher;
+        _mailService = mailService;
         _redis = redis;
     }
 
     /// <summary>
-    ///     Retrieves authentication credentials using either email + password or <c>refresh_token</c>.
+    ///     Retrieves authentication credentials.
     /// </summary>
     /// <param name="client_id">The client's identifier, e.g. "regular".</param>
     /// <param name="client_secret">The client's secret, e.g. "c29b1587-80f9-475f-b97b-dca1884eb0e3".</param>
@@ -64,11 +49,13 @@ public class AuthenticationController : Controller
     /// <param name="refresh_token">The user's refresh token, when the grant type is <c>refresh_token</c>.</param>
     /// <returns>Authentication credentials, e.g. <c>access_token</c>, <c>refresh_token</c>, etc.</returns>
     /// <remarks>
-    ///     This is the only endpoint where all the fields are named in the underscore case, both in the request and in the
+    ///     This is the only endpoint where all the fields are named in the snake case, both in the request and in the
     ///     response.
     ///     It's also the only one that responds without following the <see cref="ResponseDto{T}" /> structure.
+    ///     Swagger is not treating this endpoint properly; please refer to RFC 6749 for further information.
     /// </remarks>
     /// <response code="200">Returns authentication credentials.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="403">
     ///     When the user
     ///     1. has input an incorrect password (<c>invalid_grant</c>);
@@ -92,7 +79,7 @@ public class AuthenticationController : Controller
         if (request.IsPasswordGrantType())
         {
             var user = await _userManager.FindByEmailAsync(request.Username!);
-            if (user == null) return NotFound();
+            if (user == null) return NotFound(null);
 
             var actionResult = CheckUserLockoutState(user);
             if (actionResult != null) return actionResult;
@@ -138,7 +125,7 @@ public class AuthenticationController : Controller
             if (user == null)
                 return Unauthorized(new ResponseDto<object>
                 {
-                    Status = ResponseStatus.ErrorBrief, Code = ResponseCode.RefreshTokenOutdated
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.RefreshTokenOutdated
                 });
 
             var actionResult = CheckUserLockoutState(user);
@@ -165,79 +152,115 @@ public class AuthenticationController : Controller
     }
 
     /// <summary>
-    ///     Creates a new user.
+    ///     Sends an email to user's email address.
     /// </summary>
     /// <param name="dto">
-    ///     User Name, Email, Password, Language, Gender (Optional), Avatar (Optional), Biography (Optional),
-    ///     Date of Birth (Optional)
+    ///     The user's email address and the mode desired. Options for mode: <c>0</c> for email confirmation;
+    ///     <c>1</c> for password reset.
     /// </param>
     /// <returns>An empty body.</returns>
-    /// <response code="201">Returns an empty body. Sends a confirmation email to the user.</response>
+    /// <response code="204">Returns an empty body. Sends an email to the email address.</response>
     /// <response code="400">
     ///     When
-    ///     1. the input email address / user name has been occupied;
-    ///     2. one of the input fields has failed on data validation.
+    ///     1. the user's email address is in cooldown;
+    ///     2. the mode is email confirmation and the user has already been activated.
     /// </response>
+    /// <response code="403">When the user does not have sufficient permission (not in the Member role).</response>
+    /// <response code="404">When the user has input an email address that does not match any existing user.</response>
     /// <response code="500">When a Redis / Mail Service error has occurred.</response>
-    [HttpPost("register")]
-    [ProducesResponseType(StatusCodes.Status201Created)]
+    [HttpPost("send-email")]
+    [Consumes("application/json")]
+    [Produces("text/plain", "application/json")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> Register([FromForm] UserRegistrationDto dto)
+    public async Task<IActionResult> SendEmail([FromBody] UserEmailRequestDto dto)
     {
         var user = await _userManager.FindByEmailAsync(dto.Email);
-        if (user != null)
-            return BadRequest(new ResponseDto<object>
+        if (user == null)
+            return NotFound(new ResponseDto<object>
             {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCode.EmailOccupied
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNotFound
             });
 
-        user = await _userManager.FindByNameAsync(dto.UserName);
-        if (user != null)
-            return BadRequest(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCode.UserNameOccupied
-            });
+        if (!await _userManager.IsInRoleAsync(user, "Member"))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
 
-        string? avatarUrl = null;
-        if (dto.Avatar != null) avatarUrl = await _fileStorageService.Upload(dto.UserName, dto.Avatar);
-
-        user = new User
+        var db = _redis.GetDatabase();
+        if (await db.KeyExistsAsync($"COOLDOWN{dto.Mode}:{user.Email}"))
         {
-            SecurityStamp = Guid.NewGuid().ToString(),
-            UserName = dto.UserName,
-            Email = dto.Email,
-            Avatar = avatarUrl,
-            Language = dto.Language,
-            Gender = (int)dto.Gender,
-            Biography = dto.Biography,
-            DateOfBirth = dto.DateOfBirth,
-            DateJoined = DateTimeOffset.UtcNow
-        };
-
-        var errorCode = await SendConfirmationEmail(user);
-        if (!errorCode.Equals(string.Empty))
-            return StatusCode(StatusCodes.Status500InternalServerError,
-                new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = errorCode });
-
-        var result = await _userManager.CreateAsync(user, dto.Password);
-        if (!result.Succeeded) // TODO figure out in what circumstances can this statement be fired off.
+            var dateAvailable = DateTimeOffset.Parse((await db.StringGetAsync($"COOLDOWN{dto.Mode}:{user.Email}"))!);
             return BadRequest(new ResponseDto<object>
             {
-                Status = ResponseStatus.ErrorDetailed,
-                Code = ResponseCode.DataInvalid,
-                Errors = result.Errors.ToArray()
+                Status = ResponseStatus.ErrorTemporarilyUnavailable,
+                Code = ResponseCodes.EmailCooldown,
+                DateAvailable = dateAvailable
+            });
+        }
+
+        if (dto.Mode == EmailRequestMode.EmailConfirmation && user.EmailConfirmed)
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyActivated
             });
 
-        await _userManager.AddToRoleAsync(user, "Member");
+        var mailDto = await _mailService.GenerateEmailAsync(user, dto.Mode);
+        if (mailDto == null)
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.RedisError });
 
-        return StatusCode(StatusCodes.Status201Created);
+        try
+        {
+            await _mailService.SendMailAsync(mailDto);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorWithMessage, Code = ResponseCodes.MailError, Message = ex.Message
+                });
+        }
+
+        return NoContent();
+    }
+
+    /// <summary>
+    ///     Resets user's password.
+    /// </summary>
+    /// <param name="dto">Code from the password reset email and the new password.</param>
+    /// <returns>An empty body.</returns>
+    /// <response code="204">Returns an empty body.</response>
+    /// <response code="400">When the input code is invalid.</response>
+    [HttpPost("reset-password")]
+    [Consumes("application/json")]
+    [Produces("text/plain", "application/json")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> ResetPassword([FromBody] UserPasswordResetDto dto)
+    {
+        var user = await RedeemCode(dto.Code, EmailRequestMode.PasswordReset);
+        if (user == null)
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidCode
+            });
+
+        user.PasswordHash = _userManager.PasswordHasher.HashPassword(user, dto.Password);
+        await _userManager.UpdateAsync(user);
+        return NoContent();
     }
 
     /// <summary>
     ///     Activates user's account.
     /// </summary>
-    /// <param name="dto">Code from the confirmation Email</param>
+    /// <param name="dto">Code from the confirmation email</param>
     /// <returns>An empty body.</returns>
     /// <response code="204">Returns an empty body.</response>
     /// <response code="400">
@@ -246,74 +269,42 @@ public class AuthenticationController : Controller
     ///     2. the user has already been activated.
     /// </response>
     [HttpPost("activate")]
+    [Consumes("application/json")]
+    [Produces("text/plain", "application/json")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> Activate([FromBody] UserActivationDto dto)
     {
-        var db = _redis.GetDatabase();
-        var key = $"ACTIVATION{dto.Code}";
-        if (!await db.KeyExistsAsync(key))
-            return BadRequest(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCode.InvalidActivationCode
-            });
+        var user = await RedeemCode(dto.Code, EmailRequestMode.EmailConfirmation);
+        switch (user)
+        {
+            case null:
+                return BadRequest(new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidCode
+                });
+            case { EmailConfirmed: true, LockoutEnabled: false }:
+                return BadRequest(new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyActivated
+                });
+        }
 
-        var id = await db.StringGetAsync(key);
-        db.KeyDelete(key);
-        var user = (await _userManager.FindByIdAsync(id!))!;
-        if (user is { EmailConfirmed: true, LockoutEnabled: false })
-            return BadRequest(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCode.AlreadyActivated
-            });
         user.EmailConfirmed = true;
         user.LockoutEnabled = false;
         await _userManager.UpdateAsync(user);
         return NoContent();
     }
 
-    private async Task<MailDto> GenerateMail(User user)
+    private async Task<User?> RedeemCode(string code, EmailRequestMode mode)
     {
-        if (user.Email == null || user.UserName == null) throw new ArgumentNullException(nameof(user));
-
-        string code;
-        var random = new Random();
         var db = _redis.GetDatabase();
-        do
-        {
-            code = random.Next(1000000, 2000000).ToString()[1..];
-        } while (await db.KeyExistsAsync($"ACTIVATION{code}"));
-
-        if (!await db.StringSetAsync($"ACTIVATION{code}", user.Id, TimeSpan.FromMinutes(5)))
-            throw new RedisException("An error occurred whilst saving activation code.");
-
-        var template = _templateService.GetConfirmationEmailTemplate(user.Language);
-
-        return new MailDto
-        {
-            RecipientAddress = user.Email,
-            RecipientName = user.UserName,
-            EmailSubject = template["Subject"],
-            EmailBody = _templateService.ReplacePlaceholders(template["Body"],
-                new Dictionary<string, string> { { "UserName", user.UserName }, { "Code", code } })
-        };
-    }
-
-    private async Task<string> SendConfirmationEmail(User user)
-    {
-        var body = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(await GenerateMail(user)));
-
-        try
-        {
-            using var channel = _rabbitMqService.GetConnection().CreateModel();
-            channel.BasicPublish("", "email", null, body);
-        }
-        catch (Exception)
-        {
-            return ResponseCode.MailError;
-        }
-
-        return string.Empty;
+        var key = $"EMAIL{mode}:{code}";
+        if (!await db.KeyExistsAsync(key)) return null;
+        var id = await db.StringGetAsync(key);
+        db.KeyDelete(key);
+        var user = (await _userManager.FindByIdAsync(id!))!;
+        return user;
     }
 
     private static IEnumerable<string> GetDestinations(Claim claim)

@@ -1,8 +1,14 @@
 ﻿using PhiZoneApi.Dtos;
+using PhiZoneApi.Enums;
+using PhiZoneApi.Models;
 
 namespace PhiZoneApi.Interfaces;
 
 public interface IMailService
 {
+    Task<MailDto?> GenerateEmailAsync(User user, EmailRequestMode mode);
+
+    Task<string> PublishEmailAsync(User user, EmailRequestMode mode);
+
     Task SendMailAsync(MailDto mailDto);
 }

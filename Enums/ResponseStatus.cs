@@ -5,5 +5,6 @@ public enum ResponseStatus
     Ok,
     ErrorBrief,
     ErrorDetailed,
+    ErrorWithMessage,
     ErrorTemporarilyUnavailable
 }

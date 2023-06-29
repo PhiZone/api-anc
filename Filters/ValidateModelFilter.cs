@@ -12,10 +12,10 @@ public class ValidateModelFilter : IActionFilter
     public void OnActionExecuting(ActionExecutingContext context)
     {
         if (!context.ModelState.IsValid)
-            context.Result = new JsonResult(new ResponseDto<object>
+            context.Result = new BadRequestObjectResult(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorDetailed,
-                Code = ResponseCode.DataInvalid,
+                Code = ResponseCodes.DataInvalid,
                 Errors = ModelErrorTranslator.Translate(context.ModelState)
             });
     }

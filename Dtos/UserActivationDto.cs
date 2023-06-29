@@ -5,6 +5,6 @@ namespace PhiZoneApi.Dtos;
 
 public class UserActivationDto
 {
-    [Required(ErrorMessage = ResponseCode.FieldEmpty)]
+    [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     public string Code { get; set; } = null!;
 }

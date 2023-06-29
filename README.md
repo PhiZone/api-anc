@@ -79,3 +79,8 @@ File `appsettings.Development.json` is ignored by git using `.gitignore`. You sh
 2. File Storage: We use the file storage service provided by TapTap, courtesy of Phigrim. Ask anyone who has access to
    the service for credentials before filling in `FileStorageSettings`.
 3. RabbitMQ: Setup your own RabbitMQ server before filling in `RabbitMQSettings`.
+
+## Data Processing
+
+For details on processing an image in the File Storage,
+see [Qiniu Developer Docs](https://developer.qiniu.com/dora/3683/img-directions-for-use).

@@ -2,7 +2,7 @@
 
 namespace PhiZoneApi.Constants;
 
-public static class ResponseCode
+public static class ResponseCodes
 {
     /// <summary>
     ///     Process was successful.
@@ -27,7 +27,12 @@ public static class ResponseCode
     /// <summary>
     ///     User cannot change their user name during cooldown.
     /// </summary>
-    public const string UserNameCoolDown = "UserNameCoolDown";
+    public const string UserNameCooldown = "UserNameCooldown";
+
+    /// <summary>
+    ///     User cannot request an email during cooldown.
+    /// </summary>
+    public const string EmailCooldown = "EmailCooldown";
 
     /// <summary>
     ///     User with this email address already exists.
@@ -145,7 +150,7 @@ public static class ResponseCode
     /// <summary>
     ///     The input value is not found in the Redis database.
     /// </summary>
-    public const string InvalidActivationCode = "InvalidActivationCode";
+    public const string InvalidCode = "InvalidCode";
 
     /// <summary>
     ///     User has already confirmed their email address and activated their account.
