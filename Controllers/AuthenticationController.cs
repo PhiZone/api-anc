@@ -41,18 +41,11 @@ public class AuthenticationController : Controller
     /// <summary>
     ///     Retrieves authentication credentials.
     /// </summary>
-    /// <param name="client_id">The client's identifier, e.g. "regular".</param>
-    /// <param name="client_secret">The client's secret, e.g. "c29b1587-80f9-475f-b97b-dca1884eb0e3".</param>
-    /// <param name="grant_type">The grant type desired, either <c>password</c> or <c>refresh_token</c>.</param>
-    /// <param name="username">The user's email address, e.g. "contact@phi.zone", when the grant type is <c>password</c>.</param>
-    /// <param name="password">The user's password, when the grant type is <c>password</c>.</param>
-    /// <param name="refresh_token">The user's refresh token, when the grant type is <c>refresh_token</c>.</param>
     /// <returns>Authentication credentials, e.g. <c>access_token</c>, <c>refresh_token</c>, etc.</returns>
     /// <remarks>
-    ///     This is the only endpoint where all the fields are named in the snake case, both in the request and in the
-    ///     response.
+    ///     This is the only endpoint where fields are named in the snake case, both in the request and in the response.
     ///     It's also the only one that responds without following the <see cref="ResponseDto{T}" /> structure.
-    ///     Swagger is not treating this endpoint properly; please refer to RFC 6749 for further information.
+    ///     Refer to RFC 6749 for further information.
     /// </remarks>
     /// <response code="200">Returns authentication credentials.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
@@ -69,10 +62,10 @@ public class AuthenticationController : Controller
     [IgnoreAntiforgeryToken]
     [Consumes("application/x-www-form-urlencoded")]
     [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(OpenIddictTokenDto))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(OpenIddictTokenResponseDto))]
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(OpenIddictErrorDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Exchange()
+    public async Task<IActionResult> Exchange([FromForm] OpenIddictTokenRequestDto dto)
     {
         var request = HttpContext.GetOpenIddictServerRequest()!;
 
@@ -154,10 +147,6 @@ public class AuthenticationController : Controller
     /// <summary>
     ///     Sends an email to user's email address.
     /// </summary>
-    /// <param name="dto">
-    ///     The user's email address and the mode desired. Options for mode: <c>0</c> for email confirmation;
-    ///     <c>1</c> for password reset.
-    /// </param>
     /// <returns>An empty body.</returns>
     /// <response code="204">Returns an empty body. Sends an email to the email address.</response>
     /// <response code="400">
@@ -165,10 +154,10 @@ public class AuthenticationController : Controller
     ///     1. the user's email address is in cooldown;
     ///     2. the mode is email confirmation and the user has already been activated.
     /// </response>
-    /// <response code="403">When the user does not have sufficient permission (not in the Member role).</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
     /// <response code="404">When the user has input an email address that does not match any existing user.</response>
     /// <response code="500">When a Redis / Mail Service error has occurred.</response>
-    [HttpPost("send-email")]
+    [HttpPost("sendEmail")]
     [Consumes("application/json")]
     [Produces("text/plain", "application/json")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -185,7 +174,7 @@ public class AuthenticationController : Controller
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNotFound
             });
 
-        if (!await _userManager.IsInRoleAsync(user, "Member"))
+        if (dto.Mode != EmailRequestMode.EmailConfirmation && !await _userManager.IsInRoleAsync(user, "Member"))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -210,7 +199,7 @@ public class AuthenticationController : Controller
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyActivated
             });
 
-        var mailDto = await _mailService.GenerateEmailAsync(user, dto.Mode);
+        var mailDto = await _mailService.GenerateEmailAsync(user, dto.Mode, null);
         if (mailDto == null)
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.RedisError });
@@ -238,7 +227,7 @@ public class AuthenticationController : Controller
     /// <returns>An empty body.</returns>
     /// <response code="204">Returns an empty body.</response>
     /// <response code="400">When the input code is invalid.</response>
-    [HttpPost("reset-password")]
+    [HttpPost("resetPassword")]
     [Consumes("application/json")]
     [Produces("text/plain", "application/json")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -293,6 +282,7 @@ public class AuthenticationController : Controller
         user.EmailConfirmed = true;
         user.LockoutEnabled = false;
         await _userManager.UpdateAsync(user);
+        await _userManager.AddToRoleAsync(user, "Member");
         return NoContent();
     }
 

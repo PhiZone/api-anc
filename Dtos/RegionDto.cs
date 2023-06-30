@@ -1,6 +1,6 @@
-﻿namespace PhiZoneApi.Models;
+﻿namespace PhiZoneApi.Dtos;
 
-public class Region
+public class RegionDto
 {
     public int Id { get; set; }
 

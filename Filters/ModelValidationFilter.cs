@@ -7,7 +7,7 @@ using PhiZoneApi.Utils;
 
 namespace PhiZoneApi.Filters;
 
-public class ValidateModelFilter : IActionFilter
+public class ModelValidationFilter : IActionFilter
 {
     public void OnActionExecuting(ActionExecutingContext context)
     {

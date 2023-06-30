@@ -29,7 +29,9 @@ public class User : IdentityUser<int>
 
     [DataType(DataType.Date)] public DateTimeOffset? DateOfBirth { get; set; }
 
-    public ICollection<UserRelation>? Followers { get; set; }
+    public Region? Region { get; set; }
 
-    public ICollection<UserRelation>? Followees { get; set; }
+    public ICollection<UserRelation> Followers { get; } = new List<UserRelation>();
+
+    public ICollection<UserRelation> Followees { get; } = new List<UserRelation>();
 }

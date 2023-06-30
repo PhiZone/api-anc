@@ -6,9 +6,9 @@ namespace PhiZoneApi.Interfaces;
 
 public interface IMailService
 {
-    Task<MailDto?> GenerateEmailAsync(User user, EmailRequestMode mode);
+    Task<MailDto?> GenerateEmailAsync(User user, EmailRequestMode mode, SucceedingAction? action);
 
-    Task<string> PublishEmailAsync(User user, EmailRequestMode mode);
+    Task<string> PublishEmailAsync(User user, EmailRequestMode mode, SucceedingAction? action);
 
-    Task SendMailAsync(MailDto mailDto);
+    Task<string> SendMailAsync(MailDto mailDto);
 }

@@ -14,11 +14,13 @@ public class ResponseDto<T>
 
     public DateTimeOffset? DateAvailable { get; set; }
 
+    public int? Total { get; set; }
+
     public int? PerPage { get; set; }
 
-    public string? PreviousPage { get; set; }
+    public bool? HasPrevious { get; set; }
 
-    public string? NextPage { get; set; }
+    public bool? HasNext { get; set; }
 
     public T? Data { get; set; }
 }

@@ -18,9 +18,17 @@ public class FileStorageService : IFileStorageService
     {
         using var memoryStream = new MemoryStream();
         await formFile.CopyToAsync(memoryStream);
-        var file = new LCFile(
-            string.Join("_", fileName, DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()) +
-            FileTypeResolver.GetFileExtension(FileTypeResolver.GetMimeType(formFile)), memoryStream.ToArray());
+        var extension = FileTypeResolver.GetFileExtension(FileTypeResolver.GetMimeType(formFile));
+        var file = new LCFile($"{fileName}_{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}{extension}",
+            memoryStream.ToArray());
+        await file.Save();
+        return file.Url;
+    }
+
+    public async Task<string> Upload(string fileName, MemoryStream stream, string extension)
+    {
+        var file = new LCFile($"{fileName}_{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}.{extension}",
+            stream.ToArray());
         await file.Save();
         return file.Url;
     }

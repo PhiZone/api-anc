@@ -4,5 +4,11 @@ namespace PhiZoneApi.Interfaces;
 
 public interface IUserRepository
 {
-    ICollection<User> GetUsers(string order, bool desc, int position, int take);
+    Task<ICollection<User>> GetUsersAsync(string order, bool desc, int position, int take);
+
+    Task<int> CountAsync();
+
+    Task<int> CountFollowersAsync(User user);
+
+    Task<int> CountFolloweesAsync(User user);
 }

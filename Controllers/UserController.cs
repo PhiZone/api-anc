@@ -25,6 +25,7 @@ namespace PhiZoneApi.Controllers;
 public class UserController : Controller
 {
     private readonly IOptions<DataSettings> _dataSettings;
+    private readonly IDtoMapper _dtoMapper;
     private readonly IFileStorageService _fileStorageService;
     private readonly IMailService _mailService;
     private readonly IMapper _mapper;
@@ -32,7 +33,8 @@ public class UserController : Controller
     private readonly IUserRepository _userRepository;
 
     public UserController(IUserRepository userRepository, UserManager<User> userManager, IMailService mailService,
-        IFileStorageService fileStorageService, IOptions<DataSettings> dataSettings, IMapper mapper)
+        IFileStorageService fileStorageService, IOptions<DataSettings> dataSettings, IMapper mapper,
+        IDtoMapper dtoMapper)
     {
         _userRepository = userRepository;
         _userManager = userManager;
@@ -40,6 +42,7 @@ public class UserController : Controller
         _fileStorageService = fileStorageService;
         _dataSettings = dataSettings;
         _mapper = mapper;
+        _dtoMapper = dtoMapper;
     }
 
     /// <summary>
@@ -49,20 +52,32 @@ public class UserController : Controller
     /// <param name="desc">Whether or not the result is sorted in descending order. Defaults to <c>false</c>.</param>
     /// <param name="page">The page number. Defaults to 1.</param>
     /// <param name="perPage">How many entries are present in one page. Defaults to DataSettings:PaginationPerPage.</param>
-    /// <returns>An array containing users.</returns>
+    /// <returns>An array of users.</returns>
+    /// <response code="200">Returns an array of regions.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
     [HttpGet]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<UserDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
-    public IActionResult GetUsers(string order = "id", bool desc = false, int page = 1, int perPage = 0)
+    public async Task<IActionResult> GetUsers(string order = "id", bool desc = false, int page = 1, int perPage = 0)
     {
         perPage = perPage > 0 ? perPage : _dataSettings.Value.PaginationPerPage;
         var position = perPage * (page - 1);
-        var data = _mapper.Map<List<UserDto>>(_userRepository.GetUsers(order, desc, position, perPage));
+        var users = await _userRepository.GetUsersAsync(order, desc, position, perPage);
+        var total = await _userRepository.CountAsync();
+        var list = new List<UserDto>();
+
+        foreach (var user in users) list.Add(await _dtoMapper.MapUserAsync<UserDto>(user));
 
         return Ok(new ResponseDto<IEnumerable<UserDto>>
         {
-            Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, PerPage = perPage, Data = data
+            Status = ResponseStatus.Ok,
+            Code = ResponseCodes.Ok,
+            Total = total,
+            PerPage = perPage,
+            HasPrevious = position > 0,
+            HasNext = position < total - total % perPage,
+            Data = list
         });
     }
 
@@ -83,9 +98,9 @@ public class UserController : Controller
     {
         var user = await _userManager.FindByIdAsync(id.ToString());
         if (user == null) return NotFound();
-        var data = _mapper.Map<UserDto>(user);
+        var dto = await _dtoMapper.MapUserAsync<UserDto>(user);
 
-        return Ok(new ResponseDto<UserDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = data });
+        return Ok(new ResponseDto<UserDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
     }
 
     /// <summary>
@@ -126,7 +141,11 @@ public class UserController : Controller
             });
 
         string? avatarUrl = null;
-        if (dto.Avatar != null) avatarUrl = await _fileStorageService.Upload(dto.UserName, dto.Avatar);
+        if (dto.Avatar != null)
+        {
+            var stream = ImageUtil.CropImage(dto.Avatar, (1, 1));
+            avatarUrl = await _fileStorageService.Upload(dto.UserName, stream, "webp");
+        }
 
         user = new User
         {
@@ -144,21 +163,13 @@ public class UserController : Controller
             DateJoined = DateTimeOffset.UtcNow
         };
 
-        var errorCode = await _mailService.PublishEmailAsync(user, EmailRequestMode.EmailConfirmation);
+        user.PasswordHash = _userManager.PasswordHasher.HashPassword(user, dto.Password);
+
+        var errorCode =
+            await _mailService.PublishEmailAsync(user, EmailRequestMode.EmailConfirmation, SucceedingAction.Create);
         if (!errorCode.Equals(string.Empty))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = errorCode });
-
-        var result = await _userManager.CreateAsync(user, dto.Password);
-        if (!result.Succeeded) // TODO figure out in what circumstances can this statement be fired off.
-            return BadRequest(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorDetailed,
-                Code = ResponseCodes.DataInvalid,
-                Errors = result.Errors.ToArray()
-            });
-
-        await _userManager.AddToRoleAsync(user, "Member");
 
         return StatusCode(StatusCodes.Status201Created);
     }
@@ -198,7 +209,10 @@ public class UserController : Controller
 
         // Check permission
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        if (currentUser == null || (currentUser.Id != id && !await _userManager.IsInRoleAsync(currentUser, "Admin")))
+        if (currentUser == null) return Unauthorized();
+
+        if ((currentUser.Id == id && !await _userManager.IsInRoleAsync(currentUser, "Member")) ||
+            (currentUser.Id != id && !await _userManager.IsInRoleAsync(currentUser, "Admin")))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -209,7 +223,7 @@ public class UserController : Controller
 
         patchDocument.ApplyTo(dto, ModelState);
 
-        if (!ModelState.IsValid)
+        if (!TryValidateModel(dto))
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorDetailed,
@@ -221,6 +235,12 @@ public class UserController : Controller
         if (patchDocument.Operations.FirstOrDefault(operation =>
                 operation.path == "/userName" && operation.op is "add" or "replace") != null)
         {
+            var otherUser = await _userManager.FindByNameAsync(dto.UserName);
+            if (otherUser != null)
+                return BadRequest(new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNameOccupied
+                });
             if (user.DateLastModifiedUserName != null &&
                 DateTimeOffset.UtcNow - user.DateLastModifiedUserName < TimeSpan.FromDays(15))
                 return BadRequest(new ResponseDto<object>
@@ -285,16 +305,24 @@ public class UserController : Controller
 
         // Check permission
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        if (currentUser == null || (currentUser.Id != id && !await _userManager.IsInRoleAsync(currentUser, "Admin")))
+        if (currentUser == null) return Unauthorized();
+
+        if ((currentUser.Id == id && !await _userManager.IsInRoleAsync(currentUser, "Member")) ||
+            (currentUser.Id != id && !await _userManager.IsInRoleAsync(currentUser, "Admin")))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
         if (dto.Avatar != null)
-            user.Avatar = await _fileStorageService.Upload(user.UserName ?? "Avatar", dto.Avatar);
+        {
+            var image = ImageUtil.CropImage(dto.Avatar, (1, 1));
+            user.Avatar = await _fileStorageService.Upload(user.UserName ?? "Avatar", image, "webp");
+        }
         else
+        {
             user.Avatar = null;
+        }
 
         await _userManager.UpdateAsync(user);
         return NoContent();

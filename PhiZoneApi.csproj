@@ -9,7 +9,7 @@
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
-        <NoWarn>1701,1702,IL2121,1572,1591</NoWarn>
+        <NoWarn>1701,1702,IL2121,1570,1572,1591</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>
@@ -34,8 +34,10 @@
         <PackageReference Include="OpenIddict.AspNetCore" Version="4.5.0"/>
         <PackageReference Include="OpenIddict.EntityFrameworkCore" Version="4.5.0"/>
         <PackageReference Include="RabbitMQ.Client" Version="6.5.0"/>
+        <PackageReference Include="SixLabors.ImageSharp" Version="3.0.1"/>
         <PackageReference Include="StackExchange.Redis" Version="2.6.116"/>
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0"/>
+        <PackageReference Include="Swashbuckle.AspNetCore.Newtonsoft" Version="6.5.0"/>
     </ItemGroup>
 
     <ItemGroup>

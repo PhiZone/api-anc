@@ -2,7 +2,7 @@
 
 namespace PhiZoneApi.Dtos;
 
-public class OpenIddictTokenDto
+public class OpenIddictTokenResponseDto
 {
     [JsonProperty("access_token")] public string AccessToken { get; set; } = null!;
 

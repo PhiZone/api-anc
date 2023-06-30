@@ -1,0 +1,58 @@
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using OpenIddict.Abstractions;
+using OpenIddict.Validation.AspNetCore;
+using PhiZoneApi.Constants;
+using PhiZoneApi.Dtos;
+using PhiZoneApi.Enums;
+using PhiZoneApi.Interfaces;
+using PhiZoneApi.Models;
+
+namespace PhiZoneApi.Controllers;
+
+/// <summary>
+///     Provides user information service.
+/// </summary>
+[Route("userInfo")]
+[ApiVersion("2.0")]
+[ApiController]
+public class UserInfoController : Controller
+{
+    private readonly IDtoMapper _mapper;
+    private readonly UserManager<User> _userManager;
+
+    public UserInfoController(UserManager<User> userManager, IDtoMapper mapper)
+    {
+        _userManager = userManager;
+        _mapper = mapper;
+    }
+
+    /// <summary>
+    ///     Retrieves user's information.
+    /// </summary>
+    /// <returns>User's information.</returns>
+    /// <response code="200">Returns user's information.</response>
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
+    [HttpGet]
+    [Produces("application/json", "text/plain")]
+    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<UserDetailedDto>))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetUserInfo()
+    {
+        var user = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        if (user == null) return Unauthorized();
+        if (!await _userManager.IsInRoleAsync(user, "Member"))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+
+        var dto = await _mapper.MapUserAsync<UserDetailedDto>(user);
+        return Ok(new ResponseDto<UserDetailedDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
+    }
+}

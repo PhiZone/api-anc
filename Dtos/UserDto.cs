@@ -10,7 +10,13 @@ public class UserDto
 
     public int Gender { get; set; }
 
+    public string? Region { get; set; }
+
+    public string Language { get; set; } = null!;
+
     public string? Biography { get; set; }
+
+    public IList<string> Roles { get; set; } = null!;
 
     public double Experience { get; set; }
 
@@ -18,7 +24,9 @@ public class UserDto
 
     public double Rks { get; set; }
 
-    public string Language { get; set; } = null!;
+    public int FollowerCount { get; set; }
+
+    public int FolloweeCount { get; set; }
 
     public DateTimeOffset? DateLastLoggedIn { get; set; }
 

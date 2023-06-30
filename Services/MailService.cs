@@ -30,7 +30,7 @@ public class MailService : IMailService
         _redis = redis;
     }
 
-    public async Task<MailDto?> GenerateEmailAsync(User user, EmailRequestMode mode)
+    public async Task<MailDto?> GenerateEmailAsync(User user, EmailRequestMode mode, SucceedingAction? action)
     {
         if (user.Email == null || user.UserName == null) throw new ArgumentNullException(nameof(user));
 
@@ -48,17 +48,17 @@ public class MailService : IMailService
 
         return new MailDto
         {
-            RecipientAddress = user.Email,
-            RecipientName = user.UserName,
+            User = user,
             EmailSubject = template["Subject"],
             EmailBody = _templateService.ReplacePlaceholders(template["Body"],
-                new Dictionary<string, string> { { "UserName", user.UserName }, { "Code", code } })
+                new Dictionary<string, string> { { "UserName", user.UserName }, { "Code", code } }),
+            SucceedingAction = action
         };
     }
 
-    public async Task<string> PublishEmailAsync(User user, EmailRequestMode mode)
+    public async Task<string> PublishEmailAsync(User user, EmailRequestMode mode, SucceedingAction? action)
     {
-        var mailDto = await GenerateEmailAsync(user, mode);
+        var mailDto = await GenerateEmailAsync(user, mode, action);
         if (mailDto == null) return ResponseCodes.RedisError;
 
         var body = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(mailDto));
@@ -79,12 +79,12 @@ public class MailService : IMailService
         return string.Empty;
     }
 
-    public async Task SendMailAsync(MailDto mailDto)
+    public async Task<string> SendMailAsync(MailDto mailDto)
     {
         using var emailMessage = new MimeMessage();
         var emailFrom = new MailboxAddress(_settings.SenderName, _settings.SenderAddress);
         emailMessage.From.Add(emailFrom);
-        var emailTo = new MailboxAddress(mailDto.RecipientName, mailDto.RecipientAddress);
+        var emailTo = new MailboxAddress(mailDto.User.UserName, mailDto.User.Email);
         emailMessage.To.Add(emailTo);
 
         // emailMessage.Cc.Add(new MailboxAddress("Cc Receiver", "cc@example.com"));
@@ -96,10 +96,20 @@ public class MailService : IMailService
 
         emailMessage.Body = emailBodyBuilder.ToMessageBody();
 
-        using var mailClient = new SmtpClient();
-        await mailClient.ConnectAsync(_settings.Server, _settings.Port, SecureSocketOptions.SslOnConnect);
-        await mailClient.AuthenticateAsync(_settings.UserName, _settings.Password);
-        await mailClient.SendAsync(emailMessage);
-        await mailClient.DisconnectAsync(true);
+        try
+        {
+            using var mailClient = new SmtpClient();
+            await mailClient.ConnectAsync(_settings.Server, _settings.Port, SecureSocketOptions.SslOnConnect);
+            await mailClient.AuthenticateAsync(_settings.UserName, _settings.Password);
+            await mailClient.SendAsync(emailMessage);
+            await mailClient.DisconnectAsync(true);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            return ex.Message;
+        }
+
+        return string.Empty;
     }
 }

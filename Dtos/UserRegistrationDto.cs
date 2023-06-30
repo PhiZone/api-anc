@@ -1,6 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using PhiZoneApi.Constants;
 using PhiZoneApi.Enums;
+using PhiZoneApi.Models;
+using PhiZoneApi.Validators;
 
 namespace PhiZoneApi.Dtos;
 
@@ -31,7 +33,10 @@ public class UserRegistrationDto
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     [RegularExpression(@"^[a-z]{2}(?:-[A-Z]{2})?$", ErrorMessage = ResponseCodes.InvalidLanguageCode)]
+    [LanguageValidator(ErrorMessage = ResponseCodes.UnsupportedLanguage)]
     public string Language { get; set; } = null!;
+
+    public Region? Region { get; set; }
 
     [DataType(DataType.Date, ErrorMessage = ResponseCodes.InvalidDate)]
     public DateTimeOffset? DateOfBirth { get; set; }

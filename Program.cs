@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Versioning;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using Newtonsoft.Json.Serialization;
 using OpenIddict.Abstractions;
 using PhiZoneApi.Configurations;
 using PhiZoneApi.Data;
@@ -21,9 +22,16 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-builder.Services.AddMvc(options => { options.Filters.Add(typeof(ValidateModelFilter)); });
+builder.Services.AddMvc(options => { options.Filters.Add(typeof(ModelValidationFilter)); });
 
-builder.Services.AddControllers().AddNewtonsoftJson();
+builder.Services.AddControllers()
+    .AddNewtonsoftJson(options =>
+    {
+        options.SerializerSettings.ContractResolver = new DefaultContractResolver
+        {
+            NamingStrategy = new CamelCaseNamingStrategy()
+        };
+    });
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
 builder.Services.AddApiVersioning(options =>
@@ -81,14 +89,17 @@ builder.Services.AddIdentity<User, Role>()
     .AddDefaultTokenProviders();
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IRegionRepository, RegionRepository>();
+builder.Services.AddScoped<IDtoMapper, DtoMapper>();
 builder.Services.AddTransient<IMailService, MailService>();
 builder.Services.AddSingleton<IFileStorageService, FileStorageService>();
 builder.Services.AddSingleton<ITemplateService, TemplateService>();
 builder.Services.AddSingleton<IRabbitMqService, RabbitMqService>();
 builder.Services.AddSingleton<IConnectionMultiplexer>(
     ConnectionMultiplexer.Connect(builder.Configuration.GetValue<string>("RedisConnection") ?? "localhost"));
-builder.Services.AddSingleton<IHostedService>(provider =>
-    new MailSenderService(provider.GetService<IMailService>()!, provider.GetService<IRabbitMqService>()!));
+builder.Services.AddSingleton<IHostedService>(provider => new MailSenderService(provider.GetService<IMailService>()!,
+    provider.GetService<IRabbitMqService>()!,
+    provider.GetService<IServiceScopeFactory>()!.CreateScope().ServiceProvider.GetService<UserManager<User>>()!));
 builder.Services.AddHostedService<DatabaseSeeder>();
 
 builder.Services.Configure<ApiBehaviorOptions>(options => { options.SuppressModelStateInvalidFilter = true; });
@@ -117,9 +128,11 @@ builder.Services.AddSwaggerGen(options =>
             Version = "v2", Title = "PhiZone API v2", Description = "Backend of PhiZone, based on ASP.NET Core."
         });
 
-    var xmlFilename = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
-    options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFilename));
+    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFile));
 });
+
+builder.Services.AddSwaggerGenNewtonsoftSupport();
 
 builder.Services.AddCoreAdmin();
 

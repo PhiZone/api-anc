@@ -117,6 +117,13 @@ public static class ResponseCodes
      */
     public const string InvalidLanguageCode = "InvalidLanguageCode";
 
+    /**
+     * <summary>
+     *     The specified language is not supported.
+     * </summary>
+     */
+    public const string UnsupportedLanguage = "UnsupportedLanguage";
+
     /// <summary>
     ///     The input value is longer than the maximum length allowed.
     /// </summary>
