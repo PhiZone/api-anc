@@ -1,7 +1,10 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using OpenIddict.Abstractions;
+using OpenIddict.Validation.AspNetCore;
 using PhiZoneApi.Configurations;
 using PhiZoneApi.Constants;
 using PhiZoneApi.Dtos;
@@ -11,12 +14,11 @@ using PhiZoneApi.Models;
 
 namespace PhiZoneApi.Controllers;
 
-/// <summary>
-///     Provides region-related services.
-/// </summary>
 [Route("regions")]
 [ApiVersion("2.0")]
 [ApiController]
+[Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme,
+    Policy = "AllowAnonymous")]
 public class RegionController : Controller
 {
     private readonly IOptions<DataSettings> _dataSettings;
@@ -133,6 +135,7 @@ public class RegionController : Controller
     public async Task<IActionResult> GetRegionUsers([FromRoute] string code, string order = "id", bool desc = false,
         int page = 1, int perPage = 0)
     {
+        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         perPage = perPage > 0 ? perPage : _dataSettings.Value.PaginationPerPage;
         var position = perPage * (page - 1);
         if (!await _regionRepository.RegionExistsAsync(code)) return NotFound();
@@ -140,7 +143,7 @@ public class RegionController : Controller
         var list = new List<UserDto>();
         var total = await _regionRepository.CountUsersAsync(code);
 
-        foreach (var user in users) list.Add(await _dtoMapper.MapUserAsync<UserDto>(user));
+        foreach (var user in users) list.Add(await _dtoMapper.MapUserAsync<UserDto>(user, currentUser: currentUser));
 
         return Ok(new ResponseDto<IEnumerable<UserDto>>
         {
@@ -174,6 +177,7 @@ public class RegionController : Controller
     public async Task<IActionResult> GetRegionUsers([FromRoute] int id, string order = "id", bool desc = false,
         int page = 1, int perPage = 0)
     {
+        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         perPage = perPage > 0 ? perPage : _dataSettings.Value.PaginationPerPage;
         var position = perPage * (page - 1);
         if (!await _regionRepository.RegionExistsByIdAsync(id)) return NotFound();
@@ -181,7 +185,7 @@ public class RegionController : Controller
         var list = new List<UserDto>();
         var total = await _regionRepository.CountUsersByIdAsync(id);
 
-        foreach (var user in users) list.Add(await _dtoMapper.MapUserAsync<UserDto>(user));
+        foreach (var user in users) list.Add(await _dtoMapper.MapUserAsync<UserDto>(user, currentUser: currentUser));
 
         return Ok(new ResponseDto<IEnumerable<UserDto>>
         {

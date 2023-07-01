@@ -33,4 +33,6 @@ public class UserDto
     public DateTimeOffset DateJoined { get; set; }
 
     public DateTimeOffset? DateOfBirth { get; set; }
+
+    public DateTimeOffset? DateFollowed { get; set; }
 }

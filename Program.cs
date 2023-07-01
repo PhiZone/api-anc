@@ -82,6 +82,11 @@ builder.Services.AddAuthentication(options =>
     options.DefaultChallengeScheme = OpenIddictConstants.Schemes.Bearer;
 });
 
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AllowAnonymous", policy => { policy.RequireAssertion(_ => true); });
+});
+
 builder.Services.AddIdentity<User, Role>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddSignInManager()
@@ -89,6 +94,7 @@ builder.Services.AddIdentity<User, Role>()
     .AddDefaultTokenProviders();
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IUserRelationRepository, UserRelationRepository>();
 builder.Services.AddScoped<IRegionRepository, RegionRepository>();
 builder.Services.AddScoped<IDtoMapper, DtoMapper>();
 builder.Services.AddTransient<IMailService, MailService>();

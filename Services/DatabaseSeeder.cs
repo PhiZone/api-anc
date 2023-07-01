@@ -338,6 +338,7 @@ public class DatabaseSeeder : IHostedService
             { "ZM", "Zambia" },
             { "ZW", "Zimbabwe" }
         };
+        if (await context.Regions.CountAsync(cancellationToken) >= regions.Count) return;
         foreach (var region in regions.Select(entry => new Region { Code = entry.Key, Name = entry.Value }))
         {
             if (await context.Regions.AnyAsync(r => string.Equals(r.Code, region.Code),

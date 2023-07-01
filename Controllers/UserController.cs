@@ -16,12 +16,11 @@ using PhiZoneApi.Utils;
 
 namespace PhiZoneApi.Controllers;
 
-/// <summary>
-///     Provides user-related services.
-/// </summary>
 [Route("users")]
 [ApiVersion("2.0")]
 [ApiController]
+[Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme,
+    Policy = "AllowAnonymous")]
 public class UserController : Controller
 {
     private readonly IOptions<DataSettings> _dataSettings;
@@ -30,13 +29,15 @@ public class UserController : Controller
     private readonly IMailService _mailService;
     private readonly IMapper _mapper;
     private readonly UserManager<User> _userManager;
+    private readonly IUserRelationRepository _userRelationRepository;
     private readonly IUserRepository _userRepository;
 
-    public UserController(IUserRepository userRepository, UserManager<User> userManager, IMailService mailService,
-        IFileStorageService fileStorageService, IOptions<DataSettings> dataSettings, IMapper mapper,
-        IDtoMapper dtoMapper)
+    public UserController(IUserRepository userRepository, IUserRelationRepository userRelationRepository,
+        UserManager<User> userManager, IMailService mailService, IFileStorageService fileStorageService,
+        IOptions<DataSettings> dataSettings, IMapper mapper, IDtoMapper dtoMapper)
     {
         _userRepository = userRepository;
+        _userRelationRepository = userRelationRepository;
         _userManager = userManager;
         _mailService = mailService;
         _fileStorageService = fileStorageService;
@@ -53,7 +54,7 @@ public class UserController : Controller
     /// <param name="page">The page number. Defaults to 1.</param>
     /// <param name="perPage">How many entries are present in one page. Defaults to DataSettings:PaginationPerPage.</param>
     /// <returns>An array of users.</returns>
-    /// <response code="200">Returns an array of regions.</response>
+    /// <response code="200">Returns an array of users.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     [HttpGet]
     [Produces("application/json")]
@@ -61,13 +62,14 @@ public class UserController : Controller
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetUsers(string order = "id", bool desc = false, int page = 1, int perPage = 0)
     {
+        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         perPage = perPage > 0 ? perPage : _dataSettings.Value.PaginationPerPage;
         var position = perPage * (page - 1);
         var users = await _userRepository.GetUsersAsync(order, desc, position, perPage);
         var total = await _userRepository.CountAsync();
         var list = new List<UserDto>();
 
-        foreach (var user in users) list.Add(await _dtoMapper.MapUserAsync<UserDto>(user));
+        foreach (var user in users) list.Add(await _dtoMapper.MapUserAsync<UserDto>(user, currentUser: currentUser));
 
         return Ok(new ResponseDto<IEnumerable<UserDto>>
         {
@@ -96,9 +98,10 @@ public class UserController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetUser([FromRoute] int id)
     {
+        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         var user = await _userManager.FindByIdAsync(id.ToString());
         if (user == null) return NotFound();
-        var dto = await _dtoMapper.MapUserAsync<UserDto>(user);
+        var dto = await _dtoMapper.MapUserAsync<UserDto>(user, currentUser: currentUser);
 
         return Ok(new ResponseDto<UserDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
     }
@@ -186,9 +189,9 @@ public class UserController : Controller
     /// <response code="403">When the user does not have sufficient permission.</response>
     /// <response code="404">When the specified user is not found.</response>
     [HttpPatch("{id:int}")]
+    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Consumes("application/json")]
     [Produces("text/plain", "application/json")]
-    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -283,9 +286,9 @@ public class UserController : Controller
     /// <response code="403">When the user does not have sufficient permission.</response>
     /// <response code="404">When the specified user is not found.</response>
     [HttpPatch("{id:int}/avatar")]
+    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Consumes("multipart/form-data")]
     [Produces("text/plain", "application/json")]
-    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -325,6 +328,237 @@ public class UserController : Controller
         }
 
         await _userManager.UpdateAsync(user);
+        return NoContent();
+    }
+
+    /// <summary>
+    ///     Retrieves followers of user.
+    /// </summary>
+    /// <param name="id">User's ID.</param>
+    /// <param name="order">The field by which the result is sorted. Defaults to <c>time</c>.</param>
+    /// <param name="desc">Whether or not the result is sorted in descending order. Defaults to <c>false</c>.</param>
+    /// <param name="page">The page number. Defaults to 1.</param>
+    /// <param name="perPage">How many entries are present in one page. Defaults to DataSettings:PaginationPerPage.</param>
+    /// <returns>An array of followers of user.</returns>
+    /// <response code="200">Returns an array of followers of user.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="404">When the specified user is not found.</response>
+    [HttpGet("{id:int}/followers")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<UserDto>>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> GetFollowers([FromRoute] int id, string order = "time", bool desc = false,
+        int page = 1, int perPage = 0)
+    {
+        // Obtain user by id
+        var user = await _userManager.FindByIdAsync(id.ToString());
+
+        // Check user's existence
+        if (user == null)
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNotFound
+            });
+
+        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        perPage = perPage > 0 ? perPage : _dataSettings.Value.PaginationPerPage;
+        var position = perPage * (page - 1);
+        var followers = await _userRelationRepository.GetFollowersAsync(user.Id, order, desc, position, perPage);
+        var total = await _userRelationRepository.CountFollowersAsync(user);
+        var list = new List<UserDto>();
+
+        foreach (var follower in followers) list.Add(await _dtoMapper.MapFollowerAsync<UserDto>(follower, currentUser));
+
+        return Ok(new ResponseDto<IEnumerable<UserDto>>
+        {
+            Status = ResponseStatus.Ok,
+            Code = ResponseCodes.Ok,
+            Total = total,
+            PerPage = perPage,
+            HasPrevious = position > 0,
+            HasNext = position < total - total % perPage,
+            Data = list
+        });
+    }
+
+    /// <summary>
+    ///     Retrieves followees of user.
+    /// </summary>
+    /// <param name="id">User's ID.</param>
+    /// <param name="order">The field by which the result is sorted. Defaults to <c>time</c>.</param>
+    /// <param name="desc">Whether or not the result is sorted in descending order. Defaults to <c>false</c>.</param>
+    /// <param name="page">The page number. Defaults to 1.</param>
+    /// <param name="perPage">How many entries are present in one page. Defaults to DataSettings:PaginationPerPage.</param>
+    /// <returns>An array of followees of user.</returns>
+    /// <response code="200">Returns an array of followees of user.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="404">When the specified user is not found.</response>
+    [HttpGet("{id:int}/followees")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<UserDto>>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> GetFollowees([FromRoute] int id, string order = "time", bool desc = false,
+        int page = 1, int perPage = 0)
+    {
+        // Obtain user by id
+        var user = await _userManager.FindByIdAsync(id.ToString());
+
+        // Check user's existence
+        if (user == null)
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNotFound
+            });
+
+        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        perPage = perPage > 0 ? perPage : _dataSettings.Value.PaginationPerPage;
+        var position = perPage * (page - 1);
+        var followees = await _userRelationRepository.GetFolloweesAsync(user.Id, order, desc, position, perPage);
+        var total = await _userRelationRepository.CountFolloweesAsync(user);
+        var list = new List<UserDto>();
+
+        foreach (var followee in followees) list.Add(await _dtoMapper.MapFolloweeAsync<UserDto>(followee, currentUser));
+
+        return Ok(new ResponseDto<IEnumerable<UserDto>>
+        {
+            Status = ResponseStatus.Ok,
+            Code = ResponseCodes.Ok,
+            Total = total,
+            PerPage = perPage,
+            HasPrevious = position > 0,
+            HasNext = position < total - total % perPage,
+            Data = list
+        });
+    }
+
+    /// <summary>
+    ///     Follows a user.
+    /// </summary>
+    /// <param name="id">Target's ID.</param>
+    /// <returns>An empty body.</returns>
+    /// <response code="201">Returns an empty body.</response>
+    /// <response code="400">
+    ///     When the user
+    ///     1. follows themselves;
+    ///     2. has already followed the specified user.
+    /// </response>
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="404">When the specified user is not found.</response>
+    [HttpPost("{id:int}/follow")]
+    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
+    [Produces("text/plain", "application/json")]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> Follow([FromRoute] int id)
+    {
+        // Obtain user by id
+        var user = await _userManager.FindByIdAsync(id.ToString());
+
+        // Check user's existence
+        if (user == null)
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNotFound
+            });
+
+        // Check permission
+        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        if (currentUser == null) return Unauthorized();
+
+        if (currentUser.Id == id)
+            return BadRequest(
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
+                });
+
+        if (await _userRelationRepository.RelationExistsAsync(currentUser.Id, user.Id))
+            return BadRequest(
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
+                });
+
+        var relation = new UserRelation
+        {
+            Followee = user,
+            Follower = currentUser,
+            Time = DateTimeOffset.UtcNow
+        };
+
+        if (!await _userRelationRepository.CreateRelationAsync(relation))
+            return StatusCode(StatusCodes.Status500InternalServerError, new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief,
+                Code = ResponseCodes.InternalError
+            });
+
+        return StatusCode(StatusCodes.Status201Created);
+    }
+
+    /// <summary>
+    ///     Unfollows a user.
+    /// </summary>
+    /// <param name="id">Target's ID.</param>
+    /// <returns>An empty body.</returns>
+    /// <response code="204">Returns an empty body.</response>
+    /// <response code="400">
+    ///     When the user
+    ///     1. unfollows themselves;
+    ///     2. has not yet followed (already unfollowed) the specified user.
+    /// </response>
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="404">When the specified user is not found.</response>
+    [HttpPost("{id:int}/unfollow")]
+    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
+    [Produces("text/plain", "application/json")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> Unfollow([FromRoute] int id)
+    {
+        // Obtain user by id
+        var user = await _userManager.FindByIdAsync(id.ToString());
+
+        // Check user's existence
+        if (user == null)
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNotFound
+            });
+
+        // Check permission
+        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        if (currentUser == null) return Unauthorized();
+
+        if (currentUser.Id == id)
+            return BadRequest(
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
+                });
+
+        if (!await _userRelationRepository.RelationExistsAsync(currentUser.Id, user.Id))
+            return BadRequest(
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
+                });
+
+        var relation = await _userRelationRepository.GetRelationAsync(currentUser.Id, user.Id);
+
+        if (!await _userRelationRepository.RemoveRelationAsync(relation))
+            return StatusCode(StatusCodes.Status500InternalServerError, new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief,
+                Code = ResponseCodes.InternalError
+            });
+
         return NoContent();
     }
 }

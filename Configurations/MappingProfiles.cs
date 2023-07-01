@@ -12,6 +12,7 @@ public class MappingProfiles : Profile
         CreateMap<User, UserDetailedDto>();
         CreateMap<User, UserUpdateDto>();
         CreateMap<UserRegistrationDto, User>();
+        CreateMap<UserRelation, UserRelationDto>();
         CreateMap<Region, RegionDto>();
     }
 }

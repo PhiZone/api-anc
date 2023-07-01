@@ -17,9 +17,6 @@ using static OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace PhiZoneApi.Controllers;
 
-/// <summary>
-///     Provides authentication services, namely login, registration, and email confirmation.
-/// </summary>
 [ApiController]
 [ApiVersion("2.0")]
 [Route("auth")]
@@ -196,7 +193,7 @@ public class AuthenticationController : Controller
         if (dto.Mode == EmailRequestMode.EmailConfirmation && user.EmailConfirmed)
             return BadRequest(new ResponseDto<object>
             {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyActivated
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
             });
 
         var mailDto = await _mailService.GenerateEmailAsync(user, dto.Mode, null);
@@ -275,7 +272,7 @@ public class AuthenticationController : Controller
             case { EmailConfirmed: true, LockoutEnabled: false }:
                 return BadRequest(new ResponseDto<object>
                 {
-                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyActivated
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
                 });
         }
 

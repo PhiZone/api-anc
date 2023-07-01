@@ -11,12 +11,10 @@ using PhiZoneApi.Models;
 
 namespace PhiZoneApi.Controllers;
 
-/// <summary>
-///     Provides user information service.
-/// </summary>
 [Route("userInfo")]
 [ApiVersion("2.0")]
 [ApiController]
+[Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
 public class UserInfoController : Controller
 {
     private readonly IDtoMapper _mapper;
@@ -37,7 +35,6 @@ public class UserInfoController : Controller
     /// <response code="403">When the user does not have sufficient permission.</response>
     [HttpGet]
     [Produces("application/json", "text/plain")]
-    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<UserDetailedDto>))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]

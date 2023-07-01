@@ -31,7 +31,11 @@ public class User : IdentityUser<int>
 
     public Region? Region { get; set; }
 
-    public ICollection<UserRelation> Followers { get; } = new List<UserRelation>();
+    public IEnumerable<User> Followers { get; } = new List<User>();
 
-    public ICollection<UserRelation> Followees { get; } = new List<UserRelation>();
+    public IEnumerable<UserRelation> FollowerRelations { get; } = new List<UserRelation>();
+
+    public IEnumerable<User> Followees { get; } = new List<User>();
+
+    public IEnumerable<UserRelation> FolloweeRelations { get; } = new List<UserRelation>();
 }

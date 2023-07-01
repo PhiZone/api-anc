@@ -6,9 +6,9 @@ public class UserRelation
 
     public int FolloweeId { get; set; }
 
-    public required User Follower { get; set; }
+    public User Follower { get; set; } = null!;
 
-    public required User Followee { get; set; }
+    public User Followee { get; set; } = null!;
 
     public DateTimeOffset Time { get; set; }
 }

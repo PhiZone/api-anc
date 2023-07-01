@@ -44,24 +44,20 @@ public static class ResponseCodes
     /// </summary>
     public const string PasswordIncorrect = "PasswordIncorrect";
 
-    /**
-     * <summary>
-     *     The password should be at least 6 characters long,
-     *     contain at least one non-alphanumeric character,
-     *     have at least one lowercase letter, one uppercase letter, one digit,
-     *     and can have a maximum length of 18 characters.
-     * </summary>
-     * <code>^(?=.*[^a-zA-Z0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9]).{6,18}$</code>
-     */
+    /// <summary>
+    ///     The password should be at least 6 characters long,
+    ///     contain at least one non-alphanumeric character,
+    ///     have at least one lowercase letter, one uppercase letter, one digit,
+    ///     and can have a maximum length of 18 characters.
+    /// </summary>
+    /// <code>^(?=.*[^a-zA-Z0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9]).{6,18}$</code>
     public const string InvalidPassword = "InvalidPassword";
 
-    /**
-     * <summary>
-     *     The username can only contain numbers, underscores and English / Chinese / Japanese / Korean characters, and must
-     *     be between 4 and 12 characters in length.
-     * </summary>
-     * <code>^([a-zA-Z0-9_\u4e00-\u9fa5\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af]{3,12})|([\u4e00-\u9fa5\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af]{2,12})|([A-Za-z0-9_]{4,18})$</code>
-     */
+    /// <summary>
+    ///     The username can only contain numbers, underscores and English / Chinese / Japanese / Korean characters, and must
+    ///     be between 4 and 12 characters in length.
+    /// </summary>
+    /// <code>^([a-zA-Z0-9_\u4e00-\u9fa5\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af]{3,12})|([\u4e00-\u9fa5\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af]{2,12})|([A-Za-z0-9_]{4,18})$</code>
     public const string InvalidUserName = "InvalidUserName";
 
     /// <summary>
@@ -109,19 +105,15 @@ public static class ResponseCodes
     /// </summary>
     public const string InvalidDate = "InvalidDate";
 
-    /**
-     * <summary>
-     *     The input value is not a valid language code.
-     * </summary>
-     * <code>^[a-z]{2}(?:-[A-Z]{2})?$</code>
-     */
+    /// <summary>
+    ///     The input value is not a valid language code.
+    /// </summary>
+    /// <code>^[a-z]{2}(?:-[A-Z]{2})?$</code>
     public const string InvalidLanguageCode = "InvalidLanguageCode";
 
-    /**
-     * <summary>
-     *     The specified language is not supported.
-     * </summary>
-     */
+    /// <summary>
+    ///     The specified language is not supported.
+    /// </summary>
     public const string UnsupportedLanguage = "UnsupportedLanguage";
 
     /// <summary>
@@ -160,7 +152,12 @@ public static class ResponseCodes
     public const string InvalidCode = "InvalidCode";
 
     /// <summary>
-    ///     User has already confirmed their email address and activated their account.
+    ///     User has already performed an operation.
     /// </summary>
-    public const string AlreadyActivated = "AlreadyActivated";
+    public const string AlreadyDone = "AlreadyDone";
+
+    /// <summary>
+    ///     The operation is invalid.
+    /// </summary>
+    public const string InvalidOperation = "InvalidOperation";
 }

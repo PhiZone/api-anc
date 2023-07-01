@@ -19,19 +19,12 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, int>
     {
         base.OnModelCreating(builder);
 
-        builder.Entity<UserRelation>().HasKey(rel => new { rel.FollowerId, rel.FolloweeId });
-
-        builder.Entity<UserRelation>()
-            .HasOne(rel => rel.Follower)
-            .WithMany(user => user.Followees)
-            .HasForeignKey(rel => rel.FollowerId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        builder.Entity<UserRelation>()
-            .HasOne(rel => rel.Followee)
-            .WithMany(user => user.Followers)
-            .HasForeignKey(rel => rel.FolloweeId)
-            .OnDelete(DeleteBehavior.Restrict);
+        builder.Entity<User>()
+            .HasMany(e => e.Followers)
+            .WithMany(e => e.Followees)
+            .UsingEntity<UserRelation>(
+                l => l.HasOne<User>(e => e.Follower).WithMany(e => e.FolloweeRelations),
+                r => r.HasOne<User>(e => e.Followee).WithMany(e => e.FollowerRelations));
 
         builder.Entity<User>().ToTable("Users");
         builder.Entity<Role>().ToTable("Roles");
