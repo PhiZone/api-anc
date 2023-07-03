@@ -40,12 +40,13 @@ public class AuthenticationController : Controller
     /// </summary>
     /// <returns>Authentication credentials, e.g. <c>access_token</c>, <c>refresh_token</c>, etc.</returns>
     /// <remarks>
-    ///     This is the only endpoint where fields are named in the snake case, both in the request and in the response.
-    ///     It's also the only one that responds without following the <see cref="ResponseDto{T}" /> structure.
+    ///     This is one of the only two endpoints where fields are named in the snake case, both in the request and in the response.
+    ///     It's also one that responds without following the <see cref="ResponseDto{T}" /> structure.
     ///     Refer to RFC 6749 for further information.
     /// </remarks>
     /// <response code="200">Returns authentication credentials.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="401">When any of the client credentials is invalid.</response>
     /// <response code="403">
     ///     When the user
     ///     1. has input an incorrect password (<c>invalid_grant</c>);
@@ -60,6 +61,8 @@ public class AuthenticationController : Controller
     [Consumes("application/x-www-form-urlencoded")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(OpenIddictTokenResponseDto))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(OpenIddictErrorDto))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized, Type = typeof(OpenIddictErrorDto))]
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(OpenIddictErrorDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Exchange([FromForm] OpenIddictTokenRequestDto dto)
@@ -139,6 +142,30 @@ public class AuthenticationController : Controller
         }
 
         throw new NotImplementedException("The specified grant type is not implemented.");
+    }
+
+    /// <summary>
+    ///     Revokes a refresh token.
+    /// </summary>
+    /// <returns>An empty json object.</returns>
+    /// <remarks>
+    ///     This is one of the only two endpoints where fields are named in the snake case, both in the request and in the response.
+    ///     It's also one that responds without following the <see cref="ResponseDto{T}" /> structure.
+    ///     Refer to RFC 6749 for further information.
+    /// </remarks>
+    /// <response code="200">Returns an empty json object.</response>
+    /// <response code="400">When any of the parameters is missing.</response>
+    /// <response code="401">When any of the client credentials is invalid.</response>
+    [HttpPost("revoke")]
+    [IgnoreAntiforgeryToken]
+    [Consumes("application/x-www-form-urlencoded")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(OpenIddictErrorDto))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized, Type = typeof(OpenIddictErrorDto))]
+    public IActionResult Revoke([FromForm] OpenIddictRevocationRequestDto dto)
+    {
+        return Ok();
     }
 
     /// <summary>

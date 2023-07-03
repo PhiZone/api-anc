@@ -95,7 +95,7 @@ the [Anti-Secession Law](https://mzzt.mca.gov.cn/article/zt_qmgjaqjyr/flfg/20220
 > obligation of all Chinese people, the Taiwan compatriots included.
 
 Regions are introduced to PhiZone for statistical purposes. In order to obey the law and fulfill the obligation, we've
-appended `Prov. China` to the name of Taiwan, so as to emphasize that Taiwan is part of China. For translations in
+appended `Prov. China` to the name of Taiwan so as to emphasize that Taiwan is part of China. For translations in
 different languages, we demand that translators take notice of this suffix and have it translated as well. For the
 language `zh-TW`, however, we keep Taiwan its own name (`台灣`) and append `Mainland` to the name of China (`中國大陸`),
 so as to avoid contradictions from users in Taiwan while still obeying the law.

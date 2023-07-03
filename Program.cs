@@ -56,10 +56,9 @@ builder.Services.AddOpenIddict()
     .AddServer(options =>
     {
         options.SetTokenEndpointUris("/auth/token");
-        options.SetLogoutEndpointUris("/auth/logout");
+        options.SetRevocationEndpointUris("/auth/revoke");
         options.AllowPasswordFlow();
         options.AllowRefreshTokenFlow();
-        options.AcceptAnonymousClients();
         options.UseReferenceAccessTokens();
         options.UseReferenceRefreshTokens();
         options.RegisterScopes(OpenIddictConstants.Permissions.Scopes.Email,
