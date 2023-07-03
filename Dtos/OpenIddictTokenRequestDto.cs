@@ -1,7 +1,7 @@
 ﻿namespace PhiZoneApi.Dtos;
 
 /// <summary>
-///     A DTO specifically made for Swagger, just to ensure that the documentation is working properly.
+///     A DTO specially made for Swagger, just to ensure that the documentation is working properly.
 /// </summary>
 public class OpenIddictTokenRequestDto
 {

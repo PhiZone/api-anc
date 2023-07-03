@@ -17,7 +17,7 @@ Based on ASP.NET Core.
     - [x] Registration
     - [x] Login
     - [x] Token Renewal
-    - [ ] Token Disposal
+    - [x] Token Disposal
     - [x] Email Confirmation
     - [x] Password Reset
     - [ ] Two-factor Authentication
