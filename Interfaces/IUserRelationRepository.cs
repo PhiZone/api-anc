@@ -1,14 +1,18 @@
-﻿using PhiZoneApi.Models;
+﻿using System.Linq.Expressions;
+using PhiZoneApi.Models;
 
 namespace PhiZoneApi.Interfaces;
 
 public interface IUserRelationRepository
 {
-    Task<ICollection<UserRelation>> GetFollowersAsync(int userId, string order, bool desc, int position, int take);
+    Task<ICollection<UserRelation>> GetFollowersAsync(int userId, string order, bool desc, int position, int take,
+        Expression<Func<UserRelation, bool>>? predicate = null);
 
-    Task<ICollection<UserRelation>> GetFolloweesAsync(int userId, string order, bool desc, int position, int take);
+    Task<ICollection<UserRelation>> GetFolloweesAsync(int userId, string order, bool desc, int position, int take,
+        Expression<Func<UserRelation, bool>>? predicate = null);
 
-    Task<ICollection<UserRelation>> GetRelationsAsync(string order, bool desc, int position, int take);
+    Task<ICollection<UserRelation>> GetRelationsAsync(string order, bool desc, int position, int take,
+        Expression<Func<UserRelation, bool>>? predicate = null);
 
     Task<UserRelation> GetRelationAsync(int followerId, int followeeId);
 
@@ -18,11 +22,11 @@ public interface IUserRelationRepository
 
     Task<bool> SaveAsync();
 
-    Task<int> CountAsync();
+    Task<int> CountAsync(Expression<Func<UserRelation, bool>>? predicate = null);
 
     Task<bool> RelationExistsAsync(int followerId, int followeeId);
 
-    Task<int> CountFollowersAsync(User user);
+    Task<int> CountFollowersAsync(User user, Expression<Func<UserRelation, bool>>? predicate = null);
 
-    Task<int> CountFolloweesAsync(User user);
+    Task<int> CountFolloweesAsync(User user, Expression<Func<UserRelation, bool>>? predicate = null);
 }

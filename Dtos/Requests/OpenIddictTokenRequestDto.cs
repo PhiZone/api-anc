@@ -1,4 +1,4 @@
-﻿namespace PhiZoneApi.Dtos;
+﻿namespace PhiZoneApi.Dtos.Requests;
 
 /// <summary>
 ///     A DTO specially made for Swagger, just to ensure that the documentation is working properly.

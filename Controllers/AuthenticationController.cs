@@ -8,7 +8,8 @@ using Microsoft.IdentityModel.Tokens;
 using OpenIddict.Abstractions;
 using OpenIddict.Server.AspNetCore;
 using PhiZoneApi.Constants;
-using PhiZoneApi.Dtos;
+using PhiZoneApi.Dtos.Requests;
+using PhiZoneApi.Dtos.Responses;
 using PhiZoneApi.Enums;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
@@ -40,7 +41,8 @@ public class AuthenticationController : Controller
     /// </summary>
     /// <returns>Authentication credentials, e.g. <c>access_token</c>, <c>refresh_token</c>, etc.</returns>
     /// <remarks>
-    ///     This is one of the only two endpoints where fields are named in the snake case, both in the request and in the response.
+    ///     This is one of the only two endpoints where fields are named in snake case, both in the request and in the
+    ///     response.
     ///     It's also one that responds without following the <see cref="ResponseDto{T}" /> structure.
     ///     Refer to RFC 6749 for further information.
     /// </remarks>
@@ -149,7 +151,8 @@ public class AuthenticationController : Controller
     /// </summary>
     /// <returns>An empty json object.</returns>
     /// <remarks>
-    ///     This is one of the only two endpoints where fields are named in the snake case, both in the request and in the response.
+    ///     This is one of the only two endpoints where fields are named in snake case, both in the request and in the
+    ///     response.
     ///     It's also one that responds without following the <see cref="ResponseDto{T}" /> structure.
     ///     Refer to RFC 6749 for further information.
     /// </remarks>

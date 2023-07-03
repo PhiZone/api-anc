@@ -1,4 +1,4 @@
-﻿namespace PhiZoneApi.Dtos;
+﻿namespace PhiZoneApi.Dtos.Responses;
 
 public class UserRelationDto
 {

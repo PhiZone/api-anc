@@ -1,8 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Linq.Expressions;
+using Microsoft.EntityFrameworkCore;
 using PhiZoneApi.Data;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 using PhiZoneApi.Utils;
+
+// ReSharper disable InvertIf
 
 namespace PhiZoneApi.Repositories;
 
@@ -15,23 +18,42 @@ public class UserRepository : IUserRepository
         _context = context;
     }
 
-    public async Task<ICollection<User>> GetUsersAsync(string order, bool desc, int position, int take)
+    public async Task<ICollection<User>> GetUsersAsync(string order, bool desc, int position, int take,
+        string? search = null, Expression<Func<User, bool>>? predicate = null)
     {
-        return await _context.Users.OrderBy(order, desc).Skip(position).Take(take).ToListAsync();
+        var result = _context.Users.OrderBy(order, desc);
+
+        if (predicate != null) result = result.Where(predicate);
+
+        if (search != null)
+        {
+            search = search.Trim().ToUpper();
+            result = result.Where(user =>
+                (user.NormalizedUserName != null && user.NormalizedUserName.Contains(search)) ||
+                (user.Tag != null && user.Tag.ToUpper().Contains(search)) ||
+                (user.Biography != null && user.Biography.ToUpper().Contains(search)) ||
+                user.Language.ToUpper().Contains(search));
+        }
+
+        return await result.Skip(position).Take(take).ToListAsync();
     }
 
-    public async Task<int> CountAsync()
+    public async Task<int> CountAsync(string? search = null, Expression<Func<User, bool>>? predicate = null)
     {
-        return await _context.Users.CountAsync();
-    }
+        var result = _context.Users.AsQueryable();
 
-    public async Task<int> CountFollowersAsync(User user)
-    {
-        return await _context.UserRelations.Where(relation => relation.Followee == user).CountAsync();
-    }
+        if (predicate != null) result = result.Where(predicate);
 
-    public async Task<int> CountFolloweesAsync(User user)
-    {
-        return await _context.UserRelations.Where(relation => relation.Follower == user).CountAsync();
+        if (search != null)
+        {
+            search = search.Trim().ToUpper();
+            result = result.Where(user =>
+                (user.NormalizedUserName != null && user.NormalizedUserName.Contains(search)) ||
+                (user.Tag != null && user.Tag.ToUpper().Contains(search)) ||
+                (user.Biography != null && user.Biography.ToUpper().Contains(search)) ||
+                user.Language.ToUpper().Contains(search));
+        }
+
+        return await result.CountAsync();
     }
 }

@@ -1,12 +1,11 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using PhiZoneApi.Constants;
-using PhiZoneApi.Enums;
 using PhiZoneApi.Models;
 using PhiZoneApi.Validators;
 
-namespace PhiZoneApi.Dtos;
+namespace PhiZoneApi.Dtos.Requests;
 
-public class UserRegistrationDto
+public class UserUpdateDto
 {
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     [RegularExpression(
@@ -15,18 +14,8 @@ public class UserRegistrationDto
     public string UserName { get; set; } = null!;
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
-    [EmailAddress(ErrorMessage = ResponseCodes.InvalidEmailAddress)]
-    public string Email { get; set; } = null!;
-
-    [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
-    [RegularExpression(@"^(?=.*[^a-zA-Z0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9]).{6,18}$",
-        ErrorMessage = ResponseCodes.InvalidPassword)]
-    public string Password { get; set; } = null!;
-
-    public IFormFile? Avatar { get; set; }
-
-    [Range(0, 3, ErrorMessage = ResponseCodes.ValueOutOfRange)]
-    public Gender Gender { get; set; } = Gender.Unset;
+    [Range(0, 2, ErrorMessage = ResponseCodes.ValueOutOfRange)]
+    public int Gender { get; set; }
 
     [MaxLength(2000, ErrorMessage = ResponseCodes.ValueTooLong)]
     public string? Biography { get; set; }

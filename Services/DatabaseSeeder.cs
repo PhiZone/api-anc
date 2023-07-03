@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using OpenIddict.Abstractions;
+using PhiZoneApi.Constants;
 using PhiZoneApi.Data;
 using PhiZoneApi.Models;
 
@@ -36,11 +37,11 @@ public class DatabaseSeeder : IHostedService
         var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<Role>>();
         var roles = new List<string>
         {
-            "Member",
-            "Qualified",
-            "Volunteer",
-            "Moderator",
-            "Administrator"
+            Roles.Member,
+            Roles.Qualified,
+            Roles.Volunteer,
+            Roles.Moderator,
+            Roles.Administrator
         };
         foreach (var role in roles)
             if (!await roleManager.RoleExistsAsync(role))

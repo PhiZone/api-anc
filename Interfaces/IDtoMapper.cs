@@ -1,11 +1,11 @@
-﻿using PhiZoneApi.Dtos;
+﻿using PhiZoneApi.Dtos.Responses;
 using PhiZoneApi.Models;
 
 namespace PhiZoneApi.Interfaces;
 
 public interface IDtoMapper
 {
-    Task<T> MapUserAsync<T>(User user, T? dto = null, User? currentUser = null) where T : UserDto;
+    Task<T> MapUserAsync<T>(User user, User? currentUser = null) where T : UserDto;
 
     Task<T> MapFollowerAsync<T>(UserRelation userRelation, User? currentUser = null) where T : UserDto;
 

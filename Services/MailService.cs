@@ -6,7 +6,7 @@ using MimeKit;
 using Newtonsoft.Json;
 using PhiZoneApi.Configurations;
 using PhiZoneApi.Constants;
-using PhiZoneApi.Dtos;
+using PhiZoneApi.Dtos.Responses;
 using PhiZoneApi.Enums;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;

@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using PhiZoneApi.Constants;
 
-namespace PhiZoneApi.Dtos;
+namespace PhiZoneApi.Dtos.Requests;
 
 public class UserActivationDto
 {

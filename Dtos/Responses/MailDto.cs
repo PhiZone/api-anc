@@ -1,7 +1,7 @@
 ﻿using PhiZoneApi.Enums;
 using PhiZoneApi.Models;
 
-namespace PhiZoneApi.Dtos;
+namespace PhiZoneApi.Dtos.Responses;
 
 public class MailDto
 {

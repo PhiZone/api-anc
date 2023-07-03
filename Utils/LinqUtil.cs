@@ -37,7 +37,7 @@ public static class LinqUtil
         return matchedProperty;
     }
 
-    private static LambdaExpression GetOrderExpression(Type objType, PropertyInfo pi)
+    private static LambdaExpression GetOrderExpression(Type objType, MemberInfo pi)
     {
         var paramExpr = Expression.Parameter(objType);
         var propAccess = Expression.PropertyOrField(paramExpr, pi.Name);

@@ -11,7 +11,7 @@ public class User : IdentityUser<int>
 
     [MaxLength(2000)] public string? Biography { get; set; }
 
-    public double Experience { get; set; }
+    public int Experience { get; set; }
 
     [MaxLength(16)] public string? Tag { get; set; }
 
@@ -28,6 +28,8 @@ public class User : IdentityUser<int>
     public DateTimeOffset DateJoined { get; set; }
 
     [DataType(DataType.Date)] public DateTimeOffset? DateOfBirth { get; set; }
+
+    public int? RegionId { get; set; }
 
     public Region? Region { get; set; }
 

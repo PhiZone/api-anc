@@ -1,6 +1,6 @@
 ﻿using Newtonsoft.Json;
 
-namespace PhiZoneApi.Dtos;
+namespace PhiZoneApi.Dtos.Responses;
 
 /// <summary>
 ///     A DTO specially made for Swagger, just to ensure that the documentation is working properly.

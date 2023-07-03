@@ -2,7 +2,7 @@
 using PhiZoneApi.Constants;
 using PhiZoneApi.Enums;
 
-namespace PhiZoneApi.Dtos;
+namespace PhiZoneApi.Dtos.Requests;
 
 public class UserEmailRequestDto
 {

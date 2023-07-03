@@ -8,7 +8,7 @@ Based on ASP.NET Core.
     - [x] Sorting
     - [x] Pagination
     - [ ] Searching
-    - [ ] Filtering
+    - [x] Filtering
     - [ ] ETag
 2. Data Persistence
     - [ ] Inheritance
@@ -29,8 +29,8 @@ Based on ASP.NET Core.
     - [ ] Deletion
 5. User Relation
     - [x] Model Creation
-    - [ ] Retrieval
-    - [ ] Deletion
+    - [x] Retrieval
+    - [x] Deletion
     - [x] Count
 6. Region
     - [x] Model Creation

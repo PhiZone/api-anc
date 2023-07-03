@@ -95,6 +95,7 @@ builder.Services.AddIdentity<User, Role>()
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserRelationRepository, UserRelationRepository>();
 builder.Services.AddScoped<IRegionRepository, RegionRepository>();
+builder.Services.AddScoped<IFilterService, FilterService>();
 builder.Services.AddScoped<IDtoMapper, DtoMapper>();
 builder.Services.AddTransient<IMailService, MailService>();
 builder.Services.AddSingleton<IFileStorageService, FileStorageService>();

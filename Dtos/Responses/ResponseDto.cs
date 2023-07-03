@@ -1,6 +1,6 @@
 ﻿using PhiZoneApi.Enums;
 
-namespace PhiZoneApi.Dtos;
+namespace PhiZoneApi.Dtos.Responses;
 
 public class ResponseDto<T>
 {

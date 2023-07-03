@@ -1,10 +1,12 @@
-﻿using PhiZoneApi.Models;
+﻿using System.Linq.Expressions;
+using PhiZoneApi.Models;
 
 namespace PhiZoneApi.Interfaces;
 
 public interface IUserRepository
 {
-    Task<ICollection<User>> GetUsersAsync(string order, bool desc, int position, int take);
+    Task<ICollection<User>> GetUsersAsync(string order, bool desc, int position, int take, string? search = null,
+        Expression<Func<User, bool>>? predicate = null);
 
-    Task<int> CountAsync();
+    Task<int> CountAsync(string? search = null, Expression<Func<User, bool>>? predicate = null);
 }

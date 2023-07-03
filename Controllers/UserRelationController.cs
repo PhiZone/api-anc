@@ -6,7 +6,9 @@ using OpenIddict.Abstractions;
 using OpenIddict.Validation.AspNetCore;
 using PhiZoneApi.Configurations;
 using PhiZoneApi.Constants;
-using PhiZoneApi.Dtos;
+using PhiZoneApi.Dtos.Filters;
+using PhiZoneApi.Dtos.Requests;
+using PhiZoneApi.Dtos.Responses;
 using PhiZoneApi.Enums;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
@@ -22,13 +24,15 @@ public class UserRelationController : Controller
 {
     private readonly IOptions<DataSettings> _dataSettings;
     private readonly IDtoMapper _dtoMapper;
+    private readonly IFilterService _filterService;
     private readonly UserManager<User> _userManager;
     private readonly IUserRelationRepository _userRelationRepository;
 
-    public UserRelationController(IUserRelationRepository userRelationRepository, UserManager<User> userManager,
-        IOptions<DataSettings> dataSettings, IDtoMapper dtoMapper)
+    public UserRelationController(IUserRelationRepository userRelationRepository, IFilterService filterService,
+        UserManager<User> userManager, IOptions<DataSettings> dataSettings, IDtoMapper dtoMapper)
     {
         _userRelationRepository = userRelationRepository;
+        _filterService = filterService;
         _userManager = userManager;
         _dataSettings = dataSettings;
         _dtoMapper = dtoMapper;
@@ -37,10 +41,6 @@ public class UserRelationController : Controller
     /// <summary>
     ///     Retrieves user relations.
     /// </summary>
-    /// <param name="order">The field by which the result is sorted. Defaults to <c>time</c>.</param>
-    /// <param name="desc">Whether or not the result is sorted in descending order. Defaults to <c>false</c>.</param>
-    /// <param name="page">The page number. Defaults to 1.</param>
-    /// <param name="perPage">How many entries are present in one page. Defaults to DataSettings:PaginationPerPage.</param>
     /// <returns>An array of user relations.</returns>
     /// <response code="200">Returns an array of user relations.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
@@ -48,14 +48,16 @@ public class UserRelationController : Controller
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<UserRelationDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetUserRelations(string order = "time", bool desc = false, int page = 1,
-        int perPage = 0)
+    public async Task<IActionResult> GetUserRelations([FromQuery] UserRelationArrayRequestDto dto,
+        [FromQuery] UserRelationFilterDto? filterDto = null)
     {
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        perPage = perPage > 0 ? perPage : _dataSettings.Value.PaginationPerPage;
-        var position = perPage * (page - 1);
-        var userRelations = await _userRelationRepository.GetRelationsAsync(order, desc, position, perPage);
-        var total = await _userRelationRepository.CountAsync();
+        dto.PerPage = dto.PerPage > 0 ? dto.PerPage : _dataSettings.Value.PaginationPerPage;
+        var position = dto.PerPage * (dto.Page - 1);
+        var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser);
+        var userRelations =
+            await _userRelationRepository.GetRelationsAsync(dto.Order, dto.Desc, position, dto.PerPage, predicateExpr);
+        var total = await _userRelationRepository.CountAsync(predicateExpr);
         var list = new List<UserRelationDto>();
 
         foreach (var userRelation in userRelations)
@@ -66,9 +68,9 @@ public class UserRelationController : Controller
             Status = ResponseStatus.Ok,
             Code = ResponseCodes.Ok,
             Total = total,
-            PerPage = perPage,
+            PerPage = dto.PerPage,
             HasPrevious = position > 0,
-            HasNext = position < total - total % perPage,
+            HasNext = position < total - total % dto.PerPage,
             Data = list
         });
     }

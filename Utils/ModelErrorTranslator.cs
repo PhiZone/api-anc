@@ -1,5 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc.ModelBinding;
-using PhiZoneApi.Dtos;
+using PhiZoneApi.Dtos.Responses;
 
 namespace PhiZoneApi.Utils;
 

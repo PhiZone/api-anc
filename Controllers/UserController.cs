@@ -8,7 +8,9 @@ using OpenIddict.Abstractions;
 using OpenIddict.Validation.AspNetCore;
 using PhiZoneApi.Configurations;
 using PhiZoneApi.Constants;
-using PhiZoneApi.Dtos;
+using PhiZoneApi.Dtos.Filters;
+using PhiZoneApi.Dtos.Requests;
+using PhiZoneApi.Dtos.Responses;
 using PhiZoneApi.Enums;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
@@ -26,6 +28,7 @@ public class UserController : Controller
     private readonly IOptions<DataSettings> _dataSettings;
     private readonly IDtoMapper _dtoMapper;
     private readonly IFileStorageService _fileStorageService;
+    private readonly IFilterService _filterService;
     private readonly IMailService _mailService;
     private readonly IMapper _mapper;
     private readonly UserManager<User> _userManager;
@@ -33,13 +36,15 @@ public class UserController : Controller
     private readonly IUserRepository _userRepository;
 
     public UserController(IUserRepository userRepository, IUserRelationRepository userRelationRepository,
-        UserManager<User> userManager, IMailService mailService, IFileStorageService fileStorageService,
-        IOptions<DataSettings> dataSettings, IMapper mapper, IDtoMapper dtoMapper)
+        UserManager<User> userManager, IMailService mailService, IFilterService filterService,
+        IFileStorageService fileStorageService, IOptions<DataSettings> dataSettings, IMapper mapper,
+        IDtoMapper dtoMapper)
     {
         _userRepository = userRepository;
         _userRelationRepository = userRelationRepository;
         _userManager = userManager;
         _mailService = mailService;
+        _filterService = filterService;
         _fileStorageService = fileStorageService;
         _dataSettings = dataSettings;
         _mapper = mapper;
@@ -49,10 +54,6 @@ public class UserController : Controller
     /// <summary>
     ///     Retrieves users.
     /// </summary>
-    /// <param name="order">The field by which the result is sorted. Defaults to <c>id</c>.</param>
-    /// <param name="desc">Whether or not the result is sorted in descending order. Defaults to <c>false</c>.</param>
-    /// <param name="page">The page number. Defaults to 1.</param>
-    /// <param name="perPage">How many entries are present in one page. Defaults to DataSettings:PaginationPerPage.</param>
     /// <returns>An array of users.</returns>
     /// <response code="200">Returns an array of users.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
@@ -60,25 +61,28 @@ public class UserController : Controller
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<UserDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetUsers(string order = "id", bool desc = false, int page = 1, int perPage = 0)
+    public async Task<IActionResult> GetUsers([FromQuery] ArrayRequestDto dto,
+        [FromQuery] UserFilterDto? filterDto = null)
     {
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        perPage = perPage > 0 ? perPage : _dataSettings.Value.PaginationPerPage;
-        var position = perPage * (page - 1);
-        var users = await _userRepository.GetUsersAsync(order, desc, position, perPage);
-        var total = await _userRepository.CountAsync();
+        dto.PerPage = dto.PerPage > 0 ? dto.PerPage : _dataSettings.Value.PaginationPerPage;
+        var position = dto.PerPage * (dto.Page - 1);
+        var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser);
+        var users = await _userRepository.GetUsersAsync(dto.Order, dto.Desc, position, dto.PerPage, dto.Search,
+            predicateExpr);
+        var total = await _userRepository.CountAsync(dto.Search, predicateExpr);
         var list = new List<UserDto>();
 
-        foreach (var user in users) list.Add(await _dtoMapper.MapUserAsync<UserDto>(user, currentUser: currentUser));
+        foreach (var user in users) list.Add(await _dtoMapper.MapUserAsync<UserDto>(user, currentUser));
 
         return Ok(new ResponseDto<IEnumerable<UserDto>>
         {
             Status = ResponseStatus.Ok,
             Code = ResponseCodes.Ok,
             Total = total,
-            PerPage = perPage,
+            PerPage = dto.PerPage,
             HasPrevious = position > 0,
-            HasNext = position < total - total % perPage,
+            HasNext = position < total - total % dto.PerPage,
             Data = list
         });
     }
@@ -101,7 +105,7 @@ public class UserController : Controller
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         var user = await _userManager.FindByIdAsync(id.ToString());
         if (user == null) return NotFound();
-        var dto = await _dtoMapper.MapUserAsync<UserDto>(user, currentUser: currentUser);
+        var dto = await _dtoMapper.MapUserAsync<UserDto>(user, currentUser);
 
         return Ok(new ResponseDto<UserDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
     }
@@ -335,10 +339,6 @@ public class UserController : Controller
     ///     Retrieves followers of user.
     /// </summary>
     /// <param name="id">User's ID.</param>
-    /// <param name="order">The field by which the result is sorted. Defaults to <c>time</c>.</param>
-    /// <param name="desc">Whether or not the result is sorted in descending order. Defaults to <c>false</c>.</param>
-    /// <param name="page">The page number. Defaults to 1.</param>
-    /// <param name="perPage">How many entries are present in one page. Defaults to DataSettings:PaginationPerPage.</param>
     /// <returns>An array of followers of user.</returns>
     /// <response code="200">Returns an array of followers of user.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
@@ -348,8 +348,8 @@ public class UserController : Controller
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<UserDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetFollowers([FromRoute] int id, string order = "time", bool desc = false,
-        int page = 1, int perPage = 0)
+    public async Task<IActionResult> GetFollowers([FromRoute] int id, [FromQuery] UserRelationArrayRequestDto dto,
+        [FromQuery] UserRelationFilterDto? filterDto = null)
     {
         // Obtain user by id
         var user = await _userManager.FindByIdAsync(id.ToString());
@@ -362,10 +362,13 @@ public class UserController : Controller
             });
 
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        perPage = perPage > 0 ? perPage : _dataSettings.Value.PaginationPerPage;
-        var position = perPage * (page - 1);
-        var followers = await _userRelationRepository.GetFollowersAsync(user.Id, order, desc, position, perPage);
-        var total = await _userRelationRepository.CountFollowersAsync(user);
+        dto.PerPage = dto.PerPage > 0 ? dto.PerPage : _dataSettings.Value.PaginationPerPage;
+        var position = dto.PerPage * (dto.Page - 1);
+        var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser);
+        var followers =
+            await _userRelationRepository.GetFollowersAsync(user.Id, dto.Order, dto.Desc, position, dto.PerPage,
+                predicateExpr);
+        var total = await _userRelationRepository.CountFollowersAsync(user, predicateExpr);
         var list = new List<UserDto>();
 
         foreach (var follower in followers) list.Add(await _dtoMapper.MapFollowerAsync<UserDto>(follower, currentUser));
@@ -375,9 +378,9 @@ public class UserController : Controller
             Status = ResponseStatus.Ok,
             Code = ResponseCodes.Ok,
             Total = total,
-            PerPage = perPage,
+            PerPage = dto.PerPage,
             HasPrevious = position > 0,
-            HasNext = position < total - total % perPage,
+            HasNext = position < total - total % dto.PerPage,
             Data = list
         });
     }
@@ -386,10 +389,6 @@ public class UserController : Controller
     ///     Retrieves followees of user.
     /// </summary>
     /// <param name="id">User's ID.</param>
-    /// <param name="order">The field by which the result is sorted. Defaults to <c>time</c>.</param>
-    /// <param name="desc">Whether or not the result is sorted in descending order. Defaults to <c>false</c>.</param>
-    /// <param name="page">The page number. Defaults to 1.</param>
-    /// <param name="perPage">How many entries are present in one page. Defaults to DataSettings:PaginationPerPage.</param>
     /// <returns>An array of followees of user.</returns>
     /// <response code="200">Returns an array of followees of user.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
@@ -399,8 +398,8 @@ public class UserController : Controller
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<UserDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetFollowees([FromRoute] int id, string order = "time", bool desc = false,
-        int page = 1, int perPage = 0)
+    public async Task<IActionResult> GetFollowees([FromRoute] int id, [FromQuery] UserRelationArrayRequestDto dto,
+        [FromQuery] UserRelationFilterDto? filterDto = null)
     {
         // Obtain user by id
         var user = await _userManager.FindByIdAsync(id.ToString());
@@ -413,10 +412,13 @@ public class UserController : Controller
             });
 
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        perPage = perPage > 0 ? perPage : _dataSettings.Value.PaginationPerPage;
-        var position = perPage * (page - 1);
-        var followees = await _userRelationRepository.GetFolloweesAsync(user.Id, order, desc, position, perPage);
-        var total = await _userRelationRepository.CountFolloweesAsync(user);
+        dto.PerPage = dto.PerPage > 0 ? dto.PerPage : _dataSettings.Value.PaginationPerPage;
+        var position = dto.PerPage * (dto.Page - 1);
+        var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser);
+        var followees =
+            await _userRelationRepository.GetFolloweesAsync(user.Id, dto.Order, dto.Desc, position, dto.PerPage,
+                predicateExpr);
+        var total = await _userRelationRepository.CountFolloweesAsync(user, predicateExpr);
         var list = new List<UserDto>();
 
         foreach (var followee in followees) list.Add(await _dtoMapper.MapFolloweeAsync<UserDto>(followee, currentUser));
@@ -426,9 +428,9 @@ public class UserController : Controller
             Status = ResponseStatus.Ok,
             Code = ResponseCodes.Ok,
             Total = total,
-            PerPage = perPage,
+            PerPage = dto.PerPage,
             HasPrevious = position > 0,
-            HasNext = position < total - total % perPage,
+            HasNext = position < total - total % dto.PerPage,
             Data = list
         });
     }
@@ -470,32 +472,22 @@ public class UserController : Controller
         if (currentUser == null) return Unauthorized();
 
         if (currentUser.Id == id)
-            return BadRequest(
-                new ResponseDto<object>
-                {
-                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
-                });
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
+            });
 
         if (await _userRelationRepository.RelationExistsAsync(currentUser.Id, user.Id))
-            return BadRequest(
-                new ResponseDto<object>
-                {
-                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
-                });
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
+            });
 
-        var relation = new UserRelation
-        {
-            Followee = user,
-            Follower = currentUser,
-            Time = DateTimeOffset.UtcNow
-        };
+        var relation = new UserRelation { Followee = user, Follower = currentUser, Time = DateTimeOffset.UtcNow };
 
         if (!await _userRelationRepository.CreateRelationAsync(relation))
-            return StatusCode(StatusCodes.Status500InternalServerError, new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief,
-                Code = ResponseCodes.InternalError
-            });
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
         return StatusCode(StatusCodes.Status201Created);
     }
@@ -537,27 +529,22 @@ public class UserController : Controller
         if (currentUser == null) return Unauthorized();
 
         if (currentUser.Id == id)
-            return BadRequest(
-                new ResponseDto<object>
-                {
-                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
-                });
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
+            });
 
         if (!await _userRelationRepository.RelationExistsAsync(currentUser.Id, user.Id))
-            return BadRequest(
-                new ResponseDto<object>
-                {
-                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
-                });
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
+            });
 
         var relation = await _userRelationRepository.GetRelationAsync(currentUser.Id, user.Id);
 
         if (!await _userRelationRepository.RemoveRelationAsync(relation))
-            return StatusCode(StatusCodes.Status500InternalServerError, new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief,
-                Code = ResponseCodes.InternalError
-            });
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
         return NoContent();
     }

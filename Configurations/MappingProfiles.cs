@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
-using PhiZoneApi.Dtos;
+using PhiZoneApi.Dtos.Requests;
+using PhiZoneApi.Dtos.Responses;
 using PhiZoneApi.Models;
 
 namespace PhiZoneApi.Configurations;

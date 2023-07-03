@@ -1,4 +1,4 @@
-﻿namespace PhiZoneApi.Dtos;
+﻿namespace PhiZoneApi.Dtos.Responses;
 
 public class UserDto
 {
@@ -18,7 +18,7 @@ public class UserDto
 
     public IList<string> Roles { get; set; } = null!;
 
-    public double Experience { get; set; }
+    public int Experience { get; set; }
 
     public string? Tag { get; set; }
 

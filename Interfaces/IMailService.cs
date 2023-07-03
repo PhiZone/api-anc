@@ -1,4 +1,4 @@
-﻿using PhiZoneApi.Dtos;
+﻿using PhiZoneApi.Dtos.Responses;
 using PhiZoneApi.Enums;
 using PhiZoneApi.Models;
 
