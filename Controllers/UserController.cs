@@ -12,6 +12,7 @@ using PhiZoneApi.Dtos.Filters;
 using PhiZoneApi.Dtos.Requests;
 using PhiZoneApi.Dtos.Responses;
 using PhiZoneApi.Enums;
+using PhiZoneApi.Filters;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 using PhiZoneApi.Utils;
@@ -93,11 +94,14 @@ public class UserController : Controller
     /// <param name="id">A user's ID.</param>
     /// <returns>A user.</returns>
     /// <response code="200">Returns a user.</response>
+    /// <response code="304">When the resource has not been updated since last retrieval (requires header <c>If-None-Match</c>).</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="404">When the specified user is not found.</response>
     [HttpGet("{id:int}")]
+    [ServiceFilter(typeof(ETagFilter))]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<UserDto>))]
+    [ProducesResponseType(StatusCodes.Status304NotModified)]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetUser([FromRoute] int id)
@@ -114,8 +118,8 @@ public class UserController : Controller
     ///     Creates a new user.
     /// </summary>
     /// <param name="dto">
-    ///     User Name, Email, Password, Language, Gender (Optional), Avatar (Optional), Biography (Optional),
-    ///     Date of Birth (Optional)
+    ///     User Name, Email, Password, Language, Gender (optional), Avatar (optional), Biography (optional),
+    ///     Date of Birth (optional)
     /// </param>
     /// <returns>An empty body.</returns>
     /// <response code="201">Returns an empty body. Sends a confirmation email to the user.</response>

@@ -10,6 +10,7 @@ using PhiZoneApi.Dtos.Filters;
 using PhiZoneApi.Dtos.Requests;
 using PhiZoneApi.Dtos.Responses;
 using PhiZoneApi.Enums;
+using PhiZoneApi.Filters;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 
@@ -80,9 +81,11 @@ public class UserRelationController : Controller
     /// </summary>
     /// <returns>A user relation.</returns>
     /// <response code="200">Returns a user relation.</response>
+    /// <response code="304">When the resource has not been updated since last retrieval (requires header <c>If-None-Match</c>).</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="404">When the specified user relation is not found.</response>
     [HttpGet("{followerId:int}/{followeeId:int}")]
+    [ServiceFilter(typeof(ETagFilter))]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<UserRelationDto>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]

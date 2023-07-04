@@ -7,9 +7,9 @@ Based on ASP.NET Core.
 1. Data Presentation
     - [x] Sorting
     - [x] Pagination
-    - [ ] Searching
+    - [x] Searching
     - [x] Filtering
-    - [ ] ETag
+    - [x] ETag
 2. Data Persistence
     - [ ] Inheritance
     - [ ] File Digest
@@ -42,13 +42,9 @@ File `appsettings.Development.json` is ignored by git using `.gitignore`. You sh
 
 ```json
 {
+  "Secret": "YourSecretHere",
   "ConnectionStrings": {
     "DefaultConnection": "Host=localhost:5432;Username=yourusername;Password=yourpassword;Database=yourdatabase"
-  },
-  "JWT": {
-    "ValidAudience": "http://localhost:4200",
-    "ValidIssuer": "http://localhost:5000",
-    "Secret": "YourRandomSecret"
   },
   "MailSettings": {
     "Server": "smtp.exmail.qq.com",

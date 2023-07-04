@@ -16,8 +16,6 @@ using PhiZoneApi.Services;
 using StackExchange.Redis;
 using Role = PhiZoneApi.Models.Role;
 
-// using Microsoft.AspNetCore.Authentication.JwtBearer;
-
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -97,6 +95,7 @@ builder.Services.AddScoped<IUserRelationRepository, UserRelationRepository>();
 builder.Services.AddScoped<IRegionRepository, RegionRepository>();
 builder.Services.AddScoped<IFilterService, FilterService>();
 builder.Services.AddScoped<IDtoMapper, DtoMapper>();
+builder.Services.AddScoped<ETagFilter>();
 builder.Services.AddTransient<IMailService, MailService>();
 builder.Services.AddSingleton<IFileStorageService, FileStorageService>();
 builder.Services.AddSingleton<ITemplateService, TemplateService>();

@@ -11,6 +11,7 @@ using PhiZoneApi.Dtos.Filters;
 using PhiZoneApi.Dtos.Requests;
 using PhiZoneApi.Dtos.Responses;
 using PhiZoneApi.Enums;
+using PhiZoneApi.Filters;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 
@@ -80,9 +81,11 @@ public class RegionController : Controller
     /// <param name="code">A region's code</param>
     /// <returns>A region.</returns>
     /// <response code="200">Returns a region.</response>
+    /// <response code="304">When the resource has not been updated since last retrieval (requires header <c>If-None-Match</c>).</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="404">When the specified region is not found.</response>
     [HttpGet("{code}")]
+    [ServiceFilter(typeof(ETagFilter))]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<RegionDto>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
@@ -102,9 +105,11 @@ public class RegionController : Controller
     /// <param name="id">A region's ID.</param>
     /// <returns>A region.</returns>
     /// <response code="200">Returns a region.</response>
+    /// <response code="304">When the resource has not been updated since last retrieval (requires header <c>If-None-Match</c>).</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="404">When the specified region is not found.</response>
     [HttpGet("{id:int}")]
+    [ServiceFilter(typeof(ETagFilter))]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<RegionDto>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
