@@ -10,25 +10,25 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, int>
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
     {
     }
-    
+
     public override DbSet<User> Users { get; set; } = null!;
-    
+
     public DbSet<UserRelation> UserRelations { get; set; } = null!;
-    
+
     public DbSet<Region> Regions { get; set; } = null!;
-    
+
     public DbSet<Chapter> Chapters { get; set; } = null!;
-    
+
     public DbSet<Song> Songs { get; set; } = null!;
-    
+
     public DbSet<Chart> Charts { get; set; } = null!;
-    
+
     public DbSet<Record> Records { get; set; } = null!;
-    
+
     public DbSet<Comment> Comments { get; set; } = null!;
-    
+
     public DbSet<Reply> Replies { get; set; } = null!;
-    
+
     public DbSet<Like> Likes { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder builder)

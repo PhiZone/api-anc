@@ -28,12 +28,12 @@ namespace PhiZoneApi.Controllers;
     Policy = "AllowAnonymous")]
 public class ChapterController : Controller
 {
+    private readonly IChapterRepository _chapterRepository;
     private readonly IOptions<DataSettings> _dataSettings;
     private readonly IDtoMapper _dtoMapper;
-    private readonly IMapper _mapper;
-    private readonly IFilterService _filterService;
     private readonly IFileStorageService _fileStorageService;
-    private readonly IChapterRepository _chapterRepository;
+    private readonly IFilterService _filterService;
+    private readonly IMapper _mapper;
     private readonly UserManager<User> _userManager;
 
     public ChapterController(IChapterRepository chapterRepository, IOptions<DataSettings> dataSettings,
@@ -95,7 +95,9 @@ public class ChapterController : Controller
     /// <param name="id">Chapter's ID.</param>
     /// <returns>A chapter.</returns>
     /// <response code="200">Returns a chapter.</response>
-    /// <response code="304">When the resource has not been updated since last retrieval (requires header <c>If-None-Match</c>).</response>
+    /// <response code="304">
+    ///     When the resource has not been updated since last retrieval. Requires <c>If-None-Match</c>.
+    /// </response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="404">When the specified chapter is not found.</response>
     [HttpGet("{id}")]
@@ -132,13 +134,11 @@ public class ChapterController : Controller
     {
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if (!await _userManager.IsInRoleAsync(currentUser, Roles.Administrator))
-        {
             return StatusCode(StatusCodes.Status403Forbidden, new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief,
                 Code = ResponseCodes.InsufficientPermission
             });
-        }
         var illustrationUrl = await _fileStorageService.UploadImage<Chapter>(dto.Title, dto.Illustration, (16, 9));
         var chapter = new Chapter
         {
@@ -155,10 +155,8 @@ public class ChapterController : Controller
             DateUpdated = DateTimeOffset.UtcNow
         };
         if (!await _chapterRepository.CreateChapterAsync(chapter))
-        {
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
-        }
 
         return StatusCode(StatusCodes.Status201Created);
     }
@@ -191,39 +189,33 @@ public class ChapterController : Controller
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        
+
         var chapter = await _chapterRepository.GetChapterAsync(id);
-        
+
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if (!await _userManager.IsInRoleAsync(currentUser, Roles.Administrator))
-        {
             return StatusCode(StatusCodes.Status403Forbidden, new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief,
                 Code = ResponseCodes.InsufficientPermission
             });
-        }
 
         var dto = _mapper.Map<ChapterUpdateDto>(chapter);
         patchDocument.ApplyTo(dto, ModelState);
 
         if (!TryValidateModel(dto))
-        {
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorDetailed,
                 Code = ResponseCodes.DataInvalid,
                 Errors = ModelErrorTranslator.Translate(ModelState)
             });
-        }
 
         chapter = _mapper.Map<Chapter>(dto);
 
         if (!await _chapterRepository.UpdateChapterAsync(chapter))
-        {
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
-        }
 
         return NoContent();
     }
@@ -248,35 +240,31 @@ public class ChapterController : Controller
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> UpdateChapterIllustration([FromRoute] Guid id, [FromForm] ResourceIllustrationDto dto)
+    public async Task<IActionResult> UpdateChapterIllustration([FromRoute] Guid id,
+        [FromForm] ResourceIllustrationDto dto)
     {
         if (!await _chapterRepository.ChapterExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        
+
         var chapter = await _chapterRepository.GetChapterAsync(id);
-        
+
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if (!await _userManager.IsInRoleAsync(currentUser, Roles.Administrator))
-        {
             return StatusCode(StatusCodes.Status403Forbidden, new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief,
                 Code = ResponseCodes.InsufficientPermission
             });
-        }
         if (dto.Illustration != null)
-        {
-            chapter.Illustration = await _fileStorageService.UploadImage<Chapter>(chapter.Title, dto.Illustration, (16, 9));
-        }
+            chapter.Illustration =
+                await _fileStorageService.UploadImage<Chapter>(chapter.Title, dto.Illustration, (16, 9));
 
         if (!await _chapterRepository.UpdateChapterAsync(chapter))
-        {
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
-        }
         return NoContent();
     }
 

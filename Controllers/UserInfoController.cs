@@ -32,7 +32,9 @@ public class UserInfoController : Controller
     /// </summary>
     /// <returns>User's information.</returns>
     /// <response code="200">Returns user's information.</response>
-    /// <response code="304">When the resource has not been updated since last retrieval (requires header <c>If-None-Match</c>).</response>
+    /// <response code="304">
+    ///     When the resource has not been updated since last retrieval. Requires <c>If-None-Match</c>.
+    /// </response>
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="403">When the user does not have sufficient permission.</response>
     [HttpGet]

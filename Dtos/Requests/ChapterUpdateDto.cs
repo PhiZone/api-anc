@@ -16,13 +16,13 @@ public class ChapterUpdateDto
     public string Illustrator { get; set; } = null!;
 
     public string? Description { get; set; }
-    
+
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     public Accessibility Accessibility { get; set; }
-    
+
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     public bool IsHidden { get; set; }
-    
+
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     public bool IsLocked { get; set; }
 }

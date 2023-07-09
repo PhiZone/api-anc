@@ -24,17 +24,12 @@ public class ETagFilter : ActionFilterAttribute
         var executedContext = await next();
         var response = executedContext.HttpContext.Response;
         if (request.Method == HttpMethod.Get.Method && response.StatusCode == StatusCodes.Status200OK)
-        {
             Validate(executedContext);
-        }
     }
 
     private void Validate(ActionExecutedContext executedContext)
     {
-        if (executedContext.Result == null)
-        {
-            return;
-        }
+        if (executedContext.Result == null) return;
 
         var request = executedContext.HttpContext.Request;
         var response = executedContext.HttpContext.Response;
@@ -43,10 +38,7 @@ public class ETagFilter : ActionFilterAttribute
         if (request.Headers.TryGetValue(HeaderNames.IfNoneMatch, out var header))
         {
             var incomingETag = header.ToString();
-            if (incomingETag == eTag)
-            {
-                executedContext.Result = new StatusCodeResult(StatusCodes.Status304NotModified);
-            }
+            if (incomingETag == eTag) executedContext.Result = new StatusCodeResult(StatusCodes.Status304NotModified);
         }
 
         response.Headers.Add(HeaderNames.ETag, new[] { eTag });

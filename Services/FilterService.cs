@@ -89,10 +89,7 @@ public class FilterService : IFilterService
     private static Expression IsFalse(Expression? expression)
     {
         var falseExpr = Expression.Constant(false);
-        if (expression == null)
-        {
-            return falseExpr;
-        }
+        if (expression == null) return falseExpr;
         return Expression.Equal(expression, falseExpr);
     }
 

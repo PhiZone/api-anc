@@ -28,14 +28,14 @@ namespace PhiZoneApi.Controllers;
     Policy = "AllowAnonymous")]
 public class ChartController : Controller
 {
+    private readonly IChartRepository _chartRepository;
+    private readonly IChartService _chartService;
     private readonly IOptions<DataSettings> _dataSettings;
     private readonly IDtoMapper _dtoMapper;
-    private readonly IMapper _mapper;
-    private readonly IFilterService _filterService;
     private readonly IFileStorageService _fileStorageService;
-    private readonly IChartService _chartService;
+    private readonly IFilterService _filterService;
+    private readonly IMapper _mapper;
     private readonly ISongRepository _songRepository;
-    private readonly IChartRepository _chartRepository;
     private readonly UserManager<User> _userManager;
 
     public ChartController(IChartRepository chartRepository, IOptions<DataSettings> dataSettings,
@@ -99,7 +99,9 @@ public class ChartController : Controller
     /// <param name="id">Chart's ID.</param>
     /// <returns>A chart.</returns>
     /// <response code="200">Returns a chart.</response>
-    /// <response code="304">When the resource has not been updated since last retrieval (requires header <c>If-None-Match</c>).</response>
+    /// <response code="304">
+    ///     When the resource has not been updated since last retrieval. Requires <c>If-None-Match</c>.
+    /// </response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="404">When the specified chart is not found.</response>
     [HttpGet("{id}")]
@@ -136,21 +138,17 @@ public class ChartController : Controller
     {
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if (!await _userManager.IsInRoleAsync(currentUser, Roles.Administrator))
-        {
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        }
 
         if (!await _songRepository.SongExistsAsync(dto.SongId))
-        {
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
             });
-        }
 
         var song = await _songRepository.GetSongAsync(dto.SongId);
 
@@ -161,12 +159,10 @@ public class ChartController : Controller
         var chartInfo = dto.File != null ? await _chartService.Upload(dto.Title ?? song.Title, dto.File) : null;
 
         if (dto.File != null && chartInfo == null)
-        {
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UnsupportedChartFormat
             });
-        }
 
         var chart = new Chart
         {
@@ -191,10 +187,8 @@ public class ChartController : Controller
             DateUpdated = DateTimeOffset.UtcNow
         };
         if (!await _chartRepository.CreateChartAsync(chart))
-        {
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
-        }
 
         return StatusCode(StatusCodes.Status201Created);
     }
@@ -232,34 +226,28 @@ public class ChartController : Controller
 
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if (!await _userManager.IsInRoleAsync(currentUser, Roles.Administrator))
-        {
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        }
 
         var dto = _mapper.Map<ChartUpdateDto>(chart);
         patchDocument.ApplyTo(dto, ModelState);
 
         if (!TryValidateModel(dto))
-        {
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorDetailed,
                 Code = ResponseCodes.DataInvalid,
                 Errors = ModelErrorTranslator.Translate(ModelState)
             });
-        }
 
         chart = _mapper.Map<Chart>(dto);
 
         if (!await _chartRepository.UpdateChartAsync(chart))
-        {
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
-        }
 
         return NoContent();
     }
@@ -296,24 +284,20 @@ public class ChartController : Controller
 
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if (!await _userManager.IsInRoleAsync(currentUser, Roles.Administrator))
-        {
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        }
 
         if (dto.File != null)
         {
             var chartInfo = await _chartService.Upload(chart.Title ?? chart.Song.Title, dto.File);
             if (chartInfo == null)
-            {
                 return BadRequest(new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UnsupportedChartFormat
                 });
-            }
 
             chart.File = chartInfo.Value.Item1;
             chart.Format = chartInfo.Value.Item2;
@@ -321,10 +305,8 @@ public class ChartController : Controller
         }
 
         if (!await _chartRepository.UpdateChartAsync(chart))
-        {
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
-        }
 
         return NoContent();
     }
@@ -360,21 +342,17 @@ public class ChartController : Controller
 
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if (!await _userManager.IsInRoleAsync(currentUser, Roles.Administrator))
-        {
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        }
 
         chart.File = null;
 
         if (!await _chartRepository.UpdateChartAsync(chart))
-        {
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
-        }
 
         return NoContent();
     }
@@ -412,26 +390,20 @@ public class ChartController : Controller
 
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if (!await _userManager.IsInRoleAsync(currentUser, Roles.Administrator))
-        {
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        }
 
         if (dto.Illustration != null)
-        {
             chart.Illustration =
                 await _fileStorageService.UploadImage<Chart>(chart.Title ?? chart.Song.Title, dto.Illustration,
                     (16, 9));
-        }
 
         if (!await _chartRepository.UpdateChartAsync(chart))
-        {
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
-        }
 
         return NoContent();
     }
@@ -467,21 +439,17 @@ public class ChartController : Controller
 
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if (!await _userManager.IsInRoleAsync(currentUser, Roles.Administrator))
-        {
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        }
 
         chart.Illustration = null;
 
         if (!await _chartRepository.UpdateChartAsync(chart))
-        {
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
-        }
 
         return NoContent();
     }

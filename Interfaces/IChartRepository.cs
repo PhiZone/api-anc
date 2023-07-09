@@ -12,14 +12,15 @@ public interface IChartRepository
 
     Task<Chart> GetChartAsync(Guid id);
 
-    Task<ICollection<Record>> GetChartRecordsAsync(Guid id, string order, bool desc, int position, int take, Expression<Func<Record, bool>>? predicate = null);
+    Task<ICollection<Record>> GetChartRecordsAsync(Guid id, string order, bool desc, int position, int take,
+        Expression<Func<Record, bool>>? predicate = null);
 
     Task<bool> ChartExistsAsync(Guid id);
 
     Task<bool> CreateChartAsync(Chart song);
 
     Task<bool> UpdateChartAsync(Chart song);
-    
+
     Task<bool> RemoveChartAsync(Guid id);
 
     Task<bool> SaveAsync();

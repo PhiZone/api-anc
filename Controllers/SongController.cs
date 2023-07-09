@@ -30,11 +30,11 @@ public class SongController : Controller
 {
     private readonly IOptions<DataSettings> _dataSettings;
     private readonly IDtoMapper _dtoMapper;
-    private readonly IMapper _mapper;
-    private readonly IFilterService _filterService;
     private readonly IFileStorageService _fileStorageService;
-    private readonly ISongService _songService;
+    private readonly IFilterService _filterService;
+    private readonly IMapper _mapper;
     private readonly ISongRepository _songRepository;
+    private readonly ISongService _songService;
     private readonly UserManager<User> _userManager;
 
     public SongController(ISongRepository songRepository, IOptions<DataSettings> dataSettings,
@@ -97,7 +97,9 @@ public class SongController : Controller
     /// <param name="id">Song's ID.</param>
     /// <returns>A song.</returns>
     /// <response code="200">Returns a song.</response>
-    /// <response code="304">When the resource has not been updated since last retrieval (requires header <c>If-None-Match</c>).</response>
+    /// <response code="304">
+    ///     When the resource has not been updated since last retrieval. Requires <c>If-None-Match</c>.
+    /// </response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="404">When the specified song is not found.</response>
     [HttpGet("{id}")]
@@ -134,27 +136,23 @@ public class SongController : Controller
     {
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if (!await _userManager.IsInRoleAsync(currentUser, Roles.Administrator))
-        {
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        }
 
         (string, TimeSpan)? songInfo = null;
         if (wait)
         {
             songInfo = await _songService.UploadAsync(dto.Title, dto.File);
             if (songInfo == null)
-            {
                 return BadRequest(new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.DataInvalid
                 });
-            }
         }
-        
+
         var illustrationUrl = await _fileStorageService.UploadImage<Song>(dto.Title, dto.Illustration, (16, 9));
         var song = new Song
         {
@@ -182,16 +180,11 @@ public class SongController : Controller
             DateCreated = DateTimeOffset.UtcNow,
             DateUpdated = DateTimeOffset.UtcNow
         };
-        
+
         if (!await _songRepository.CreateSongAsync(song))
-        {
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
-        }
-        if (!wait)
-        {
-            await _songService.PublishAsync(dto.File, song.Id);
-        }
+        if (!wait) await _songService.PublishAsync(dto.File, song.Id);
 
         return StatusCode(StatusCodes.Status201Created);
     }
@@ -229,34 +222,28 @@ public class SongController : Controller
 
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if (!await _userManager.IsInRoleAsync(currentUser, Roles.Administrator))
-        {
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        }
 
         var dto = _mapper.Map<SongUpdateDto>(song);
         patchDocument.ApplyTo(dto, ModelState);
 
         if (!TryValidateModel(dto))
-        {
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorDetailed,
                 Code = ResponseCodes.DataInvalid,
                 Errors = ModelErrorTranslator.Translate(ModelState)
             });
-        }
 
         song = _mapper.Map<Song>(dto);
 
         if (!await _songRepository.UpdateSongAsync(song))
-        {
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
-        }
 
         return NoContent();
     }
@@ -281,7 +268,8 @@ public class SongController : Controller
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> UpdateSongFile([FromRoute] Guid id, [FromForm] FileDto dto, [FromQuery] bool wait = false)
+    public async Task<IActionResult> UpdateSongFile([FromRoute] Guid id, [FromForm] FileDto dto,
+        [FromQuery] bool wait = false)
     {
         if (!await _songRepository.SongExistsAsync(id))
             return NotFound(new ResponseDto<object>
@@ -293,13 +281,11 @@ public class SongController : Controller
 
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if (!await _userManager.IsInRoleAsync(currentUser, Roles.Administrator))
-        {
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        }
 
         if (dto.File != null)
         {
@@ -311,12 +297,10 @@ public class SongController : Controller
             {
                 var songInfo = await _songService.UploadAsync(song.Title, dto.File);
                 if (songInfo == null)
-                {
                     return BadRequest(new ResponseDto<object>
                     {
                         Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.DataInvalid
                     });
-                }
 
                 song.File = songInfo.Value.Item1;
                 song.Duration = songInfo.Value.Item2;
@@ -324,10 +308,8 @@ public class SongController : Controller
         }
 
         if (!await _songRepository.UpdateSongAsync(song))
-        {
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
-        }
 
         return NoContent();
     }
@@ -364,24 +346,18 @@ public class SongController : Controller
 
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if (!await _userManager.IsInRoleAsync(currentUser, Roles.Administrator))
-        {
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        }
 
         if (dto.Illustration != null)
-        {
             song.Illustration = await _fileStorageService.UploadImage<Song>(song.Title, dto.Illustration, (16, 9));
-        }
 
         if (!await _songRepository.UpdateSongAsync(song))
-        {
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
-        }
 
         return NoContent();
     }

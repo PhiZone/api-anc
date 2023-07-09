@@ -8,9 +8,9 @@ namespace PhiZoneApi.Services;
 
 public class DtoMapper : IDtoMapper
 {
+    private readonly ILikeRepository _likeRepository;
     private readonly IMapper _mapper;
     private readonly IRegionRepository _regionRepository;
-    private readonly ILikeRepository _likeRepository;
     private readonly UserManager<User> _userManager;
     private readonly IUserRelationRepository _userRelationRepository;
 

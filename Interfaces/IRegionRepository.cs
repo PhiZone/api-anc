@@ -27,9 +27,9 @@ public interface IRegionRepository
     Task<bool> CreateRegionAsync(Region region);
 
     Task<bool> UpdateRegionAsync(Region region);
-    
+
     Task<bool> RemoveRegionAsync(string code);
-    
+
     Task<bool> RemoveRegionAsync(int id);
 
     Task<bool> SaveAsync();

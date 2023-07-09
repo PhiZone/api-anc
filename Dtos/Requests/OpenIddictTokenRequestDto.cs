@@ -1,5 +1,6 @@
 ﻿// ReSharper disable InconsistentNaming
 // ReSharper disable UnusedMember.Global
+
 namespace PhiZoneApi.Dtos.Requests;
 
 /// <summary>

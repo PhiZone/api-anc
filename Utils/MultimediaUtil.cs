@@ -48,6 +48,7 @@ public static class MultimediaUtil
             {
                 await file.CopyToAsync(stream);
             }
+
             var outputStream = ConvertToStream(tempInputPath);
             File.Delete(tempInputPath);
             return outputStream;
@@ -68,6 +69,7 @@ public static class MultimediaUtil
             {
                 await stream.WriteAsync(buffer);
             }
+
             var outputStream = ConvertToStream(tempInputPath);
             File.Delete(tempInputPath);
             return outputStream;
@@ -106,13 +108,12 @@ public static class MultimediaUtil
                 var buffer = new byte[4096];
                 int bytesRead;
                 while ((bytesRead = output.Read(buffer, 0, buffer.Length)) > 0)
-                {
                     outputStream.Write(buffer, 0, bytesRead);
-                }
             }
 
             process.WaitForExit();
         }
+
         outputStream.Position = 0;
 
         return outputStream;

@@ -22,10 +22,7 @@ public partial class ChartService : IChartService
     public async Task<(string, ChartFormat, int)?> Upload(string fileName, IFormFile file)
     {
         var result = await Validate(file);
-        if (result == null)
-        {
-            return null;
-        }
+        if (result == null) return null;
 
         var serialized = result.Value.Item1 == ChartFormat.RpeJson
             ? Serialize(Standardize((RpeJsonDto)result.Value.Item2))
@@ -41,14 +38,9 @@ public partial class ChartService : IChartService
         var content = await reader.ReadToEndAsync();
         var rpeJson = ReadRpe(content);
         if (rpeJson != null)
-        {
             return new ValueTuple<ChartFormat, ChartFormatDto, int>(ChartFormat.RpeJson, rpeJson, CountNotes(rpeJson));
-        }
         var pec = ReadPec(content);
-        if (pec != null)
-        {
-            return new ValueTuple<ChartFormat, ChartFormatDto, int>(ChartFormat.Pec, pec, CountNotes(pec));
-        }
+        if (pec != null) return new ValueTuple<ChartFormat, ChartFormatDto, int>(ChartFormat.Pec, pec, CountNotes(pec));
         return null;
     }
 
@@ -58,7 +50,6 @@ public partial class ChartService : IChartService
         foreach (var line in dto.JudgeLineList)
         {
             if (line.EventLayers != null)
-            {
                 foreach (var layer in line.EventLayers)
                 {
                     layer.AlphaEvents?.Sort();
@@ -67,7 +58,6 @@ public partial class ChartService : IChartService
                     layer.RotateEvents?.Sort();
                     layer.SpeedEvents?.Sort();
                 }
-            }
 
             if (line.Extended != null)
             {
@@ -108,25 +98,18 @@ public partial class ChartService : IChartService
     private static string Serialize(PecDto dto)
     {
         var builder = new StringBuilder($"{dto.Offset}\r\n");
-        foreach (var command in dto.BpmCommands)
-        {
-            builder.Append($"{BpmCommand.Id} {command.Time} {command.Bpm}\r\n");
-        }
+        foreach (var command in dto.BpmCommands) builder.Append($"{BpmCommand.Id} {command.Time} {command.Bpm}\r\n");
 
         builder.Append("\r\n");
 
         foreach (var command in dto.NoteCommands)
         {
             if (command.EndTime == null)
-            {
                 builder.Append(
                     $"{command.Id} {command.JudgeLine} {command.Time} {command.PositionX} {command.Direction} {Convert.ToInt32(command.IsFake)}\r\n");
-            }
             else
-            {
                 builder.Append(
                     $"{command.Id} {command.JudgeLine} {command.Time} {command.EndTime} {command.PositionX} {command.Direction} {Convert.ToInt32(command.IsFake)}\r\n");
-            }
 
             builder.Append($"# {command.Speed}\r\n& {command.Size}\r\n");
         }
@@ -134,54 +117,40 @@ public partial class ChartService : IChartService
         builder.Append("\r\n");
 
         foreach (var command in dto.SpeedCommands)
-        {
             builder.Append($"{SpeedCommand.Id} {command.JudgeLine} {command.Time} {command.Speed}\r\n");
-        }
 
         builder.Append("\r\n");
 
         foreach (var command in dto.MoveCommands)
-        {
             builder.Append($"{MoveCommand.Id} {command.JudgeLine} {command.Time} {command.X} {command.Y}\r\n");
-        }
 
         builder.Append("\r\n");
 
         foreach (var command in dto.RotationCommands)
-        {
             builder.Append($"{RotationCommand.Id} {command.JudgeLine} {command.Time} {command.Arc}\r\n");
-        }
 
         builder.Append("\r\n");
 
         foreach (var command in dto.AlphaCommands)
-        {
             builder.Append($"{AlphaCommand.Id} {command.JudgeLine} {command.Time} {command.Alpha}\r\n");
-        }
 
         builder.Append("\r\n");
 
         foreach (var command in dto.DurationalMoveCommands)
-        {
             builder.Append(
                 $"{DurationalMoveCommand.Id} {command.JudgeLine} {command.Time} {command.EndTime} {command.X} {command.Y} {command.MotionType}\r\n");
-        }
 
         builder.Append("\r\n");
 
         foreach (var command in dto.DurationalRotationCommands)
-        {
             builder.Append(
                 $"{DurationalRotationCommand.Id} {command.JudgeLine} {command.Time} {command.EndTime} {command.Arc} {command.MotionType}\r\n");
-        }
 
         builder.Append("\r\n");
 
         foreach (var command in dto.DurationalAlphaCommands)
-        {
             builder.Append(
                 $"{DurationalAlphaCommand.Id} {command.JudgeLine} {command.Time} {command.EndTime} {command.Alpha}\r\n");
-        }
 
         return builder.ToString();
     }
@@ -209,136 +178,103 @@ public partial class ChartService : IChartService
         try
         {
             var dto = JsonConvert.DeserializeObject<RpeJsonDto>(input);
-            if (dto == null)
-            {
-                return null;
-            }
+            if (dto == null) return null;
 
             foreach (var info in dto.BpmList)
-            {
                 if (info.StartTime[1] != 0 && info.StartTime[2] == 0)
-                {
                     return null;
-                }
-            }
 
             foreach (var line in dto.JudgeLineList)
             {
                 if (line.Notes != null)
-                {
                     foreach (var note in line.Notes)
                     {
                         if (note.StartTime[1] != 0 && note.StartTime[2] == 0) return null;
                         if (note.EndTime[1] != 0 && note.EndTime[2] == 0) return null;
                     }
-                }
 
                 if (line.EventLayers != null)
-                {
                     foreach (var layer in line.EventLayers)
                     {
                         if (layer.AlphaEvents != null)
-                        {
                             foreach (var e in layer.AlphaEvents)
                             {
                                 if (e.StartTime[1] != 0 && e.StartTime[2] == 0) return null;
                                 if (e.EndTime[1] != 0 && e.EndTime[2] == 0) return null;
                             }
-                        }
 
                         if (layer.MoveXEvents != null)
-                        {
                             foreach (var e in layer.MoveXEvents)
                             {
                                 if (e.StartTime[1] != 0 && e.StartTime[2] == 0) return null;
                                 if (e.EndTime[1] != 0 && e.EndTime[2] == 0) return null;
                             }
-                        }
 
                         if (layer.MoveYEvents != null)
-                        {
                             foreach (var e in layer.MoveYEvents)
                             {
                                 if (e.StartTime[1] != 0 && e.StartTime[2] == 0) return null;
                                 if (e.EndTime[1] != 0 && e.EndTime[2] == 0) return null;
                             }
-                        }
 
                         if (layer.RotateEvents != null)
-                        {
                             foreach (var e in layer.RotateEvents)
                             {
                                 if (e.StartTime[1] != 0 && e.StartTime[2] == 0) return null;
                                 if (e.EndTime[1] != 0 && e.EndTime[2] == 0) return null;
                             }
-                        }
 
                         if (layer.SpeedEvents != null)
-                        {
                             foreach (var e in layer.SpeedEvents)
                             {
                                 if (e.StartTime[1] != 0 && e.StartTime[2] == 0) return null;
                                 if (e.EndTime[1] != 0 && e.EndTime[2] == 0) return null;
                             }
-                        }
                     }
-                }
 
                 if (line.Extended != null)
                 {
                     if (line.Extended.ColorEvents != null)
-                    {
                         foreach (var e in line.Extended.ColorEvents)
                         {
                             if (e.StartTime[1] != 0 && e.StartTime[2] == 0) return null;
                             if (e.EndTime[1] != 0 && e.EndTime[2] == 0) return null;
                         }
-                    }
 
                     if (line.Extended.InclineEvents != null)
-                    {
                         foreach (var e in line.Extended.InclineEvents)
                         {
                             if (e.StartTime[1] != 0 && e.StartTime[2] == 0) return null;
                             if (e.EndTime[1] != 0 && e.EndTime[2] == 0) return null;
                         }
-                    }
 
                     if (line.Extended.PaintEvents != null)
-                    {
                         foreach (var e in line.Extended.PaintEvents)
                         {
                             if (e.StartTime[1] != 0 && e.StartTime[2] == 0) return null;
                             if (e.EndTime[1] != 0 && e.EndTime[2] == 0) return null;
                         }
-                    }
 
                     if (line.Extended.ScaleXEvents != null)
-                    {
                         foreach (var e in line.Extended.ScaleXEvents)
                         {
                             if (e.StartTime[1] != 0 && e.StartTime[2] == 0) return null;
                             if (e.EndTime[1] != 0 && e.EndTime[2] == 0) return null;
                         }
-                    }
 
                     if (line.Extended.ScaleYEvents != null)
-                    {
                         foreach (var e in line.Extended.ScaleYEvents)
                         {
                             if (e.StartTime[1] != 0 && e.StartTime[2] == 0) return null;
                             if (e.EndTime[1] != 0 && e.EndTime[2] == 0) return null;
                         }
-                    }
 
                     if (line.Extended.TextEvents != null)
-                    {
                         foreach (var e in line.Extended.TextEvents)
                         {
                             if (e.StartTime[1] != 0 && e.StartTime[2] == 0) return null;
                             if (e.EndTime[1] != 0 && e.EndTime[2] == 0) return null;
                         }
-                    }
                 }
             }
 
@@ -369,10 +305,7 @@ public partial class ChartService : IChartService
         {
             foreach (var line in input.Split(GetLineSeparator(input)))
             {
-                if (line == string.Empty || !PecCommandRegex().IsMatch(line))
-                {
-                    continue;
-                }
+                if (line == string.Empty || !PecCommandRegex().IsMatch(line)) continue;
 
                 if (int.TryParse(line, out var number))
                 {
@@ -502,6 +435,7 @@ public partial class ChartService : IChartService
                     }
                 }
             }
+
             return dto.BpmCommands.Count > 0 ? dto : null;
         }
         catch (Exception ex)

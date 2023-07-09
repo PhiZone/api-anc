@@ -85,7 +85,9 @@ public class UserRelationController : Controller
     /// </summary>
     /// <returns>A user relation.</returns>
     /// <response code="200">Returns a user relation.</response>
-    /// <response code="304">When the resource has not been updated since last retrieval (requires header <c>If-None-Match</c>).</response>
+    /// <response code="304">
+    ///     When the resource has not been updated since last retrieval. Requires <c>If-None-Match</c>.
+    /// </response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="404">When the specified user relation is not found.</response>
     [HttpGet("{followerId:int}/{followeeId:int}")]

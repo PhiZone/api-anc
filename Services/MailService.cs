@@ -41,7 +41,7 @@ public class MailService : IMailService
         {
             code = random.Next(1000000, 2000000).ToString()[1..];
         } while (await db.KeyExistsAsync($"EMAIL:{mode}:{code}"));
-        
+
         if (!await db.StringSetAsync($"EMAIL:{mode}:{code}", user.Email, TimeSpan.FromSeconds(305))) return null;
 
         var template = _templateService.GetEmailTemplate(mode, user.Language);

@@ -32,8 +32,8 @@ public class UserController : Controller
     private readonly IFilterService _filterService;
     private readonly IMailService _mailService;
     private readonly IMapper _mapper;
-    private readonly UserManager<User> _userManager;
     private readonly IRegionRepository _regionRepository;
+    private readonly UserManager<User> _userManager;
     private readonly IUserRelationRepository _userRelationRepository;
     private readonly IUserRepository _userRepository;
 
@@ -100,7 +100,9 @@ public class UserController : Controller
     /// <param name="id">User's ID.</param>
     /// <returns>A user.</returns>
     /// <response code="200">Returns a user.</response>
-    /// <response code="304">When the resource has not been updated since last retrieval (requires header <c>If-None-Match</c>).</response>
+    /// <response code="304">
+    ///     When the resource has not been updated since last retrieval. Requires <c>If-None-Match</c>.
+    /// </response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="404">When the specified user is not found.</response>
     [HttpGet("{id:int}")]
@@ -159,9 +161,7 @@ public class UserController : Controller
 
         string? avatarUrl = null;
         if (dto.Avatar != null)
-        {
             avatarUrl = await _fileStorageService.UploadImage<User>(dto.UserName, dto.Avatar, (1, 1));
-        }
 
         user = new User
         {
@@ -332,9 +332,7 @@ public class UserController : Controller
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
         if (dto.Avatar != null)
-        {
             user.Avatar = await _fileStorageService.UploadImage<User>(user.UserName ?? "Avatar", dto.Avatar, (1, 1));
-        }
 
         await _userManager.UpdateAsync(user);
         return NoContent();
@@ -545,7 +543,8 @@ public class UserController : Controller
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
             });
 
-        var relation = new UserRelation { Followee = user, Follower = currentUser, DateCreated = DateTimeOffset.UtcNow };
+        var relation = new UserRelation
+            { Followee = user, Follower = currentUser, DateCreated = DateTimeOffset.UtcNow };
 
         if (!await _userRelationRepository.CreateRelationAsync(relation))
             return StatusCode(StatusCodes.Status500InternalServerError,

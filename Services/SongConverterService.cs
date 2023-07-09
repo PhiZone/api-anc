@@ -8,10 +8,11 @@ namespace PhiZoneApi.Services;
 public class SongConverterService : BackgroundService
 {
     private readonly IModel _channel;
-    private readonly ISongService _songService;
     private readonly ISongRepository _songRepository;
+    private readonly ISongService _songService;
 
-    public SongConverterService(IRabbitMqService rabbitMqService, ISongService songService, ISongRepository songRepository)
+    public SongConverterService(IRabbitMqService rabbitMqService, ISongService songService,
+        ISongRepository songRepository)
     {
         _songService = songService;
         _songRepository = songRepository;
@@ -28,7 +29,7 @@ public class SongConverterService : BackgroundService
             if (args.BasicProperties.Headers == null ||
                 !args.BasicProperties.Headers.TryGetValue("SongId", out var songIdObj))
                 return;
-            
+
             var songId = Encoding.UTF8.GetString((byte[])songIdObj);
             var body = args.Body.ToArray();
             var song = await _songRepository.GetSongAsync(new Guid(songId));

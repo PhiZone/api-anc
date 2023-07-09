@@ -7,9 +7,9 @@ namespace PhiZoneApi.Services;
 
 public class SongService : ISongService
 {
-    private readonly ISongRepository _songRepository;
     private readonly IFileStorageService _fileStorageService;
     private readonly IRabbitMqService _rabbitMqService;
+    private readonly ISongRepository _songRepository;
 
     public SongService(IFileStorageService fileStorageService, IRabbitMqService rabbitMqService,
         ISongRepository songRepository)
@@ -39,13 +39,6 @@ public class SongService : ISongService
         return (url, duration);
     }
 
-    public async Task<bool> UpdateSongAsync(Song song, (string, TimeSpan) songInfo)
-    {
-        song.File = songInfo.Item1;
-        song.Duration = songInfo.Item2;
-        return await _songRepository.UpdateSongAsync(song);
-    }
-
     public async Task PublishAsync(IFormFile file, Guid songId)
     {
         await using var stream = file.OpenReadStream();
@@ -58,5 +51,12 @@ public class SongService : ISongService
             { "SongId", songId.ToString() }
         };
         channel.BasicPublish("", "song", false, properties, memoryStream.ToArray());
+    }
+
+    public async Task<bool> UpdateSongAsync(Song song, (string, TimeSpan) songInfo)
+    {
+        song.File = songInfo.Item1;
+        song.Duration = songInfo.Item2;
+        return await _songRepository.UpdateSongAsync(song);
     }
 }

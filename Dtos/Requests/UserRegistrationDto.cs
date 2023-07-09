@@ -1,7 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using PhiZoneApi.Constants;
 using PhiZoneApi.Enums;
-using PhiZoneApi.Models;
 using PhiZoneApi.Validators;
 
 namespace PhiZoneApi.Dtos.Requests;

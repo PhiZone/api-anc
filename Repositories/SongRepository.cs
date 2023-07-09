@@ -53,7 +53,10 @@ public class SongRepository : ISongRepository
         if (search != null)
         {
             search = search.Trim().ToUpper();
-            result = result.Where(chart => (chart.Title != null && chart.Title.ToUpper().Contains(search)) || chart.AuthorName.ToUpper().Contains(search) || (chart.Description != null && chart.Description.ToUpper().Contains(search)));
+            result = result.Where(chart =>
+                (chart.Title != null && chart.Title.ToUpper().Contains(search)) ||
+                chart.AuthorName.ToUpper().Contains(search) ||
+                (chart.Description != null && chart.Description.ToUpper().Contains(search)));
         }
 
         return await result.Skip(position).Take(take).ToListAsync();
@@ -117,7 +120,10 @@ public class SongRepository : ISongRepository
         if (search != null)
         {
             search = search.Trim().ToUpper();
-            result = result.Where(chart => (chart.Title != null && chart.Title.ToUpper().Contains(search)) || chart.AuthorName.ToUpper().Contains(search) || (chart.Description != null && chart.Description.ToUpper().Contains(search)));
+            result = result.Where(chart =>
+                (chart.Title != null && chart.Title.ToUpper().Contains(search)) ||
+                chart.AuthorName.ToUpper().Contains(search) ||
+                (chart.Description != null && chart.Description.ToUpper().Contains(search)));
         }
 
         return await result.CountAsync();

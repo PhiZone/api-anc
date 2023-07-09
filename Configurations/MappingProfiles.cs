@@ -1,5 +1,4 @@
 ﻿using AutoMapper;
-using PhiZoneApi.Dtos.Deliverers;
 using PhiZoneApi.Dtos.Requests;
 using PhiZoneApi.Dtos.Responses;
 using PhiZoneApi.Models;

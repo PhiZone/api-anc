@@ -40,7 +40,7 @@ public class BpmInfo : IComparable<BpmInfo>
     [JsonProperty("bpm")] public double Bpm { get; set; }
 
     [JsonProperty("startTime")] public List<int> StartTime { get; set; } = null!;
-    
+
     public int CompareTo(BpmInfo? other)
     {
         if (ReferenceEquals(this, other)) return 0;
@@ -109,7 +109,7 @@ public class Note : IComparable<Note>
     [JsonProperty("visibleTime")] public double VisibleTime { get; set; }
 
     [JsonProperty("yOffset")] public double YOffset { get; set; }
-    
+
     public int CompareTo(Note? other)
     {
         if (ReferenceEquals(this, other)) return 0;
@@ -194,7 +194,7 @@ public class Event : IComparable<Event>
     [JsonProperty("start")] public double Start { get; set; }
 
     [JsonProperty("startTime")] public List<int> StartTime { get; set; } = null!;
-    
+
     public int CompareTo(Event? other)
     {
         if (ReferenceEquals(this, other)) return 0;
@@ -220,7 +220,7 @@ public class SpeedEvent : IComparable<SpeedEvent>
     [JsonProperty("start")] public double Start { get; set; }
 
     [JsonProperty("startTime")] public List<int> StartTime { get; set; } = null!;
-    
+
     public int CompareTo(SpeedEvent? other)
     {
         if (ReferenceEquals(this, other)) return 0;
