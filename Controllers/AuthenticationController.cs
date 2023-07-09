@@ -84,13 +84,13 @@ public class AuthenticationController : Controller
                 user.AccessFailedCount++;
                 await _userManager.UpdateAsync(user);
 
-                var properties = new AuthenticationProperties(new Dictionary<string, string>
-                {
-                    [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidGrant,
-                    [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] = "The password is incorrect."
-                }!);
-
-                return Forbid(properties, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+                return Forbid(
+                    new AuthenticationProperties(new Dictionary<string, string>
+                    {
+                        [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidGrant,
+                        [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
+                            "The password is incorrect."
+                    }!), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
             }
 
             var identity = new ClaimsIdentity(TokenValidationParameters.DefaultAuthenticationType, Claims.Name,
@@ -143,7 +143,13 @@ public class AuthenticationController : Controller
             return SignIn(new ClaimsPrincipal(identity), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
         }
 
-        throw new NotImplementedException("The specified grant type is not implemented.");
+        return Forbid(
+            new AuthenticationProperties(new Dictionary<string, string>
+            {
+                [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidRequest,
+                [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
+                    "The specified grant type is not implemented."
+            }!), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
     }
 
     /// <summary>

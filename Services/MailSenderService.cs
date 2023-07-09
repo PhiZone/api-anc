@@ -28,7 +28,7 @@ public class MailSenderService : BackgroundService
         _channel.QueueDeclare("email", false, false, false, null);
 
         var consumer = new EventingBasicConsumer(_channel);
-        consumer.Received += async (model, args) =>
+        consumer.Received += async (_, args) =>
         {
             var body = args.Body.ToArray();
             var message = Encoding.UTF8.GetString(body);

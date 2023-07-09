@@ -4,7 +4,7 @@ public enum ChartFormat
 {
     RpeJson,
     Pec,
-    Phigrim,
     PhiZone,
+    Phigrim,
     Unsupported
 }

@@ -8,8 +8,6 @@ public static class LinqUtil
     public static IQueryable<T> OrderBy<T>(this IQueryable<T> query, string field, bool desc)
     {
         if (string.IsNullOrWhiteSpace(field)) return query;
-        var p = Expression.Parameter(typeof(T));
-        Expression key = Expression.Property(p, field);
         var propInfo = GetPropertyInfo(typeof(T), field);
         var expr = GetOrderExpression(typeof(T), propInfo);
         if (desc)

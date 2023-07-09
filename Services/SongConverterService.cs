@@ -24,7 +24,7 @@ public class SongConverterService : BackgroundService
         _channel.QueueDeclare("song", false, false, false, null);
 
         var consumer = new EventingBasicConsumer(_channel);
-        consumer.Received += async (model, args) =>
+        consumer.Received += async (_, args) =>
         {
             if (args.BasicProperties.Headers == null ||
                 !args.BasicProperties.Headers.TryGetValue("SongId", out var songIdObj))

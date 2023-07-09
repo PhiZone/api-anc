@@ -1,10 +1,11 @@
 ﻿using Microsoft.AspNetCore.StaticFiles;
+// ReSharper disable StringLiteralTypo
 
 namespace PhiZoneApi.Utils;
 
 public static class FileTypeResolver
 {
-    private static readonly Dictionary<string, string> _mappings = new(StringComparer.OrdinalIgnoreCase)
+    private static readonly Dictionary<string, string> Mappings = new(StringComparer.OrdinalIgnoreCase)
     {
         { ".323", "text/h323" },
         { ".3g2", "video/3gpp2" },
@@ -402,7 +403,7 @@ public static class FileTypeResolver
     {
         if (mimeType == "application/octet-stream") return string.Empty;
 
-        var extensions = _mappings
+        var extensions = Mappings
             .Where(mapping => string.Equals(mapping.Value, mimeType, StringComparison.OrdinalIgnoreCase))
             .Select(mapping => mapping.Key)
             .ToArray();

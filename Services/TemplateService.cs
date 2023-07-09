@@ -24,7 +24,7 @@ public class TemplateService : ITemplateService
             var fileContent = File.ReadAllText(languageFile);
             var json = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, string>>>(fileContent);
             _confirmationEmail[language] = json!["ConfirmationEmail"];
-            _passwordResetEmail[language] = json!["PasswordResetEmail"];
+            _passwordResetEmail[language] = json["PasswordResetEmail"];
         }
     }
 

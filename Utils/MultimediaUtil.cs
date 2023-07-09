@@ -86,6 +86,7 @@ public static class MultimediaUtil
         var outputStream = new MemoryStream();
 
         const string ffmpegPath = "ffmpeg";
+        // ReSharper disable once StringLiteralTypo
         const string outputOptions = "-vn -c:a libvorbis -q:a 0 -f ogg -map_metadata 0 pipe:1";
         var arguments = $"-i \"{inputFilePath}\" {outputOptions}";
 
