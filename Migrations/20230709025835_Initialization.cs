@@ -213,14 +213,14 @@ namespace PhiZoneApi.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    OwnerId = table.Column<int>(type: "integer", nullable: false),
+                    DateCreated = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    LikeCount = table.Column<int>(type: "integer", nullable: false),
                     Description = table.Column<string>(type: "text", nullable: true),
                     Accessibility = table.Column<int>(type: "integer", nullable: false),
                     IsHidden = table.Column<bool>(type: "boolean", nullable: false),
                     IsLocked = table.Column<bool>(type: "boolean", nullable: false),
-                    OwnerId = table.Column<int>(type: "integer", nullable: false),
-                    DateCreated = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     DateUpdated = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    LikeCount = table.Column<int>(type: "integer", nullable: false),
                     Title = table.Column<string>(type: "text", nullable: false),
                     Illustration = table.Column<string>(type: "text", nullable: false),
                     Illustrator = table.Column<string>(type: "text", nullable: false),
@@ -242,9 +242,10 @@ namespace PhiZoneApi.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ResourceId = table.Column<Guid>(type: "uuid", nullable: false),
-                    UserId = table.Column<int>(type: "integer", nullable: false),
+                    OwnerId = table.Column<int>(type: "integer", nullable: false),
                     DateCreated = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    LikeCount = table.Column<int>(type: "integer", nullable: false),
+                    ResourceId = table.Column<Guid>(type: "uuid", nullable: false),
                     Content = table.Column<string>(type: "text", nullable: false),
                     Language = table.Column<string>(type: "text", nullable: false)
                 },
@@ -252,8 +253,8 @@ namespace PhiZoneApi.Migrations
                 {
                     table.PrimaryKey("PK_Comments", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Comments_Users_UserId",
-                        column: x => x.UserId,
+                        name: "FK_Comments_Users_OwnerId",
+                        column: x => x.OwnerId,
                         principalTable: "Users",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -264,16 +265,16 @@ namespace PhiZoneApi.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ResourceId = table.Column<Guid>(type: "uuid", nullable: false),
-                    UserId = table.Column<int>(type: "integer", nullable: false),
-                    DateCreated = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                    OwnerId = table.Column<int>(type: "integer", nullable: false),
+                    DateCreated = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    ResourceId = table.Column<Guid>(type: "uuid", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Likes", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Likes_Users_UserId",
-                        column: x => x.UserId,
+                        name: "FK_Likes_Users_OwnerId",
+                        column: x => x.OwnerId,
                         principalTable: "Users",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -284,14 +285,14 @@ namespace PhiZoneApi.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    OwnerId = table.Column<int>(type: "integer", nullable: false),
+                    DateCreated = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    LikeCount = table.Column<int>(type: "integer", nullable: false),
                     Description = table.Column<string>(type: "text", nullable: true),
                     Accessibility = table.Column<int>(type: "integer", nullable: false),
                     IsHidden = table.Column<bool>(type: "boolean", nullable: false),
                     IsLocked = table.Column<bool>(type: "boolean", nullable: false),
-                    OwnerId = table.Column<int>(type: "integer", nullable: false),
-                    DateCreated = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     DateUpdated = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    LikeCount = table.Column<int>(type: "integer", nullable: false),
                     Title = table.Column<string>(type: "text", nullable: false),
                     EditionType = table.Column<int>(type: "integer", nullable: false),
                     Edition = table.Column<string>(type: "text", nullable: true),
@@ -435,11 +436,12 @@ namespace PhiZoneApi.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    OwnerId = table.Column<int>(type: "integer", nullable: false),
+                    DateCreated = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    LikeCount = table.Column<int>(type: "integer", nullable: false),
                     CommentId = table.Column<Guid>(type: "uuid", nullable: false),
                     Content = table.Column<string>(type: "text", nullable: false),
-                    Language = table.Column<string>(type: "text", nullable: false),
-                    UserId = table.Column<int>(type: "integer", nullable: false),
-                    DateCreated = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                    Language = table.Column<string>(type: "text", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -451,8 +453,8 @@ namespace PhiZoneApi.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_Replies_Users_UserId",
-                        column: x => x.UserId,
+                        name: "FK_Replies_Users_OwnerId",
+                        column: x => x.OwnerId,
                         principalTable: "Users",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -487,14 +489,14 @@ namespace PhiZoneApi.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    OwnerId = table.Column<int>(type: "integer", nullable: false),
+                    DateCreated = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    LikeCount = table.Column<int>(type: "integer", nullable: false),
                     Description = table.Column<string>(type: "text", nullable: true),
                     Accessibility = table.Column<int>(type: "integer", nullable: false),
                     IsHidden = table.Column<bool>(type: "boolean", nullable: false),
                     IsLocked = table.Column<bool>(type: "boolean", nullable: false),
-                    OwnerId = table.Column<int>(type: "integer", nullable: false),
-                    DateCreated = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     DateUpdated = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    LikeCount = table.Column<int>(type: "integer", nullable: false),
                     Title = table.Column<string>(type: "text", nullable: true),
                     LevelType = table.Column<int>(type: "integer", nullable: false),
                     Level = table.Column<string>(type: "text", nullable: false),
@@ -587,7 +589,9 @@ namespace PhiZoneApi.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    PlayerId = table.Column<int>(type: "integer", nullable: false),
+                    OwnerId = table.Column<int>(type: "integer", nullable: false),
+                    DateCreated = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    LikeCount = table.Column<int>(type: "integer", nullable: false),
                     ChartId = table.Column<Guid>(type: "uuid", nullable: false),
                     Score = table.Column<int>(type: "integer", nullable: false),
                     Accuracy = table.Column<double>(type: "double precision", nullable: false),
@@ -600,8 +604,7 @@ namespace PhiZoneApi.Migrations
                     Miss = table.Column<int>(type: "integer", nullable: false),
                     Rks = table.Column<double>(type: "double precision", nullable: false),
                     PerfectJudgment = table.Column<int>(type: "integer", nullable: false),
-                    GoodJudgment = table.Column<int>(type: "integer", nullable: false),
-                    DateCreated = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                    GoodJudgment = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -613,8 +616,8 @@ namespace PhiZoneApi.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_Records_Users_PlayerId",
-                        column: x => x.PlayerId,
+                        name: "FK_Records_Users_OwnerId",
+                        column: x => x.OwnerId,
                         principalTable: "Users",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -646,24 +649,24 @@ namespace PhiZoneApi.Migrations
                 column: "ChartsId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Comments_OwnerId",
+                table: "Comments",
+                column: "OwnerId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Comments_ResourceId",
                 table: "Comments",
                 column: "ResourceId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Comments_UserId",
-                table: "Comments",
-                column: "UserId");
+                name: "IX_Likes_OwnerId",
+                table: "Likes",
+                column: "OwnerId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Likes_ResourceId",
                 table: "Likes",
                 column: "ResourceId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Likes_UserId",
-                table: "Likes",
-                column: "UserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_OpenIddictApplications_ClientId",
@@ -704,9 +707,9 @@ namespace PhiZoneApi.Migrations
                 column: "ChartId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Records_PlayerId",
+                name: "IX_Records_OwnerId",
                 table: "Records",
-                column: "PlayerId");
+                column: "OwnerId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Replies_CommentId",
@@ -714,9 +717,9 @@ namespace PhiZoneApi.Migrations
                 column: "CommentId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Replies_UserId",
+                name: "IX_Replies_OwnerId",
                 table: "Replies",
-                column: "UserId");
+                column: "OwnerId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_RoleClaims_RoleId",

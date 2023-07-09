@@ -36,7 +36,7 @@ public class LikeRepository : ILikeRepository
     public async Task<Like> GetLikeAsync(Guid resourceId, int userId)
     {
         return (await _context.Likes.FirstOrDefaultAsync(
-            like => like.Resource.Id == resourceId && like.UserId == userId))!;
+            like => like.Resource.Id == resourceId && like.OwnerId == userId))!;
     }
 
     public async Task<bool> LikeExistsAsync(Guid id)
@@ -47,7 +47,7 @@ public class LikeRepository : ILikeRepository
     public async Task<bool> LikeExistsAsync(Guid resourceId, int userId)
     {
         return (await _context.Likes.AnyAsync(
-            like => like.Resource.Id == resourceId && like.UserId == userId))!;
+            like => like.Resource.Id == resourceId && like.OwnerId == userId))!;
     }
 
     public async Task<bool> CreateLikeAsync(Like like)

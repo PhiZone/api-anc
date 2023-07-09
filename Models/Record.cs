@@ -1,13 +1,7 @@
 ﻿namespace PhiZoneApi.Models;
 
-public class Record
+public class Record : LikeableResource
 {
-    public Guid Id { get; set; }
-
-    public int PlayerId { get; set; }
-
-    public User Player { get; set; } = null!;
-
     public Guid ChartId { get; set; }
 
     public Chart Chart { get; set; } = null!;
@@ -35,6 +29,4 @@ public class Record
     public int PerfectJudgment { get; set; }
 
     public int GoodJudgment { get; set; }
-
-    public DateTimeOffset DateCreated { get; set; }
 }

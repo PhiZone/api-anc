@@ -42,8 +42,7 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, int>
                 l => l.HasOne<User>(e => e.Follower).WithMany(e => e.FolloweeRelations),
                 r => r.HasOne<User>(e => e.Followee).WithMany(e => e.FollowerRelations));
 
-        builder.Entity<PublicResource>().UseTpcMappingStrategy();
-        builder.Entity<Interaction>().UseTpcMappingStrategy();
+        builder.Entity<Resource>().UseTpcMappingStrategy();
 
         builder.Entity<User>().ToTable("Users");
         builder.Entity<Role>().ToTable("Roles");
