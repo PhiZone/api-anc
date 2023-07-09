@@ -10,5 +10,5 @@ public class UserRelation
 
     public User Followee { get; set; } = null!;
 
-    public DateTimeOffset Time { get; set; }
+    public DateTimeOffset DateCreated { get; set; }
 }

@@ -1,4 +1,6 @@
-﻿namespace PhiZoneApi.Dtos.Requests;
+﻿// ReSharper disable InconsistentNaming
+// ReSharper disable UnusedMember.Global
+namespace PhiZoneApi.Dtos.Requests;
 
 /// <summary>
 ///     A DTO specially made for Swagger, just to ensure that the documentation is working properly.

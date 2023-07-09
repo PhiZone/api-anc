@@ -23,8 +23,9 @@ public class FilterService : IFilterService
     public async Task<Expression<Func<T, bool>>?> Parse<T>(FilterDto<T>? dto, string? predicate = null,
         User? currentUser = null)
     {
-        if (predicate != null && currentUser != null &&
-            !await _userManager.IsInRoleAsync(currentUser, Roles.Administrator))
+        var isAdmin = currentUser != null && await _userManager.IsInRoleAsync(currentUser, Roles.Administrator);
+
+        if (isAdmin && predicate != null)
             return await CSharpScript.EvaluateAsync<Expression<Func<T, bool>>>(predicate,
                 ScriptOptions.Default.AddReferences(typeof(T).Assembly));
 
@@ -32,7 +33,9 @@ public class FilterService : IFilterService
 
         var entity = Expression.Parameter(typeof(T), "e");
 
-        Expression expression = Expression.Constant(true);
+        Expression expression =
+            Expression.OrElse(Expression.Constant(isAdmin || typeof(T).GetProperty("IsHidden") == null),
+                IsFalse(Property<T>(entity, "IsHidden")));
         foreach (var property in dto.GetType().GetProperties())
         {
             var name = property.Name;
@@ -55,15 +58,18 @@ public class FilterService : IFilterService
                 expression = Expression.AndAlso(expression,
                     Expression.Call(condition, Method(type, "Contains"), Property<T>(entity, property, Actions.Range)));
 
+            if (name.StartsWith(Actions.Is))
+                expression = Expression.AndAlso(expression, Expression.Equal(Property<T>(entity, property), condition));
+
             if (name.StartsWith(Actions.Equals))
                 expression = Expression.AndAlso(expression,
-                    Expression.Call(ToLower(Property<T>(entity, property, Actions.Equals)), Method(type, "Equals", 1),
-                        ToLower(condition)));
+                    Expression.Call(ToUpper(Property<T>(entity, property, Actions.Equals)), Method(type, "Equals", 1),
+                        ToUpper(condition)));
 
             if (name.StartsWith(Actions.Contains))
                 expression = Expression.AndAlso(expression,
-                    Expression.Call(ToLower(Property<T>(entity, property, Actions.Contains)), Method(type, "Contains"),
-                        ToLower(condition)));
+                    Expression.Call(ToUpper(Property<T>(entity, property, Actions.Contains)), Method(type, "Contains"),
+                        ToUpper(condition)));
 
             if (name.StartsWith(Actions.Earliest))
                 expression = Expression.AndAlso(expression,
@@ -80,20 +86,39 @@ public class FilterService : IFilterService
         return Expression.Lambda<Func<T, bool>>(expression, entity);
     }
 
-    private static MemberExpression Property<T>(Expression entity, MemberInfo property, string action)
+    private static Expression IsFalse(Expression? expression)
     {
-        return Expression.Property(entity, typeof(T).GetProperty(property.Name[action.Length..])!);
+        var falseExpr = Expression.Constant(false);
+        if (expression == null)
+        {
+            return falseExpr;
+        }
+        return Expression.Equal(expression, falseExpr);
     }
 
-    private static Expression ToLower(Expression expression)
+    private static MemberExpression? Property<T>(Expression entity, string name)
     {
-        return Expression.Call(expression, typeof(string).GetMethods().Where(m => m.Name == "ToLower").ToArray()[0]);
+        var property = typeof(T).GetProperty(name);
+        return property != null ? Expression.Property(entity, property) : null;
+    }
+
+    private static MemberExpression Property<T>(Expression entity, MemberInfo property, string? action = null)
+    {
+        return Expression.Property(entity,
+            typeof(T).GetProperty(action != null ? property.Name[action.Length..] : property.Name)!);
+    }
+
+    private static Expression ToUpper(Expression expression)
+    {
+        return Expression.Call(expression, typeof(string).GetMethods().Where(m => m.Name == "ToUpper").ToArray()[0]);
     }
 
     private static Expression CompareDate(Expression property, Expression condition)
     {
         return Expression.Call(null, typeof(DateTimeOffset).GetMethod("Compare")!, property,
-            Expression.Call(condition, Method(typeof(DateTimeOffset?), "GetValueOrDefault")));
+            condition.Type == typeof(DateTimeOffset)
+                ? condition
+                : Expression.Call(condition, Method(typeof(DateTimeOffset?), "GetValueOrDefault")));
     }
 
     private static MethodInfo Method(Type type, string name, int i = 0)

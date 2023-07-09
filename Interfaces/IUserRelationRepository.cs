@@ -18,7 +18,7 @@ public interface IUserRelationRepository
 
     Task<bool> CreateRelationAsync(UserRelation userRelation);
 
-    Task<bool> RemoveRelationAsync(UserRelation userRelation);
+    Task<bool> RemoveRelationAsync(int followerId, int followeeId);
 
     Task<bool> SaveAsync();
 

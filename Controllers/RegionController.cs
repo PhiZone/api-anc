@@ -56,7 +56,11 @@ public class RegionController : Controller
         [FromQuery] RegionFilterDto? filterDto = null)
     {
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        dto.PerPage = dto.PerPage > 0 ? dto.PerPage : _dataSettings.Value.PaginationPerPage;
+        dto.PerPage = dto.PerPage > 0
+            ? dto.PerPage <= _dataSettings.Value.PaginationMaxPerPage
+                ? dto.PerPage
+                : _dataSettings.Value.PaginationMaxPerPage
+            : _dataSettings.Value.PaginationPerPage;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser);
         var list = _mapper.Map<List<RegionDto>>(await _regionRepository.GetRegionsAsync(dto.Order, dto.Desc, position,
@@ -102,7 +106,7 @@ public class RegionController : Controller
     /// <summary>
     ///     Retrieves a specific region by its ID.
     /// </summary>
-    /// <param name="id">A region's ID.</param>
+    /// <param name="id">Region's ID.</param>
     /// <returns>A region.</returns>
     /// <response code="200">Returns a region.</response>
     /// <response code="304">When the resource has not been updated since last retrieval (requires header <c>If-None-Match</c>).</response>
@@ -116,8 +120,8 @@ public class RegionController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetRegion([FromRoute] int id)
     {
-        if (!await _regionRepository.RegionExistsByIdAsync(id)) return NotFound();
-        var region = await _regionRepository.GetRegionByIdAsync(id);
+        if (!await _regionRepository.RegionExistsAsync(id)) return NotFound();
+        var region = await _regionRepository.GetRegionAsync(id);
         var dto = _mapper.Map<RegionDto>(region);
 
         return Ok(new ResponseDto<RegionDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
@@ -139,7 +143,11 @@ public class RegionController : Controller
         [FromQuery] UserFilterDto? filterDto = null)
     {
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        dto.PerPage = dto.PerPage > 0 ? dto.PerPage : _dataSettings.Value.PaginationPerPage;
+        dto.PerPage = dto.PerPage > 0
+            ? dto.PerPage <= _dataSettings.Value.PaginationMaxPerPage
+                ? dto.PerPage
+                : _dataSettings.Value.PaginationMaxPerPage
+            : _dataSettings.Value.PaginationPerPage;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser);
         if (!await _regionRepository.RegionExistsAsync(code)) return NotFound();
@@ -165,7 +173,7 @@ public class RegionController : Controller
     /// <summary>
     ///     Retrieves users from a specific region by its ID.
     /// </summary>
-    /// <param name="id">A region's ID.</param>
+    /// <param name="id">Region's ID.</param>
     /// <returns>An array of users.</returns>
     /// <response code="200">Returns an array of users.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
@@ -179,14 +187,18 @@ public class RegionController : Controller
         [FromQuery] UserFilterDto? filterDto = null)
     {
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        dto.PerPage = dto.PerPage > 0 ? dto.PerPage : _dataSettings.Value.PaginationPerPage;
+        dto.PerPage = dto.PerPage > 0
+            ? dto.PerPage <= _dataSettings.Value.PaginationMaxPerPage
+                ? dto.PerPage
+                : _dataSettings.Value.PaginationMaxPerPage
+            : _dataSettings.Value.PaginationPerPage;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser);
-        if (!await _regionRepository.RegionExistsByIdAsync(id)) return NotFound();
-        var users = await _regionRepository.GetRegionUsersByIdAsync(id, dto.Order, dto.Desc, position, dto.PerPage,
+        if (!await _regionRepository.RegionExistsAsync(id)) return NotFound();
+        var users = await _regionRepository.GetRegionUsersAsync(id, dto.Order, dto.Desc, position, dto.PerPage,
             dto.Search, predicateExpr);
         var list = new List<UserDto>();
-        var total = await _regionRepository.CountUsersByIdAsync(id, dto.Search, predicateExpr);
+        var total = await _regionRepository.CountUsersAsync(id, dto.Search, predicateExpr);
 
         foreach (var user in users) list.Add(await _dtoMapper.MapUserAsync<UserDto>(user, currentUser));
 

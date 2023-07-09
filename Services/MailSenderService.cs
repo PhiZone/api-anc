@@ -1,7 +1,7 @@
 ﻿using System.Text;
 using Microsoft.AspNetCore.Identity;
 using Newtonsoft.Json;
-using PhiZoneApi.Dtos.Responses;
+using PhiZoneApi.Dtos.Deliverers;
 using PhiZoneApi.Enums;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
@@ -32,7 +32,7 @@ public class MailSenderService : BackgroundService
         {
             var body = args.Body.ToArray();
             var message = Encoding.UTF8.GetString(body);
-            var mailDto = JsonConvert.DeserializeObject<MailDto>(message);
+            var mailDto = JsonConvert.DeserializeObject<MailTaskDto>(message);
 
             var result = await _mailService.SendMailAsync(mailDto!);
             if (result == string.Empty)
@@ -40,7 +40,6 @@ public class MailSenderService : BackgroundService
                 {
                     case SucceedingAction.Create:
                         await _userManager.CreateAsync(mailDto.User);
-                        Console.WriteLine($"WOCAO CREATED !!! {mailDto.User.UserName} {mailDto.User.Email}");
                         break;
                     case SucceedingAction.Update:
                         break;

@@ -14,22 +14,43 @@ public class FileStorageService : IFileStorageService
         LCApplication.Initialize(options.Value.ClientId, options.Value.ClientToken, options.Value.ServerUrl);
     }
 
-    public async Task<string> Upload(string fileName, IFormFile formFile)
+    public async Task<string> Upload<T>(string fileName, IFormFile formFile)
     {
         using var memoryStream = new MemoryStream();
         await formFile.CopyToAsync(memoryStream);
         var extension = FileTypeResolver.GetFileExtension(FileTypeResolver.GetMimeType(formFile));
-        var file = new LCFile($"{fileName}_{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}{extension}",
+        var file = new LCFile(
+            $"{typeof(T).Name}_{NormalizeFileName(fileName)}_{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}{extension}",
             memoryStream.ToArray());
         await file.Save();
         return file.Url;
     }
 
-    public async Task<string> Upload(string fileName, MemoryStream stream, string extension)
+    public async Task<string> UploadImage<T>(string fileName, IFormFile formFile, (int, int) aspectRatio)
     {
-        var file = new LCFile($"{fileName}_{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}.{extension}",
+        var stream = MultimediaUtil.CropImage(formFile, aspectRatio);
+        return await Upload<T>(fileName, stream, "webp");
+    }
+
+    public async Task<string> UploadImage<T>(string fileName, byte[] buffer, (int, int) aspectRatio)
+    {
+        var stream = MultimediaUtil.CropImage(buffer, aspectRatio);
+        return await Upload<T>(fileName, stream, "webp");
+    }
+
+    public async Task<string> Upload<T>(string fileName, MemoryStream stream, string extension)
+    {
+        var file = new LCFile(
+            $"{typeof(T).Name}_{NormalizeFileName(fileName)}_{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}.{extension}",
             stream.ToArray());
         await file.Save();
         return file.Url;
+    }
+
+    private static string NormalizeFileName(string input)
+    {
+        var chars = Path.GetInvalidFileNameChars().Concat(new[] { ' ' });
+
+        return chars.Aggregate(input, (current, invalidChar) => current.Replace(invalidChar.ToString(), string.Empty));
     }
 }

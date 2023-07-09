@@ -55,9 +55,10 @@ public class UserRelationRepository : IUserRelationRepository
         return await SaveAsync();
     }
 
-    public async Task<bool> RemoveRelationAsync(UserRelation userRelation)
+    public async Task<bool> RemoveRelationAsync(int followerId, int followeeId)
     {
-        _context.UserRelations.Remove(userRelation);
+        _context.UserRelations.Remove((await _context.UserRelations.FirstOrDefaultAsync(relation =>
+            relation.FollowerId == followerId && relation.FolloweeId == followeeId))!);
         return await SaveAsync();
     }
 

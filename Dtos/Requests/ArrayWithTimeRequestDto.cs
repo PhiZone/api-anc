@@ -1,11 +1,11 @@
 ﻿namespace PhiZoneApi.Dtos.Requests;
 
-public class UserRelationArrayRequestDto
+public class ArrayWithTimeRequestDto
 {
     /// <summary>
-    ///     The field by which the result is sorted. Defaults to <c>time</c>.
+    ///     The field by which the result is sorted. Defaults to <c>dateCreated</c>.
     /// </summary>
-    public string Order { get; set; } = "time";
+    public string Order { get; set; } = "dateCreated";
 
     /// <summary>
     ///     Whether or not the result is sorted in descending order. Defaults to <c>false</c>.
@@ -21,6 +21,11 @@ public class UserRelationArrayRequestDto
     ///     How many entries are present in one page. Defaults to DataSettings:PaginationPerPage.
     /// </summary>
     public int PerPage { get; set; }
+
+    /// <summary>
+    ///     A string that filters the query result in multiple fields. Optional.
+    /// </summary>
+    public string? Search { get; set; } = null;
 
     /// <summary>
     ///     A string that will be evaluated into <c>Func<T, bool></c>, which filters the query result.

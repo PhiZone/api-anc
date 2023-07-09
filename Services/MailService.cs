@@ -6,7 +6,7 @@ using MimeKit;
 using Newtonsoft.Json;
 using PhiZoneApi.Configurations;
 using PhiZoneApi.Constants;
-using PhiZoneApi.Dtos.Responses;
+using PhiZoneApi.Dtos.Deliverers;
 using PhiZoneApi.Enums;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
@@ -30,7 +30,7 @@ public class MailService : IMailService
         _redis = redis;
     }
 
-    public async Task<MailDto?> GenerateEmailAsync(User user, EmailRequestMode mode, SucceedingAction? action)
+    public async Task<MailTaskDto?> GenerateEmailAsync(User user, EmailRequestMode mode, SucceedingAction? action)
     {
         if (user.Email == null || user.UserName == null) throw new ArgumentNullException(nameof(user));
 
@@ -40,13 +40,13 @@ public class MailService : IMailService
         do
         {
             code = random.Next(1000000, 2000000).ToString()[1..];
-        } while (await db.KeyExistsAsync($"EMAIL{mode}:{code}"));
-
-        if (!await db.StringSetAsync($"EMAIL{mode}:{code}", user.Id, TimeSpan.FromMinutes(5))) return null;
+        } while (await db.KeyExistsAsync($"EMAIL:{mode}:{code}"));
+        
+        if (!await db.StringSetAsync($"EMAIL:{mode}:{code}", user.Email, TimeSpan.FromSeconds(305))) return null;
 
         var template = _templateService.GetEmailTemplate(mode, user.Language);
 
-        return new MailDto
+        return new MailTaskDto
         {
             User = user,
             EmailSubject = template["Subject"],
@@ -74,25 +74,25 @@ public class MailService : IMailService
         }
 
         var db = _redis.GetDatabase();
-        await db.StringSetAsync($"COOLDOWN{mode}:{user.Email}", DateTimeOffset.UtcNow.AddMinutes(5).ToString(),
+        await db.StringSetAsync($"COOLDOWN:{mode}:{user.Email}", DateTimeOffset.UtcNow.AddMinutes(5).ToString(),
             TimeSpan.FromMinutes(5));
         return string.Empty;
     }
 
-    public async Task<string> SendMailAsync(MailDto mailDto)
+    public async Task<string> SendMailAsync(MailTaskDto mailTaskDto)
     {
         using var emailMessage = new MimeMessage();
         var emailFrom = new MailboxAddress(_settings.SenderName, _settings.SenderAddress);
         emailMessage.From.Add(emailFrom);
-        var emailTo = new MailboxAddress(mailDto.User.UserName, mailDto.User.Email);
+        var emailTo = new MailboxAddress(mailTaskDto.User.UserName, mailTaskDto.User.Email);
         emailMessage.To.Add(emailTo);
 
         // emailMessage.Cc.Add(new MailboxAddress("Cc Receiver", "cc@example.com"));
         // emailMessage.Bcc.Add(new MailboxAddress("Bcc Receiver", "bcc@example.com"));
 
-        emailMessage.Subject = mailDto.EmailSubject;
+        emailMessage.Subject = mailTaskDto.EmailSubject;
 
-        var emailBodyBuilder = new BodyBuilder { TextBody = mailDto.EmailBody };
+        var emailBodyBuilder = new BodyBuilder { TextBody = mailTaskDto.EmailBody };
 
         emailMessage.Body = emailBodyBuilder.ToMessageBody();
 

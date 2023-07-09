@@ -33,13 +33,14 @@ public class UserController : Controller
     private readonly IMailService _mailService;
     private readonly IMapper _mapper;
     private readonly UserManager<User> _userManager;
+    private readonly IRegionRepository _regionRepository;
     private readonly IUserRelationRepository _userRelationRepository;
     private readonly IUserRepository _userRepository;
 
     public UserController(IUserRepository userRepository, IUserRelationRepository userRelationRepository,
         UserManager<User> userManager, IMailService mailService, IFilterService filterService,
         IFileStorageService fileStorageService, IOptions<DataSettings> dataSettings, IMapper mapper,
-        IDtoMapper dtoMapper)
+        IDtoMapper dtoMapper, IRegionRepository regionRepository)
     {
         _userRepository = userRepository;
         _userRelationRepository = userRelationRepository;
@@ -50,6 +51,7 @@ public class UserController : Controller
         _dataSettings = dataSettings;
         _mapper = mapper;
         _dtoMapper = dtoMapper;
+        _regionRepository = regionRepository;
     }
 
     /// <summary>
@@ -66,7 +68,11 @@ public class UserController : Controller
         [FromQuery] UserFilterDto? filterDto = null)
     {
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        dto.PerPage = dto.PerPage > 0 ? dto.PerPage : _dataSettings.Value.PaginationPerPage;
+        dto.PerPage = dto.PerPage > 0
+            ? dto.PerPage <= _dataSettings.Value.PaginationMaxPerPage
+                ? dto.PerPage
+                : _dataSettings.Value.PaginationMaxPerPage
+            : _dataSettings.Value.PaginationPerPage;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser);
         var users = await _userRepository.GetUsersAsync(dto.Order, dto.Desc, position, dto.PerPage, dto.Search,
@@ -91,7 +97,7 @@ public class UserController : Controller
     /// <summary>
     ///     Retrieves a specific user.
     /// </summary>
-    /// <param name="id">A user's ID.</param>
+    /// <param name="id">User's ID.</param>
     /// <returns>A user.</returns>
     /// <response code="200">Returns a user.</response>
     /// <response code="304">When the resource has not been updated since last retrieval (requires header <c>If-None-Match</c>).</response>
@@ -154,8 +160,7 @@ public class UserController : Controller
         string? avatarUrl = null;
         if (dto.Avatar != null)
         {
-            var stream = ImageUtil.CropImage(dto.Avatar, (1, 1));
-            avatarUrl = await _fileStorageService.Upload(dto.UserName, stream, "webp");
+            avatarUrl = await _fileStorageService.UploadImage<User>(dto.UserName, dto.Avatar, (1, 1));
         }
 
         user = new User
@@ -167,6 +172,7 @@ public class UserController : Controller
             Language = dto.Language,
             Gender = (int)dto.Gender,
             Biography = dto.Biography,
+            RegionId = (await _regionRepository.GetRegionAsync(dto.RegionCode)).Id,
             DateOfBirth =
                 dto.DateOfBirth != null
                     ? new DateTimeOffset(dto.DateOfBirth.GetValueOrDefault().DateTime, TimeSpan.Zero)
@@ -231,7 +237,6 @@ public class UserController : Controller
                 });
 
         var dto = _mapper.Map<UserUpdateDto>(user);
-
         patchDocument.ApplyTo(dto, ModelState);
 
         if (!TryValidateModel(dto))
@@ -275,6 +280,7 @@ public class UserController : Controller
         user.Gender = dto.Gender;
         user.Biography = dto.Biography;
         user.Language = dto.Language;
+        user.RegionId = (await _regionRepository.GetRegionAsync(dto.RegionCode)).Id;
 
         // Save
         await _userManager.UpdateAsync(user);
@@ -327,13 +333,56 @@ public class UserController : Controller
                 });
         if (dto.Avatar != null)
         {
-            var image = ImageUtil.CropImage(dto.Avatar, (1, 1));
-            user.Avatar = await _fileStorageService.Upload(user.UserName ?? "Avatar", image, "webp");
+            user.Avatar = await _fileStorageService.UploadImage<User>(user.UserName ?? "Avatar", dto.Avatar, (1, 1));
         }
-        else
-        {
-            user.Avatar = null;
-        }
+
+        await _userManager.UpdateAsync(user);
+        return NoContent();
+    }
+
+    /// <summary>
+    ///     Removes a user's avatar.
+    /// </summary>
+    /// <param name="id">User's ID.</param>
+    /// <returns>An empty body.</returns>
+    /// <response code="204">Returns an empty body.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
+    /// <response code="404">When the specified user is not found.</response>
+    [HttpDelete("{id:int}/avatar")]
+    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
+    [Produces("text/plain", "application/json")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> RemoveUserAvatar([FromRoute] int id)
+    {
+        // Obtain user by id
+        var user = await _userManager.FindByIdAsync(id.ToString());
+
+        // Check user's existence
+        if (user == null)
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNotFound
+            });
+
+        // Check permission
+        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        if (currentUser == null) return Unauthorized();
+
+        if ((currentUser.Id == id && !await _userManager.IsInRoleAsync(currentUser, "Member")) ||
+            (currentUser.Id != id && !await _userManager.IsInRoleAsync(currentUser, "Admin")))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+
+        user.Avatar = null;
 
         await _userManager.UpdateAsync(user);
         return NoContent();
@@ -352,7 +401,7 @@ public class UserController : Controller
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<UserDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetFollowers([FromRoute] int id, [FromQuery] UserRelationArrayRequestDto dto,
+    public async Task<IActionResult> GetFollowers([FromRoute] int id, [FromQuery] ArrayWithTimeRequestDto dto,
         [FromQuery] UserRelationFilterDto? filterDto = null)
     {
         // Obtain user by id
@@ -366,7 +415,11 @@ public class UserController : Controller
             });
 
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        dto.PerPage = dto.PerPage > 0 ? dto.PerPage : _dataSettings.Value.PaginationPerPage;
+        dto.PerPage = dto.PerPage > 0
+            ? dto.PerPage <= _dataSettings.Value.PaginationMaxPerPage
+                ? dto.PerPage
+                : _dataSettings.Value.PaginationMaxPerPage
+            : _dataSettings.Value.PaginationPerPage;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser);
         var followers =
@@ -402,7 +455,7 @@ public class UserController : Controller
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<UserDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetFollowees([FromRoute] int id, [FromQuery] UserRelationArrayRequestDto dto,
+    public async Task<IActionResult> GetFollowees([FromRoute] int id, [FromQuery] ArrayWithTimeRequestDto dto,
         [FromQuery] UserRelationFilterDto? filterDto = null)
     {
         // Obtain user by id
@@ -416,7 +469,11 @@ public class UserController : Controller
             });
 
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        dto.PerPage = dto.PerPage > 0 ? dto.PerPage : _dataSettings.Value.PaginationPerPage;
+        dto.PerPage = dto.PerPage > 0
+            ? dto.PerPage <= _dataSettings.Value.PaginationMaxPerPage
+                ? dto.PerPage
+                : _dataSettings.Value.PaginationMaxPerPage
+            : _dataSettings.Value.PaginationPerPage;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser);
         var followees =
@@ -452,6 +509,7 @@ public class UserController : Controller
     /// </response>
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="404">When the specified user is not found.</response>
+    /// <response code="500">When an internal server error has occurred.</response>
     [HttpPost("{id:int}/follow")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Produces("text/plain", "application/json")]
@@ -487,7 +545,7 @@ public class UserController : Controller
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
             });
 
-        var relation = new UserRelation { Followee = user, Follower = currentUser, Time = DateTimeOffset.UtcNow };
+        var relation = new UserRelation { Followee = user, Follower = currentUser, DateCreated = DateTimeOffset.UtcNow };
 
         if (!await _userRelationRepository.CreateRelationAsync(relation))
             return StatusCode(StatusCodes.Status500InternalServerError,
@@ -509,6 +567,7 @@ public class UserController : Controller
     /// </response>
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="404">When the specified user is not found.</response>
+    /// <response code="500">When an internal server error has occurred.</response>
     [HttpPost("{id:int}/unfollow")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Produces("text/plain", "application/json")]
@@ -544,9 +603,7 @@ public class UserController : Controller
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
             });
 
-        var relation = await _userRelationRepository.GetRelationAsync(currentUser.Id, user.Id);
-
-        if (!await _userRelationRepository.RemoveRelationAsync(relation))
+        if (!await _userRelationRepository.RemoveRelationAsync(currentUser.Id, user.Id))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 

@@ -1,9 +1,9 @@
 ﻿using PhiZoneApi.Enums;
 using PhiZoneApi.Models;
 
-namespace PhiZoneApi.Dtos.Responses;
+namespace PhiZoneApi.Dtos.Deliverers;
 
-public class MailDto
+public class MailTaskDto
 {
     public User User { get; init; } = null!;
 

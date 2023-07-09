@@ -35,7 +35,7 @@ public class RegionRepository : IRegionRepository
         return await result.Skip(position).Take(take).ToListAsync();
     }
 
-    public async Task<Region> GetRegionByIdAsync(int id)
+    public async Task<Region> GetRegionAsync(int id)
     {
         return (await _context.Regions.FirstOrDefaultAsync(region => region.Id == id))!;
     }
@@ -45,7 +45,7 @@ public class RegionRepository : IRegionRepository
         return (await _context.Regions.FirstOrDefaultAsync(region => string.Equals(region.Code, code.ToUpper())))!;
     }
 
-    public async Task<ICollection<User>> GetRegionUsersByIdAsync(int id, string order, bool desc, int position,
+    public async Task<ICollection<User>> GetRegionUsersAsync(int id, string order, bool desc, int position,
         int take, string? search = null, Expression<Func<User, bool>>? predicate = null)
     {
         var region = (await _context.Regions.FirstOrDefaultAsync(region => region.Id == id))!;
@@ -88,7 +88,7 @@ public class RegionRepository : IRegionRepository
         return await result.Skip(position).Take(take).ToListAsync();
     }
 
-    public async Task<bool> RegionExistsByIdAsync(int id)
+    public async Task<bool> RegionExistsAsync(int id)
     {
         return await _context.Regions.AnyAsync(region => region.Id == id);
     }
@@ -96,6 +96,11 @@ public class RegionRepository : IRegionRepository
     public async Task<bool> RegionExistsAsync(string code)
     {
         return await _context.Regions.AnyAsync(region => string.Equals(region.Code, code.ToUpper()));
+    }
+
+    public bool RegionExists(string code)
+    {
+        return _context.Regions.Any(region => string.Equals(region.Code, code.ToUpper()));
     }
 
     public async Task<bool> CreateRegionAsync(Region region)
@@ -110,9 +115,15 @@ public class RegionRepository : IRegionRepository
         return await SaveAsync();
     }
 
-    public async Task<bool> DeleteRegionAsync(Region region)
+    public async Task<bool> RemoveRegionAsync(string code)
     {
-        _context.Remove(region);
+        _context.Regions.Remove((await _context.Regions.FirstOrDefaultAsync(region => region.Code == code.ToUpper()))!);
+        return await SaveAsync();
+    }
+
+    public async Task<bool> RemoveRegionAsync(int id)
+    {
+        _context.Regions.Remove((await _context.Regions.FirstOrDefaultAsync(region => region.Id == id))!);
         return await SaveAsync();
     }
 
@@ -160,7 +171,7 @@ public class RegionRepository : IRegionRepository
         return await result.CountAsync();
     }
 
-    public async Task<int> CountUsersByIdAsync(int id, string? search = null,
+    public async Task<int> CountUsersAsync(int id, string? search = null,
         Expression<Func<User, bool>>? predicate = null)
     {
         var region = (await _context.Regions.FirstOrDefaultAsync(region => region.Id == id))!;

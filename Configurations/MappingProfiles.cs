@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using PhiZoneApi.Dtos.Deliverers;
 using PhiZoneApi.Dtos.Requests;
 using PhiZoneApi.Dtos.Responses;
 using PhiZoneApi.Models;
@@ -15,5 +16,11 @@ public class MappingProfiles : Profile
         CreateMap<UserRegistrationDto, User>();
         CreateMap<UserRelation, UserRelationDto>();
         CreateMap<Region, RegionDto>();
+        CreateMap<Chapter, ChapterDto>();
+        CreateMap<Chapter, ChapterUpdateDto>();
+        CreateMap<ChapterUpdateDto, Chapter>();
+        CreateMap<Song, SongDto>();
+        CreateMap<Chart, ChartDto>();
+        CreateMap<Record, RecordDto>();
     }
 }

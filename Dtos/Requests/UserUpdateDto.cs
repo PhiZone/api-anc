@@ -25,7 +25,10 @@ public class UserUpdateDto
     [LanguageValidator(ErrorMessage = ResponseCodes.UnsupportedLanguage)]
     public string Language { get; set; } = null!;
 
-    public Region? Region { get; set; }
+    [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
+    [RegularExpression(@"^[A-Z]{2}$", ErrorMessage = ResponseCodes.InvalidRegionCode)]
+    [RegionValidator(ErrorMessage = ResponseCodes.UnsupportedRegion)]
+    public string RegionCode { get; set; } = null!;
 
     [DataType(DataType.Date, ErrorMessage = ResponseCodes.InvalidDate)]
     public DateTimeOffset? DateOfBirth { get; set; }

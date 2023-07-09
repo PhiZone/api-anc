@@ -117,6 +117,22 @@ public static class ResponseCodes
     public const string UnsupportedLanguage = "UnsupportedLanguage";
 
     /// <summary>
+    ///     The input value is not a valid region code.
+    /// </summary>
+    /// <code>^[A-Z]{2}$</code>
+    public const string InvalidRegionCode = "InvalidRegionCode";
+
+    /// <summary>
+    ///     The specified region is not supported.
+    /// </summary>
+    public const string UnsupportedRegion = "UnsupportedRegion";
+
+    /// <summary>
+    ///     The specified chart format is not supported.
+    /// </summary>
+    public const string UnsupportedChartFormat = "UnsupportedChartFormat";
+
+    /// <summary>
     ///     The input value is longer than the maximum length allowed.
     /// </summary>
     public const string ValueTooLong = "ValueTooLong";
@@ -140,6 +156,16 @@ public static class ResponseCodes
     ///     The specified user is not found.
     /// </summary>
     public const string UserNotFound = "UserNotFound";
+
+    /// <summary>
+    ///     The specified parent resource is not found.
+    /// </summary>
+    public const string ParentNotFound = "ParentNotFound";
+
+    /// <summary>
+    ///     The specified resource is not found.
+    /// </summary>
+    public const string ResourceNotFound = "ResourceNotFound";
 
     /// <summary>
     ///     The user does not have enough permission to perform the action.

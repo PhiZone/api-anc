@@ -209,9 +209,9 @@ public class AuthenticationController : Controller
                 });
 
         var db = _redis.GetDatabase();
-        if (await db.KeyExistsAsync($"COOLDOWN{dto.Mode}:{user.Email}"))
+        if (await db.KeyExistsAsync($"COOLDOWN:{dto.Mode}:{user.Email}"))
         {
-            var dateAvailable = DateTimeOffset.Parse((await db.StringGetAsync($"COOLDOWN{dto.Mode}:{user.Email}"))!);
+            var dateAvailable = DateTimeOffset.Parse((await db.StringGetAsync($"COOLDOWN:{dto.Mode}:{user.Email}"))!);
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorTemporarilyUnavailable,
@@ -316,11 +316,11 @@ public class AuthenticationController : Controller
     private async Task<User?> RedeemCode(string code, EmailRequestMode mode)
     {
         var db = _redis.GetDatabase();
-        var key = $"EMAIL{mode}:{code}";
+        var key = $"EMAIL:{mode}:{code}";
         if (!await db.KeyExistsAsync(key)) return null;
-        var id = await db.StringGetAsync(key);
+        var email = await db.StringGetAsync(key);
         db.KeyDelete(key);
-        var user = (await _userManager.FindByIdAsync(id!))!;
+        var user = (await _userManager.FindByEmailAsync(email!))!;
         return user;
     }
 

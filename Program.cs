@@ -93,9 +93,15 @@ builder.Services.AddIdentity<User, Role>()
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserRelationRepository, UserRelationRepository>();
 builder.Services.AddScoped<IRegionRepository, RegionRepository>();
+builder.Services.AddScoped<IChapterRepository, ChapterRepository>();
+builder.Services.AddScoped<ISongRepository, SongRepository>();
+builder.Services.AddScoped<IChartRepository, ChartRepository>();
+builder.Services.AddScoped<ILikeRepository, LikeRepository>();
 builder.Services.AddScoped<IFilterService, FilterService>();
 builder.Services.AddScoped<IDtoMapper, DtoMapper>();
 builder.Services.AddScoped<ETagFilter>();
+builder.Services.AddScoped<ISongService, SongService>();
+builder.Services.AddSingleton<IChartService, ChartService>();
 builder.Services.AddTransient<IMailService, MailService>();
 builder.Services.AddSingleton<IFileStorageService, FileStorageService>();
 builder.Services.AddSingleton<ITemplateService, TemplateService>();
@@ -105,6 +111,10 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(
 builder.Services.AddSingleton<IHostedService>(provider => new MailSenderService(provider.GetService<IMailService>()!,
     provider.GetService<IRabbitMqService>()!,
     provider.GetService<IServiceScopeFactory>()!.CreateScope().ServiceProvider.GetService<UserManager<User>>()!));
+builder.Services.AddSingleton<IHostedService>(provider => new SongConverterService(
+    provider.GetService<IRabbitMqService>()!,
+    provider.GetService<IServiceScopeFactory>()!.CreateScope().ServiceProvider.GetService<ISongService>()!,
+    provider.GetService<IServiceScopeFactory>()!.CreateScope().ServiceProvider.GetService<ISongRepository>()!));
 builder.Services.AddHostedService<DatabaseSeeder>();
 
 builder.Services.Configure<ApiBehaviorOptions>(options => { options.SuppressModelStateInvalidFilter = true; });
@@ -130,7 +140,7 @@ builder.Services.AddSwaggerGen(options =>
     options.SwaggerDoc("v2",
         new OpenApiInfo
         {
-            Version = "v2", Title = "PhiZone API v2", Description = "Backend of PhiZone, based on ASP.NET Core."
+            Version = "v2", Title = "PhiZone API", Description = "Backend of PhiZone, based on ASP.NET Core."
         });
 
     var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
