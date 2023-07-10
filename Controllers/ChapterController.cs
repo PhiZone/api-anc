@@ -29,16 +29,20 @@ namespace PhiZoneApi.Controllers;
 public class ChapterController : Controller
 {
     private readonly IChapterRepository _chapterRepository;
+    private readonly ICommentRepository _commentRepository;
     private readonly IOptions<DataSettings> _dataSettings;
     private readonly IDtoMapper _dtoMapper;
     private readonly IFileStorageService _fileStorageService;
     private readonly IFilterService _filterService;
+    private readonly ILikeRepository _likeRepository;
+    private readonly ILikeService _likeService;
     private readonly IMapper _mapper;
     private readonly UserManager<User> _userManager;
 
     public ChapterController(IChapterRepository chapterRepository, IOptions<DataSettings> dataSettings,
         UserManager<User> userManager, IFilterService filterService, IFileStorageService fileStorageService,
-        IDtoMapper dtoMapper, IMapper mapper)
+        IDtoMapper dtoMapper, IMapper mapper, ILikeRepository likeRepository, ILikeService likeService,
+        ICommentRepository commentRepository)
     {
         _chapterRepository = chapterRepository;
         _dataSettings = dataSettings;
@@ -46,6 +50,9 @@ public class ChapterController : Controller
         _filterService = filterService;
         _dtoMapper = dtoMapper;
         _mapper = mapper;
+        _likeRepository = likeRepository;
+        _likeService = likeService;
+        _commentRepository = commentRepository;
         _fileStorageService = fileStorageService;
     }
 
@@ -72,7 +79,7 @@ public class ChapterController : Controller
         var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser);
         var chapters = await _chapterRepository.GetChaptersAsync(dto.Order, dto.Desc, position,
             dto.PerPage, dto.Search, predicateExpr);
-        var total = await _chapterRepository.CountAsync(dto.Search, predicateExpr);
+        var total = await _chapterRepository.CountChaptersAsync(dto.Search, predicateExpr);
         var list = new List<ChapterDto>();
 
         foreach (var chapter in chapters) list.Add(await _dtoMapper.MapChapterAsync<ChapterDto>(chapter, currentUser));
@@ -310,5 +317,186 @@ public class ChapterController : Controller
             HasNext = position < total - total % dto.PerPage,
             Data = list
         });
+    }
+
+    /// <summary>
+    ///     Retrieves likes from a specific chapter.
+    /// </summary>
+    /// <param name="id">A chapter's ID.</param>
+    /// <returns>An array of likes.</returns>
+    /// <response code="200">Returns an array of likes.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="404">When the specified chapter is not found.</response>
+    [HttpGet("{id}/likes")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<LikeDto>>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> GetChapterLikes([FromRoute] Guid id, [FromQuery] ArrayWithTimeRequestDto dto)
+    {
+        dto.PerPage = dto.PerPage > 0
+            ? dto.PerPage <= _dataSettings.Value.PaginationMaxPerPage
+                ? dto.PerPage
+                : _dataSettings.Value.PaginationMaxPerPage
+            : _dataSettings.Value.PaginationPerPage;
+        var position = dto.PerPage * (dto.Page - 1);
+        if (!await _chapterRepository.ChapterExistsAsync(id)) return NotFound();
+        var likes = await _likeRepository.GetLikesAsync(dto.Order, dto.Desc, position, dto.PerPage,
+            e => e.ResourceId == id);
+        var list = _mapper.Map<List<LikeDto>>(likes);
+        var total = await _likeRepository.CountLikesAsync(e => e.ResourceId == id);
+
+        return Ok(new ResponseDto<IEnumerable<LikeDto>>
+        {
+            Status = ResponseStatus.Ok,
+            Code = ResponseCodes.Ok,
+            Total = total,
+            PerPage = dto.PerPage,
+            HasPrevious = position > 0,
+            HasNext = position < total - total % dto.PerPage,
+            Data = list
+        });
+    }
+
+    /// <summary>
+    ///     Like a specific chapter.
+    /// </summary>
+    /// <param name="id">A chapter's ID.</param>
+    /// <returns>An empty body.</returns>
+    /// <response code="201">Returns an empty body.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="404">When the specified chapter is not found.</response>
+    [HttpPost("{id}/likes")]
+    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> CreateLike([FromRoute] Guid id)
+    {
+        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        if (!await _chapterRepository.ChapterExistsAsync(id)) return NotFound();
+        var chapter = await _chapterRepository.GetChapterAsync(id);
+        if (!await _likeService.CreateLikeAsync(chapter, currentUser!.Id))
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief,
+                Code = ResponseCodes.AlreadyDone
+            });
+
+        return StatusCode(StatusCodes.Status201Created);
+    }
+
+    /// <summary>
+    ///     Removes the like from a specific chapter.
+    /// </summary>
+    /// <param name="id">A chapter's ID.</param>
+    /// <returns>An empty body.</returns>
+    /// <response code="204">Returns an empty body.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="404">When the specified chapter is not found.</response>
+    [HttpDelete("{id}/likes")]
+    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> RemoveLike([FromRoute] Guid id)
+    {
+        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        if (!await _chapterRepository.ChapterExistsAsync(id)) return NotFound();
+        var chapter = await _chapterRepository.GetChapterAsync(id);
+        if (!await _likeService.RemoveLikeAsync(chapter, currentUser!.Id))
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief,
+                Code = ResponseCodes.AlreadyDone
+            });
+
+        return NoContent();
+    }
+
+    /// <summary>
+    ///     Retrieves comments from a specific chapter.
+    /// </summary>
+    /// <param name="id">A chapter's ID.</param>
+    /// <returns>An array of comments.</returns>
+    /// <response code="200">Returns an array of comments.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="404">When the specified chapter is not found.</response>
+    [HttpGet("{id}/comments")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<CommentDto>>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> GetChapterComments([FromRoute] Guid id, [FromQuery] ArrayWithTimeRequestDto dto)
+    {
+        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        dto.PerPage = dto.PerPage > 0
+            ? dto.PerPage <= _dataSettings.Value.PaginationMaxPerPage
+                ? dto.PerPage
+                : _dataSettings.Value.PaginationMaxPerPage
+            : _dataSettings.Value.PaginationPerPage;
+        var position = dto.PerPage * (dto.Page - 1);
+        if (!await _chapterRepository.ChapterExistsAsync(id)) return NotFound();
+        var comments = await _commentRepository.GetCommentsAsync(dto.Order, dto.Desc, position, dto.PerPage,
+            e => e.ResourceId == id);
+        var list = new List<CommentDto>();
+        var total = await _commentRepository.CountCommentsAsync(e => e.ResourceId == id);
+
+        foreach (var comment in comments) list.Add(await _dtoMapper.MapCommentAsync<CommentDto>(comment, currentUser));
+
+        return Ok(new ResponseDto<IEnumerable<CommentDto>>
+        {
+            Status = ResponseStatus.Ok,
+            Code = ResponseCodes.Ok,
+            Total = total,
+            PerPage = dto.PerPage,
+            HasPrevious = position > 0,
+            HasNext = position < total - total % dto.PerPage,
+            Data = list
+        });
+    }
+
+    /// <summary>
+    ///     Comments on a specific chapter.
+    /// </summary>
+    /// <param name="id">A chapter's ID.</param>
+    /// <returns>An empty body.</returns>
+    /// <response code="201">Returns an empty body.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="404">When the specified chapter is not found.</response>
+    [HttpPost("{id}/comments")]
+    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> CreateComment([FromRoute] Guid id, [FromBody] CommentCreationDto dto)
+    {
+        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        if (!await _userManager.IsInRoleAsync(currentUser!, Roles.Member))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+        if (!await _chapterRepository.ChapterExistsAsync(id)) return NotFound();
+        var chapter = await _chapterRepository.GetChapterAsync(id);
+        var comment = new Comment
+        {
+            ResourceId = chapter.Id,
+            Content = dto.Content,
+            Language = dto.Language,
+            OwnerId = currentUser!.Id,
+            DateCreated = DateTimeOffset.UtcNow
+        };
+        if (!await _commentRepository.CreateCommentAsync(comment))
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
+            });
+
+        return StatusCode(StatusCodes.Status201Created);
     }
 }

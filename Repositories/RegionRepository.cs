@@ -105,13 +105,13 @@ public class RegionRepository : IRegionRepository
 
     public async Task<bool> CreateRegionAsync(Region region)
     {
-        await _context.AddAsync(region);
+        await _context.Regions.AddAsync(region);
         return await SaveAsync();
     }
 
     public async Task<bool> UpdateRegionAsync(Region region)
     {
-        _context.Update(region);
+        _context.Regions.Update(region);
         return await SaveAsync();
     }
 
@@ -133,7 +133,7 @@ public class RegionRepository : IRegionRepository
         return saved > 0;
     }
 
-    public async Task<int> CountAsync(string? search = null, Expression<Func<Region, bool>>? predicate = null)
+    public async Task<int> CountRegionsAsync(string? search = null, Expression<Func<Region, bool>>? predicate = null)
     {
         var result = _context.Regions.AsQueryable();
 
@@ -149,7 +149,7 @@ public class RegionRepository : IRegionRepository
         return await result.CountAsync();
     }
 
-    public async Task<int> CountUsersAsync(string code, string? search = null,
+    public async Task<int> CountRegionUsersAsync(string code, string? search = null,
         Expression<Func<User, bool>>? predicate = null)
     {
         var region = (await _context.Regions.FirstOrDefaultAsync(region =>
@@ -171,7 +171,7 @@ public class RegionRepository : IRegionRepository
         return await result.CountAsync();
     }
 
-    public async Task<int> CountUsersAsync(int id, string? search = null,
+    public async Task<int> CountRegionUsersAsync(int id, string? search = null,
         Expression<Func<User, bool>>? predicate = null)
     {
         var region = (await _context.Regions.FirstOrDefaultAsync(region => region.Id == id))!;

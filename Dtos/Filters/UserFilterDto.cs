@@ -25,9 +25,13 @@ public class UserFilterDto : FilterDto<User>
 
     public string? EqualsTag { get; set; }
 
+    public List<string>? RangeTag { get; set; }
+
     public string? ContainsLanguage { get; set; }
 
     public string? EqualsLanguage { get; set; }
+
+    public List<string>? RangeLanguage { get; set; }
 
     public double? MinRks { get; set; }
 

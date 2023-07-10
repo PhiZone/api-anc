@@ -186,4 +186,9 @@ public static class ResponseCodes
     ///     The operation is invalid.
     /// </summary>
     public const string InvalidOperation = "InvalidOperation";
+
+    /// <summary>
+    ///     The time relation is invalid.
+    /// </summary>
+    public const string InvalidTimeRelation = "InvalidTimeRelation";
 }

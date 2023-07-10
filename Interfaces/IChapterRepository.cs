@@ -23,7 +23,7 @@ public interface IChapterRepository
 
     Task<bool> SaveAsync();
 
-    Task<int> CountAsync(string? search = null, Expression<Func<Chapter, bool>>? predicate = null);
+    Task<int> CountChaptersAsync(string? search = null, Expression<Func<Chapter, bool>>? predicate = null);
 
     Task<int> CountSongsAsync(Guid id, string? search = null, Expression<Func<Song, bool>>? predicate = null);
 }

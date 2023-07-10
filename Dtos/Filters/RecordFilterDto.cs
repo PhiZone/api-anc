@@ -82,11 +82,7 @@ public class RecordFilterDto : FilterDto<Record>
 
     public List<int>? RangeGoodJudgment { get; set; }
 
-    public int? MinAppId { get; set; }
-
-    public int? MaxAppId { get; set; }
-
-    public List<int>? RangeAppId { get; set; }
+    public List<Guid>? RangeApplicationId { get; set; }
 
     public DateTimeOffset? EarliestDateCreated { get; set; }
 

@@ -65,7 +65,7 @@ public class RegionController : Controller
         var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser);
         var list = _mapper.Map<List<RegionDto>>(await _regionRepository.GetRegionsAsync(dto.Order, dto.Desc, position,
             dto.PerPage, dto.Search, predicateExpr));
-        var total = await _regionRepository.CountAsync(dto.Search, predicateExpr);
+        var total = await _regionRepository.CountRegionsAsync(dto.Search, predicateExpr);
 
         return Ok(new ResponseDto<IEnumerable<RegionDto>>
         {
@@ -158,7 +158,7 @@ public class RegionController : Controller
         var users = await _regionRepository.GetRegionUsersAsync(code, dto.Order, dto.Desc, position, dto.PerPage,
             dto.Search, predicateExpr);
         var list = new List<UserDto>();
-        var total = await _regionRepository.CountUsersAsync(code, dto.Search, predicateExpr);
+        var total = await _regionRepository.CountRegionUsersAsync(code, dto.Search, predicateExpr);
 
         foreach (var user in users) list.Add(await _dtoMapper.MapUserAsync<UserDto>(user, currentUser));
 
@@ -202,7 +202,7 @@ public class RegionController : Controller
         var users = await _regionRepository.GetRegionUsersAsync(id, dto.Order, dto.Desc, position, dto.PerPage,
             dto.Search, predicateExpr);
         var list = new List<UserDto>();
-        var total = await _regionRepository.CountUsersAsync(id, dto.Search, predicateExpr);
+        var total = await _regionRepository.CountRegionUsersAsync(id, dto.Search, predicateExpr);
 
         foreach (var user in users) list.Add(await _dtoMapper.MapUserAsync<UserDto>(user, currentUser));
 

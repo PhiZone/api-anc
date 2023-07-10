@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.StaticFiles;
+
 // ReSharper disable StringLiteralTypo
 
 namespace PhiZoneApi.Utils;

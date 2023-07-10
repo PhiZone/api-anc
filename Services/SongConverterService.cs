@@ -38,6 +38,10 @@ public class SongConverterService : BackgroundService
             {
                 song.File = result.Value.Item1;
                 song.Duration = result.Value.Item2;
+                if (song.PreviewEnd > song.Duration) song.PreviewEnd = song.Duration.Value;
+
+                if (song.PreviewStart > song.PreviewEnd) song.PreviewStart = TimeSpan.Zero;
+
                 await _songRepository.UpdateSongAsync(song);
             }
 

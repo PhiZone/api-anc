@@ -69,13 +69,13 @@ public class SongRepository : ISongRepository
 
     public async Task<bool> CreateSongAsync(Song song)
     {
-        await _context.AddAsync(song);
+        await _context.Songs.AddAsync(song);
         return await SaveAsync();
     }
 
     public async Task<bool> UpdateSongAsync(Song song)
     {
-        _context.Update(song);
+        _context.Songs.Update(song);
         return await SaveAsync();
     }
 
@@ -91,7 +91,7 @@ public class SongRepository : ISongRepository
         return saved > 0;
     }
 
-    public async Task<int> CountAsync(string? search = null, Expression<Func<Song, bool>>? predicate = null)
+    public async Task<int> CountSongsAsync(string? search = null, Expression<Func<Song, bool>>? predicate = null)
     {
         var result = _context.Songs.AsQueryable();
 
@@ -109,7 +109,7 @@ public class SongRepository : ISongRepository
         return await result.CountAsync();
     }
 
-    public async Task<int> CountChartsAsync(Guid id, string? search = null,
+    public async Task<int> CountSongChartsAsync(Guid id, string? search = null,
         Expression<Func<Chart, bool>>? predicate = null)
     {
         var song = (await _context.Songs.FirstOrDefaultAsync(song => song.Id == id))!;

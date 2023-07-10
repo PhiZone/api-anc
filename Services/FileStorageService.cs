@@ -1,4 +1,5 @@
-﻿using LeanCloud;
+﻿using System.Web;
+using LeanCloud;
 using LeanCloud.Storage;
 using Microsoft.Extensions.Options;
 using PhiZoneApi.Configurations;
@@ -51,6 +52,7 @@ public class FileStorageService : IFileStorageService
     {
         var chars = Path.GetInvalidFileNameChars().Concat(new[] { ' ' });
 
-        return chars.Aggregate(input, (current, invalidChar) => current.Replace(invalidChar.ToString(), string.Empty));
+        return HttpUtility.UrlEncode(chars.Aggregate(input,
+            (current, invalidChar) => current.Replace(invalidChar.ToString(), string.Empty)));
     }
 }

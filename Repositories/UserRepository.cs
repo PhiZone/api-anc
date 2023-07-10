@@ -38,7 +38,7 @@ public class UserRepository : IUserRepository
         return await result.Skip(position).Take(take).ToListAsync();
     }
 
-    public async Task<int> CountAsync(string? search = null, Expression<Func<User, bool>>? predicate = null)
+    public async Task<int> CountUsersAsync(string? search = null, Expression<Func<User, bool>>? predicate = null)
     {
         var result = _context.Users.AsQueryable();
 

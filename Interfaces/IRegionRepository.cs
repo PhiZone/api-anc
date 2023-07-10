@@ -34,9 +34,9 @@ public interface IRegionRepository
 
     Task<bool> SaveAsync();
 
-    Task<int> CountAsync(string? search = null, Expression<Func<Region, bool>>? predicate = null);
+    Task<int> CountRegionsAsync(string? search = null, Expression<Func<Region, bool>>? predicate = null);
 
-    Task<int> CountUsersAsync(string code, string? search = null, Expression<Func<User, bool>>? predicate = null);
+    Task<int> CountRegionUsersAsync(string code, string? search = null, Expression<Func<User, bool>>? predicate = null);
 
-    Task<int> CountUsersAsync(int id, string? search = null, Expression<Func<User, bool>>? predicate = null);
+    Task<int> CountRegionUsersAsync(int id, string? search = null, Expression<Func<User, bool>>? predicate = null);
 }

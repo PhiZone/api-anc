@@ -68,13 +68,13 @@ public class ChapterRepository : IChapterRepository
 
     public async Task<bool> CreateChapterAsync(Chapter chapter)
     {
-        await _context.AddAsync(chapter);
+        await _context.Chapters.AddAsync(chapter);
         return await SaveAsync();
     }
 
     public async Task<bool> UpdateChapterAsync(Chapter chapter)
     {
-        _context.Update(chapter);
+        _context.Chapters.Update(chapter);
         return await SaveAsync();
     }
 
@@ -90,7 +90,7 @@ public class ChapterRepository : IChapterRepository
         return saved > 0;
     }
 
-    public async Task<int> CountAsync(string? search = null, Expression<Func<Chapter, bool>>? predicate = null)
+    public async Task<int> CountChaptersAsync(string? search = null, Expression<Func<Chapter, bool>>? predicate = null)
     {
         var result = _context.Chapters.AsQueryable();
 

@@ -4,15 +4,31 @@ namespace PhiZoneApi.Interfaces;
 
 public interface ILikeService
 {
-    Task CreateLikeAsync(Chapter chapter, int userId);
-    
-    Task CreateLikeAsync(Song song, int userId);
-    
-    Task CreateLikeAsync(Chart chart, int userId);
-    
-    Task CreateLikeAsync(Record record, int userId);
-    
-    Task CreateLikeAsync(Comment comment, int userId);
-    
-    Task CreateLikeAsync(Reply reply, int userId);
+    Task<bool> CreateLikeAsync(Chapter chapter, int userId);
+
+    Task<bool> CreateLikeAsync(Song song, int userId);
+
+    Task<bool> CreateLikeAsync(Chart chart, int userId);
+
+    Task<bool> CreateLikeAsync(Record record, int userId);
+
+    Task<bool> CreateLikeAsync(Comment comment, int userId);
+
+    Task<bool> CreateLikeAsync(Reply reply, int userId);
+
+    Task<bool> CreateLikeAsync(Application application, int userId);
+
+    Task<bool> RemoveLikeAsync(Chapter chapter, int userId);
+
+    Task<bool> RemoveLikeAsync(Song song, int userId);
+
+    Task<bool> RemoveLikeAsync(Chart chart, int userId);
+
+    Task<bool> RemoveLikeAsync(Record record, int userId);
+
+    Task<bool> RemoveLikeAsync(Comment comment, int userId);
+
+    Task<bool> RemoveLikeAsync(Reply reply, int userId);
+
+    Task<bool> RemoveLikeAsync(Application application, int userId);
 }

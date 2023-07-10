@@ -62,7 +62,7 @@ public class UserRelationController : Controller
         var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser);
         var userRelations =
             await _userRelationRepository.GetRelationsAsync(dto.Order, dto.Desc, position, dto.PerPage, predicateExpr);
-        var total = await _userRelationRepository.CountAsync(predicateExpr);
+        var total = await _userRelationRepository.CountRelationsAsync(predicateExpr);
         var list = new List<UserRelationDto>();
 
         foreach (var userRelation in userRelations)

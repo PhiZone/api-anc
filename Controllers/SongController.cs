@@ -28,10 +28,13 @@ namespace PhiZoneApi.Controllers;
     Policy = "AllowAnonymous")]
 public class SongController : Controller
 {
+    private readonly ICommentRepository _commentRepository;
     private readonly IOptions<DataSettings> _dataSettings;
     private readonly IDtoMapper _dtoMapper;
     private readonly IFileStorageService _fileStorageService;
     private readonly IFilterService _filterService;
+    private readonly ILikeRepository _likeRepository;
+    private readonly ILikeService _likeService;
     private readonly IMapper _mapper;
     private readonly ISongRepository _songRepository;
     private readonly ISongService _songService;
@@ -39,7 +42,8 @@ public class SongController : Controller
 
     public SongController(ISongRepository songRepository, IOptions<DataSettings> dataSettings,
         UserManager<User> userManager, IFilterService filterService, IFileStorageService fileStorageService,
-        IDtoMapper dtoMapper, IMapper mapper, ISongService songService)
+        IDtoMapper dtoMapper, IMapper mapper, ISongService songService, ILikeRepository likeRepository,
+        ILikeService likeService, ICommentRepository commentRepository)
     {
         _songRepository = songRepository;
         _dataSettings = dataSettings;
@@ -48,6 +52,9 @@ public class SongController : Controller
         _dtoMapper = dtoMapper;
         _mapper = mapper;
         _songService = songService;
+        _likeRepository = likeRepository;
+        _likeService = likeService;
+        _commentRepository = commentRepository;
         _fileStorageService = fileStorageService;
     }
 
@@ -74,7 +81,7 @@ public class SongController : Controller
         var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser);
         var songs = await _songRepository.GetSongsAsync(dto.Order, dto.Desc, position, dto.PerPage, dto.Search,
             predicateExpr);
-        var total = await _songRepository.CountAsync(dto.Search, predicateExpr);
+        var total = await _songRepository.CountSongsAsync(dto.Search, predicateExpr);
         var list = new List<SongDto>();
 
         foreach (var song in songs) list.Add(await _dtoMapper.MapSongAsync<SongDto>(song, currentUser));
@@ -151,6 +158,20 @@ public class SongController : Controller
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.DataInvalid
                 });
+
+            if (!(TimeSpan.Zero <= dto.PreviewStart && dto.PreviewStart <= dto.PreviewEnd &&
+                  dto.PreviewEnd <= songInfo.Value.Item2))
+                return BadRequest(new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidTimeRelation
+                });
+        }
+        else if (!(TimeSpan.Zero <= dto.PreviewStart && dto.PreviewStart <= dto.PreviewEnd))
+        {
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidTimeRelation
+            });
         }
 
         var illustrationUrl = await _fileStorageService.UploadImage<Song>(dto.Title, dto.Illustration, (16, 9));
@@ -184,6 +205,7 @@ public class SongController : Controller
         if (!await _songRepository.CreateSongAsync(song))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+
         if (!wait) await _songService.PublishAsync(dto.File, song.Id);
 
         return StatusCode(StatusCodes.Status201Created);
@@ -237,6 +259,13 @@ public class SongController : Controller
                 Status = ResponseStatus.ErrorDetailed,
                 Code = ResponseCodes.DataInvalid,
                 Errors = ModelErrorTranslator.Translate(ModelState)
+            });
+
+        if (!(TimeSpan.Zero <= dto.PreviewStart && dto.PreviewStart <= dto.PreviewEnd &&
+              dto.PreviewEnd <= song.Duration))
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidTimeRelation
             });
 
         song = _mapper.Map<Song>(dto);
@@ -304,6 +333,9 @@ public class SongController : Controller
 
                 song.File = songInfo.Value.Item1;
                 song.Duration = songInfo.Value.Item2;
+                if (song.PreviewEnd > song.Duration) song.PreviewEnd = song.Duration.Value;
+
+                if (song.PreviewStart > song.PreviewEnd) song.PreviewStart = TimeSpan.Zero;
             }
         }
 
@@ -390,7 +422,7 @@ public class SongController : Controller
         var charts = await _songRepository.GetSongChartsAsync(id, dto.Order, dto.Desc, position, dto.PerPage,
             dto.Search, predicateExpr);
         var list = new List<ChartDto>();
-        var total = await _songRepository.CountChartsAsync(id, dto.Search, predicateExpr);
+        var total = await _songRepository.CountSongChartsAsync(id, dto.Search, predicateExpr);
 
         foreach (var chart in charts) list.Add(await _dtoMapper.MapChartAsync<ChartDto>(chart, currentUser));
 
@@ -404,5 +436,184 @@ public class SongController : Controller
             HasNext = position < total - total % dto.PerPage,
             Data = list
         });
+    }
+
+    /// <summary>
+    ///     Retrieves likes from a specific song.
+    /// </summary>
+    /// <param name="id">A song's ID.</param>
+    /// <returns>An array of likes.</returns>
+    /// <response code="200">Returns an array of likes.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="404">When the specified song is not found.</response>
+    [HttpGet("{id}/likes")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<LikeDto>>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> GetSongLikes([FromRoute] Guid id, [FromQuery] ArrayWithTimeRequestDto dto)
+    {
+        dto.PerPage = dto.PerPage > 0
+            ? dto.PerPage <= _dataSettings.Value.PaginationMaxPerPage
+                ? dto.PerPage
+                : _dataSettings.Value.PaginationMaxPerPage
+            : _dataSettings.Value.PaginationPerPage;
+        var position = dto.PerPage * (dto.Page - 1);
+        if (!await _songRepository.SongExistsAsync(id)) return NotFound();
+        var likes = await _likeRepository.GetLikesAsync(dto.Order, dto.Desc, position, dto.PerPage,
+            e => e.ResourceId == id);
+        var list = _mapper.Map<List<LikeDto>>(likes);
+        var total = await _likeRepository.CountLikesAsync(e => e.ResourceId == id);
+
+        return Ok(new ResponseDto<IEnumerable<LikeDto>>
+        {
+            Status = ResponseStatus.Ok,
+            Code = ResponseCodes.Ok,
+            Total = total,
+            PerPage = dto.PerPage,
+            HasPrevious = position > 0,
+            HasNext = position < total - total % dto.PerPage,
+            Data = list
+        });
+    }
+
+    /// <summary>
+    ///     Likes a specific song.
+    /// </summary>
+    /// <param name="id">A song's ID.</param>
+    /// <returns>An empty body.</returns>
+    /// <response code="201">Returns an empty body.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="404">When the specified song is not found.</response>
+    [HttpPost("{id}/likes")]
+    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> CreateLike([FromRoute] Guid id)
+    {
+        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        if (!await _songRepository.SongExistsAsync(id)) return NotFound();
+        var song = await _songRepository.GetSongAsync(id);
+        if (!await _likeService.CreateLikeAsync(song, currentUser!.Id))
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
+            });
+
+        return StatusCode(StatusCodes.Status201Created);
+    }
+
+    /// <summary>
+    ///     Removes the like from a specific song.
+    /// </summary>
+    /// <param name="id">A song's ID.</param>
+    /// <returns>An empty body.</returns>
+    /// <response code="204">Returns an empty body.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="404">When the specified song is not found.</response>
+    [HttpDelete("{id}/likes")]
+    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
+    [Produces("text/plain", "application/json")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> RemoveLike([FromRoute] Guid id)
+    {
+        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        if (!await _songRepository.SongExistsAsync(id)) return NotFound();
+        var song = await _songRepository.GetSongAsync(id);
+        if (!await _likeService.RemoveLikeAsync(song, currentUser!.Id))
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
+            });
+
+        return NoContent();
+    }
+
+    /// <summary>
+    ///     Retrieves comments from a specific song.
+    /// </summary>
+    /// <param name="id">A song's ID.</param>
+    /// <returns>An array of comments.</returns>
+    /// <response code="200">Returns an array of comments.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="404">When the specified song is not found.</response>
+    [HttpGet("{id}/comments")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<CommentDto>>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> GetSongComments([FromRoute] Guid id, [FromQuery] ArrayWithTimeRequestDto dto)
+    {
+        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        dto.PerPage = dto.PerPage > 0
+            ? dto.PerPage <= _dataSettings.Value.PaginationMaxPerPage
+                ? dto.PerPage
+                : _dataSettings.Value.PaginationMaxPerPage
+            : _dataSettings.Value.PaginationPerPage;
+        var position = dto.PerPage * (dto.Page - 1);
+        if (!await _songRepository.SongExistsAsync(id)) return NotFound();
+        var comments = await _commentRepository.GetCommentsAsync(dto.Order, dto.Desc, position, dto.PerPage,
+            e => e.ResourceId == id);
+        var list = new List<CommentDto>();
+        var total = await _commentRepository.CountCommentsAsync(e => e.ResourceId == id);
+
+        foreach (var comment in comments) list.Add(await _dtoMapper.MapCommentAsync<CommentDto>(comment, currentUser));
+
+        return Ok(new ResponseDto<IEnumerable<CommentDto>>
+        {
+            Status = ResponseStatus.Ok,
+            Code = ResponseCodes.Ok,
+            Total = total,
+            PerPage = dto.PerPage,
+            HasPrevious = position > 0,
+            HasNext = position < total - total % dto.PerPage,
+            Data = list
+        });
+    }
+
+    /// <summary>
+    ///     Comments on a specific song.
+    /// </summary>
+    /// <param name="id">A song's ID.</param>
+    /// <returns>An empty body.</returns>
+    /// <response code="201">Returns an empty body.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="404">When the specified song is not found.</response>
+    [HttpPost("{id}/comments")]
+    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> CreateComment([FromRoute] Guid id, [FromBody] CommentCreationDto dto)
+    {
+        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        if (!await _userManager.IsInRoleAsync(currentUser!, Roles.Member))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+        if (!await _songRepository.SongExistsAsync(id)) return NotFound();
+        var song = await _songRepository.GetSongAsync(id);
+        var comment = new Comment
+        {
+            ResourceId = song.Id,
+            Content = dto.Content,
+            Language = dto.Language,
+            OwnerId = currentUser!.Id,
+            DateCreated = DateTimeOffset.UtcNow
+        };
+        if (!await _commentRepository.CreateCommentAsync(comment))
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
+            });
+
+        return StatusCode(StatusCodes.Status201Created);
     }
 }

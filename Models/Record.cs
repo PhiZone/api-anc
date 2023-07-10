@@ -29,4 +29,8 @@ public class Record : LikeableResource
     public int PerfectJudgment { get; set; }
 
     public int GoodJudgment { get; set; }
+
+    public Guid ApplicationId { get; set; }
+
+    public Application Application { get; set; } = null!;
 }

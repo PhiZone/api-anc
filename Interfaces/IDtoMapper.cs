@@ -17,4 +17,12 @@ public interface IDtoMapper
     Task<T> MapSongAsync<T>(Song song, User? currentUser = null) where T : SongDto;
 
     Task<T> MapChartAsync<T>(Chart chart, User? currentUser = null) where T : ChartDto;
+
+    Task<T> MapRecordAsync<T>(Record record, User? currentUser = null) where T : RecordDto;
+
+    Task<T> MapCommentAsync<T>(Comment comment, User? currentUser = null) where T : CommentDto;
+
+    Task<T> MapReplyAsync<T>(Reply reply, User? currentUser = null) where T : ReplyDto;
+
+    Task<T> MapApplicationAsync<T>(Application application, User? currentUser = null) where T : ApplicationDto;
 }

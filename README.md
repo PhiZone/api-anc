@@ -11,7 +11,7 @@ Based on ASP.NET Core.
     - [x] Filtering
     - [x] ETag
 2. Data Persistence
-    - [ ] Inheritance
+    - [x] Inheritance
     - [ ] File Digest
 3. Authentication
     - [x] Registration
@@ -22,19 +22,6 @@ Based on ASP.NET Core.
     - [x] Password Reset
     - [ ] Two-factor Authentication
     - [ ] Phone Number Confirmation
-4. User
-    - [x] Model Creation
-    - [x] Retrieval
-    - [x] Update
-    - [ ] Deletion
-5. User Relation
-    - [x] Model Creation
-    - [x] Retrieval
-    - [x] Deletion
-    - [x] Count
-6. Region
-    - [x] Model Creation
-    - [x] Retrieval
 
 ## Configuration
 

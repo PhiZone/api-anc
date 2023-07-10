@@ -4,7 +4,7 @@ public class RecordDto
 {
     public Guid Id { get; set; }
 
-    public int PlayerId { get; set; }
+    public int OwnerId { get; set; }
 
     public Guid ChartId { get; set; }
 
@@ -32,7 +32,11 @@ public class RecordDto
 
     public int GoodJudgment { get; set; }
 
-    public int AppId { get; set; }
+    public int LikeCount { get; set; }
 
     public DateTimeOffset DateCreated { get; set; }
+
+    public Guid ApplicationId { get; set; }
+
+    public DateTimeOffset? DateLiked { get; set; }
 }

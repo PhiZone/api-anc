@@ -25,7 +25,7 @@ public interface ISongRepository
 
     Task<bool> SaveAsync();
 
-    Task<int> CountAsync(string? search = null, Expression<Func<Song, bool>>? predicate = null);
+    Task<int> CountSongsAsync(string? search = null, Expression<Func<Song, bool>>? predicate = null);
 
-    Task<int> CountChartsAsync(Guid id, string? search = null, Expression<Func<Chart, bool>>? predicate = null);
+    Task<int> CountSongChartsAsync(Guid id, string? search = null, Expression<Func<Chart, bool>>? predicate = null);
 }

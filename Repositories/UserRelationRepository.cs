@@ -68,7 +68,7 @@ public class UserRelationRepository : IUserRelationRepository
         return saved > 0;
     }
 
-    public async Task<int> CountAsync(Expression<Func<UserRelation, bool>>? predicate = null)
+    public async Task<int> CountRelationsAsync(Expression<Func<UserRelation, bool>>? predicate = null)
     {
         if (predicate != null) return await _context.UserRelations.Where(predicate).CountAsync();
         return await _context.UserRelations.CountAsync();

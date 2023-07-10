@@ -22,5 +22,5 @@ public interface ILikeRepository
 
     Task<bool> SaveAsync();
 
-    Task<int> CountAsync(Expression<Func<Like, bool>>? predicate = null);
+    Task<int> CountLikesAsync(Expression<Func<Like, bool>>? predicate = null);
 }

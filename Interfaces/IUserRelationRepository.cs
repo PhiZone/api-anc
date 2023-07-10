@@ -22,7 +22,7 @@ public interface IUserRelationRepository
 
     Task<bool> SaveAsync();
 
-    Task<int> CountAsync(Expression<Func<UserRelation, bool>>? predicate = null);
+    Task<int> CountRelationsAsync(Expression<Func<UserRelation, bool>>? predicate = null);
 
     Task<bool> RelationExistsAsync(int followerId, int followeeId);
 

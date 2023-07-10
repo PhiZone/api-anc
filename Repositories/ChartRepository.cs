@@ -65,13 +65,13 @@ public class ChartRepository : IChartRepository
 
     public async Task<bool> CreateChartAsync(Chart chart)
     {
-        await _context.AddAsync(chart);
+        await _context.Charts.AddAsync(chart);
         return await SaveAsync();
     }
 
     public async Task<bool> UpdateChartAsync(Chart chart)
     {
-        _context.Update(chart);
+        _context.Charts.Update(chart);
         return await SaveAsync();
     }
 
@@ -87,7 +87,7 @@ public class ChartRepository : IChartRepository
         return saved > 0;
     }
 
-    public async Task<int> CountAsync(string? search = null, Expression<Func<Chart, bool>>? predicate = null)
+    public async Task<int> CountChartsAsync(string? search = null, Expression<Func<Chart, bool>>? predicate = null)
     {
         var result = _context.Charts.AsQueryable();
 
@@ -110,7 +110,7 @@ public class ChartRepository : IChartRepository
         return await result.CountAsync();
     }
 
-    public async Task<int> CountRecordsAsync(Guid id, string? search = null,
+    public async Task<int> CountChartRecordsAsync(Guid id,
         Expression<Func<Record, bool>>? predicate = null)
     {
         var chart = (await _context.Charts.FirstOrDefaultAsync(chart => chart.Id == id))!;

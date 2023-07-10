@@ -52,7 +52,7 @@ public class LikeRepository : ILikeRepository
 
     public async Task<bool> CreateLikeAsync(Like like)
     {
-        await _context.AddAsync(like);
+        await _context.Likes.AddAsync(like);
         return await SaveAsync();
     }
 
@@ -68,7 +68,7 @@ public class LikeRepository : ILikeRepository
         return saved > 0;
     }
 
-    public async Task<int> CountAsync(Expression<Func<Like, bool>>? predicate = null)
+    public async Task<int> CountLikesAsync(Expression<Func<Like, bool>>? predicate = null)
     {
         var result = _context.Likes.AsQueryable();
 

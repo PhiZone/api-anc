@@ -21,5 +21,9 @@ public class MappingProfiles : Profile
         CreateMap<Song, SongDto>();
         CreateMap<Chart, ChartDto>();
         CreateMap<Record, RecordDto>();
+        CreateMap<Like, LikeDto>();
+        CreateMap<Comment, CommentDto>();
+        CreateMap<Reply, ReplyDto>();
+        CreateMap<Application, ApplicationDto>();
     }
 }

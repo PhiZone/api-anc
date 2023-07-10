@@ -17,15 +17,15 @@ public interface IChartRepository
 
     Task<bool> ChartExistsAsync(Guid id);
 
-    Task<bool> CreateChartAsync(Chart song);
+    Task<bool> CreateChartAsync(Chart chart);
 
-    Task<bool> UpdateChartAsync(Chart song);
+    Task<bool> UpdateChartAsync(Chart chart);
 
     Task<bool> RemoveChartAsync(Guid id);
 
     Task<bool> SaveAsync();
 
-    Task<int> CountAsync(string? search = null, Expression<Func<Chart, bool>>? predicate = null);
+    Task<int> CountChartsAsync(string? search = null, Expression<Func<Chart, bool>>? predicate = null);
 
-    Task<int> CountRecordsAsync(Guid id, string? search = null, Expression<Func<Record, bool>>? predicate = null);
+    Task<int> CountChartRecordsAsync(Guid id, Expression<Func<Record, bool>>? predicate = null);
 }

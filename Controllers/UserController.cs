@@ -77,7 +77,7 @@ public class UserController : Controller
         var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser);
         var users = await _userRepository.GetUsersAsync(dto.Order, dto.Desc, position, dto.PerPage, dto.Search,
             predicateExpr);
-        var total = await _userRepository.CountAsync(dto.Search, predicateExpr);
+        var total = await _userRepository.CountUsersAsync(dto.Search, predicateExpr);
         var list = new List<UserDto>();
 
         foreach (var user in users) list.Add(await _dtoMapper.MapUserAsync<UserDto>(user, currentUser));
