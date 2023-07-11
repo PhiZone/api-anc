@@ -243,7 +243,7 @@ public class UserController : Controller
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorDetailed,
-                Code = ResponseCodes.DataInvalid,
+                Code = ResponseCodes.InvalidData,
                 Errors = ModelErrorTranslator.Translate(ModelState)
             });
 

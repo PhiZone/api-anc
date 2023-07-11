@@ -28,6 +28,9 @@ public class ApplicationCreationDto
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     public ApplicationType Type { get; set; }
+    
+    [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
+    public string Secret { get; set; } = null!;
 
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]

@@ -12,7 +12,7 @@ public static class ResponseCodes
     /// <summary>
     ///     Data validation has failed.
     /// </summary>
-    public const string DataInvalid = "DataInvalid";
+    public const string InvalidData = "InvalidData";
 
     /// <summary>
     ///     User's account has been temporarily (only when DateAvailable is present) / permanently locked.
@@ -168,14 +168,29 @@ public static class ResponseCodes
     public const string ResourceNotFound = "ResourceNotFound";
 
     /// <summary>
+    ///     The specified configuration is not found.
+    /// </summary>
+    public const string ConfigurationNotFound = "ConfigurationNotFound";
+
+    /// <summary>
+    ///     The specified application is not found.
+    /// </summary>
+    public const string ApplicationNotFound = "ApplicationNotFound";
+
+    /// <summary>
     ///     The user does not have enough permission to perform the action.
     /// </summary>
     public const string InsufficientPermission = "InsufficientPermission";
 
     /// <summary>
-    ///     The input value is not found in the Redis database.
+    ///     The input code is not found in the Redis database.
     /// </summary>
     public const string InvalidCode = "InvalidCode";
+
+    /// <summary>
+    ///     The input token is not found in the Redis database.
+    /// </summary>
+    public const string InvalidToken = "InvalidToken";
 
     /// <summary>
     ///     User has already performed an operation.

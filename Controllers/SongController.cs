@@ -156,7 +156,7 @@ public class SongController : Controller
             if (songInfo == null)
                 return BadRequest(new ResponseDto<object>
                 {
-                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.DataInvalid
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidData
                 });
 
             if (!(TimeSpan.Zero <= dto.PreviewStart && dto.PreviewStart <= dto.PreviewEnd &&
@@ -258,7 +258,7 @@ public class SongController : Controller
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorDetailed,
-                Code = ResponseCodes.DataInvalid,
+                Code = ResponseCodes.InvalidData,
                 Errors = ModelErrorTranslator.Translate(ModelState)
             });
 
@@ -329,7 +329,7 @@ public class SongController : Controller
                 if (songInfo == null)
                     return BadRequest(new ResponseDto<object>
                     {
-                        Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.DataInvalid
+                        Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidData
                     });
 
                 song.File = songInfo.Value.Item1;
@@ -612,10 +612,8 @@ public class SongController : Controller
             DateCreated = DateTimeOffset.UtcNow
         };
         if (!await _commentRepository.CreateCommentAsync(comment))
-            return BadRequest(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
-            });
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
         return StatusCode(StatusCodes.Status201Created);
     }

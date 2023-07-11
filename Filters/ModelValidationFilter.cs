@@ -15,7 +15,7 @@ public class ModelValidationFilter : IActionFilter
             context.Result = new BadRequestObjectResult(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorDetailed,
-                Code = ResponseCodes.DataInvalid,
+                Code = ResponseCodes.InvalidData,
                 Errors = ModelErrorTranslator.Translate(context.ModelState)
             });
     }

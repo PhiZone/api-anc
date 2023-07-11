@@ -67,6 +67,7 @@ public class AuthenticationController : Controller
     [ProducesResponseType(StatusCodes.Status401Unauthorized, Type = typeof(OpenIddictErrorDto))]
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(OpenIddictErrorDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    // ReSharper disable once UnusedParameter.Global
     public async Task<IActionResult> Exchange([FromForm] OpenIddictTokenRequestDto dto)
     {
         var request = HttpContext.GetOpenIddictServerRequest()!;
@@ -172,6 +173,7 @@ public class AuthenticationController : Controller
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(OpenIddictErrorDto))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized, Type = typeof(OpenIddictErrorDto))]
+    // ReSharper disable once UnusedParameter.Global
     public IActionResult Revoke([FromForm] OpenIddictRevocationRequestDto dto)
     {
         return Ok();

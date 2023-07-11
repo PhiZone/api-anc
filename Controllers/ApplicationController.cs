@@ -214,7 +214,7 @@ public class ApplicationController : Controller
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorDetailed,
-                Code = ResponseCodes.DataInvalid,
+                Code = ResponseCodes.InvalidData,
                 Errors = ModelErrorTranslator.Translate(ModelState)
             });
 
@@ -448,11 +448,8 @@ public class ApplicationController : Controller
             OwnerId = currentUser!.Id,
             DateCreated = DateTimeOffset.UtcNow
         };
-        if (!await _commentRepository.CreateCommentAsync(comment))
-            return BadRequest(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
-            });
+        if (!await _commentRepository.CreateCommentAsync(comment))return StatusCode(StatusCodes.Status500InternalServerError,
+            new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
         return StatusCode(StatusCodes.Status201Created);
     }

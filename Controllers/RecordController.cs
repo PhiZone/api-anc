@@ -1,12 +1,16 @@
-﻿using AutoMapper;
+﻿using System.Security.Cryptography;
+using System.Text;
+using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using OpenIddict.Abstractions;
 using OpenIddict.Validation.AspNetCore;
 using PhiZoneApi.Configurations;
 using PhiZoneApi.Constants;
+using PhiZoneApi.Dtos.Deliverers;
 using PhiZoneApi.Dtos.Filters;
 using PhiZoneApi.Dtos.Requests;
 using PhiZoneApi.Dtos.Responses;
@@ -14,6 +18,7 @@ using PhiZoneApi.Enums;
 using PhiZoneApi.Filters;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
+using PhiZoneApi.Utils;
 using StackExchange.Redis;
 
 // ReSharper disable RouteTemplates.ParameterConstraintCanBeSpecified
@@ -36,13 +41,16 @@ public class RecordController : Controller
     private readonly ILikeService _likeService;
     private readonly IMapper _mapper;
     private readonly IRecordRepository _recordRepository;
+    private readonly IApplicationRepository _applicationRepository;
+    private readonly IPlayConfigurationRepository _playConfigurationRepository;
     private readonly IConnectionMultiplexer _redis;
     private readonly UserManager<User> _userManager;
 
     public RecordController(IRecordRepository recordRepository, IOptions<DataSettings> dataSettings,
         UserManager<User> userManager, IFilterService filterService, IDtoMapper dtoMapper, IMapper mapper,
         IChartRepository chartRepository, ILikeRepository likeRepository, ILikeService likeService,
-        ICommentRepository commentRepository, IConnectionMultiplexer redis)
+        ICommentRepository commentRepository, IConnectionMultiplexer redis,
+        IApplicationRepository applicationRepository, IPlayConfigurationRepository playConfigurationRepository)
     {
         _recordRepository = recordRepository;
         _dataSettings = dataSettings;
@@ -55,6 +63,8 @@ public class RecordController : Controller
         _likeService = likeService;
         _commentRepository = commentRepository;
         _redis = redis;
+        _applicationRepository = applicationRepository;
+        _playConfigurationRepository = playConfigurationRepository;
     }
 
     /// <summary>
@@ -122,6 +132,232 @@ public class RecordController : Controller
         var dto = await _dtoMapper.MapRecordAsync<RecordDto>(record, currentUser);
 
         return Ok(new ResponseDto<RecordDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
+    }
+
+    /// <summary>
+    ///     Creates a new record.
+    /// </summary>
+    /// <returns>A <see cref="RecordResponseDto"/>.</returns>
+    /// <response code="201">Returns a <see cref="RecordResponseDto"/>.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="404">When either the token, the application, the chart, the user, or the configuration is not found.</response>
+    /// <response code="500">When an internal server error has occurred.</response>
+    [HttpPost]
+    [Consumes("application/json")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ResponseDto<RecordResponseDto>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> CreateRecord([FromBody] RecordCreationDto dto)
+    {
+        var db = _redis.GetDatabase();
+        if (!await db.KeyExistsAsync($"PLAY:{dto.Token}"))
+        {
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidToken
+            });
+        }
+
+        var info = JsonConvert.DeserializeObject<PlayInfoDto>((await db.StringGetAsync($"PLAY:{dto.Token}"))!)!;
+        if (DateTimeOffset.UtcNow < info.EarliestEndTime)
+        {
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorWithMessage,
+                Code = ResponseCodes.InvalidData,
+                Message = "Your request is made earlier than expected."
+            });
+        }
+
+        if (!await _applicationRepository.ApplicationExistsAsync(info.ApplicationId))
+        {
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ApplicationNotFound
+            });
+        }
+
+        var secret = (await _applicationRepository.GetApplicationAsync(info.ApplicationId)).Secret;
+        var digest =
+            $"{info.ChartId}:{info.ConfigurationId}:{info.PlayerId}:{dto.MaxCombo}:{dto.Perfect}:{dto.GoodEarly}:{dto.GoodLate}:{dto.Bad}:{dto.Miss}:{info.Timestamp}";
+        Console.WriteLine(digest);
+        using var hasher = new HMACSHA256(Encoding.UTF8.GetBytes(secret));
+        var hmac = BitConverter.ToString(
+            await hasher.ComputeHashAsync(new MemoryStream(Encoding.UTF8.GetBytes(digest))));
+        Console.WriteLine(hmac);
+        if (!dto.Hmac.Equals(hmac, StringComparison.OrdinalIgnoreCase))
+        {
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorWithMessage,
+                Code = ResponseCodes.InvalidData,
+                Message = "HMAC validation has failed."
+            });
+        }
+
+        if (!await _chartRepository.ChartExistsAsync(info.ChartId))
+        {
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+        }
+
+        var chart = await _chartRepository.GetChartAsync(info.ChartId);
+        if (chart.FileChecksum != null && !chart.FileChecksum.Equals(dto.Checksum))
+        {
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorWithMessage,
+                Code = ResponseCodes.InvalidData,
+                Message = "File checksum validation has failed."
+            });
+        }
+
+        var judgmentCount = dto.Perfect + dto.GoodEarly + dto.GoodLate + dto.Bad + dto.Miss;
+        if (judgmentCount != chart.NoteCount)
+        {
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorWithMessage,
+                Code = ResponseCodes.InvalidData,
+                Message =
+                    $"The number of judgments ({judgmentCount}) is not equal to the number of notes ({chart.NoteCount})."
+            });
+        }
+
+        var minExpectation = judgmentCount / (dto.Bad + dto.Miss + 1);
+        var maxExpectation = judgmentCount - dto.Bad - dto.Miss;
+        if (dto.MaxCombo < minExpectation || dto.MaxCombo > maxExpectation)
+        {
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorWithMessage,
+                Code = ResponseCodes.InvalidData,
+                Message =
+                    $"Max combo ({dto.MaxCombo}) is not within the expected range [{minExpectation}, {maxExpectation}]."
+            });
+        }
+
+        db.KeyDelete($"PLAY:{dto.Token}");
+        var player = await _userManager.FindByIdAsync(info.PlayerId.ToString());
+        if (player == null)
+        {
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNotFound
+            });
+        }
+
+        if (!await _playConfigurationRepository.PlayConfigurationExistsAsync(info.ConfigurationId))
+        {
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ConfigurationNotFound
+            });
+        }
+
+        var configuration = await _playConfigurationRepository.GetPlayConfigurationAsync(info.ConfigurationId);
+
+        var score = RecordUtil.CalculateScore(dto.Perfect, dto.GoodEarly + dto.GoodLate, dto.Bad, dto.Miss,
+            dto.MaxCombo);
+        var accuracy = RecordUtil.CalculateAccuracy(dto.Perfect, dto.GoodEarly + dto.GoodLate, dto.Bad, dto.Miss);
+        var rksFactor = RecordUtil.CalculateRksFactor(configuration.PerfectJudgment, configuration.GoodJudgment);
+        var rks = RecordUtil.CalculateRks(dto.Perfect, dto.GoodEarly + dto.GoodLate, dto.Bad, dto.Miss,
+            chart.Difficulty, dto.StdDeviation) * rksFactor;
+        var rksBefore = player.Rks;
+        var experienceDelta = 0;
+        var highestAccuracy = 0d;
+        if (await _recordRepository.CountRecordsAsync(record =>
+                record.ChartId == info.ChartId && record.OwnerId == player.Id) > 0)
+        {
+            highestAccuracy = (await _recordRepository.GetRecordsAsync("Accuracy", true, 0, 1,
+                record => record.ChartId == info.ChartId && record.OwnerId == player.Id)).FirstOrDefault()!.Accuracy;
+        }
+
+        var record = new Record
+        {
+            ChartId = info.ChartId,
+            OwnerId = info.PlayerId,
+            ApplicationId = info.ApplicationId,
+            Score = score,
+            Accuracy = accuracy,
+            IsFullCombo = dto.MaxCombo == judgmentCount,
+            MaxCombo = dto.MaxCombo,
+            Perfect = dto.Perfect,
+            GoodEarly = dto.GoodEarly,
+            GoodLate = dto.GoodLate,
+            Bad = dto.Bad,
+            Miss = dto.Miss,
+            StdDeviation = dto.StdDeviation,
+            Rks = rks,
+            PerfectJudgment = configuration.PerfectJudgment,
+            GoodJudgment = configuration.GoodJudgment,
+            DateCreated = DateTimeOffset.UtcNow
+        };
+
+        if (!await _recordRepository.CreateRecordAsync(record))
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+        }
+
+        experienceDelta += (int)(rksFactor * score switch
+        {
+            1000000 => 20,
+            >= 960000 => 14,
+            >= 920000 => 9,
+            >= 880000 => 5,
+            _ => 1
+        });
+
+        if (accuracy >= 0.98 && (highestAccuracy is >= 0.97 and < 0.98 || accuracy - highestAccuracy >= 0.01) ||
+            Math.Abs(accuracy - 1d) < 1e-7 && highestAccuracy < 1)
+        {
+            var pos = await _recordRepository.CountRecordsAsync(r => r.ChartId == info.ChartId && r.Rks > rks) + 1;
+            if (pos <= 1000)
+            {
+                var temp = Math.Pow(chart.Difficulty, 7d / 5);
+                experienceDelta += (int)Math.Pow(chart.Difficulty + 2, temp * (Math.Pow(pos, 4d / 7) - temp) / -1152);
+            }
+        }
+
+        var phiRks =
+            (await _recordRepository.GetRecordsAsync("Rks", true, 0, 1,
+                r => r.OwnerId == player.Id && r.Score == 1000000)).FirstOrDefault()
+            ?.Rks ?? 0d;
+        var best19Rks = (await RecordUtil.GetBest19(player.Id, _recordRepository)).Sum(r => r.Rks);
+        var rksAfter = (phiRks + best19Rks) / 20;
+
+        if (!chart.IsRanked)
+        {
+            experienceDelta = (int)(experienceDelta * 0.1);
+        }
+
+        player.Experience += experienceDelta;
+        player.Rks = rksAfter;
+
+        await _userManager.UpdateAsync(player);
+
+        return StatusCode(StatusCodes.Status201Created,
+            new ResponseDto<RecordResponseDto>
+            {
+                Status = ResponseStatus.Ok,
+                Data = new RecordResponseDto
+                {
+                    Id = record.Id,
+                    Score = score,
+                    Accuracy = accuracy,
+                    IsFullCombo = record.IsFullCombo,
+                    ExperienceDelta = experienceDelta,
+                    RksBefore = rksBefore,
+                    RksAfter = rksAfter,
+                    DateCreated = record.DateCreated
+                }
+            });
     }
 
     /// <summary>
@@ -307,10 +543,8 @@ public class RecordController : Controller
             DateCreated = DateTimeOffset.UtcNow
         };
         if (!await _commentRepository.CreateCommentAsync(comment))
-            return BadRequest(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
-            });
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
         return StatusCode(StatusCodes.Status201Created);
     }

@@ -1,26 +1,37 @@
-﻿namespace PhiZoneApi.Dtos.Requests;
+﻿using System.ComponentModel.DataAnnotations;
+using PhiZoneApi.Constants;
+
+namespace PhiZoneApi.Dtos.Requests;
 
 public class RecordCreationDto
 {
-    public Guid ChartId { get; set; }
-
+    [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
+    public Guid Token { get; set; }
+    
+    [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     public int MaxCombo { get; set; }
 
+    [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     public int Perfect { get; set; }
 
+    [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     public int GoodEarly { get; set; }
 
+    [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     public int GoodLate { get; set; }
 
+    [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     public int Bad { get; set; }
 
+    [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     public int Miss { get; set; }
+    
+    [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
+    public double StdDeviation { get; set; }
+    
+    [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
+    public string Hmac { get; set; } = null!;
 
-    public int PerfectJudgment { get; set; }
-
-    public int GoodJudgment { get; set; }
-
-    public int OwnerId { get; set; }
-
-    public Guid ApplicationId { get; set; }
+    [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
+    public string Checksum { get; set; } = null!;
 }

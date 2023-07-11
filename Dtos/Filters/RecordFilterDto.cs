@@ -63,6 +63,10 @@ public class RecordFilterDto : FilterDto<Record>
     public int? MaxMiss { get; set; }
 
     public List<int>? RangeMiss { get; set; }
+    
+    public double? MinStdDeviation { get; set; }
+    
+    public double? MaxStdDeviation { get; set; }
 
     public double? MinRks { get; set; }
 
