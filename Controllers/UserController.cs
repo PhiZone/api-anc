@@ -161,7 +161,7 @@ public class UserController : Controller
 
         string? avatarUrl = null;
         if (dto.Avatar != null)
-            avatarUrl = await _fileStorageService.UploadImage<User>(dto.UserName, dto.Avatar, (1, 1));
+            avatarUrl = (await _fileStorageService.UploadImage<User>(dto.UserName, dto.Avatar, (1, 1))).Item1;
 
         user = new User
         {
@@ -332,7 +332,8 @@ public class UserController : Controller
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
         if (dto.Avatar != null)
-            user.Avatar = await _fileStorageService.UploadImage<User>(user.UserName ?? "Avatar", dto.Avatar, (1, 1));
+            user.Avatar = (await _fileStorageService.UploadImage<User>(user.UserName ?? "Avatar", dto.Avatar, (1, 1)))
+                .Item1;
 
         await _userManager.UpdateAsync(user);
         return NoContent();
@@ -544,7 +545,9 @@ public class UserController : Controller
             });
 
         var relation = new UserRelation
-            { Followee = user, Follower = currentUser, DateCreated = DateTimeOffset.UtcNow };
+        {
+            Followee = user, Follower = currentUser, DateCreated = DateTimeOffset.UtcNow
+        };
 
         if (!await _userRelationRepository.CreateRelationAsync(relation))
             return StatusCode(StatusCodes.Status500InternalServerError,

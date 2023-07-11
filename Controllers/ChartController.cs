@@ -160,7 +160,7 @@ public class ChartController : Controller
         var song = await _songRepository.GetSongAsync(dto.SongId);
 
         var illustrationUrl = dto.Illustration != null
-            ? await _fileStorageService.UploadImage<Chart>(dto.Title ?? song.Title, dto.Illustration, (16, 9))
+            ? (await _fileStorageService.UploadImage<Chart>(dto.Title ?? song.Title, dto.Illustration, (16, 9))).Item1
             : null;
 
         var chartInfo = dto.File != null ? await _chartService.Upload(dto.Title ?? song.Title, dto.File) : null;
@@ -177,8 +177,9 @@ public class ChartController : Controller
             LevelType = dto.LevelType,
             Level = dto.Level,
             Difficulty = dto.Difficulty,
-            Format = chartInfo?.Item2 ?? ChartFormat.Unsupported,
+            Format = chartInfo?.Item3 ?? ChartFormat.Unsupported,
             File = chartInfo?.Item1,
+            FileChecksum = chartInfo?.Item2,
             AuthorName = dto.AuthorName,
             Illustration = illustrationUrl,
             Illustrator = dto.Illustrator,
@@ -187,7 +188,7 @@ public class ChartController : Controller
             IsHidden = dto.IsHidden,
             IsLocked = dto.IsLocked,
             IsRanked = dto.IsRanked,
-            NoteCount = chartInfo?.Item3 ?? 0,
+            NoteCount = chartInfo?.Item4 ?? 0,
             SongId = dto.SongId,
             Owner = currentUser,
             DateCreated = DateTimeOffset.UtcNow,
@@ -307,8 +308,9 @@ public class ChartController : Controller
                 });
 
             chart.File = chartInfo.Value.Item1;
-            chart.Format = chartInfo.Value.Item2;
-            chart.NoteCount = chartInfo.Value.Item3;
+            chart.FileChecksum = chartInfo.Value.Item2;
+            chart.Format = chartInfo.Value.Item3;
+            chart.NoteCount = chartInfo.Value.Item4;
         }
 
         if (!await _chartRepository.UpdateChartAsync(chart))
@@ -405,8 +407,8 @@ public class ChartController : Controller
 
         if (dto.Illustration != null)
             chart.Illustration =
-                await _fileStorageService.UploadImage<Chart>(chart.Title ?? chart.Song.Title, dto.Illustration,
-                    (16, 9));
+                (await _fileStorageService.UploadImage<Chart>(chart.Title ?? chart.Song.Title, dto.Illustration,
+                    (16, 9))).Item1;
 
         if (!await _chartRepository.UpdateChartAsync(chart))
             return StatusCode(StatusCodes.Status500InternalServerError,

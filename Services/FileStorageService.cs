@@ -15,7 +15,7 @@ public class FileStorageService : IFileStorageService
         LCApplication.Initialize(options.Value.ClientId, options.Value.ClientToken, options.Value.ServerUrl);
     }
 
-    public async Task<string> Upload<T>(string fileName, IFormFile formFile)
+    public async Task<(string, string)> Upload<T>(string fileName, IFormFile formFile)
     {
         using var memoryStream = new MemoryStream();
         await formFile.CopyToAsync(memoryStream);
@@ -24,28 +24,30 @@ public class FileStorageService : IFileStorageService
             $"{typeof(T).Name}_{NormalizeFileName(fileName)}_{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}{extension}",
             memoryStream.ToArray());
         await file.Save();
-        return file.Url;
+        foreach (var entry in file.MetaData) Console.WriteLine($"{entry.Key}: {entry.Value}");
+        return (file.Url, (string)file.MetaData["_checksum"]);
     }
 
-    public async Task<string> UploadImage<T>(string fileName, IFormFile formFile, (int, int) aspectRatio)
+    public async Task<(string, string)> UploadImage<T>(string fileName, IFormFile formFile, (int, int) aspectRatio)
     {
         var stream = MultimediaUtil.CropImage(formFile, aspectRatio);
         return await Upload<T>(fileName, stream, "webp");
     }
 
-    public async Task<string> UploadImage<T>(string fileName, byte[] buffer, (int, int) aspectRatio)
+    public async Task<(string, string)> UploadImage<T>(string fileName, byte[] buffer, (int, int) aspectRatio)
     {
         var stream = MultimediaUtil.CropImage(buffer, aspectRatio);
         return await Upload<T>(fileName, stream, "webp");
     }
 
-    public async Task<string> Upload<T>(string fileName, MemoryStream stream, string extension)
+    public async Task<(string, string)> Upload<T>(string fileName, MemoryStream stream, string extension)
     {
         var file = new LCFile(
             $"{typeof(T).Name}_{NormalizeFileName(fileName)}_{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}.{extension}",
             stream.ToArray());
         await file.Save();
-        return file.Url;
+        foreach (var entry in file.MetaData) Console.WriteLine($"{entry.Key}: {entry.Value}");
+        return (file.Url, (string)file.MetaData["_checksum"]);
     }
 
     private static string NormalizeFileName(string input)

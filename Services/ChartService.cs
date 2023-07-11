@@ -19,17 +19,19 @@ public partial class ChartService : IChartService
         _fileStorageService = fileStorageService;
     }
 
-    public async Task<(string, ChartFormat, int)?> Upload(string fileName, IFormFile file)
+    public async Task<(string, string, ChartFormat, int)?> Upload(string fileName, IFormFile file)
     {
-        var result = await Validate(file);
-        if (result == null) return null;
+        var validationResult = await Validate(file);
+        if (validationResult == null) return null;
 
-        var serialized = result.Value.Item1 == ChartFormat.RpeJson
-            ? Serialize(Standardize((RpeJsonDto)result.Value.Item2))
-            : Serialize(Standardize((PecDto)result.Value.Item2));
+        var serialized = validationResult.Value.Item1 == ChartFormat.RpeJson
+            ? Serialize(Standardize((RpeJsonDto)validationResult.Value.Item2))
+            : Serialize(Standardize((PecDto)validationResult.Value.Item2));
         var stream = new MemoryStream(Encoding.UTF8.GetBytes(serialized));
-        var url = await _fileStorageService.Upload<Chart>(fileName, stream, GetExtension(result.Value.Item1));
-        return new ValueTuple<string, ChartFormat, int>(url, result.Value.Item1, result.Value.Item3);
+        var uploadResult =
+            await _fileStorageService.Upload<Chart>(fileName, stream, GetExtension(validationResult.Value.Item1));
+        return new ValueTuple<string, string, ChartFormat, int>(uploadResult.Item1, uploadResult.Item2,
+            validationResult.Value.Item1, validationResult.Value.Item3);
     }
 
     public async Task<(ChartFormat, ChartFormatDto, int)?> Validate(IFormFile file)

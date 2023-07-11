@@ -19,24 +19,24 @@ public class SongService : ISongService
         _songRepository = songRepository;
     }
 
-    public async Task<(string, TimeSpan)?> UploadAsync(string fileName, IFormFile file)
+    public async Task<(string, string, TimeSpan)?> UploadAsync(string fileName, IFormFile file)
     {
         var stream = await MultimediaUtil.ConvertAudio(file);
         if (stream == null) return null;
         using var vorbis = new VorbisReader(stream, false);
         var duration = vorbis.TotalTime;
-        var url = await _fileStorageService.Upload<Song>(fileName, stream, "ogg");
-        return (url, duration);
+        var result = await _fileStorageService.Upload<Song>(fileName, stream, "ogg");
+        return (result.Item1, result.Item2, duration);
     }
 
-    public async Task<(string, TimeSpan)?> UploadAsync(string fileName, byte[] buffer)
+    public async Task<(string, string, TimeSpan)?> UploadAsync(string fileName, byte[] buffer)
     {
         var stream = await MultimediaUtil.ConvertAudio(buffer);
         if (stream == null) return null;
         using var vorbis = new VorbisReader(stream, false);
         var duration = vorbis.TotalTime;
-        var url = await _fileStorageService.Upload<Song>(fileName, stream, "ogg");
-        return (url, duration);
+        var result = await _fileStorageService.Upload<Song>(fileName, stream, "ogg");
+        return (result.Item1, result.Item2, duration);
     }
 
     public async Task PublishAsync(IFormFile file, Guid songId)

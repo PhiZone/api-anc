@@ -149,7 +149,7 @@ public class SongController : Controller
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
-        (string, TimeSpan)? songInfo = null;
+        (string, string, TimeSpan)? songInfo = null;
         if (wait)
         {
             songInfo = await _songService.UploadAsync(dto.Title, dto.File);
@@ -160,7 +160,7 @@ public class SongController : Controller
                 });
 
             if (!(TimeSpan.Zero <= dto.PreviewStart && dto.PreviewStart <= dto.PreviewEnd &&
-                  dto.PreviewEnd <= songInfo.Value.Item2))
+                  dto.PreviewEnd <= songInfo.Value.Item3))
                 return BadRequest(new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidTimeRelation
@@ -174,7 +174,7 @@ public class SongController : Controller
             });
         }
 
-        var illustrationUrl = await _fileStorageService.UploadImage<Song>(dto.Title, dto.Illustration, (16, 9));
+        var illustrationUrl = (await _fileStorageService.UploadImage<Song>(dto.Title, dto.Illustration, (16, 9))).Item1;
         var song = new Song
         {
             Title = dto.Title,
@@ -182,6 +182,7 @@ public class SongController : Controller
             Edition = dto.Edition,
             AuthorName = dto.AuthorName,
             File = songInfo?.Item1,
+            FileChecksum = songInfo?.Item2,
             Illustration = illustrationUrl,
             Illustrator = dto.Illustrator,
             Description = dto.Description,
@@ -194,7 +195,7 @@ public class SongController : Controller
             MaxBpm = dto.MaxBpm,
             Offset = dto.Offset,
             IsOriginal = dto.IsOriginal,
-            Duration = songInfo?.Item2,
+            Duration = songInfo?.Item3,
             PreviewStart = dto.PreviewStart,
             PreviewEnd = dto.PreviewEnd,
             OwnerId = currentUser.Id,
@@ -332,7 +333,8 @@ public class SongController : Controller
                     });
 
                 song.File = songInfo.Value.Item1;
-                song.Duration = songInfo.Value.Item2;
+                song.FileChecksum = songInfo.Value.Item2;
+                song.Duration = songInfo.Value.Item3;
                 if (song.PreviewEnd > song.Duration) song.PreviewEnd = song.Duration.Value;
 
                 if (song.PreviewStart > song.PreviewEnd) song.PreviewStart = TimeSpan.Zero;
@@ -385,7 +387,8 @@ public class SongController : Controller
                 });
 
         if (dto.Illustration != null)
-            song.Illustration = await _fileStorageService.UploadImage<Song>(song.Title, dto.Illustration, (16, 9));
+            song.Illustration = (await _fileStorageService.UploadImage<Song>(song.Title, dto.Illustration, (16, 9)))
+                .Item1;
 
         if (!await _songRepository.UpdateSongAsync(song))
             return StatusCode(StatusCodes.Status500InternalServerError,

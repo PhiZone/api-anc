@@ -7,5 +7,5 @@ public interface IChartService
 {
     Task<(ChartFormat, ChartFormatDto, int)?> Validate(IFormFile file);
 
-    Task<(string, ChartFormat, int)?> Upload(string fileName, IFormFile file);
+    Task<(string, string, ChartFormat, int)?> Upload(string fileName, IFormFile file);
 }

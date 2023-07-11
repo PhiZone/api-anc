@@ -15,6 +15,8 @@ public class Chart : PublicResource
 
     public string? File { get; set; }
 
+    public string? FileChecksum { get; set; }
+
     public string AuthorName { get; set; } = null!;
 
     public string? Illustration { get; set; }

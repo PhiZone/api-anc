@@ -14,6 +14,7 @@ using PhiZoneApi.Enums;
 using PhiZoneApi.Filters;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
+using StackExchange.Redis;
 
 // ReSharper disable RouteTemplates.ParameterConstraintCanBeSpecified
 
@@ -35,12 +36,13 @@ public class RecordController : Controller
     private readonly ILikeService _likeService;
     private readonly IMapper _mapper;
     private readonly IRecordRepository _recordRepository;
+    private readonly IConnectionMultiplexer _redis;
     private readonly UserManager<User> _userManager;
 
     public RecordController(IRecordRepository recordRepository, IOptions<DataSettings> dataSettings,
-        UserManager<User> userManager, IFilterService filterService,
-        IDtoMapper dtoMapper, IMapper mapper, IChartRepository chartRepository,
-        ILikeRepository likeRepository, ILikeService likeService, ICommentRepository commentRepository)
+        UserManager<User> userManager, IFilterService filterService, IDtoMapper dtoMapper, IMapper mapper,
+        IChartRepository chartRepository, ILikeRepository likeRepository, ILikeService likeService,
+        ICommentRepository commentRepository, IConnectionMultiplexer redis)
     {
         _recordRepository = recordRepository;
         _dataSettings = dataSettings;
@@ -52,6 +54,7 @@ public class RecordController : Controller
         _likeRepository = likeRepository;
         _likeService = likeService;
         _commentRepository = commentRepository;
+        _redis = redis;
     }
 
     /// <summary>

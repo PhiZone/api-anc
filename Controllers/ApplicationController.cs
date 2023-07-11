@@ -147,7 +147,8 @@ public class ApplicationController : Controller
                 Status = ResponseStatus.ErrorBrief,
                 Code = ResponseCodes.InsufficientPermission
             });
-        var illustrationUrl = await _fileStorageService.UploadImage<Application>(dto.Name, dto.Illustration, (16, 9));
+        var illustrationUrl = (await _fileStorageService.UploadImage<Application>(dto.Name, dto.Illustration, (16, 9)))
+            .Item1;
         var application = new Application
         {
             Name = dto.Name,
@@ -266,7 +267,7 @@ public class ApplicationController : Controller
             });
         if (dto.Illustration != null)
             application.Illustration =
-                await _fileStorageService.UploadImage<Application>(application.Name, dto.Illustration, (16, 9));
+                (await _fileStorageService.UploadImage<Application>(application.Name, dto.Illustration, (16, 9))).Item1;
 
         if (!await _applicationRepository.UpdateApplicationAsync(application))
             return StatusCode(StatusCodes.Status500InternalServerError,

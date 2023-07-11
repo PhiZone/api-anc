@@ -146,7 +146,8 @@ public class ChapterController : Controller
                 Status = ResponseStatus.ErrorBrief,
                 Code = ResponseCodes.InsufficientPermission
             });
-        var illustrationUrl = await _fileStorageService.UploadImage<Chapter>(dto.Title, dto.Illustration, (16, 9));
+        var illustrationUrl = (await _fileStorageService.UploadImage<Chapter>(dto.Title, dto.Illustration, (16, 9)))
+            .Item1;
         var chapter = new Chapter
         {
             Title = dto.Title,
@@ -267,7 +268,7 @@ public class ChapterController : Controller
             });
         if (dto.Illustration != null)
             chapter.Illustration =
-                await _fileStorageService.UploadImage<Chapter>(chapter.Title, dto.Illustration, (16, 9));
+                (await _fileStorageService.UploadImage<Chapter>(chapter.Title, dto.Illustration, (16, 9))).Item1;
 
         if (!await _chapterRepository.UpdateChapterAsync(chapter))
             return StatusCode(StatusCodes.Status500InternalServerError,

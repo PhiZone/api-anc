@@ -37,7 +37,8 @@ public class SongConverterService : BackgroundService
             if (result != null)
             {
                 song.File = result.Value.Item1;
-                song.Duration = result.Value.Item2;
+                song.FileChecksum = result.Value.Item2;
+                song.Duration = result.Value.Item3;
                 if (song.PreviewEnd > song.Duration) song.PreviewEnd = song.Duration.Value;
 
                 if (song.PreviewStart > song.PreviewEnd) song.PreviewStart = TimeSpan.Zero;

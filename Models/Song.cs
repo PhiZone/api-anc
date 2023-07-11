@@ -14,6 +14,8 @@ public class Song : PublicResource
 
     public string? File { get; set; }
 
+    public string? FileChecksum { get; set; }
+
     public string Illustration { get; set; } = null!;
 
     public string Illustrator { get; set; } = null!;
