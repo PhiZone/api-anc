@@ -142,8 +142,8 @@ public class CommentController : Controller
             });
 
         var comment = await _commentRepository.GetCommentAsync(id);
-        if ((currentUser!.Id == comment.OwnerId && !await _userManager.IsInRoleAsync(currentUser, "Member")) ||
-            (currentUser.Id != comment.OwnerId && !await _userManager.IsInRoleAsync(currentUser, "Admin")))
+        if ((currentUser!.Id == comment.OwnerId && !await _userManager.IsInRoleAsync(currentUser, Roles.Member)) ||
+            (currentUser.Id != comment.OwnerId && !await _userManager.IsInRoleAsync(currentUser, Roles.Administrator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {

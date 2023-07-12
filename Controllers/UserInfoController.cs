@@ -47,7 +47,7 @@ public class UserInfoController : Controller
     {
         var user = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         if (user == null) return Unauthorized();
-        if (!await _userManager.IsInRoleAsync(user, "Member"))
+        if (!await _userManager.IsInRoleAsync(user, Roles.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {

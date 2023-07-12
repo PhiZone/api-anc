@@ -158,6 +158,7 @@ public class ApplicationController : Controller
             Homepage = dto.Homepage,
             ApiEndpoint = dto.ApiEndpoint,
             Type = dto.Type,
+            Secret = dto.Secret,
             OwnerId = dto.OwnerId,
             DateCreated = DateTimeOffset.UtcNow
         };
@@ -448,8 +449,9 @@ public class ApplicationController : Controller
             OwnerId = currentUser!.Id,
             DateCreated = DateTimeOffset.UtcNow
         };
-        if (!await _commentRepository.CreateCommentAsync(comment))return StatusCode(StatusCodes.Status500InternalServerError,
-            new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+        if (!await _commentRepository.CreateCommentAsync(comment))
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
         return StatusCode(StatusCodes.Status201Created);
     }

@@ -140,8 +140,8 @@ public class ReplyController : Controller
             });
 
         var reply = await _replyRepository.GetReplyAsync(id);
-        if ((currentUser!.Id == reply.OwnerId && !await _userManager.IsInRoleAsync(currentUser, "Member")) ||
-            (currentUser.Id != reply.OwnerId && !await _userManager.IsInRoleAsync(currentUser, "Admin")))
+        if ((currentUser!.Id == reply.OwnerId && !await _userManager.IsInRoleAsync(currentUser, Roles.Member)) ||
+            (currentUser.Id != reply.OwnerId && !await _userManager.IsInRoleAsync(currentUser, Roles.Administrator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {

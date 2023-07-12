@@ -8,10 +8,7 @@ public static class RecordUtil
     public static int CalculateScore(int perfect, int good, int bad, int miss, int maxCombo)
     {
         var totalCount = perfect + good + bad + miss;
-        if (totalCount == 0)
-        {
-            return 0;
-        }
+        if (totalCount == 0) return 0;
 
         return (int)Math.Round((double)(900000 * perfect + 58500 * good + 100000 * maxCombo) / totalCount, 0);
     }
@@ -19,10 +16,7 @@ public static class RecordUtil
     public static double CalculateAccuracy(int perfect, int good, int bad, int miss)
     {
         var totalCount = perfect + good + bad + miss;
-        if (totalCount == 0)
-        {
-            return 0;
-        }
+        if (totalCount == 0) return 0;
 
         return (perfect + 0.65 * good) / totalCount;
     }
@@ -30,16 +24,10 @@ public static class RecordUtil
     public static double CalculateRks(int perfect, int good, int bad, int miss, double difficulty, double stdDeviation)
     {
         var totalCount = perfect + good + bad + miss;
-        if (totalCount == 0)
-        {
-            return 0;
-        }
+        if (totalCount == 0) return 0;
 
         var accuracy = (double)(100 * perfect + 65 * good) / totalCount;
-        if (accuracy < 70)
-        {
-            return 0;
-        }
+        if (accuracy < 70) return 0;
 
         accuracy -= 55;
         return accuracy * accuracy * difficulty / 2025 + 0.032 - stdDeviation / 2;
@@ -70,16 +58,10 @@ public static class RecordUtil
                 record => record.OwnerId == userId && record.Chart.IsRanked);
             foreach (var record in records)
             {
-                if (charts.Contains(record.ChartId))
-                {
-                    continue;
-                }
+                if (charts.Contains(record.ChartId)) continue;
                 result.Add(record);
                 charts.Add(record.ChartId);
-                if (result.Count >= 19)
-                {
-                    break;
-                }
+                if (result.Count >= 19) break;
             }
         }
 

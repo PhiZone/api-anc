@@ -209,7 +209,7 @@ public class AuthenticationController : Controller
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNotFound
             });
 
-        if (dto.Mode != EmailRequestMode.EmailConfirmation && !await _userManager.IsInRoleAsync(user, "Member"))
+        if (dto.Mode != EmailRequestMode.EmailConfirmation && !await _userManager.IsInRoleAsync(user, Roles.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -317,7 +317,7 @@ public class AuthenticationController : Controller
         user.EmailConfirmed = true;
         user.LockoutEnabled = false;
         await _userManager.UpdateAsync(user);
-        await _userManager.AddToRoleAsync(user, "Member");
+        await _userManager.AddToRoleAsync(user, Roles.Member);
         return NoContent();
     }
 

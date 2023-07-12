@@ -25,7 +25,7 @@ public class RecordDto
     public int Bad { get; set; }
 
     public int Miss { get; set; }
-    
+
     public double StdDeviation { get; set; }
 
     public double Rks { get; set; }

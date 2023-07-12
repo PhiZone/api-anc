@@ -36,6 +36,7 @@ public class FilterService : IFilterService
         Expression expression =
             Expression.OrElse(Expression.Constant(isAdmin || typeof(T).GetProperty("IsHidden") == null),
                 IsFalse(Property<T>(entity, "IsHidden")));
+
         foreach (var property in dto.GetType().GetProperties())
         {
             var name = property.Name;
@@ -60,6 +61,10 @@ public class FilterService : IFilterService
 
             if (name.StartsWith(Actions.Is))
                 expression = Expression.AndAlso(expression, Expression.Equal(Property<T>(entity, property), condition));
+
+            if (name.StartsWith(Actions.Has))
+                expression = Expression.AndAlso(expression,
+                    Expression.Equal(Property<T>(entity, property, Actions.Has), condition));
 
             if (name.StartsWith(Actions.Equals))
                 expression = Expression.AndAlso(expression,

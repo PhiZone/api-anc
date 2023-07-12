@@ -20,5 +20,6 @@ public interface IPlayConfigurationRepository
 
     Task<bool> SaveAsync();
 
-    Task<int> CountPlayConfigurationsAsync(string? search = null, Expression<Func<PlayConfiguration, bool>>? predicate = null);
+    Task<int> CountPlayConfigurationsAsync(string? search = null,
+        Expression<Func<PlayConfiguration, bool>>? predicate = null);
 }

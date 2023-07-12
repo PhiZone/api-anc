@@ -104,7 +104,7 @@ builder.Services.AddScoped<IReplyRepository, ReplyRepository>();
 builder.Services.AddScoped<IChartRepository, ChartRepository>();
 builder.Services.AddScoped<ILikeRepository, LikeRepository>();
 builder.Services.AddScoped<IApplicationRepository, ApplicationRepository>();
-// builder.Services.AddScoped<IPlayConfigurationRepository, PlayConfigurationRepository>();
+builder.Services.AddScoped<IPlayConfigurationRepository, PlayConfigurationRepository>();
 builder.Services.AddScoped<IFilterService, FilterService>();
 builder.Services.AddScoped<ILikeService, LikeService>();
 builder.Services.AddScoped<IDtoMapper, DtoMapper>();
@@ -175,11 +175,7 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI(options =>
-    {
-        options.SwaggerEndpoint("/swagger/v2/swagger.json", "PhiZone API v2");
-        options.RoutePrefix = string.Empty;
-    });
+    app.UseSwaggerUI(options => { options.SwaggerEndpoint("/swagger/v2/swagger.json", "PhiZone API v2"); });
 }
 
 app.UseAuthentication();

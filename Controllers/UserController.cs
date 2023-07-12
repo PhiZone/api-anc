@@ -228,8 +228,8 @@ public class UserController : Controller
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         if (currentUser == null) return Unauthorized();
 
-        if ((currentUser.Id == id && !await _userManager.IsInRoleAsync(currentUser, "Member")) ||
-            (currentUser.Id != id && !await _userManager.IsInRoleAsync(currentUser, "Admin")))
+        if ((currentUser.Id == id && !await _userManager.IsInRoleAsync(currentUser, Roles.Member)) ||
+            (currentUser.Id != id && !await _userManager.IsInRoleAsync(currentUser, Roles.Administrator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -324,8 +324,8 @@ public class UserController : Controller
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         if (currentUser == null) return Unauthorized();
 
-        if ((currentUser.Id == id && !await _userManager.IsInRoleAsync(currentUser, "Member")) ||
-            (currentUser.Id != id && !await _userManager.IsInRoleAsync(currentUser, "Admin")))
+        if ((currentUser.Id == id && !await _userManager.IsInRoleAsync(currentUser, Roles.Member)) ||
+            (currentUser.Id != id && !await _userManager.IsInRoleAsync(currentUser, Roles.Administrator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -373,8 +373,8 @@ public class UserController : Controller
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         if (currentUser == null) return Unauthorized();
 
-        if ((currentUser.Id == id && !await _userManager.IsInRoleAsync(currentUser, "Member")) ||
-            (currentUser.Id != id && !await _userManager.IsInRoleAsync(currentUser, "Admin")))
+        if ((currentUser.Id == id && !await _userManager.IsInRoleAsync(currentUser, Roles.Member)) ||
+            (currentUser.Id != id && !await _userManager.IsInRoleAsync(currentUser, Roles.Administrator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {

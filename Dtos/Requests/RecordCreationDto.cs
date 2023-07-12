@@ -7,7 +7,7 @@ public class RecordCreationDto
 {
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     public Guid Token { get; set; }
-    
+
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     public int MaxCombo { get; set; }
 
@@ -25,10 +25,10 @@ public class RecordCreationDto
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     public int Miss { get; set; }
-    
+
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     public double StdDeviation { get; set; }
-    
+
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     public string Hmac { get; set; } = null!;
 

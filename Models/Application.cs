@@ -17,6 +17,6 @@ public class Application : LikeableResource
     public string? ApiEndpoint { get; set; }
 
     public ApplicationType Type { get; set; }
-    
+
     public string Secret { get; set; } = null!;
 }

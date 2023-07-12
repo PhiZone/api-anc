@@ -32,6 +32,7 @@ namespace PhiZoneApi.Controllers;
     Policy = "AllowAnonymous")]
 public class RecordController : Controller
 {
+    private readonly IApplicationRepository _applicationRepository;
     private readonly IChartRepository _chartRepository;
     private readonly ICommentRepository _commentRepository;
     private readonly IOptions<DataSettings> _dataSettings;
@@ -40,9 +41,8 @@ public class RecordController : Controller
     private readonly ILikeRepository _likeRepository;
     private readonly ILikeService _likeService;
     private readonly IMapper _mapper;
-    private readonly IRecordRepository _recordRepository;
-    private readonly IApplicationRepository _applicationRepository;
     private readonly IPlayConfigurationRepository _playConfigurationRepository;
+    private readonly IRecordRepository _recordRepository;
     private readonly IConnectionMultiplexer _redis;
     private readonly UserManager<User> _userManager;
 
@@ -137,8 +137,8 @@ public class RecordController : Controller
     /// <summary>
     ///     Creates a new record.
     /// </summary>
-    /// <returns>A <see cref="RecordResponseDto"/>.</returns>
-    /// <response code="201">Returns a <see cref="RecordResponseDto"/>.</response>
+    /// <returns>A <see cref="RecordResponseDto" />.</returns>
+    /// <response code="201">Returns a <see cref="RecordResponseDto" />.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="404">When either the token, the application, the chart, the user, or the configuration is not found.</response>
     /// <response code="500">When an internal server error has occurred.</response>
@@ -154,31 +154,25 @@ public class RecordController : Controller
     {
         var db = _redis.GetDatabase();
         if (!await db.KeyExistsAsync($"PLAY:{dto.Token}"))
-        {
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidToken
             });
-        }
 
         var info = JsonConvert.DeserializeObject<PlayInfoDto>((await db.StringGetAsync($"PLAY:{dto.Token}"))!)!;
         if (DateTimeOffset.UtcNow < info.EarliestEndTime)
-        {
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorWithMessage,
                 Code = ResponseCodes.InvalidData,
                 Message = "Your request is made earlier than expected."
             });
-        }
 
         if (!await _applicationRepository.ApplicationExistsAsync(info.ApplicationId))
-        {
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ApplicationNotFound
             });
-        }
 
         var secret = (await _applicationRepository.GetApplicationAsync(info.ApplicationId)).Secret;
         var digest =
@@ -189,37 +183,30 @@ public class RecordController : Controller
             await hasher.ComputeHashAsync(new MemoryStream(Encoding.UTF8.GetBytes(digest))));
         Console.WriteLine(hmac);
         if (!dto.Hmac.Equals(hmac, StringComparison.OrdinalIgnoreCase))
-        {
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorWithMessage,
                 Code = ResponseCodes.InvalidData,
                 Message = "HMAC validation has failed."
             });
-        }
 
         if (!await _chartRepository.ChartExistsAsync(info.ChartId))
-        {
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        }
 
         var chart = await _chartRepository.GetChartAsync(info.ChartId);
         if (chart.FileChecksum != null && !chart.FileChecksum.Equals(dto.Checksum))
-        {
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorWithMessage,
                 Code = ResponseCodes.InvalidData,
                 Message = "File checksum validation has failed."
             });
-        }
 
         var judgmentCount = dto.Perfect + dto.GoodEarly + dto.GoodLate + dto.Bad + dto.Miss;
         if (judgmentCount != chart.NoteCount)
-        {
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorWithMessage,
@@ -227,12 +214,10 @@ public class RecordController : Controller
                 Message =
                     $"The number of judgments ({judgmentCount}) is not equal to the number of notes ({chart.NoteCount})."
             });
-        }
 
         var minExpectation = judgmentCount / (dto.Bad + dto.Miss + 1);
         var maxExpectation = judgmentCount - dto.Bad - dto.Miss;
         if (dto.MaxCombo < minExpectation || dto.MaxCombo > maxExpectation)
-        {
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorWithMessage,
@@ -240,25 +225,20 @@ public class RecordController : Controller
                 Message =
                     $"Max combo ({dto.MaxCombo}) is not within the expected range [{minExpectation}, {maxExpectation}]."
             });
-        }
 
         db.KeyDelete($"PLAY:{dto.Token}");
         var player = await _userManager.FindByIdAsync(info.PlayerId.ToString());
         if (player == null)
-        {
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNotFound
             });
-        }
 
         if (!await _playConfigurationRepository.PlayConfigurationExistsAsync(info.ConfigurationId))
-        {
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ConfigurationNotFound
             });
-        }
 
         var configuration = await _playConfigurationRepository.GetPlayConfigurationAsync(info.ConfigurationId);
 
@@ -273,10 +253,8 @@ public class RecordController : Controller
         var highestAccuracy = 0d;
         if (await _recordRepository.CountRecordsAsync(record =>
                 record.ChartId == info.ChartId && record.OwnerId == player.Id) > 0)
-        {
             highestAccuracy = (await _recordRepository.GetRecordsAsync("Accuracy", true, 0, 1,
                 record => record.ChartId == info.ChartId && record.OwnerId == player.Id)).FirstOrDefault()!.Accuracy;
-        }
 
         var record = new Record
         {
@@ -300,10 +278,8 @@ public class RecordController : Controller
         };
 
         if (!await _recordRepository.CreateRecordAsync(record))
-        {
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
-        }
 
         experienceDelta += (int)(rksFactor * score switch
         {
@@ -314,8 +290,8 @@ public class RecordController : Controller
             _ => 1
         });
 
-        if (accuracy >= 0.98 && (highestAccuracy is >= 0.97 and < 0.98 || accuracy - highestAccuracy >= 0.01) ||
-            Math.Abs(accuracy - 1d) < 1e-7 && highestAccuracy < 1)
+        if ((accuracy >= 0.98 && (highestAccuracy is >= 0.97 and < 0.98 || accuracy - highestAccuracy >= 0.01)) ||
+            (Math.Abs(accuracy - 1d) < 1e-7 && highestAccuracy < 1))
         {
             var pos = await _recordRepository.CountRecordsAsync(r => r.ChartId == info.ChartId && r.Rks > rks) + 1;
             if (pos <= 1000)
@@ -332,10 +308,7 @@ public class RecordController : Controller
         var best19Rks = (await RecordUtil.GetBest19(player.Id, _recordRepository)).Sum(r => r.Rks);
         var rksAfter = (phiRks + best19Rks) / 20;
 
-        if (!chart.IsRanked)
-        {
-            experienceDelta = (int)(experienceDelta * 0.1);
-        }
+        if (!chart.IsRanked) experienceDelta = (int)(experienceDelta * 0.1);
 
         player.Experience += experienceDelta;
         player.Rks = rksAfter;
