@@ -18,7 +18,6 @@ using PhiZoneApi.Enums;
 using PhiZoneApi.Filters;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
-using PhiZoneApi.Utils;
 using StackExchange.Redis;
 
 // ReSharper disable RouteTemplates.ParameterConstraintCanBeSpecified
@@ -43,6 +42,7 @@ public class RecordController : Controller
     private readonly IMapper _mapper;
     private readonly IPlayConfigurationRepository _playConfigurationRepository;
     private readonly IRecordRepository _recordRepository;
+    private readonly IRecordService _recordService;
     private readonly IConnectionMultiplexer _redis;
     private readonly UserManager<User> _userManager;
 
@@ -50,7 +50,8 @@ public class RecordController : Controller
         UserManager<User> userManager, IFilterService filterService, IDtoMapper dtoMapper, IMapper mapper,
         IChartRepository chartRepository, ILikeRepository likeRepository, ILikeService likeService,
         ICommentRepository commentRepository, IConnectionMultiplexer redis,
-        IApplicationRepository applicationRepository, IPlayConfigurationRepository playConfigurationRepository)
+        IApplicationRepository applicationRepository, IPlayConfigurationRepository playConfigurationRepository,
+        IRecordService recordService)
     {
         _recordRepository = recordRepository;
         _dataSettings = dataSettings;
@@ -65,6 +66,7 @@ public class RecordController : Controller
         _redis = redis;
         _applicationRepository = applicationRepository;
         _playConfigurationRepository = playConfigurationRepository;
+        _recordService = recordService;
     }
 
     /// <summary>
@@ -122,7 +124,7 @@ public class RecordController : Controller
     [ServiceFilter(typeof(ETagFilter))]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<RecordDto>))]
-    [ProducesResponseType(StatusCodes.Status304NotModified)]
+    [ProducesResponseType(typeof(void), StatusCodes.Status304NotModified, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetRecord([FromRoute] Guid id)
@@ -148,7 +150,7 @@ public class RecordController : Controller
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ResponseDto<RecordResponseDto>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
@@ -162,13 +164,13 @@ public class RecordController : Controller
             });
 
         var info = JsonConvert.DeserializeObject<PlayInfoDto>((await db.StringGetAsync($"PLAY:{dto.Token}"))!)!;
-        if (DateTimeOffset.UtcNow < info.EarliestEndTime)
-            return BadRequest(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorWithMessage,
-                Code = ResponseCodes.InvalidData,
-                Message = "Your request is made earlier than expected."
-            });
+        // if (DateTimeOffset.UtcNow < info.EarliestEndTime)
+        //     return BadRequest(new ResponseDto<object>
+        //     {
+        //         Status = ResponseStatus.ErrorWithMessage,
+        //         Code = ResponseCodes.InvalidData,
+        //         Message = "Your request is made earlier than expected."
+        //     });
 
         if (!await _applicationRepository.ApplicationExistsAsync(info.ApplicationId))
             return NotFound(new ResponseDto<object>
@@ -181,7 +183,7 @@ public class RecordController : Controller
             $"{info.ChartId}:{info.ConfigurationId}:{info.PlayerId}:{dto.MaxCombo}:{dto.Perfect}:{dto.GoodEarly}:{dto.GoodLate}:{dto.Bad}:{dto.Miss}:{info.Timestamp}";
         Console.WriteLine(digest);
         using var hasher = new HMACSHA256(Encoding.UTF8.GetBytes(secret));
-        var hmac = BitConverter.ToString(
+        var hmac = Convert.ToBase64String(
             await hasher.ComputeHashAsync(new MemoryStream(Encoding.UTF8.GetBytes(digest))));
         Console.WriteLine(hmac);
         if (!dto.Hmac.Equals(hmac, StringComparison.OrdinalIgnoreCase))
@@ -244,11 +246,11 @@ public class RecordController : Controller
 
         var configuration = await _playConfigurationRepository.GetPlayConfigurationAsync(info.ConfigurationId);
 
-        var score = RecordUtil.CalculateScore(dto.Perfect, dto.GoodEarly + dto.GoodLate, dto.Bad, dto.Miss,
+        var score = _recordService.CalculateScore(dto.Perfect, dto.GoodEarly + dto.GoodLate, dto.Bad, dto.Miss,
             dto.MaxCombo);
-        var accuracy = RecordUtil.CalculateAccuracy(dto.Perfect, dto.GoodEarly + dto.GoodLate, dto.Bad, dto.Miss);
-        var rksFactor = RecordUtil.CalculateRksFactor(configuration.PerfectJudgment, configuration.GoodJudgment);
-        var rks = RecordUtil.CalculateRks(dto.Perfect, dto.GoodEarly + dto.GoodLate, dto.Bad, dto.Miss,
+        var accuracy = _recordService.CalculateAccuracy(dto.Perfect, dto.GoodEarly + dto.GoodLate, dto.Bad, dto.Miss);
+        var rksFactor = _recordService.CalculateRksFactor(configuration.PerfectJudgment, configuration.GoodJudgment);
+        var rks = _recordService.CalculateRks(dto.Perfect, dto.GoodEarly + dto.GoodLate, dto.Bad, dto.Miss,
             chart.Difficulty, dto.StdDeviation) * rksFactor;
         var rksBefore = player.Rks;
         var experienceDelta = 0;
@@ -305,9 +307,9 @@ public class RecordController : Controller
 
         var phiRks =
             (await _recordRepository.GetRecordsAsync("Rks", true, 0, 1,
-                r => r.OwnerId == player.Id && r.Score == 1000000)).FirstOrDefault()
+                r => r.OwnerId == player.Id && r.Score == 1000000 && r.Chart.IsRanked)).FirstOrDefault()
             ?.Rks ?? 0d;
-        var best19Rks = (await RecordUtil.GetBest19(player.Id, _recordRepository)).Sum(r => r.Rks);
+        var best19Rks = (await _recordService.GetBest19(player.Id)).Sum(r => r.Rks);
         var rksAfter = (phiRks + best19Rks) / 20;
 
         if (!chart.IsRanked) experienceDelta = (int)(experienceDelta * 0.1);
@@ -386,9 +388,9 @@ public class RecordController : Controller
     [HttpPost("{id}/likes")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> CreateLike([FromRoute] Guid id)
     {
@@ -422,9 +424,9 @@ public class RecordController : Controller
     [HttpDelete("{id}/likes")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> RemoveLike([FromRoute] Guid id)
     {
@@ -502,9 +504,9 @@ public class RecordController : Controller
     [HttpPost("{id}/comments")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]

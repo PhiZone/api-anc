@@ -30,6 +30,8 @@ public class RecordDto
 
     public double Rks { get; set; }
 
+    public int Position { get; set; }
+
     public int PerfectJudgment { get; set; }
 
     public int GoodJudgment { get; set; }

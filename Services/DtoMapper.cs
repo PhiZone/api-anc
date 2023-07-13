@@ -11,6 +11,7 @@ public class DtoMapper : IDtoMapper
     private readonly ICommentRepository _commentRepository;
     private readonly ILikeRepository _likeRepository;
     private readonly IMapper _mapper;
+    private readonly IRecordRepository _recordRepository;
     private readonly IRegionRepository _regionRepository;
     private readonly IReplyRepository _replyRepository;
     private readonly UserManager<User> _userManager;
@@ -18,7 +19,7 @@ public class DtoMapper : IDtoMapper
 
     public DtoMapper(IUserRelationRepository userRelationRepository, IRegionRepository regionRepository,
         ILikeRepository likeRepository, UserManager<User> userManager, IMapper mapper,
-        ICommentRepository commentRepository, IReplyRepository replyRepository)
+        ICommentRepository commentRepository, IReplyRepository replyRepository, IRecordRepository recordRepository)
     {
         _userRelationRepository = userRelationRepository;
         _regionRepository = regionRepository;
@@ -27,6 +28,7 @@ public class DtoMapper : IDtoMapper
         _mapper = mapper;
         _commentRepository = commentRepository;
         _replyRepository = replyRepository;
+        _recordRepository = recordRepository;
     }
 
     public async Task<T> MapUserAsync<T>(User user, User? currentUser = null) where T : UserDto
@@ -95,6 +97,8 @@ public class DtoMapper : IDtoMapper
     public async Task<T> MapRecordAsync<T>(Record record, User? currentUser = null) where T : RecordDto
     {
         var dto = _mapper.Map<T>(record);
+        dto.Position =
+            await _recordRepository.CountRecordsAsync(r => r.ChartId == record.ChartId && r.Rks > record.Rks) + 1;
         dto.DateLiked = currentUser != null && await _likeRepository.LikeExistsAsync(record.Id, currentUser.Id)
             ? (await _likeRepository.GetLikeAsync(record.Id, currentUser.Id)).DateCreated
             : null;

@@ -17,14 +17,16 @@ public class MappingProfiles : Profile
         CreateMap<Region, RegionDto>();
         CreateMap<Chapter, ChapterDto>();
         CreateMap<Chapter, ChapterUpdateDto>();
-        CreateMap<ChapterUpdateDto, Chapter>();
         CreateMap<Song, SongDto>();
+        CreateMap<Song, SongUpdateDto>();
         CreateMap<Chart, ChartDto>();
+        CreateMap<Chart, ChartUpdateDto>();
         CreateMap<Record, RecordDto>();
         CreateMap<Like, LikeDto>();
         CreateMap<Comment, CommentDto>();
         CreateMap<Reply, ReplyDto>();
         CreateMap<Application, ApplicationDto>();
+        CreateMap<Application, ApplicationUpdateDto>();
         CreateMap<PlayConfiguration, PlayConfigurationResponseDto>();
         CreateMap<PlayConfigurationRequestDto, PlayConfiguration>();
     }

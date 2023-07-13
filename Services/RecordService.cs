@@ -1,11 +1,20 @@
 ﻿using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 
-namespace PhiZoneApi.Utils;
+namespace PhiZoneApi.Services;
 
-public static class RecordUtil
+public class RecordService : IRecordService
 {
-    public static int CalculateScore(int perfect, int good, int bad, int miss, int maxCombo)
+    private readonly IChartRepository _chartRepository;
+    private readonly IRecordRepository _recordRepository;
+
+    public RecordService(IRecordRepository recordRepository, IChartRepository chartRepository)
+    {
+        _recordRepository = recordRepository;
+        _chartRepository = chartRepository;
+    }
+
+    public int CalculateScore(int perfect, int good, int bad, int miss, int maxCombo)
     {
         var totalCount = perfect + good + bad + miss;
         if (totalCount == 0) return 0;
@@ -13,7 +22,7 @@ public static class RecordUtil
         return (int)Math.Round((double)(900000 * perfect + 58500 * good + 100000 * maxCombo) / totalCount, 0);
     }
 
-    public static double CalculateAccuracy(int perfect, int good, int bad, int miss)
+    public double CalculateAccuracy(int perfect, int good, int bad, int miss)
     {
         var totalCount = perfect + good + bad + miss;
         if (totalCount == 0) return 0;
@@ -21,7 +30,7 @@ public static class RecordUtil
         return (perfect + 0.65 * good) / totalCount;
     }
 
-    public static double CalculateRks(int perfect, int good, int bad, int miss, double difficulty, double stdDeviation)
+    public double CalculateRks(int perfect, int good, int bad, int miss, double difficulty, double stdDeviation)
     {
         var totalCount = perfect + good + bad + miss;
         if (totalCount == 0) return 0;
@@ -33,7 +42,7 @@ public static class RecordUtil
         return accuracy * accuracy * difficulty / 2025 + 0.032 - stdDeviation / 2;
     }
 
-    public static double CalculateRksFactor(int perfectJudgment, int goodJudgment)
+    public double CalculateRksFactor(int perfectJudgment, int goodJudgment)
     {
         var x = 0.8 * perfectJudgment + 0.225 * goodJudgment;
         switch (x)
@@ -48,14 +57,15 @@ public static class RecordUtil
         }
     }
 
-    public static async Task<List<Record>> GetBest19(int userId, IRecordRepository repository)
+    public async Task<List<Record>> GetBest19(int userId)
     {
         var result = new List<Record>();
         var charts = new List<Guid>();
         for (var position = 0; result.Count < 19; position += 30)
         {
-            var records = await repository.GetRecordsAsync("Rks", true, position, 30,
+            var records = await _recordRepository.GetRecordsAsync("Rks", true, position, 30,
                 record => record.OwnerId == userId && record.Chart.IsRanked);
+            if (records.Count == 0) break;
             foreach (var record in records)
             {
                 if (charts.Contains(record.ChartId)) continue;

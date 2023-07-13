@@ -11,10 +11,6 @@ public class ApplicationUpdateDto
 
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
-    public IFormFile Illustration { get; set; } = null!;
-
-
-    [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     public string Illustrator { get; set; } = null!;
 
     public string? Description { get; set; }
