@@ -92,7 +92,7 @@ public class UserRelationController : Controller
     /// <response code="404">When the specified user relation is not found.</response>
     [HttpGet("{followerId:int}/{followeeId:int}")]
     [ServiceFilter(typeof(ETagFilter))]
-    [Produces("application/json")]
+    [Produces("application/json", "text/plain")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<UserRelationDto>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status304NotModified, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]

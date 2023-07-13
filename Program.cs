@@ -104,6 +104,7 @@ builder.Services.AddScoped<IReplyRepository, ReplyRepository>();
 builder.Services.AddScoped<IChartRepository, ChartRepository>();
 builder.Services.AddScoped<ILikeRepository, LikeRepository>();
 builder.Services.AddScoped<IApplicationRepository, ApplicationRepository>();
+builder.Services.AddScoped<IAnnouncementRepository, AnnouncementRepository>();
 builder.Services.AddScoped<IPlayConfigurationRepository, PlayConfigurationRepository>();
 builder.Services.AddScoped<IFilterService, FilterService>();
 builder.Services.AddScoped<ILikeService, LikeService>();

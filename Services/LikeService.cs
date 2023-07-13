@@ -5,6 +5,7 @@ namespace PhiZoneApi.Services;
 
 public class LikeService : ILikeService
 {
+    private readonly IAnnouncementRepository _announcementRepository;
     private readonly IApplicationRepository _applicationRepository;
     private readonly IChapterRepository _chapterRepository;
     private readonly IChartRepository _chartRepository;
@@ -17,7 +18,7 @@ public class LikeService : ILikeService
     public LikeService(ILikeRepository likeRepository, IChapterRepository chapterRepository,
         ISongRepository songRepository, IChartRepository chartRepository, IRecordRepository recordRepository,
         ICommentRepository commentRepository, IReplyRepository replyRepository,
-        IApplicationRepository applicationRepository)
+        IApplicationRepository applicationRepository, IAnnouncementRepository announcementRepository)
     {
         _likeRepository = likeRepository;
         _chapterRepository = chapterRepository;
@@ -27,6 +28,7 @@ public class LikeService : ILikeService
         _commentRepository = commentRepository;
         _replyRepository = replyRepository;
         _applicationRepository = applicationRepository;
+        _announcementRepository = announcementRepository;
     }
 
     public async Task<bool> CreateLikeAsync(Chapter chapter, int userId)
@@ -92,6 +94,15 @@ public class LikeService : ILikeService
         return result && await _applicationRepository.UpdateApplicationAsync(application);
     }
 
+    public async Task<bool> CreateLikeAsync(Announcement announcement, int userId)
+    {
+        if (await _likeRepository.LikeExistsAsync(announcement.Id, userId)) return false;
+        var like = new Like { ResourceId = announcement.Id, OwnerId = userId, DateCreated = DateTimeOffset.UtcNow };
+        var result = await _likeRepository.CreateLikeAsync(like);
+        announcement.LikeCount = await _likeRepository.CountLikesAsync(e => e.ResourceId == announcement.Id);
+        return result && await _announcementRepository.UpdateAnnouncementAsync(announcement);
+    }
+
     public async Task<bool> RemoveLikeAsync(Chapter chapter, int userId)
     {
         if (!await _likeRepository.LikeExistsAsync(chapter.Id, userId)) return false;
@@ -153,5 +164,14 @@ public class LikeService : ILikeService
         var result = await _likeRepository.RemoveLikeAsync(like.Id);
         application.LikeCount = await _likeRepository.CountLikesAsync(e => e.ResourceId == application.Id);
         return result && await _applicationRepository.UpdateApplicationAsync(application);
+    }
+
+    public async Task<bool> RemoveLikeAsync(Announcement announcement, int userId)
+    {
+        if (!await _likeRepository.LikeExistsAsync(announcement.Id, userId)) return false;
+        var like = await _likeRepository.GetLikeAsync(announcement.Id, userId);
+        var result = await _likeRepository.RemoveLikeAsync(like.Id);
+        announcement.LikeCount = await _likeRepository.CountLikesAsync(e => e.ResourceId == announcement.Id);
+        return result && await _announcementRepository.UpdateAnnouncementAsync(announcement);
     }
 }

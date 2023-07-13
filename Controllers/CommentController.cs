@@ -15,6 +15,8 @@ using PhiZoneApi.Filters;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 
+// ReSharper disable RouteTemplates.ActionRoutePrefixCanBeExtractedToControllerRoute
+
 namespace PhiZoneApi.Controllers;
 
 [Route("comments")]
@@ -92,7 +94,7 @@ public class CommentController : Controller
     /// <summary>
     ///     Retrieves a specific comment.
     /// </summary>
-    /// <param name="id">Comment's ID.</param>
+    /// <param name="id">A comment's ID.</param>
     /// <returns>A comment.</returns>
     /// <response code="200">Returns a comment.</response>
     /// <response code="304">
@@ -100,9 +102,9 @@ public class CommentController : Controller
     /// </response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="404">When the specified comment is not found.</response>
-    [HttpGet("{id}")]
+    [HttpGet("{id:guid}")]
     [ServiceFilter(typeof(ETagFilter))]
-    [Produces("application/json")]
+    [Produces("application/json", "text/plain")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<CommentDto>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status304NotModified, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
@@ -128,7 +130,7 @@ public class CommentController : Controller
     /// <response code="403">When the user does not have sufficient permission.</response>
     /// <response code="404">When the specified comment is not found.</response>
     /// <response code="500">When an internal server error has occurred.</response>
-    [HttpDelete("{id}")]
+    [HttpDelete("{id:guid}")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Produces("text/plain", "application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
@@ -171,7 +173,7 @@ public class CommentController : Controller
     /// <response code="200">Returns an array of replies.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="404">When the specified comment is not found.</response>
-    [HttpGet("{id}/replies")]
+    [HttpGet("{id:guid}/replies")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<ReplyDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
@@ -218,7 +220,7 @@ public class CommentController : Controller
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="403">When the user does not have sufficient permission.</response>
     /// <response code="404">When the specified comment is not found.</response>
-    [HttpPost("{id}/replies")]
+    [HttpPost("{id:guid}/replies")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
@@ -262,7 +264,7 @@ public class CommentController : Controller
     /// <response code="200">Returns an array of likes.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="404">When the specified comment is not found.</response>
-    [HttpGet("{id}/likes")]
+    [HttpGet("{id:guid}/likes")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<LikeDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
@@ -302,7 +304,7 @@ public class CommentController : Controller
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="404">When the specified comment is not found.</response>
-    [HttpPost("{id}/likes")]
+    [HttpPost("{id:guid}/likes")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
@@ -338,7 +340,7 @@ public class CommentController : Controller
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="404">When the specified comment is not found.</response>
-    [HttpDelete("{id}/likes")]
+    [HttpDelete("{id:guid}/likes")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]

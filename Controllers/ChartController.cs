@@ -17,6 +17,8 @@ using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 using PhiZoneApi.Utils;
 
+// ReSharper disable RouteTemplates.ActionRoutePrefixCanBeExtractedToControllerRoute
+
 // ReSharper disable RouteTemplates.ParameterConstraintCanBeSpecified
 
 namespace PhiZoneApi.Controllers;
@@ -103,7 +105,7 @@ public class ChartController : Controller
     /// <summary>
     ///     Retrieves a specific chart.
     /// </summary>
-    /// <param name="id">Chart's ID.</param>
+    /// <param name="id">A chart's ID.</param>
     /// <returns>A chart.</returns>
     /// <response code="200">Returns a chart.</response>
     /// <response code="304">
@@ -111,9 +113,9 @@ public class ChartController : Controller
     /// </response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="404">When the specified chart is not found.</response>
-    [HttpGet("{id}")]
+    [HttpGet("{id:guid}")]
     [ServiceFilter(typeof(ETagFilter))]
-    [Produces("application/json")]
+    [Produces("application/json", "text/plain")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<ChartDto>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status304NotModified, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
@@ -209,7 +211,7 @@ public class ChartController : Controller
     /// <summary>
     ///     Updates a chart.
     /// </summary>
-    /// <param name="id">Chart's ID.</param>
+    /// <param name="id">A chart's ID.</param>
     /// <param name="patchDocument">A JSON Patch Document.</param>
     /// <returns>An empty body.</returns>
     /// <response code="204">Returns an empty body.</response>
@@ -218,7 +220,7 @@ public class ChartController : Controller
     /// <response code="403">When the user does not have sufficient permission.</response>
     /// <response code="404">When the specified chart is not found.</response>
     /// <response code="500">When an internal server error has occurred.</response>
-    [HttpPatch("{id}")]
+    [HttpPatch("{id:guid}")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Consumes("application/json")]
     [Produces("text/plain", "application/json")]
@@ -270,6 +272,7 @@ public class ChartController : Controller
         chart.IsLocked = dto.IsLocked;
         chart.IsRanked = dto.IsRanked;
         chart.SongId = dto.SongId;
+        chart.DateUpdated = DateTimeOffset.UtcNow;
 
         if (!await _chartRepository.UpdateChartAsync(chart))
             return StatusCode(StatusCodes.Status500InternalServerError,
@@ -281,7 +284,7 @@ public class ChartController : Controller
     /// <summary>
     ///     Updates a chart's file.
     /// </summary>
-    /// <param name="id">Chart's ID.</param>
+    /// <param name="id">A chart's ID.</param>
     /// <param name="dto">The new file.</param>
     /// <returns>An empty body.</returns>
     /// <response code="204">Returns an empty body.</response>
@@ -290,7 +293,7 @@ public class ChartController : Controller
     /// <response code="403">When the user does not have sufficient permission.</response>
     /// <response code="404">When the specified chart is not found.</response>
     /// <response code="500">When an internal server error has occurred.</response>
-    [HttpPatch("{id}/file")]
+    [HttpPatch("{id:guid}/file")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Consumes("multipart/form-data")]
     [Produces("text/plain", "application/json")]
@@ -331,6 +334,7 @@ public class ChartController : Controller
             chart.FileChecksum = chartInfo.Value.Item2;
             chart.Format = chartInfo.Value.Item3;
             chart.NoteCount = chartInfo.Value.Item4;
+            chart.DateUpdated = DateTimeOffset.UtcNow;
         }
 
         if (!await _chartRepository.UpdateChartAsync(chart))
@@ -343,7 +347,7 @@ public class ChartController : Controller
     /// <summary>
     ///     Removes a chart's file.
     /// </summary>
-    /// <param name="id">Chart's ID.</param>
+    /// <param name="id">A chart's ID.</param>
     /// <returns>An empty body.</returns>
     /// <response code="204">Returns an empty body.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
@@ -351,7 +355,7 @@ public class ChartController : Controller
     /// <response code="403">When the user does not have sufficient permission.</response>
     /// <response code="404">When the specified chart is not found.</response>
     /// <response code="500">When an internal server error has occurred.</response>
-    [HttpDelete("{id}/file")]
+    [HttpDelete("{id:guid}/file")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Consumes("multipart/form-data")]
     [Produces("text/plain", "application/json")]
@@ -380,6 +384,7 @@ public class ChartController : Controller
                 });
 
         chart.File = null;
+        chart.DateUpdated = DateTimeOffset.UtcNow;
 
         if (!await _chartRepository.UpdateChartAsync(chart))
             return StatusCode(StatusCodes.Status500InternalServerError,
@@ -391,7 +396,7 @@ public class ChartController : Controller
     /// <summary>
     ///     Updates a chart's illustration.
     /// </summary>
-    /// <param name="id">Chart's ID.</param>
+    /// <param name="id">A chart's ID.</param>
     /// <param name="dto">The new illustration.</param>
     /// <returns>An empty body.</returns>
     /// <response code="204">Returns an empty body.</response>
@@ -400,7 +405,7 @@ public class ChartController : Controller
     /// <response code="403">When the user does not have sufficient permission.</response>
     /// <response code="404">When the specified chart is not found.</response>
     /// <response code="500">When an internal server error has occurred.</response>
-    [HttpPatch("{id}/illustration")]
+    [HttpPatch("{id:guid}/illustration")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Consumes("multipart/form-data")]
     [Produces("text/plain", "application/json")]
@@ -430,9 +435,12 @@ public class ChartController : Controller
                 });
 
         if (dto.Illustration != null)
+        {
             chart.Illustration =
                 (await _fileStorageService.UploadImage<Chart>(chart.Title ?? chart.Song.Title, dto.Illustration,
                     (16, 9))).Item1;
+            chart.DateUpdated = DateTimeOffset.UtcNow;
+        }
 
         if (!await _chartRepository.UpdateChartAsync(chart))
             return StatusCode(StatusCodes.Status500InternalServerError,
@@ -444,7 +452,7 @@ public class ChartController : Controller
     /// <summary>
     ///     Removes a chart's illustration.
     /// </summary>
-    /// <param name="id">Chart's ID.</param>
+    /// <param name="id">A chart's ID.</param>
     /// <returns>An empty body.</returns>
     /// <response code="204">Returns an empty body.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
@@ -452,7 +460,7 @@ public class ChartController : Controller
     /// <response code="403">When the user does not have sufficient permission.</response>
     /// <response code="404">When the specified chart is not found.</response>
     /// <response code="500">When an internal server error has occurred.</response>
-    [HttpDelete("{id}/illustration")]
+    [HttpDelete("{id:guid}/illustration")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Consumes("multipart/form-data")]
     [Produces("text/plain", "application/json")]
@@ -481,6 +489,7 @@ public class ChartController : Controller
                 });
 
         chart.Illustration = null;
+        chart.DateUpdated = DateTimeOffset.UtcNow;
 
         if (!await _chartRepository.UpdateChartAsync(chart))
             return StatusCode(StatusCodes.Status500InternalServerError,
@@ -497,7 +506,7 @@ public class ChartController : Controller
     /// <response code="200">Returns an array of records.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="404">When the specified chart is not found.</response>
-    [HttpGet("{id}/records")]
+    [HttpGet("{id:guid}/records")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<RecordDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
@@ -541,7 +550,7 @@ public class ChartController : Controller
     /// <response code="200">Returns an array of likes.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="404">When the specified chart is not found.</response>
-    [HttpGet("{id}/likes")]
+    [HttpGet("{id:guid}/likes")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<LikeDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
@@ -581,7 +590,7 @@ public class ChartController : Controller
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="404">When the specified chart is not found.</response>
-    [HttpPost("{id}/likes")]
+    [HttpPost("{id:guid}/likes")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
@@ -617,7 +626,7 @@ public class ChartController : Controller
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="404">When the specified chart is not found.</response>
-    [HttpDelete("{id}/likes")]
+    [HttpDelete("{id:guid}/likes")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
@@ -652,7 +661,7 @@ public class ChartController : Controller
     /// <response code="200">Returns an array of comments.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="404">When the specified chart is not found.</response>
-    [HttpGet("{id}/comments")]
+    [HttpGet("{id:guid}/comments")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<CommentDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
@@ -697,7 +706,7 @@ public class ChartController : Controller
     /// <response code="403">When the user does not have sufficient permission.</response>
     /// <response code="404">When the specified chart is not found.</response>
     /// <response code="500">When an internal server error has occurred.</response>
-    [HttpPost("{id}/comments")]
+    [HttpPost("{id:guid}/comments")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]

@@ -17,6 +17,8 @@ using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 using PhiZoneApi.Utils;
 
+// ReSharper disable RouteTemplates.ActionRoutePrefixCanBeExtractedToControllerRoute
+
 // ReSharper disable RouteTemplates.ParameterConstraintCanBeSpecified
 
 namespace PhiZoneApi.Controllers;
@@ -100,17 +102,17 @@ public class ApplicationController : Controller
     /// <summary>
     ///     Retrieves a specific application.
     /// </summary>
-    /// <param name="id">Application's ID.</param>
-    /// <returns>A application.</returns>
-    /// <response code="200">Returns a application.</response>
+    /// <param name="id">An application's ID.</param>
+    /// <returns>An application.</returns>
+    /// <response code="200">Returns an application.</response>
     /// <response code="304">
     ///     When the resource has not been updated since last retrieval. Requires <c>If-None-Match</c>.
     /// </response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="404">When the specified application is not found.</response>
-    [HttpGet("{id}")]
+    [HttpGet("{id:guid}")]
     [ServiceFilter(typeof(ETagFilter))]
-    [Produces("application/json")]
+    [Produces("application/json", "text/plain")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<ApplicationDto>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status304NotModified, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
@@ -137,7 +139,7 @@ public class ApplicationController : Controller
     [HttpPost]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Consumes("multipart/form-data")]
-    [Produces("application/json")]
+    [Produces("text/plain", "application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -165,7 +167,8 @@ public class ApplicationController : Controller
             Type = dto.Type,
             Secret = dto.Secret,
             OwnerId = dto.OwnerId,
-            DateCreated = DateTimeOffset.UtcNow
+            DateCreated = DateTimeOffset.UtcNow,
+            DateUpdated = DateTimeOffset.UtcNow
         };
         if (!await _applicationRepository.CreateApplicationAsync(application))
             return StatusCode(StatusCodes.Status500InternalServerError,
@@ -175,9 +178,9 @@ public class ApplicationController : Controller
     }
 
     /// <summary>
-    ///     Updates a application.
+    ///     Updates an application.
     /// </summary>
-    /// <param name="id">Application's ID.</param>
+    /// <param name="id">An application's ID.</param>
     /// <param name="patchDocument">A JSON Patch Document.</param>
     /// <returns>An empty body.</returns>
     /// <response code="204">Returns an empty body.</response>
@@ -186,7 +189,7 @@ public class ApplicationController : Controller
     /// <response code="403">When the user does not have sufficient permission.</response>
     /// <response code="404">When the specified application is not found.</response>
     /// <response code="500">When an internal server error has occurred.</response>
-    [HttpPatch("{id}")]
+    [HttpPatch("{id:guid}")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Consumes("application/json")]
     [Produces("text/plain", "application/json")]
@@ -233,6 +236,7 @@ public class ApplicationController : Controller
         application.ApiEndpoint = dto.ApiEndpoint;
         application.Type = dto.Type;
         application.OwnerId = dto.OwnerId;
+        application.DateUpdated = DateTimeOffset.UtcNow;
 
         if (!await _applicationRepository.UpdateApplicationAsync(application))
             return StatusCode(StatusCodes.Status500InternalServerError,
@@ -242,7 +246,7 @@ public class ApplicationController : Controller
     }
 
     /// <summary>
-    ///     Updates a application's illustration.
+    ///     Updates an application's illustration.
     /// </summary>
     /// <param name="id">Application's ID.</param>
     /// <param name="dto">The new illustration.</param>
@@ -253,7 +257,7 @@ public class ApplicationController : Controller
     /// <response code="403">When the user does not have sufficient permission.</response>
     /// <response code="404">When the specified application is not found.</response>
     /// <response code="500">When an internal server error has occurred.</response>
-    [HttpPatch("{id}/illustration")]
+    [HttpPatch("{id:guid}/illustration")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Consumes("multipart/form-data")]
     [Produces("text/plain", "application/json")]
@@ -282,8 +286,11 @@ public class ApplicationController : Controller
                 Code = ResponseCodes.InsufficientPermission
             });
         if (dto.Illustration != null)
+        {
             application.Illustration =
                 (await _fileStorageService.UploadImage<Application>(application.Name, dto.Illustration, (16, 9))).Item1;
+            application.DateUpdated = DateTimeOffset.UtcNow;
+        }
 
         if (!await _applicationRepository.UpdateApplicationAsync(application))
             return StatusCode(StatusCodes.Status500InternalServerError,
@@ -294,12 +301,12 @@ public class ApplicationController : Controller
     /// <summary>
     ///     Retrieves likes from a specific application.
     /// </summary>
-    /// <param name="id">A application's ID.</param>
+    /// <param name="id">An application's ID.</param>
     /// <returns>An array of likes.</returns>
     /// <response code="200">Returns an array of likes.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="404">When the specified application is not found.</response>
-    [HttpGet("{id}/likes")]
+    [HttpGet("{id:guid}/likes")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<LikeDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
@@ -333,13 +340,13 @@ public class ApplicationController : Controller
     /// <summary>
     ///     Likes a specific application.
     /// </summary>
-    /// <param name="id">A application's ID.</param>
+    /// <param name="id">An application's ID.</param>
     /// <returns>An empty body.</returns>
     /// <response code="201">Returns an empty body.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="404">When the specified application is not found.</response>
-    [HttpPost("{id}/likes")]
+    [HttpPost("{id:guid}/likes")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
@@ -364,13 +371,13 @@ public class ApplicationController : Controller
     /// <summary>
     ///     Removes the like from a specific application.
     /// </summary>
-    /// <param name="id">A application's ID.</param>
+    /// <param name="id">An application's ID.</param>
     /// <returns>An empty body.</returns>
     /// <response code="204">Returns an empty body.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="404">When the specified application is not found.</response>
-    [HttpDelete("{id}/likes")]
+    [HttpDelete("{id:guid}/likes")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
@@ -395,12 +402,12 @@ public class ApplicationController : Controller
     /// <summary>
     ///     Retrieves comments from a specific application.
     /// </summary>
-    /// <param name="id">A application's ID.</param>
+    /// <param name="id">An application's ID.</param>
     /// <returns>An array of comments.</returns>
     /// <response code="200">Returns an array of comments.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="404">When the specified application is not found.</response>
-    [HttpGet("{id}/comments")]
+    [HttpGet("{id:guid}/comments")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<CommentDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
@@ -438,7 +445,7 @@ public class ApplicationController : Controller
     /// <summary>
     ///     Comments on a specific application.
     /// </summary>
-    /// <param name="id">A application's ID.</param>
+    /// <param name="id">An application's ID.</param>
     /// <returns>An empty body.</returns>
     /// <response code="201">Returns an empty body.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
@@ -446,7 +453,7 @@ public class ApplicationController : Controller
     /// <response code="403">When the user does not have sufficient permission.</response>
     /// <response code="404">When the specified application is not found.</response>
     /// <response code="500">When an internal server error has occurred.</response>
-    [HttpPost("{id}/comments")]
+    [HttpPost("{id:guid}/comments")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]

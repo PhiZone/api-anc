@@ -128,9 +128,14 @@ public static class ResponseCodes
     public const string UnsupportedRegion = "UnsupportedRegion";
 
     /// <summary>
-    ///     The specified chart format is not supported.
+    ///     The format of the specified chart is not supported.
     /// </summary>
     public const string UnsupportedChartFormat = "UnsupportedChartFormat";
+
+    /// <summary>
+    ///     The format of the specified lyrics is not supported.
+    /// </summary>
+    public const string UnsupportedLyricsFormat = "UnsupportedLyricsFormat";
 
     /// <summary>
     ///     The input value is longer than the maximum length allowed.

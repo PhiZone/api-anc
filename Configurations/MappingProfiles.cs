@@ -27,6 +27,8 @@ public class MappingProfiles : Profile
         CreateMap<Reply, ReplyDto>();
         CreateMap<Application, ApplicationDto>();
         CreateMap<Application, ApplicationUpdateDto>();
+        CreateMap<Announcement, AnnouncementDto>();
+        CreateMap<Announcement, AnnouncementRequestDto>();
         CreateMap<PlayConfiguration, PlayConfigurationResponseDto>();
         CreateMap<PlayConfigurationRequestDto, PlayConfiguration>();
     }

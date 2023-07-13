@@ -112,7 +112,7 @@ public class RecordController : Controller
     /// <summary>
     ///     Retrieves a specific record.
     /// </summary>
-    /// <param name="id">Record's ID.</param>
+    /// <param name="id">A record's ID.</param>
     /// <returns>A record.</returns>
     /// <response code="200">Returns a record.</response>
     /// <response code="304">
@@ -120,7 +120,7 @@ public class RecordController : Controller
     /// </response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="404">When the specified record is not found.</response>
-    [HttpGet("{id}")]
+    [HttpGet("{id:guid}")]
     [ServiceFilter(typeof(ETagFilter))]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<RecordDto>))]
@@ -140,8 +140,8 @@ public class RecordController : Controller
     /// <summary>
     ///     Creates a new record.
     /// </summary>
-    /// <returns>A <see cref="RecordResponseDto" />.</returns>
-    /// <response code="201">Returns a <see cref="RecordResponseDto" />.</response>
+    /// <returns>An object containing calculated results related to the play.</returns>
+    /// <response code="201">Returns an object containing calculated results related to the play.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="404">When either the token, the application, the chart, the user, or the configuration is not found.</response>
     /// <response code="500">When an internal server error has occurred.</response>
@@ -164,13 +164,13 @@ public class RecordController : Controller
             });
 
         var info = JsonConvert.DeserializeObject<PlayInfoDto>((await db.StringGetAsync($"PLAY:{dto.Token}"))!)!;
-        // if (DateTimeOffset.UtcNow < info.EarliestEndTime)
-        //     return BadRequest(new ResponseDto<object>
-        //     {
-        //         Status = ResponseStatus.ErrorWithMessage,
-        //         Code = ResponseCodes.InvalidData,
-        //         Message = "Your request is made earlier than expected."
-        //     });
+        if (DateTimeOffset.UtcNow < info.EarliestEndTime)
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorWithMessage,
+                Code = ResponseCodes.InvalidData,
+                Message = "Your request is made earlier than expected."
+            });
 
         if (!await _applicationRepository.ApplicationExistsAsync(info.ApplicationId))
             return NotFound(new ResponseDto<object>
@@ -345,7 +345,7 @@ public class RecordController : Controller
     /// <response code="200">Returns an array of likes.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="404">When the specified record is not found.</response>
-    [HttpGet("{id}/likes")]
+    [HttpGet("{id:guid}/likes")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<LikeDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
@@ -385,7 +385,7 @@ public class RecordController : Controller
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="404">When the specified record is not found.</response>
-    [HttpPost("{id}/likes")]
+    [HttpPost("{id:guid}/likes")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
@@ -421,7 +421,7 @@ public class RecordController : Controller
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="404">When the specified record is not found.</response>
-    [HttpDelete("{id}/likes")]
+    [HttpDelete("{id:guid}/likes")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
@@ -456,7 +456,7 @@ public class RecordController : Controller
     /// <response code="200">Returns an array of comments.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="404">When the specified record is not found.</response>
-    [HttpGet("{id}/comments")]
+    [HttpGet("{id:guid}/comments")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<CommentDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
@@ -501,7 +501,7 @@ public class RecordController : Controller
     /// <response code="403">When the user does not have sufficient permission.</response>
     /// <response code="404">When the specified record is not found.</response>
     /// <response code="500">When an internal server error has occurred.</response>
-    [HttpPost("{id}/comments")]
+    [HttpPost("{id:guid}/comments")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]

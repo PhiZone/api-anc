@@ -24,6 +24,8 @@ public class ApplicationDto
 
     public DateTimeOffset DateCreated { get; set; }
 
+    public DateTimeOffset DateUpdated { get; set; }
+
     public int CommentCount { get; set; }
 
     public int LikeCount { get; set; }

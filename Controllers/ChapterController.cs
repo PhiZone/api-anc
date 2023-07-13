@@ -17,6 +17,8 @@ using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 using PhiZoneApi.Utils;
 
+// ReSharper disable RouteTemplates.ActionRoutePrefixCanBeExtractedToControllerRoute
+
 // ReSharper disable RouteTemplates.ParameterConstraintCanBeSpecified
 
 namespace PhiZoneApi.Controllers;
@@ -99,7 +101,7 @@ public class ChapterController : Controller
     /// <summary>
     ///     Retrieves a specific chapter.
     /// </summary>
-    /// <param name="id">Chapter's ID.</param>
+    /// <param name="id">A chapter's ID.</param>
     /// <returns>A chapter.</returns>
     /// <response code="200">Returns a chapter.</response>
     /// <response code="304">
@@ -107,9 +109,9 @@ public class ChapterController : Controller
     /// </response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="404">When the specified chapter is not found.</response>
-    [HttpGet("{id}")]
+    [HttpGet("{id:guid}")]
     [ServiceFilter(typeof(ETagFilter))]
-    [Produces("application/json")]
+    [Produces("application/json", "text/plain")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<ChapterDto>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status304NotModified, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
@@ -177,7 +179,7 @@ public class ChapterController : Controller
     /// <summary>
     ///     Updates a chapter.
     /// </summary>
-    /// <param name="id">Chapter's ID.</param>
+    /// <param name="id">A chapter's ID.</param>
     /// <param name="patchDocument">A JSON Patch Document.</param>
     /// <returns>An empty body.</returns>
     /// <response code="204">Returns an empty body.</response>
@@ -186,7 +188,7 @@ public class ChapterController : Controller
     /// <response code="403">When the user does not have sufficient permission.</response>
     /// <response code="404">When the specified chapter is not found.</response>
     /// <response code="500">When an internal server error has occurred.</response>
-    [HttpPatch("{id}")]
+    [HttpPatch("{id:guid}")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Consumes("application/json")]
     [Produces("text/plain", "application/json")]
@@ -233,6 +235,7 @@ public class ChapterController : Controller
         chapter.Accessibility = dto.Accessibility;
         chapter.IsHidden = dto.IsHidden;
         chapter.IsLocked = dto.IsLocked;
+        chapter.DateUpdated = DateTimeOffset.UtcNow;
 
         if (!await _chapterRepository.UpdateChapterAsync(chapter))
             return StatusCode(StatusCodes.Status500InternalServerError,
@@ -244,7 +247,7 @@ public class ChapterController : Controller
     /// <summary>
     ///     Updates a chapter's illustration.
     /// </summary>
-    /// <param name="id">Chapter's ID.</param>
+    /// <param name="id">A chapter's ID.</param>
     /// <param name="dto">The new illustration.</param>
     /// <returns>An empty body.</returns>
     /// <response code="204">Returns an empty body.</response>
@@ -253,7 +256,7 @@ public class ChapterController : Controller
     /// <response code="403">When the user does not have sufficient permission.</response>
     /// <response code="404">When the specified chapter is not found.</response>
     /// <response code="500">When an internal server error has occurred.</response>
-    [HttpPatch("{id}/illustration")]
+    [HttpPatch("{id:guid}/illustration")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Consumes("multipart/form-data")]
     [Produces("text/plain", "application/json")]
@@ -282,8 +285,11 @@ public class ChapterController : Controller
                 Code = ResponseCodes.InsufficientPermission
             });
         if (dto.Illustration != null)
+        {
             chapter.Illustration =
                 (await _fileStorageService.UploadImage<Chapter>(chapter.Title, dto.Illustration, (16, 9))).Item1;
+            chapter.DateUpdated = DateTimeOffset.UtcNow;
+        }
 
         if (!await _chapterRepository.UpdateChapterAsync(chapter))
             return StatusCode(StatusCodes.Status500InternalServerError,
@@ -299,7 +305,7 @@ public class ChapterController : Controller
     /// <response code="200">Returns an array of songs.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="404">When the specified chapter is not found.</response>
-    [HttpGet("{id}/songs")]
+    [HttpGet("{id:guid}/songs")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<SongDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
@@ -343,7 +349,7 @@ public class ChapterController : Controller
     /// <response code="200">Returns an array of likes.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="404">When the specified chapter is not found.</response>
-    [HttpGet("{id}/likes")]
+    [HttpGet("{id:guid}/likes")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<LikeDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
@@ -383,7 +389,7 @@ public class ChapterController : Controller
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="404">When the specified chapter is not found.</response>
-    [HttpPost("{id}/likes")]
+    [HttpPost("{id:guid}/likes")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
@@ -413,7 +419,7 @@ public class ChapterController : Controller
     /// <response code="204">Returns an empty body.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="404">When the specified chapter is not found.</response>
-    [HttpDelete("{id}/likes")]
+    [HttpDelete("{id:guid}/likes")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
@@ -442,7 +448,7 @@ public class ChapterController : Controller
     /// <response code="200">Returns an array of comments.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="404">When the specified chapter is not found.</response>
-    [HttpGet("{id}/comments")]
+    [HttpGet("{id:guid}/comments")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<CommentDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
@@ -487,7 +493,7 @@ public class ChapterController : Controller
     /// <response code="403">When the user does not have sufficient permission.</response>
     /// <response code="404">When the specified chapter is not found.</response>
     /// <response code="500">When an internal server error has occurred.</response>
-    [HttpPost("{id}/comments")]
+    [HttpPost("{id:guid}/comments")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]

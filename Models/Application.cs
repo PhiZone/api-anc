@@ -19,4 +19,6 @@ public class Application : LikeableResource
     public ApplicationType Type { get; set; }
 
     public string Secret { get; set; } = null!;
+
+    public DateTimeOffset DateUpdated { get; set; }
 }

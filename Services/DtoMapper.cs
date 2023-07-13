@@ -134,4 +134,16 @@ public class DtoMapper : IDtoMapper
             : null;
         return dto;
     }
+
+    public async Task<T> MapAnnouncementAsync<T>(Announcement announcement, User? currentUser = null)
+        where T : AnnouncementDto
+    {
+        var dto = _mapper.Map<T>(announcement);
+        dto.CommentCount =
+            await _commentRepository.CountCommentsAsync(comment => comment.ResourceId == announcement.Id);
+        dto.DateLiked = currentUser != null && await _likeRepository.LikeExistsAsync(announcement.Id, currentUser.Id)
+            ? (await _likeRepository.GetLikeAsync(announcement.Id, currentUser.Id)).DateCreated
+            : null;
+        return dto;
+    }
 }

@@ -109,7 +109,7 @@ public class RegionController : Controller
     /// <summary>
     ///     Retrieves a specific region by its ID.
     /// </summary>
-    /// <param name="id">Region's ID.</param>
+    /// <param name="id">A region's ID.</param>
     /// <returns>A region.</returns>
     /// <response code="200">Returns a region.</response>
     /// <response code="304">
@@ -119,7 +119,7 @@ public class RegionController : Controller
     /// <response code="404">When the specified region is not found.</response>
     [HttpGet("{id:int}")]
     [ServiceFilter(typeof(ETagFilter))]
-    [Produces("application/json")]
+    [Produces("application/json", "text/plain")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<RegionDto>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status304NotModified, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
@@ -179,7 +179,7 @@ public class RegionController : Controller
     /// <summary>
     ///     Retrieves users from a specific region by its ID.
     /// </summary>
-    /// <param name="id">Region's ID.</param>
+    /// <param name="id">A region's ID.</param>
     /// <returns>An array of users.</returns>
     /// <response code="200">Returns an array of users.</response>
     /// <response code="400">When any of the parameters is invalid.</response>

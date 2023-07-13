@@ -102,7 +102,7 @@ public class PlayerController : Controller
     /// <summary>
     ///     Retrieves a specific configuration.
     /// </summary>
-    /// <param name="id">PlayConfiguration's ID.</param>
+    /// <param name="id">A configuration's ID.</param>
     /// <returns>A configuration.</returns>
     /// <response code="200">Returns a configuration.</response>
     /// <response code="304">
@@ -110,9 +110,9 @@ public class PlayerController : Controller
     /// </response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="404">When the specified configuration is not found.</response>
-    [HttpGet("configurations/{id}")]
+    [HttpGet("configurations/{id:guid}")]
     [ServiceFilter(typeof(ETagFilter))]
-    [Produces("application/json")]
+    [Produces("application/json", "text/plain")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<PlayConfigurationResponseDto>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status304NotModified, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
@@ -188,7 +188,7 @@ public class PlayerController : Controller
     /// <summary>
     ///     Updates a configuration.
     /// </summary>
-    /// <param name="id">PlayConfiguration's ID.</param>
+    /// <param name="id">A configuration's ID.</param>
     /// <param name="patchDocument">A JSON Patch Document.</param>
     /// <returns>An empty body.</returns>
     /// <response code="204">Returns an empty body.</response>
@@ -198,7 +198,7 @@ public class PlayerController : Controller
     /// <response code="404">When the specified configuration is not found.</response>
     /// <response code="418">When the user attempts to swap the perfect and good judgments.</response>
     /// <response code="500">When an internal server error has occurred.</response>
-    [HttpPatch("configurations/{id}")]
+    [HttpPatch("configurations/{id:guid}")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Consumes("application/json")]
     [Produces("text/plain", "application/json")]
@@ -255,8 +255,8 @@ public class PlayerController : Controller
     /// <summary>
     ///     Obtains a play token.
     /// </summary>
-    /// <returns>A <see cref="PlayResponseDto" />.</returns>
-    /// <response code="200">Returns a <see cref="PlayResponseDto" />.</response>
+    /// <returns>An object containing a play token and a timestamp of the current time in UTC.</returns>
+    /// <response code="200">Returns an object containing a play token and a timestamp of the current time in UTC.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="403">When the user does not have sufficient permission.</response>

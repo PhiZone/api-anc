@@ -1,6 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using PhiZoneApi.Constants;
 using PhiZoneApi.Enums;
+using PhiZoneApi.Validators;
 
 namespace PhiZoneApi.Dtos.Requests;
 
@@ -31,6 +32,8 @@ public class SongUpdateDto
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     public bool IsLocked { get; set; }
 
+
+    [LyricsValidator(ErrorMessage = ResponseCodes.UnsupportedLyricsFormat)]
     public string? Lyrics { get; set; }
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]

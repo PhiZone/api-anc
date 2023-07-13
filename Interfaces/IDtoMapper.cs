@@ -10,6 +10,7 @@ public interface IDtoMapper
     Task<T> MapFollowerAsync<T>(UserRelation userRelation, User? currentUser = null) where T : UserDto;
 
     Task<T> MapFolloweeAsync<T>(UserRelation userRelation, User? currentUser = null) where T : UserDto;
+
     Task<T> MapUserRelationAsync<T>(UserRelation userRelation, User? currentUser = null) where T : UserRelationDto;
 
     Task<T> MapChapterAsync<T>(Chapter chapter, User? currentUser = null) where T : ChapterDto;
@@ -25,4 +26,6 @@ public interface IDtoMapper
     Task<T> MapReplyAsync<T>(Reply reply, User? currentUser = null) where T : ReplyDto;
 
     Task<T> MapApplicationAsync<T>(Application application, User? currentUser = null) where T : ApplicationDto;
+
+    Task<T> MapAnnouncementAsync<T>(Announcement announcement, User? currentUser = null) where T : AnnouncementDto;
 }

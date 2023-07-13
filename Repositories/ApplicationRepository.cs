@@ -5,6 +5,8 @@ using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 using PhiZoneApi.Utils;
 
+// ReSharper disable InvertIf
+
 namespace PhiZoneApi.Repositories;
 
 public class ApplicationRepository : IApplicationRepository
@@ -21,6 +23,14 @@ public class ApplicationRepository : IApplicationRepository
     {
         var result = _context.Applications.OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
+        if (search != null)
+        {
+            search = search.Trim().ToUpper();
+            result = result.Where(application => application.Name.ToUpper().Contains(search) ||
+                                                 application.Homepage.ToUpper().Contains(search) ||
+                                                 (application.Description != null &&
+                                                  application.Description.ToUpper().Contains(search)));
+        }
 
         return await result.Skip(position).Take(take).ToListAsync();
     }
@@ -66,6 +76,14 @@ public class ApplicationRepository : IApplicationRepository
         var result = _context.Applications.AsQueryable();
 
         if (predicate != null) result = result.Where(predicate);
+        if (search != null)
+        {
+            search = search.Trim().ToUpper();
+            result = result.Where(application => application.Name.ToUpper().Contains(search) ||
+                                                 application.Homepage.ToUpper().Contains(search) ||
+                                                 (application.Description != null &&
+                                                  application.Description.ToUpper().Contains(search)));
+        }
 
         return await result.CountAsync();
     }

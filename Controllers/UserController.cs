@@ -17,6 +17,8 @@ using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 using PhiZoneApi.Utils;
 
+// ReSharper disable RouteTemplates.ActionRoutePrefixCanBeExtractedToControllerRoute
+
 namespace PhiZoneApi.Controllers;
 
 [Route("users")]
@@ -32,6 +34,8 @@ public class UserController : Controller
     private readonly IFilterService _filterService;
     private readonly IMailService _mailService;
     private readonly IMapper _mapper;
+    private readonly IRecordRepository _recordRepository;
+    private readonly IRecordService _recordService;
     private readonly IRegionRepository _regionRepository;
     private readonly UserManager<User> _userManager;
     private readonly IUserRelationRepository _userRelationRepository;
@@ -40,7 +44,8 @@ public class UserController : Controller
     public UserController(IUserRepository userRepository, IUserRelationRepository userRelationRepository,
         UserManager<User> userManager, IMailService mailService, IFilterService filterService,
         IFileStorageService fileStorageService, IOptions<DataSettings> dataSettings, IMapper mapper,
-        IDtoMapper dtoMapper, IRegionRepository regionRepository)
+        IDtoMapper dtoMapper, IRegionRepository regionRepository, IRecordRepository recordRepository,
+        IRecordService recordService)
     {
         _userRepository = userRepository;
         _userRelationRepository = userRelationRepository;
@@ -52,6 +57,8 @@ public class UserController : Controller
         _mapper = mapper;
         _dtoMapper = dtoMapper;
         _regionRepository = regionRepository;
+        _recordRepository = recordRepository;
+        _recordService = recordService;
     }
 
     /// <summary>
@@ -97,7 +104,7 @@ public class UserController : Controller
     /// <summary>
     ///     Retrieves a specific user.
     /// </summary>
-    /// <param name="id">User's ID.</param>
+    /// <param name="id">A user's ID.</param>
     /// <returns>A user.</returns>
     /// <response code="200">Returns a user.</response>
     /// <response code="304">
@@ -107,7 +114,7 @@ public class UserController : Controller
     /// <response code="404">When the specified user is not found.</response>
     [HttpGet("{id:int}")]
     [ServiceFilter(typeof(ETagFilter))]
-    [Produces("application/json")]
+    [Produces("application/json", "text/plain")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<UserDto>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status304NotModified, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
@@ -194,7 +201,7 @@ public class UserController : Controller
     /// <summary>
     ///     Updates a user.
     /// </summary>
-    /// <param name="id">User's ID.</param>
+    /// <param name="id">A user's ID.</param>
     /// <param name="patchDocument">A JSON Patch Document.</param>
     /// <returns>An empty body.</returns>
     /// <response code="204">Returns an empty body.</response>
@@ -291,7 +298,7 @@ public class UserController : Controller
     /// <summary>
     ///     Updates a user's avatar.
     /// </summary>
-    /// <param name="id">User's ID.</param>
+    /// <param name="id">A user's ID.</param>
     /// <param name="dto">The new avatar.</param>
     /// <returns>An empty body.</returns>
     /// <response code="204">Returns an empty body.</response>
@@ -342,7 +349,7 @@ public class UserController : Controller
     /// <summary>
     ///     Removes a user's avatar.
     /// </summary>
-    /// <param name="id">User's ID.</param>
+    /// <param name="id">A user's ID.</param>
     /// <returns>An empty body.</returns>
     /// <response code="204">Returns an empty body.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
@@ -390,7 +397,7 @@ public class UserController : Controller
     /// <summary>
     ///     Retrieves followers of user.
     /// </summary>
-    /// <param name="id">User's ID.</param>
+    /// <param name="id">A user's ID.</param>
     /// <returns>An array of followers of user.</returns>
     /// <response code="200">Returns an array of followers of user.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
@@ -444,7 +451,7 @@ public class UserController : Controller
     /// <summary>
     ///     Retrieves followees of user.
     /// </summary>
-    /// <param name="id">User's ID.</param>
+    /// <param name="id">A user's ID.</param>
     /// <returns>An array of followees of user.</returns>
     /// <response code="200">Returns an array of followees of user.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
@@ -498,7 +505,7 @@ public class UserController : Controller
     /// <summary>
     ///     Follows a user.
     /// </summary>
-    /// <param name="id">Target's ID.</param>
+    /// <param name="id">A user's ID.</param>
     /// <returns>An empty body.</returns>
     /// <response code="201">Returns an empty body.</response>
     /// <response code="400">
@@ -559,7 +566,7 @@ public class UserController : Controller
     /// <summary>
     ///     Unfollows a user.
     /// </summary>
-    /// <param name="id">Target's ID.</param>
+    /// <param name="id">A user's ID.</param>
     /// <returns>An empty body.</returns>
     /// <response code="204">Returns an empty body.</response>
     /// <response code="400">
@@ -610,5 +617,34 @@ public class UserController : Controller
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
         return NoContent();
+    }
+
+    /// <summary>
+    ///     Gets a user's best play records.
+    /// </summary>
+    /// <param name="id">A user's ID.</param>
+    /// <returns>Phi1 and Best19.</returns>
+    /// <response code="200">Returns Phi1 and Best19.</response>
+    [HttpGet("{id:int}/bestRecords")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<UserBestRecordsDto>))]
+    public async Task<IActionResult> GetBestRecords([FromRoute] int id)
+    {
+        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        var phi1 = (await _recordRepository.GetRecordsAsync("Rks", true, 0, 1,
+            r => r.OwnerId == id && r.Score == 1000000 && r.Chart.IsRanked)).FirstOrDefault();
+        var phi1Dto = phi1 != null ? await _dtoMapper.MapRecordAsync<RecordDto>(phi1) : null;
+        var b19 = await _recordService.GetBest19(id);
+        var b19Dto = new List<RecordDto>();
+        foreach (var record in b19) b19Dto.Add(await _dtoMapper.MapRecordAsync<RecordDto>(record, currentUser));
+        return Ok(new ResponseDto<UserBestRecordsDto>
+        {
+            Status = ResponseStatus.Ok,
+            Data = new UserBestRecordsDto
+            {
+                Phi1 = phi1Dto,
+                Best19 = b19Dto
+            }
+        });
     }
 }

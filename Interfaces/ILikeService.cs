@@ -18,6 +18,8 @@ public interface ILikeService
 
     Task<bool> CreateLikeAsync(Application application, int userId);
 
+    Task<bool> CreateLikeAsync(Announcement announcement, int userId);
+
     Task<bool> RemoveLikeAsync(Chapter chapter, int userId);
 
     Task<bool> RemoveLikeAsync(Song song, int userId);
@@ -31,4 +33,6 @@ public interface ILikeService
     Task<bool> RemoveLikeAsync(Reply reply, int userId);
 
     Task<bool> RemoveLikeAsync(Application application, int userId);
+
+    Task<bool> RemoveLikeAsync(Announcement announcement, int userId);
 }
