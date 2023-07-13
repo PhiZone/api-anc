@@ -316,8 +316,10 @@ public class RecordController : Controller
 
         player.Experience += experienceDelta;
         player.Rks = rksAfter;
-
         await _userManager.UpdateAsync(player);
+
+        chart.PlayCount = await _chartRepository.CountChartRecordsAsync(chart.Id);
+        await _chartRepository.UpdateChartAsync(chart);
 
         return StatusCode(StatusCodes.Status201Created,
             new ResponseDto<RecordResponseDto>

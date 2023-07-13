@@ -3,9 +3,9 @@
 public class Vote : Resource
 {
     public Guid ChartId { get; set; }
-    
+
     public Chart Chart { get; set; } = null!;
-    
+
     public int Arrangement { get; set; }
 
     public int Feel { get; set; }

@@ -39,11 +39,11 @@ public class ChartController : Controller
     private readonly IFilterService _filterService;
     private readonly ILikeRepository _likeRepository;
     private readonly ILikeService _likeService;
-    private readonly IVoteRepository _voteRepository;
-    private readonly IVoteService _voteService;
     private readonly IMapper _mapper;
     private readonly ISongRepository _songRepository;
     private readonly UserManager<User> _userManager;
+    private readonly IVoteRepository _voteRepository;
+    private readonly IVoteService _voteService;
 
     public ChartController(IChartRepository chartRepository, IOptions<DataSettings> dataSettings,
         UserManager<User> userManager, IFilterService filterService, IFileStorageService fileStorageService,

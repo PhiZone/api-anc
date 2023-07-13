@@ -5,13 +5,11 @@ namespace PhiZoneApi.Services;
 
 public class RecordService : IRecordService
 {
-    private readonly IChartRepository _chartRepository;
     private readonly IRecordRepository _recordRepository;
 
-    public RecordService(IRecordRepository recordRepository, IChartRepository chartRepository)
+    public RecordService(IRecordRepository recordRepository)
     {
         _recordRepository = recordRepository;
-        _chartRepository = chartRepository;
     }
 
     public int CalculateScore(int perfect, int good, int bad, int miss, int maxCombo)

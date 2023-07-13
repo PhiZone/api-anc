@@ -3,9 +3,9 @@
 public class VoteDto
 {
     public Guid Id { get; set; }
-    
+
     public Guid ChartId { get; set; }
-    
+
     public int Arrangement { get; set; }
 
     public int Feel { get; set; }

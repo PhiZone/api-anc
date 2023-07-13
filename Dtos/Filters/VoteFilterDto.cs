@@ -3,13 +3,13 @@
 public class VoteFilterDto
 {
     public List<Guid>? RangeId { get; set; }
-    
+
     public List<Guid>? RangeChartId { get; set; }
-    
+
     public int? MinArrangement { get; set; }
-    
+
     public int? MaxArrangement { get; set; }
-    
+
     public List<int>? RangeArrangement { get; set; }
 
     public int? MinFeel { get; set; }

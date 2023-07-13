@@ -7,9 +7,9 @@ namespace PhiZoneApi.Services;
 public class VoteService : IVoteService
 {
     private readonly IChartRepository _chartRepository;
-    private readonly IVoteRepository _voteRepository;
     private readonly List<int> _experienceList;
     private readonly List<double> _multiplierList;
+    private readonly IVoteRepository _voteRepository;
 
     public VoteService(IVoteRepository voteRepository, IChartRepository chartRepository)
     {
