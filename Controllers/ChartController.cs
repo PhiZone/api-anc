@@ -39,6 +39,8 @@ public class ChartController : Controller
     private readonly IFilterService _filterService;
     private readonly ILikeRepository _likeRepository;
     private readonly ILikeService _likeService;
+    private readonly IVoteRepository _voteRepository;
+    private readonly IVoteService _voteService;
     private readonly IMapper _mapper;
     private readonly ISongRepository _songRepository;
     private readonly UserManager<User> _userManager;
@@ -46,7 +48,8 @@ public class ChartController : Controller
     public ChartController(IChartRepository chartRepository, IOptions<DataSettings> dataSettings,
         UserManager<User> userManager, IFilterService filterService, IFileStorageService fileStorageService,
         IDtoMapper dtoMapper, IMapper mapper, IChartService chartService, ISongRepository songRepository,
-        ILikeRepository likeRepository, ILikeService likeService, ICommentRepository commentRepository)
+        ILikeRepository likeRepository, ILikeService likeService, ICommentRepository commentRepository,
+        IVoteRepository voteRepository, IVoteService voteService)
     {
         _chartRepository = chartRepository;
         _dataSettings = dataSettings;
@@ -59,6 +62,8 @@ public class ChartController : Controller
         _likeRepository = likeRepository;
         _likeService = likeService;
         _commentRepository = commentRepository;
+        _voteRepository = voteRepository;
+        _voteService = voteService;
         _fileStorageService = fileStorageService;
     }
 
@@ -599,8 +604,8 @@ public class ChartController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> CreateLike([FromRoute] Guid id)
     {
-        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        if (!await _userManager.IsInRoleAsync(currentUser!, Roles.Member))
+        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!await _userManager.IsInRoleAsync(currentUser, Roles.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -608,7 +613,7 @@ public class ChartController : Controller
                 });
         if (!await _chartRepository.ChartExistsAsync(id)) return NotFound();
         var chart = await _chartRepository.GetChartAsync(id);
-        if (!await _likeService.CreateLikeAsync(chart, currentUser!.Id))
+        if (!await _likeService.CreateLikeAsync(chart, currentUser.Id))
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
@@ -635,8 +640,8 @@ public class ChartController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> RemoveLike([FromRoute] Guid id)
     {
-        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        if (!await _userManager.IsInRoleAsync(currentUser!, Roles.Member))
+        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!await _userManager.IsInRoleAsync(currentUser, Roles.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -644,7 +649,7 @@ public class ChartController : Controller
                 });
         if (!await _chartRepository.ChartExistsAsync(id)) return NotFound();
         var chart = await _chartRepository.GetChartAsync(id);
-        if (!await _likeService.RemoveLikeAsync(chart, currentUser!.Id))
+        if (!await _likeService.RemoveLikeAsync(chart, currentUser.Id))
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
@@ -717,8 +722,8 @@ public class ChartController : Controller
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> CreateComment([FromRoute] Guid id, [FromBody] CommentCreationDto dto)
     {
-        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        if (!await _userManager.IsInRoleAsync(currentUser!, Roles.Member))
+        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!await _userManager.IsInRoleAsync(currentUser, Roles.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -731,7 +736,7 @@ public class ChartController : Controller
             ResourceId = chart.Id,
             Content = dto.Content,
             Language = dto.Language,
-            OwnerId = currentUser!.Id,
+            OwnerId = currentUser.Id,
             DateCreated = DateTimeOffset.UtcNow
         };
         if (!await _commentRepository.CreateCommentAsync(comment))
@@ -739,5 +744,116 @@ public class ChartController : Controller
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
         return StatusCode(StatusCodes.Status201Created);
+    }
+
+    /// <summary>
+    ///     Retrieves votes from a specific chart.
+    /// </summary>
+    /// <param name="id">A chart's ID.</param>
+    /// <returns>An array of votes.</returns>
+    /// <response code="200">Returns an array of votes.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="404">When the specified chart is not found.</response>
+    [HttpGet("{id:guid}/votes")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<VoteDto>>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> GetChartVotes([FromRoute] Guid id, [FromQuery] ArrayWithTimeRequestDto dto)
+    {
+        dto.PerPage = dto.PerPage > 0
+            ? dto.PerPage <= _dataSettings.Value.PaginationMaxPerPage
+                ? dto.PerPage
+                : _dataSettings.Value.PaginationMaxPerPage
+            : _dataSettings.Value.PaginationPerPage;
+        var position = dto.PerPage * (dto.Page - 1);
+        if (!await _chartRepository.ChartExistsAsync(id)) return NotFound();
+        var votes = await _voteRepository.GetVotesAsync(dto.Order, dto.Desc, position, dto.PerPage,
+            e => e.ChartId == id);
+        var list = _mapper.Map<List<VoteDto>>(votes);
+        var total = await _voteRepository.CountVotesAsync(e => e.ChartId == id);
+
+        return Ok(new ResponseDto<IEnumerable<VoteDto>>
+        {
+            Status = ResponseStatus.Ok,
+            Code = ResponseCodes.Ok,
+            Total = total,
+            PerPage = dto.PerPage,
+            HasPrevious = position > 0,
+            HasNext = position < total - total % dto.PerPage,
+            Data = list
+        });
+    }
+
+    /// <summary>
+    ///     Votes a specific chart.
+    /// </summary>
+    /// <param name="id">A chart's ID.</param>
+    /// <returns>An empty body.</returns>
+    /// <response code="201">Returns an empty body.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="404">When the specified chart is not found.</response>
+    [HttpPost("{id:guid}/votes")]
+    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> CreateVote([FromRoute] Guid id, [FromBody] VoteRequestDto dto)
+    {
+        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!await _userManager.IsInRoleAsync(currentUser, Roles.Member))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+        if (!await _chartRepository.ChartExistsAsync(id)) return NotFound();
+        var chart = await _chartRepository.GetChartAsync(id);
+        if (!await _voteService.CreateVoteAsync(dto, chart, currentUser))
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
+            });
+
+        return StatusCode(StatusCodes.Status201Created);
+    }
+
+    /// <summary>
+    ///     Removes the vote from a specific chart.
+    /// </summary>
+    /// <param name="id">A chart's ID.</param>
+    /// <returns>An empty body.</returns>
+    /// <response code="204">Returns an empty body.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="404">When the specified chart is not found.</response>
+    [HttpDelete("{id:guid}/votes")]
+    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> RemoveVote([FromRoute] Guid id)
+    {
+        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!await _userManager.IsInRoleAsync(currentUser, Roles.Member))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+        if (!await _chartRepository.ChartExistsAsync(id)) return NotFound();
+        var chart = await _chartRepository.GetChartAsync(id);
+        if (!await _voteService.RemoveVoteAsync(chart, currentUser.Id))
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
+            });
+
+        return NoContent();
     }
 }

@@ -271,8 +271,8 @@ public class PlayerController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> Play([FromQuery] Guid chartId, Guid configurationId, Guid applicationId)
     {
-        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        if (!await _userManager.IsInRoleAsync(currentUser!, Roles.Member))
+        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!await _userManager.IsInRoleAsync(currentUser, Roles.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -312,7 +312,7 @@ public class PlayerController : Controller
             ChartId = chartId,
             ConfigurationId = configurationId,
             ApplicationId = applicationId,
-            PlayerId = currentUser!.Id,
+            PlayerId = currentUser.Id,
             EarliestEndTime = DateTimeOffset.UtcNow.Add(song.Duration!.Value),
             Timestamp = timestamp
         };

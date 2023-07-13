@@ -31,6 +31,8 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, int>
 
     public DbSet<Like> Likes { get; set; } = null!;
 
+    public DbSet<Vote> Votes { get; set; } = null!;
+
     public DbSet<PlayConfiguration> PlayConfigurations { get; set; } = null!;
 
     public DbSet<Application> Applications { get; set; } = null!;

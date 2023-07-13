@@ -464,8 +464,8 @@ public class ApplicationController : Controller
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> CreateComment([FromRoute] Guid id, [FromBody] CommentCreationDto dto)
     {
-        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        if (!await _userManager.IsInRoleAsync(currentUser!, Roles.Member))
+        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!await _userManager.IsInRoleAsync(currentUser, Roles.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -478,7 +478,7 @@ public class ApplicationController : Controller
             ResourceId = application.Id,
             Content = dto.Content,
             Language = dto.Language,
-            OwnerId = currentUser!.Id,
+            OwnerId = currentUser.Id,
             DateCreated = DateTimeOffset.UtcNow
         };
         if (!await _commentRepository.CreateCommentAsync(comment))

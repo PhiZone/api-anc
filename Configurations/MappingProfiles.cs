@@ -31,5 +31,6 @@ public class MappingProfiles : Profile
         CreateMap<Announcement, AnnouncementRequestDto>();
         CreateMap<PlayConfiguration, PlayConfigurationResponseDto>();
         CreateMap<PlayConfigurationRequestDto, PlayConfiguration>();
+        CreateMap<Vote, VoteDto>();
     }
 }

@@ -230,8 +230,8 @@ public class CommentController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> CreateReply([FromRoute] Guid id, [FromBody] ReplyCreationDto dto)
     {
-        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        if (!await _userManager.IsInRoleAsync(currentUser!, Roles.Member))
+        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!await _userManager.IsInRoleAsync(currentUser, Roles.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -244,7 +244,7 @@ public class CommentController : Controller
             CommentId = comment.Id,
             Content = dto.Content,
             Language = dto.Language,
-            OwnerId = currentUser!.Id,
+            OwnerId = currentUser.Id,
             DateCreated = DateTimeOffset.UtcNow
         };
         if (!await _replyRepository.CreateReplyAsync(reply))
@@ -313,8 +313,8 @@ public class CommentController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> CreateLike([FromRoute] Guid id)
     {
-        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        if (!await _userManager.IsInRoleAsync(currentUser!, Roles.Member))
+        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!await _userManager.IsInRoleAsync(currentUser, Roles.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -322,7 +322,7 @@ public class CommentController : Controller
                 });
         if (!await _commentRepository.CommentExistsAsync(id)) return NotFound();
         var comment = await _commentRepository.GetCommentAsync(id);
-        if (!await _likeService.CreateLikeAsync(comment, currentUser!.Id))
+        if (!await _likeService.CreateLikeAsync(comment, currentUser.Id))
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
@@ -349,8 +349,8 @@ public class CommentController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> RemoveLike([FromRoute] Guid id)
     {
-        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        if (!await _userManager.IsInRoleAsync(currentUser!, Roles.Member))
+        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!await _userManager.IsInRoleAsync(currentUser, Roles.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -358,7 +358,7 @@ public class CommentController : Controller
                 });
         if (!await _commentRepository.CommentExistsAsync(id)) return NotFound();
         var comment = await _commentRepository.GetCommentAsync(id);
-        if (!await _likeService.RemoveLikeAsync(comment, currentUser!.Id))
+        if (!await _likeService.RemoveLikeAsync(comment, currentUser.Id))
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
