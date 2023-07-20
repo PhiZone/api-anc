@@ -19,6 +19,7 @@ using PhiZoneApi.Filters;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 using StackExchange.Redis;
+// ReSharper disable RouteTemplates.ActionRoutePrefixCanBeExtractedToControllerRoute
 
 // ReSharper disable RouteTemplates.ParameterConstraintCanBeSpecified
 

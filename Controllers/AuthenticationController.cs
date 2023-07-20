@@ -15,6 +15,7 @@ using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 using StackExchange.Redis;
 using static OpenIddict.Abstractions.OpenIddictConstants;
+// ReSharper disable InvertIf
 
 namespace PhiZoneApi.Controllers;
 
