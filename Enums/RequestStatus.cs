@@ -1,6 +1,6 @@
 ﻿namespace PhiZoneApi.Enums;
 
-public enum SubmissionStatus
+public enum RequestStatus
 {
     Waiting, Approved, Rejected
 }

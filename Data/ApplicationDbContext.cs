@@ -39,6 +39,12 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, int>
 
     public DbSet<Announcement> Announcements { get; set; } = null!;
 
+    public DbSet<VolunteerVote> VolunteerVotes { get; set; } = null!;
+
+    public DbSet<SongSubmission> SongSubmissions { get; set; } = null!;
+
+    public DbSet<ChartSubmission> ChartSubmissions { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);

@@ -8,13 +8,13 @@ public class Submission : Resource
 
     public Accessibility Accessibility { get; set; }
     
-    public SubmissionStatus Status { get; set; }
+    public RequestStatus Status { get; set; }
     
-    public SubmissionStatus VolunteerStatus { get; set; }
+    public RequestStatus VolunteerStatus { get; set; }
     
-    public SubmissionStatus CollabStatus { get; set; }
+    public RequestStatus CollabStatus { get; set; }
     
-    public SubmissionStatus AdmissionStatus { get; set; }
+    public RequestStatus AdmissionStatus { get; set; }
     
     public Guid? RepresentationId { get; set; }
     

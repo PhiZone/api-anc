@@ -2,7 +2,7 @@
 
 namespace PhiZoneApi.Models;
 
-public class ChartSubmission
+public class ChartSubmission : Submission
 {
     public string? Title { get; set; }
     
