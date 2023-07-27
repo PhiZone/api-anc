@@ -341,6 +341,44 @@ public class RecordController : Controller
     }
 
     /// <summary>
+    ///     Removes a record.
+    /// </summary>
+    /// <param name="id">A record's ID.</param>
+    /// <returns>An empty body.</returns>
+    /// <response code="204">Returns an empty body.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
+    /// <response code="404">When the specified record is not found.</response>
+    /// <response code="500">When an internal server error has occurred.</response>
+    [HttpDelete("{id:guid}")]
+    [Produces("text/plain", "application/json")]
+    public async Task<IActionResult> RemoveRecord([FromRoute] Guid id)
+    {
+        if (!await _recordRepository.RecordExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+
+        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!await _userManager.IsInRoleAsync(currentUser, Roles.Administrator))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+
+        if (!await _recordRepository.RemoveRecordAsync(id))
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+        }
+
+        return NoContent();
+    }
+
+    /// <summary>
     ///     Retrieves likes from a specific record.
     /// </summary>
     /// <param name="id">A record's ID.</param>
