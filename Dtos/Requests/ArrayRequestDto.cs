@@ -28,7 +28,7 @@ public class ArrayRequestDto
     public string? Search { get; set; } = null;
 
     /// <summary>
-    ///     A string that will be evaluated into <c>Func<T, bool></c>, which filters the query result.
+    ///     A string that will be evaluated into a <c>Func</c>, which filters the query result.
     ///     Optional. Administrators only.
     /// </summary>
     public string? Predicate { get; set; } = null;
