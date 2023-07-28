@@ -119,7 +119,9 @@ public class PlayerController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetPlayConfiguration([FromRoute] Guid id)
     {
-        if (!await _configurationRepository.PlayConfigurationExistsAsync(id)) return NotFound();
+        if (!await _configurationRepository.PlayConfigurationExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
         var configuration = await _configurationRepository.GetPlayConfigurationAsync(id);
         var dto = _mapper.Map<PlayConfigurationResponseDto>(configuration);
 
@@ -286,10 +288,8 @@ public class PlayerController : Controller
                 });
 
         if (!await _configurationRepository.RemovePlayConfigurationAsync(configuration.Id))
-        {
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
-        }
 
         return NoContent();
     }

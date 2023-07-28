@@ -14,17 +14,17 @@ public interface IAdmissionRepository
     Task<ICollection<Admission>> GetAdmissionsAsync(string order, bool desc, int position, int take,
         Expression<Func<Admission, bool>>? predicate = null);
 
-    Task<Admission> GetAdmissionAsync(Guid followerId, Guid followeeId);
+    Task<Admission> GetAdmissionAsync(Guid admitterId, Guid admitteeId);
 
     Task<bool> CreateAdmissionAsync(Admission admission);
 
-    Task<bool> RemoveAdmissionAsync(Guid followerId, Guid followeeId);
+    Task<bool> RemoveAdmissionAsync(Guid admitterId, Guid admitteeId);
 
     Task<bool> SaveAsync();
 
     Task<int> CountAdmissionsAsync(Expression<Func<Admission, bool>>? predicate = null);
 
-    Task<bool> AdmissionExistsAsync(Guid followerId, Guid followeeId);
+    Task<bool> AdmissionExistsAsync(Guid admitterId, Guid admitteeId);
 
     Task<int> CountAdmittersAsync(Guid admitteeId, Expression<Func<Admission, bool>>? predicate = null);
 

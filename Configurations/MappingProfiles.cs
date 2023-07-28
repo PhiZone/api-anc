@@ -18,6 +18,7 @@ public class MappingProfiles : Profile
         CreateMap<Chapter, ChapterDto>();
         CreateMap<Chapter, ChapterUpdateDto>();
         CreateMap<Song, SongDto>();
+        CreateMap<Song, SongAdmitteeDto>();
         CreateMap<Song, SongUpdateDto>();
         CreateMap<Chart, ChartDto>();
         CreateMap<Chart, ChartUpdateDto>();

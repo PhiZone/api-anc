@@ -18,7 +18,8 @@ public class VolunteerVoteRepository : IVolunteerVoteRepository
         _context = context;
     }
 
-    public async Task<ICollection<VolunteerVote>> GetVolunteerVotesAsync(string order, bool desc, int position, int take,
+    public async Task<ICollection<VolunteerVote>> GetVolunteerVotesAsync(string order, bool desc, int position,
+        int take,
         Expression<Func<VolunteerVote, bool>>? predicate = null)
     {
         var result = _context.VolunteerVotes.OrderBy(order, desc);

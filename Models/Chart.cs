@@ -5,7 +5,7 @@ namespace PhiZoneApi.Models;
 public class Chart : PublicResource
 {
     public string? Title { get; set; }
-    
+
     public ChartLevel LevelType { get; set; }
 
     public string Level { get; set; } = null!;
@@ -48,7 +48,7 @@ public class Chart : PublicResource
 
     public Song Song { get; set; } = null!;
 
-    public IEnumerable<User> Authors { get; } = new List<User>();
+    public List<User> Authors { get; } = new();
 
     public int PlayCount { get; set; }
 }

@@ -10,8 +10,8 @@ public interface IChapterRepository
 
     Task<Chapter> GetChapterAsync(Guid id);
 
-    Task<ICollection<Song>> GetChapterSongsAsync(Guid id, string order, bool desc, int position, int take,
-        string? search = null, Expression<Func<Song, bool>>? predicate = null);
+    Task<ICollection<Admission>> GetChapterSongsAsync(Guid id, string order, bool desc, int position, int take,
+        string? search = null, Expression<Func<Admission, bool>>? predicate = null);
 
     Task<bool> ChapterExistsAsync(Guid id);
 
@@ -25,5 +25,6 @@ public interface IChapterRepository
 
     Task<int> CountChaptersAsync(string? search = null, Expression<Func<Chapter, bool>>? predicate = null);
 
-    Task<int> CountSongsAsync(Guid id, string? search = null, Expression<Func<Song, bool>>? predicate = null);
+    Task<int> CountChapterSongsAsync(Guid id, string? search = null,
+        Expression<Func<Admission, bool>>? predicate = null);
 }

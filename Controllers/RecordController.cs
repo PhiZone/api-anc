@@ -19,6 +19,7 @@ using PhiZoneApi.Filters;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 using StackExchange.Redis;
+
 // ReSharper disable RouteTemplates.ActionRoutePrefixCanBeExtractedToControllerRoute
 
 // ReSharper disable RouteTemplates.ParameterConstraintCanBeSpecified
@@ -131,7 +132,9 @@ public class RecordController : Controller
     public async Task<IActionResult> GetRecord([FromRoute] Guid id)
     {
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        if (!await _recordRepository.RecordExistsAsync(id)) return NotFound();
+        if (!await _recordRepository.RecordExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
         var record = await _recordRepository.GetRecordAsync(id);
         var dto = await _dtoMapper.MapRecordAsync<RecordDto>(record, currentUser);
 
@@ -370,10 +373,8 @@ public class RecordController : Controller
                 });
 
         if (!await _recordRepository.RemoveRecordAsync(id))
-        {
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
-        }
 
         return NoContent();
     }
@@ -399,7 +400,9 @@ public class RecordController : Controller
                 : _dataSettings.Value.PaginationMaxPerPage
             : _dataSettings.Value.PaginationPerPage;
         var position = dto.PerPage * (dto.Page - 1);
-        if (!await _recordRepository.RecordExistsAsync(id)) return NotFound();
+        if (!await _recordRepository.RecordExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
         var likes = await _likeRepository.GetLikesAsync(dto.Order, dto.Desc, position, dto.PerPage,
             e => e.ResourceId == id);
         var list = _mapper.Map<List<LikeDto>>(likes);
@@ -442,7 +445,9 @@ public class RecordController : Controller
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        if (!await _recordRepository.RecordExistsAsync(id)) return NotFound();
+        if (!await _recordRepository.RecordExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
         var record = await _recordRepository.GetRecordAsync(id);
         if (!await _likeService.CreateLikeAsync(record, currentUser.Id))
             return BadRequest(new ResponseDto<object>
@@ -478,7 +483,9 @@ public class RecordController : Controller
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        if (!await _recordRepository.RecordExistsAsync(id)) return NotFound();
+        if (!await _recordRepository.RecordExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
         var record = await _recordRepository.GetRecordAsync(id);
         if (!await _likeService.RemoveLikeAsync(record, currentUser.Id))
             return BadRequest(new ResponseDto<object>
@@ -511,7 +518,9 @@ public class RecordController : Controller
                 : _dataSettings.Value.PaginationMaxPerPage
             : _dataSettings.Value.PaginationPerPage;
         var position = dto.PerPage * (dto.Page - 1);
-        if (!await _recordRepository.RecordExistsAsync(id)) return NotFound();
+        if (!await _recordRepository.RecordExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
         var comments = await _commentRepository.GetCommentsAsync(dto.Order, dto.Desc, position, dto.PerPage,
             e => e.ResourceId == id);
         var list = new List<CommentDto>();
@@ -560,7 +569,9 @@ public class RecordController : Controller
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        if (!await _recordRepository.RecordExistsAsync(id)) return NotFound();
+        if (!await _recordRepository.RecordExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
         var record = await _recordRepository.GetRecordAsync(id);
         var comment = new Comment
         {

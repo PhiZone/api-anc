@@ -110,7 +110,9 @@ public class ReplyController : Controller
     public async Task<IActionResult> GetReply([FromRoute] Guid id)
     {
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        if (!await _replyRepository.ReplyExistsAsync(id)) return NotFound();
+        if (!await _replyRepository.ReplyExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
         var reply = await _replyRepository.GetReplyAsync(id);
         var dto = await _dtoMapper.MapReplyAsync<ReplyDto>(reply, currentUser);
 
@@ -184,7 +186,9 @@ public class ReplyController : Controller
                 : _dataSettings.Value.PaginationMaxPerPage
             : _dataSettings.Value.PaginationPerPage;
         var position = dto.PerPage * (dto.Page - 1);
-        if (!await _replyRepository.ReplyExistsAsync(id)) return NotFound();
+        if (!await _replyRepository.ReplyExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
         var likes = await _likeRepository.GetLikesAsync(dto.Order, dto.Desc, position, dto.PerPage,
             e => e.ResourceId == id);
         var list = _mapper.Map<List<LikeDto>>(likes);
@@ -221,7 +225,9 @@ public class ReplyController : Controller
     public async Task<IActionResult> CreateLike([FromRoute] Guid id)
     {
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        if (!await _replyRepository.ReplyExistsAsync(id)) return NotFound();
+        if (!await _replyRepository.ReplyExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
         var reply = await _replyRepository.GetReplyAsync(id);
         if (!await _likeService.CreateLikeAsync(reply, currentUser!.Id))
             return BadRequest(new ResponseDto<object>
@@ -251,7 +257,9 @@ public class ReplyController : Controller
     public async Task<IActionResult> RemoveLike([FromRoute] Guid id)
     {
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        if (!await _replyRepository.ReplyExistsAsync(id)) return NotFound();
+        if (!await _replyRepository.ReplyExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
         var reply = await _replyRepository.GetReplyAsync(id);
         if (!await _likeService.RemoveLikeAsync(reply, currentUser!.Id))
             return BadRequest(new ResponseDto<object>

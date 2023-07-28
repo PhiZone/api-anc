@@ -24,7 +24,6 @@ public class FileStorageService : IFileStorageService
             $"{typeof(T).Name}_{NormalizeFileName(fileName)}_{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}{extension}",
             memoryStream.ToArray());
         await file.Save();
-        foreach (var entry in file.MetaData) Console.WriteLine($"{entry.Key}: {entry.Value}");
         return (file.Url, (string)file.MetaData["_checksum"]);
     }
 
@@ -46,7 +45,6 @@ public class FileStorageService : IFileStorageService
             $"{typeof(T).Name}_{NormalizeFileName(fileName)}_{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}.{extension}",
             stream.ToArray());
         await file.Save();
-        foreach (var entry in file.MetaData) Console.WriteLine($"{entry.Key}: {entry.Value}");
         return (file.Url, (string)file.MetaData["_checksum"]);
     }
 

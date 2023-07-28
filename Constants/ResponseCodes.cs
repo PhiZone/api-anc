@@ -183,6 +183,11 @@ public static class ResponseCodes
     public const string ApplicationNotFound = "ApplicationNotFound";
 
     /// <summary>
+    ///     The specified relation is not found.
+    /// </summary>
+    public const string RelationNotFound = "RelationNotFound";
+
+    /// <summary>
     ///     The user does not have enough permission to perform the action.
     /// </summary>
     public const string InsufficientPermission = "InsufficientPermission";

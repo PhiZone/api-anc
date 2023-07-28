@@ -115,7 +115,9 @@ public class AnnouncementController : Controller
     public async Task<IActionResult> GetAnnouncement([FromRoute] Guid id)
     {
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        if (!await _announcementRepository.AnnouncementExistsAsync(id)) return NotFound();
+        if (!await _announcementRepository.AnnouncementExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
         var announcement = await _announcementRepository.GetAnnouncementAsync(id);
         var dto = await _dtoMapper.MapAnnouncementAsync<AnnouncementDto>(announcement, currentUser);
 
@@ -293,7 +295,9 @@ public class AnnouncementController : Controller
                 : _dataSettings.Value.PaginationMaxPerPage
             : _dataSettings.Value.PaginationPerPage;
         var position = dto.PerPage * (dto.Page - 1);
-        if (!await _announcementRepository.AnnouncementExistsAsync(id)) return NotFound();
+        if (!await _announcementRepository.AnnouncementExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
         var likes = await _likeRepository.GetLikesAsync(dto.Order, dto.Desc, position, dto.PerPage,
             e => e.ResourceId == id);
         var list = _mapper.Map<List<LikeDto>>(likes);
@@ -330,7 +334,9 @@ public class AnnouncementController : Controller
     public async Task<IActionResult> CreateLike([FromRoute] Guid id)
     {
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        if (!await _announcementRepository.AnnouncementExistsAsync(id)) return NotFound();
+        if (!await _announcementRepository.AnnouncementExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
         var announcement = await _announcementRepository.GetAnnouncementAsync(id);
         if (!await _likeService.CreateLikeAsync(announcement, currentUser!.Id))
             return BadRequest(new ResponseDto<object>
@@ -360,7 +366,9 @@ public class AnnouncementController : Controller
     public async Task<IActionResult> RemoveLike([FromRoute] Guid id)
     {
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        if (!await _announcementRepository.AnnouncementExistsAsync(id)) return NotFound();
+        if (!await _announcementRepository.AnnouncementExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
         var announcement = await _announcementRepository.GetAnnouncementAsync(id);
         if (!await _likeService.RemoveLikeAsync(announcement, currentUser!.Id))
             return BadRequest(new ResponseDto<object>
@@ -394,7 +402,9 @@ public class AnnouncementController : Controller
                 : _dataSettings.Value.PaginationMaxPerPage
             : _dataSettings.Value.PaginationPerPage;
         var position = dto.PerPage * (dto.Page - 1);
-        if (!await _announcementRepository.AnnouncementExistsAsync(id)) return NotFound();
+        if (!await _announcementRepository.AnnouncementExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
         var comments = await _commentRepository.GetCommentsAsync(dto.Order, dto.Desc, position, dto.PerPage,
             e => e.ResourceId == id);
         var list = new List<CommentDto>();
@@ -443,7 +453,9 @@ public class AnnouncementController : Controller
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        if (!await _announcementRepository.AnnouncementExistsAsync(id)) return NotFound();
+        if (!await _announcementRepository.AnnouncementExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
         var announcement = await _announcementRepository.GetAnnouncementAsync(id);
         var comment = new Comment
         {

@@ -120,7 +120,9 @@ public class ApplicationController : Controller
     public async Task<IActionResult> GetApplication([FromRoute] Guid id)
     {
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        if (!await _applicationRepository.ApplicationExistsAsync(id)) return NotFound();
+        if (!await _applicationRepository.ApplicationExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
         var application = await _applicationRepository.GetApplicationAsync(id);
         var dto = await _dtoMapper.MapApplicationAsync<ApplicationDto>(application, currentUser);
 
@@ -328,10 +330,8 @@ public class ApplicationController : Controller
                 });
 
         if (!await _applicationRepository.RemoveApplicationAsync(id))
-        {
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
-        }
 
         return NoContent();
     }
@@ -357,7 +357,9 @@ public class ApplicationController : Controller
                 : _dataSettings.Value.PaginationMaxPerPage
             : _dataSettings.Value.PaginationPerPage;
         var position = dto.PerPage * (dto.Page - 1);
-        if (!await _applicationRepository.ApplicationExistsAsync(id)) return NotFound();
+        if (!await _applicationRepository.ApplicationExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
         var likes = await _likeRepository.GetLikesAsync(dto.Order, dto.Desc, position, dto.PerPage,
             e => e.ResourceId == id);
         var list = _mapper.Map<List<LikeDto>>(likes);
@@ -394,7 +396,9 @@ public class ApplicationController : Controller
     public async Task<IActionResult> CreateLike([FromRoute] Guid id)
     {
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        if (!await _applicationRepository.ApplicationExistsAsync(id)) return NotFound();
+        if (!await _applicationRepository.ApplicationExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
         var application = await _applicationRepository.GetApplicationAsync(id);
         if (!await _likeService.CreateLikeAsync(application, currentUser!.Id))
             return BadRequest(new ResponseDto<object>
@@ -425,7 +429,9 @@ public class ApplicationController : Controller
     public async Task<IActionResult> RemoveLike([FromRoute] Guid id)
     {
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        if (!await _applicationRepository.ApplicationExistsAsync(id)) return NotFound();
+        if (!await _applicationRepository.ApplicationExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
         var application = await _applicationRepository.GetApplicationAsync(id);
         if (!await _likeService.RemoveLikeAsync(application, currentUser!.Id))
             return BadRequest(new ResponseDto<object>
@@ -460,7 +466,9 @@ public class ApplicationController : Controller
                 : _dataSettings.Value.PaginationMaxPerPage
             : _dataSettings.Value.PaginationPerPage;
         var position = dto.PerPage * (dto.Page - 1);
-        if (!await _applicationRepository.ApplicationExistsAsync(id)) return NotFound();
+        if (!await _applicationRepository.ApplicationExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
         var comments = await _commentRepository.GetCommentsAsync(dto.Order, dto.Desc, position, dto.PerPage,
             e => e.ResourceId == id);
         var list = new List<CommentDto>();
@@ -509,7 +517,9 @@ public class ApplicationController : Controller
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        if (!await _applicationRepository.ApplicationExistsAsync(id)) return NotFound();
+        if (!await _applicationRepository.ApplicationExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
         var application = await _applicationRepository.GetApplicationAsync(id);
         var comment = new Comment
         {

@@ -92,9 +92,6 @@ builder.Services.AddIdentity<User, Role>()
     .AddUserManager<UserManager<User>>()
     .AddDefaultTokenProviders();
 
-Console.WriteLine($"Language Path: {builder.Configuration.GetSection("LanguageSettings").GetValue<string>("DirectoryPath")}");
-Console.WriteLine($"RabbitMQ: {builder.Configuration.GetSection("RabbitMQSettings").GetValue<string>("HostName")}:{builder.Configuration.GetSection("RabbitMQSettings").GetValue<string>("Port")} with {builder.Configuration.GetSection("RabbitMQSettings").GetValue<string>("UserName")} - {builder.Configuration.GetSection("RabbitMQSettings").GetValue<string>("Password")}");
-
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserRelationRepository, UserRelationRepository>();
 builder.Services.AddScoped<IRegionRepository, RegionRepository>();

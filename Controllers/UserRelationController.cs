@@ -100,7 +100,9 @@ public class UserRelationController : Controller
     public async Task<IActionResult> GetUserRelation([FromRoute] int followerId, [FromRoute] int followeeId)
     {
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        if (!await _userRelationRepository.RelationExistsAsync(followerId, followeeId)) return NotFound();
+        if (!await _userRelationRepository.RelationExistsAsync(followerId, followeeId))
+            return NotFound(new ResponseDto<object>
+                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
 
         var userRelation = await _userRelationRepository.GetRelationAsync(followerId, followeeId);
         var dto = await _dtoMapper.MapUserRelationAsync<UserRelationDto>(userRelation, currentUser);

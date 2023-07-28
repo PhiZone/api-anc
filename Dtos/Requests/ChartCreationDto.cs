@@ -41,5 +41,8 @@ public class ChartCreationDto
     public bool IsRanked { get; set; }
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
+    public List<int> AuthorsId { get; set; } = null!;
+
+    [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     public Guid SongId { get; set; }
 }

@@ -43,10 +43,10 @@ public class AdmissionRepository : IAdmissionRepository
         return await result.Skip(position).Take(take).ToListAsync();
     }
 
-    public async Task<Admission> GetAdmissionAsync(Guid followerId, Guid followeeId)
+    public async Task<Admission> GetAdmissionAsync(Guid admitterId, Guid admitteeId)
     {
         return (await _context.Admissions.FirstOrDefaultAsync(admission =>
-            admission.AdmitterId == followerId && admission.AdmitteeId == followeeId))!;
+            admission.AdmitterId == admitterId && admission.AdmitteeId == admitteeId))!;
     }
 
     public async Task<bool> CreateAdmissionAsync(Admission admission)
@@ -55,10 +55,10 @@ public class AdmissionRepository : IAdmissionRepository
         return await SaveAsync();
     }
 
-    public async Task<bool> RemoveAdmissionAsync(Guid followerId, Guid followeeId)
+    public async Task<bool> RemoveAdmissionAsync(Guid admitterId, Guid admitteeId)
     {
         _context.Admissions.Remove((await _context.Admissions.FirstOrDefaultAsync(admission =>
-            admission.AdmitterId == followerId && admission.AdmitteeId == followeeId))!);
+            admission.AdmitterId == admitterId && admission.AdmitteeId == admitteeId))!);
         return await SaveAsync();
     }
 
@@ -74,10 +74,10 @@ public class AdmissionRepository : IAdmissionRepository
         return await _context.Admissions.CountAsync();
     }
 
-    public async Task<bool> AdmissionExistsAsync(Guid followerId, Guid followeeId)
+    public async Task<bool> AdmissionExistsAsync(Guid admitterId, Guid admitteeId)
     {
         return await _context.Admissions.AnyAsync(admission =>
-            admission.AdmitterId == followerId && admission.AdmitteeId == followeeId);
+            admission.AdmitterId == admitterId && admission.AdmitteeId == admitteeId);
     }
 
     public async Task<int> CountAdmittersAsync(Guid admitteeId, Expression<Func<Admission, bool>>? predicate = null)

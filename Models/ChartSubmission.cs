@@ -5,7 +5,7 @@ namespace PhiZoneApi.Models;
 public class ChartSubmission : Submission
 {
     public string? Title { get; set; }
-    
+
     public ChartLevel LevelType { get; set; }
 
     public string Level { get; set; } = null!;

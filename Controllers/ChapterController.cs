@@ -119,7 +119,9 @@ public class ChapterController : Controller
     public async Task<IActionResult> GetChapter([FromRoute] Guid id)
     {
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        if (!await _chapterRepository.ChapterExistsAsync(id)) return NotFound();
+        if (!await _chapterRepository.ChapterExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
         var chapter = await _chapterRepository.GetChapterAsync(id);
         var dto = await _dtoMapper.MapChapterAsync<ChapterDto>(chapter, currentUser);
 
@@ -327,10 +329,8 @@ public class ChapterController : Controller
                 });
 
         if (!await _chapterRepository.RemoveChapterAsync(id))
-        {
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
-        }
 
         return NoContent();
     }
@@ -345,11 +345,11 @@ public class ChapterController : Controller
     /// <response code="404">When the specified chapter is not found.</response>
     [HttpGet("{id:guid}/songs")]
     [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<SongDto>>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<SongAdmitteeDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetChapterSongs([FromRoute] Guid id, [FromQuery] ArrayWithTimeRequestDto dto,
-        [FromQuery] SongFilterDto? filterDto = null)
+        [FromQuery] AdmissionFilterDto? filterDto = null)
     {
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         dto.PerPage = dto.PerPage > 0
@@ -359,15 +359,18 @@ public class ChapterController : Controller
             : _dataSettings.Value.PaginationPerPage;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser);
-        if (!await _chapterRepository.ChapterExistsAsync(id)) return NotFound();
-        var songs = await _chapterRepository.GetChapterSongsAsync(id, dto.Order, dto.Desc, position, dto.PerPage,
+        if (!await _chapterRepository.ChapterExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
+        var admissions = await _chapterRepository.GetChapterSongsAsync(id, dto.Order, dto.Desc, position, dto.PerPage,
             dto.Search, predicateExpr);
-        var list = new List<SongDto>();
-        var total = await _chapterRepository.CountSongsAsync(id, dto.Search, predicateExpr);
+        var list = new List<SongAdmitteeDto>();
+        var total = await _chapterRepository.CountChapterSongsAsync(id, dto.Search, predicateExpr);
 
-        foreach (var song in songs) list.Add(await _dtoMapper.MapSongAsync<SongDto>(song, currentUser));
+        foreach (var admission in admissions)
+            list.Add(await _dtoMapper.MapChapterSongAsync<SongAdmitteeDto>(admission, currentUser));
 
-        return Ok(new ResponseDto<IEnumerable<SongDto>>
+        return Ok(new ResponseDto<IEnumerable<SongAdmitteeDto>>
         {
             Status = ResponseStatus.Ok,
             Code = ResponseCodes.Ok,
@@ -400,7 +403,9 @@ public class ChapterController : Controller
                 : _dataSettings.Value.PaginationMaxPerPage
             : _dataSettings.Value.PaginationPerPage;
         var position = dto.PerPage * (dto.Page - 1);
-        if (!await _chapterRepository.ChapterExistsAsync(id)) return NotFound();
+        if (!await _chapterRepository.ChapterExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
         var likes = await _likeRepository.GetLikesAsync(dto.Order, dto.Desc, position, dto.PerPage,
             e => e.ResourceId == id);
         var list = _mapper.Map<List<LikeDto>>(likes);
@@ -437,7 +442,9 @@ public class ChapterController : Controller
     public async Task<IActionResult> CreateLike([FromRoute] Guid id)
     {
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        if (!await _chapterRepository.ChapterExistsAsync(id)) return NotFound();
+        if (!await _chapterRepository.ChapterExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
         var chapter = await _chapterRepository.GetChapterAsync(id);
         if (!await _likeService.CreateLikeAsync(chapter, currentUser!.Id))
             return BadRequest(new ResponseDto<object>
@@ -466,7 +473,9 @@ public class ChapterController : Controller
     public async Task<IActionResult> RemoveLike([FromRoute] Guid id)
     {
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        if (!await _chapterRepository.ChapterExistsAsync(id)) return NotFound();
+        if (!await _chapterRepository.ChapterExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
         var chapter = await _chapterRepository.GetChapterAsync(id);
         if (!await _likeService.RemoveLikeAsync(chapter, currentUser!.Id))
             return BadRequest(new ResponseDto<object>
@@ -500,7 +509,9 @@ public class ChapterController : Controller
                 : _dataSettings.Value.PaginationMaxPerPage
             : _dataSettings.Value.PaginationPerPage;
         var position = dto.PerPage * (dto.Page - 1);
-        if (!await _chapterRepository.ChapterExistsAsync(id)) return NotFound();
+        if (!await _chapterRepository.ChapterExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
         var comments = await _commentRepository.GetCommentsAsync(dto.Order, dto.Desc, position, dto.PerPage,
             e => e.ResourceId == id);
         var list = new List<CommentDto>();
@@ -549,7 +560,9 @@ public class ChapterController : Controller
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        if (!await _chapterRepository.ChapterExistsAsync(id)) return NotFound();
+        if (!await _chapterRepository.ChapterExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
         var chapter = await _chapterRepository.GetChapterAsync(id);
         var comment = new Comment
         {

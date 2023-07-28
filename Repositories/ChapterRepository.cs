@@ -1,6 +1,7 @@
 ﻿using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using PhiZoneApi.Data;
+using PhiZoneApi.Enums;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 using PhiZoneApi.Utils;
@@ -41,21 +42,19 @@ public class ChapterRepository : IChapterRepository
         return (await _context.Chapters.FirstOrDefaultAsync(chapter => chapter.Id == id))!;
     }
 
-    public async Task<ICollection<Song>> GetChapterSongsAsync(Guid id, string order, bool desc, int position,
-        int take, string? search = null, Expression<Func<Song, bool>>? predicate = null)
+    public async Task<ICollection<Admission>> GetChapterSongsAsync(Guid id, string order, bool desc, int position,
+        int take, string? search = null, Expression<Func<Admission, bool>>? predicate = null)
     {
-        var chapter = (await _context.Chapters.FirstOrDefaultAsync(chapter => chapter.Id == id))!;
-        var result = chapter.Songs.AsQueryable().OrderBy(order, desc);
+        var result = _context.Admissions
+            .Where(admission => admission.AdmitterId == id && admission.Status == RequestStatus.Approved)
+            .OrderBy(order, desc);
 
         if (predicate != null) result = result.Where(predicate);
 
         if (search != null)
         {
             search = search.Trim().ToUpper();
-            result = result.Where(song => song.Title.ToUpper().Contains(search) ||
-                                          (song.Edition != null && song.Edition.ToUpper().Contains(search)) ||
-                                          song.AuthorName.ToUpper().Contains(search) || (song.Description != null &&
-                                              song.Description.ToUpper().Contains(search)));
+            result = result.Where(admission => admission.Label != null && admission.Label.ToUpper().Contains(search));
         }
 
         return await result.Skip(position).Take(take).ToListAsync();
@@ -107,21 +106,18 @@ public class ChapterRepository : IChapterRepository
         return await result.CountAsync();
     }
 
-    public async Task<int> CountSongsAsync(Guid id, string? search = null,
-        Expression<Func<Song, bool>>? predicate = null)
+    public async Task<int> CountChapterSongsAsync(Guid id, string? search = null,
+        Expression<Func<Admission, bool>>? predicate = null)
     {
-        var chapter = (await _context.Chapters.FirstOrDefaultAsync(chapter => chapter.Id == id))!;
-        var result = chapter.Songs.AsQueryable();
+        var result = _context.Admissions.Where(admission =>
+            admission.AdmitterId == id && admission.Status == RequestStatus.Approved);
 
         if (predicate != null) result = result.Where(predicate);
 
         if (search != null)
         {
             search = search.Trim().ToUpper();
-            result = result.Where(song => song.Title.ToUpper().Contains(search) ||
-                                          (song.Edition != null && song.Edition.ToUpper().Contains(search)) ||
-                                          song.AuthorName.ToUpper().Contains(search) || (song.Description != null &&
-                                              song.Description.ToUpper().Contains(search)));
+            result = result.Where(admission => admission.Label != null && admission.Label.ToUpper().Contains(search));
         }
 
         return await result.CountAsync();

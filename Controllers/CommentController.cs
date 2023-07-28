@@ -112,7 +112,9 @@ public class CommentController : Controller
     public async Task<IActionResult> GetComment([FromRoute] Guid id)
     {
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        if (!await _commentRepository.CommentExistsAsync(id)) return NotFound();
+        if (!await _commentRepository.CommentExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
         var comment = await _commentRepository.GetCommentAsync(id);
         var dto = await _dtoMapper.MapCommentAsync<CommentDto>(comment, currentUser);
 
@@ -189,7 +191,9 @@ public class CommentController : Controller
             : _dataSettings.Value.PaginationPerPage;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser);
-        if (!await _commentRepository.CommentExistsAsync(id)) return NotFound();
+        if (!await _commentRepository.CommentExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
         var replies =
             await _commentRepository.GetCommentRepliesAsync(id, dto.Order, dto.Desc, position, dto.PerPage,
                 predicateExpr);
@@ -237,7 +241,9 @@ public class CommentController : Controller
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        if (!await _commentRepository.CommentExistsAsync(id)) return NotFound();
+        if (!await _commentRepository.CommentExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
         var comment = await _commentRepository.GetCommentAsync(id);
         var reply = new Reply
         {
@@ -277,7 +283,9 @@ public class CommentController : Controller
                 : _dataSettings.Value.PaginationMaxPerPage
             : _dataSettings.Value.PaginationPerPage;
         var position = dto.PerPage * (dto.Page - 1);
-        if (!await _commentRepository.CommentExistsAsync(id)) return NotFound();
+        if (!await _commentRepository.CommentExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
         var likes = await _likeRepository.GetLikesAsync(dto.Order, dto.Desc, position, dto.PerPage,
             e => e.ResourceId == id);
         var list = _mapper.Map<List<LikeDto>>(likes);
@@ -320,7 +328,9 @@ public class CommentController : Controller
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        if (!await _commentRepository.CommentExistsAsync(id)) return NotFound();
+        if (!await _commentRepository.CommentExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
         var comment = await _commentRepository.GetCommentAsync(id);
         if (!await _likeService.CreateLikeAsync(comment, currentUser.Id))
             return BadRequest(new ResponseDto<object>
@@ -356,7 +366,9 @@ public class CommentController : Controller
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        if (!await _commentRepository.CommentExistsAsync(id)) return NotFound();
+        if (!await _commentRepository.CommentExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
         var comment = await _commentRepository.GetCommentAsync(id);
         if (!await _likeService.RemoveLikeAsync(comment, currentUser.Id))
             return BadRequest(new ResponseDto<object>

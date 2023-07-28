@@ -8,18 +8,21 @@ namespace PhiZoneApi.Services;
 
 public class DtoMapper : IDtoMapper
 {
+    private readonly IChapterRepository _chapterRepository;
     private readonly ICommentRepository _commentRepository;
     private readonly ILikeRepository _likeRepository;
     private readonly IMapper _mapper;
     private readonly IRecordRepository _recordRepository;
     private readonly IRegionRepository _regionRepository;
     private readonly IReplyRepository _replyRepository;
+    private readonly ISongRepository _songRepository;
     private readonly UserManager<User> _userManager;
     private readonly IUserRelationRepository _userRelationRepository;
 
     public DtoMapper(IUserRelationRepository userRelationRepository, IRegionRepository regionRepository,
         ILikeRepository likeRepository, UserManager<User> userManager, IMapper mapper,
-        ICommentRepository commentRepository, IReplyRepository replyRepository, IRecordRepository recordRepository)
+        ICommentRepository commentRepository, IReplyRepository replyRepository, IRecordRepository recordRepository,
+        IChapterRepository chapterRepository, ISongRepository songRepository)
     {
         _userRelationRepository = userRelationRepository;
         _regionRepository = regionRepository;
@@ -29,6 +32,8 @@ public class DtoMapper : IDtoMapper
         _commentRepository = commentRepository;
         _replyRepository = replyRepository;
         _recordRepository = recordRepository;
+        _chapterRepository = chapterRepository;
+        _songRepository = songRepository;
     }
 
     public async Task<T> MapUserAsync<T>(User user, User? currentUser = null) where T : UserDto
@@ -64,6 +69,25 @@ public class DtoMapper : IDtoMapper
         return dto;
     }
 
+    public async Task<AdmissionDto<TAdmitter, TAdmittee>> MapAdmissionAsync<TAdmitter, TAdmittee>(Admission admission,
+        User? currentUser = null)
+        where TAdmitter : ChapterDto where TAdmittee : SongDto
+    {
+        var dto = new AdmissionDto<TAdmitter, TAdmittee>
+        {
+            Admitter = await MapChapterAsync<TAdmitter>(await _chapterRepository.GetChapterAsync(admission.AdmitterId),
+                currentUser),
+            Admittee = await MapSongAsync<TAdmittee>(await _songRepository.GetSongAsync(admission.AdmitteeId),
+                currentUser),
+            Status = admission.Status,
+            Label = admission.Label,
+            RequesterId = admission.RequesterId,
+            RequesteeId = admission.RequesteeId,
+            DateCreated = admission.DateCreated
+        };
+        return dto;
+    }
+
     public async Task<T> MapChapterAsync<T>(Chapter chapter, User? currentUser = null) where T : ChapterDto
     {
         var dto = _mapper.Map<T>(chapter);
@@ -81,6 +105,13 @@ public class DtoMapper : IDtoMapper
         dto.DateLiked = currentUser != null && await _likeRepository.LikeExistsAsync(song.Id, currentUser.Id)
             ? (await _likeRepository.GetLikeAsync(song.Id, currentUser.Id)).DateCreated
             : null;
+        return dto;
+    }
+
+    public async Task<T> MapChapterSongAsync<T>(Admission admission, User? currentUser = null) where T : SongAdmitteeDto
+    {
+        var dto = await MapSongAsync<T>(await _songRepository.GetSongAsync(admission.AdmitteeId), currentUser);
+        dto.Label = admission.Label;
         return dto;
     }
 

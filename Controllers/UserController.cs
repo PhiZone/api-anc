@@ -123,7 +123,11 @@ public class UserController : Controller
     {
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         var user = await _userManager.FindByIdAsync(id.ToString());
-        if (user == null) return NotFound();
+        if (user == null)
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNotFound
+            });
         var dto = await _dtoMapper.MapUserAsync<UserDto>(user, currentUser);
 
         return Ok(new ResponseDto<UserDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
@@ -641,11 +645,7 @@ public class UserController : Controller
         {
             Status = ResponseStatus.Ok,
             Code = ResponseCodes.Ok,
-            Data = new UserBestRecordsDto
-            {
-                Phi1 = phi1Dto,
-                Best19 = b19Dto
-            }
+            Data = new UserBestRecordsDto { Phi1 = phi1Dto, Best19 = b19Dto }
         });
     }
 }
