@@ -93,7 +93,7 @@ builder.Services.AddIdentity<User, Role>()
     .AddDefaultTokenProviders();
 
 Console.WriteLine($"Language Path: {builder.Configuration.GetSection("LanguageSettings").GetValue<string>("DirectoryPath")}");
-Console.WriteLine($"Secret: {builder.Configuration.GetValue<string>("Secret")}");
+Console.WriteLine($"RabbitMQ: {builder.Configuration.GetSection("RabbitMQSettings").GetValue<string>("HostName")}:{builder.Configuration.GetSection("RabbitMQSettings").GetValue<string>("Port")} with {builder.Configuration.GetSection("RabbitMQSettings").GetValue<string>("UserName")} - {builder.Configuration.GetSection("RabbitMQSettings").GetValue<string>("Password")}");
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserRelationRepository, UserRelationRepository>();
@@ -124,7 +124,6 @@ builder.Services.AddSingleton<IMailService, MailService>();
 builder.Services.AddSingleton<IFileStorageService, FileStorageService>();
 builder.Services.AddSingleton<ITemplateService, TemplateService>();
 builder.Services.AddSingleton<IRabbitMqService, RabbitMqService>();
-Console.WriteLine($"Connecting to redis server: {builder.Configuration.GetValue<string>("RedisConnection") ?? "localhost"}");
 builder.Services.AddSingleton<IConnectionMultiplexer>(
     ConnectionMultiplexer.Connect(builder.Configuration.GetValue<string>("RedisConnection") ?? "localhost"));
 builder.Services.AddSingleton<IHostedService>(provider => new MailSenderService(provider.GetService<IMailService>()!,
@@ -194,6 +193,6 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapDefaultControllerRoute();
 
-app.UseCoreAdminCdn("https://core-admin-demo.azurewebsites.net/_content/CoreAdmin");
+// app.UseCoreAdminCdn("https://core-admin-demo.azurewebsites.net/_content/CoreAdmin");
 
 app.Run();
