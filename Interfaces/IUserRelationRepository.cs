@@ -26,7 +26,7 @@ public interface IUserRelationRepository
 
     Task<bool> RelationExistsAsync(int followerId, int followeeId);
 
-    Task<int> CountFollowersAsync(User user, Expression<Func<UserRelation, bool>>? predicate = null);
+    Task<int> CountFollowersAsync(int userId, Expression<Func<UserRelation, bool>>? predicate = null);
 
-    Task<int> CountFolloweesAsync(User user, Expression<Func<UserRelation, bool>>? predicate = null);
+    Task<int> CountFolloweesAsync(int userId, Expression<Func<UserRelation, bool>>? predicate = null);
 }

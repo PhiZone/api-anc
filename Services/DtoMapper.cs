@@ -35,8 +35,8 @@ public class DtoMapper : IDtoMapper
     {
         var dto = _mapper.Map<T>(user);
         dto.Roles = await _userManager.GetRolesAsync(user);
-        dto.FollowerCount = await _userRelationRepository.CountFollowersAsync(user);
-        dto.FolloweeCount = await _userRelationRepository.CountFolloweesAsync(user);
+        dto.FollowerCount = await _userRelationRepository.CountFollowersAsync(user.Id);
+        dto.FolloweeCount = await _userRelationRepository.CountFolloweesAsync(user.Id);
         if (user.RegionId != null) dto.Region = (await _regionRepository.GetRegionAsync((int)user.RegionId)).Code;
         if (currentUser != null && await _userRelationRepository.RelationExistsAsync(currentUser.Id, user.Id))
             dto.DateFollowed = (await _userRelationRepository.GetRelationAsync(currentUser.Id, user.Id)).DateCreated;

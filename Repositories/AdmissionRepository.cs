@@ -1,0 +1,102 @@
+﻿using System.Linq.Expressions;
+using Microsoft.EntityFrameworkCore;
+using PhiZoneApi.Data;
+using PhiZoneApi.Interfaces;
+using PhiZoneApi.Models;
+using PhiZoneApi.Utils;
+
+namespace PhiZoneApi.Repositories;
+
+public class AdmissionRepository : IAdmissionRepository
+{
+    private readonly ApplicationDbContext _context;
+
+    public AdmissionRepository(ApplicationDbContext context)
+    {
+        _context = context;
+    }
+
+    public async Task<ICollection<Admission>> GetAdmittersAsync(Guid admitteeId, string order, bool desc, int position,
+        int take, Expression<Func<Admission, bool>>? predicate = null)
+    {
+        var result = _context.Admissions.Where(admission => admission.AdmitteeId == admitteeId).OrderBy(order, desc);
+        if (predicate != null) result = result.Where(predicate);
+
+        return await result.Skip(position).Take(take).ToListAsync();
+    }
+
+    public async Task<ICollection<Admission>> GetAdmitteesAsync(Guid admitterId, string order, bool desc, int position,
+        int take, Expression<Func<Admission, bool>>? predicate = null)
+    {
+        var result = _context.Admissions.Where(admission => admission.AdmitterId == admitterId).OrderBy(order, desc);
+        if (predicate != null) result = result.Where(predicate);
+
+        return await result.Skip(position).Take(take).ToListAsync();
+    }
+
+    public async Task<ICollection<Admission>> GetAdmissionsAsync(string order, bool desc, int position, int take,
+        Expression<Func<Admission, bool>>? predicate = null)
+    {
+        var result = _context.Admissions.OrderBy(order, desc);
+        if (predicate != null) result = result.Where(predicate);
+
+        return await result.Skip(position).Take(take).ToListAsync();
+    }
+
+    public async Task<Admission> GetAdmissionAsync(Guid followerId, Guid followeeId)
+    {
+        return (await _context.Admissions.FirstOrDefaultAsync(admission =>
+            admission.AdmitterId == followerId && admission.AdmitteeId == followeeId))!;
+    }
+
+    public async Task<bool> CreateAdmissionAsync(Admission admission)
+    {
+        await _context.Admissions.AddAsync(admission);
+        return await SaveAsync();
+    }
+
+    public async Task<bool> RemoveAdmissionAsync(Guid followerId, Guid followeeId)
+    {
+        _context.Admissions.Remove((await _context.Admissions.FirstOrDefaultAsync(admission =>
+            admission.AdmitterId == followerId && admission.AdmitteeId == followeeId))!);
+        return await SaveAsync();
+    }
+
+    public async Task<bool> SaveAsync()
+    {
+        var saved = await _context.SaveChangesAsync();
+        return saved > 0;
+    }
+
+    public async Task<int> CountAdmissionsAsync(Expression<Func<Admission, bool>>? predicate = null)
+    {
+        if (predicate != null) return await _context.Admissions.Where(predicate).CountAsync();
+        return await _context.Admissions.CountAsync();
+    }
+
+    public async Task<bool> AdmissionExistsAsync(Guid followerId, Guid followeeId)
+    {
+        return await _context.Admissions.AnyAsync(admission =>
+            admission.AdmitterId == followerId && admission.AdmitteeId == followeeId);
+    }
+
+    public async Task<int> CountAdmittersAsync(Guid admitteeId, Expression<Func<Admission, bool>>? predicate = null)
+    {
+        if (predicate != null)
+            return await _context.Admissions.Where(admission => admission.Admittee.Id == admitteeId)
+                .Where(predicate)
+                .CountAsync();
+
+        return await _context.Admissions.Where(admission => admission.Admittee.Id == admitteeId).CountAsync();
+    }
+
+    public async Task<int> CountAdmitteesAsync(Guid admitterId, Expression<Func<Admission, bool>>? predicate = null)
+    {
+        if (predicate != null)
+            return await _context.Admissions.Where(admission => admission.Admitter.Id == admitterId)
+                .Where(predicate)
+                .CountAsync();
+
+        return await _context.Admissions.Where(admission => admission.Admitter.Id == admitterId).CountAsync();
+    }
+}

@@ -11,4 +11,6 @@ public class Chapter : PublicResource
     public string Illustrator { get; set; } = null!;
 
     public IEnumerable<Song> Songs { get; } = new List<Song>();
+
+    public IEnumerable<Admission> SongAdmittees { get; } = new List<Admission>();
 }

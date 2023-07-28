@@ -80,23 +80,23 @@ public class UserRelationRepository : IUserRelationRepository
             relation.FollowerId == followerId && relation.FolloweeId == followeeId);
     }
 
-    public async Task<int> CountFollowersAsync(User user, Expression<Func<UserRelation, bool>>? predicate = null)
+    public async Task<int> CountFollowersAsync(int userId, Expression<Func<UserRelation, bool>>? predicate = null)
     {
         if (predicate != null)
-            return await _context.UserRelations.Where(relation => relation.Follower == user)
+            return await _context.UserRelations.Where(relation => relation.Followee.Id == userId)
                 .Where(predicate)
                 .CountAsync();
 
-        return await _context.UserRelations.Where(relation => relation.Followee == user).CountAsync();
+        return await _context.UserRelations.Where(relation => relation.Followee.Id == userId).CountAsync();
     }
 
-    public async Task<int> CountFolloweesAsync(User user, Expression<Func<UserRelation, bool>>? predicate = null)
+    public async Task<int> CountFolloweesAsync(int userId, Expression<Func<UserRelation, bool>>? predicate = null)
     {
         if (predicate != null)
-            return await _context.UserRelations.Where(relation => relation.Follower == user)
+            return await _context.UserRelations.Where(relation => relation.Follower.Id == userId)
                 .Where(predicate)
                 .CountAsync();
 
-        return await _context.UserRelations.Where(relation => relation.Follower == user).CountAsync();
+        return await _context.UserRelations.Where(relation => relation.Follower.Id == userId).CountAsync();
     }
 }

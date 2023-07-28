@@ -39,6 +39,8 @@ public class Song : PublicResource
     public TimeSpan PreviewEnd { get; set; }
 
     public IEnumerable<Chapter> Chapters { get; } = new List<Chapter>();
+    
+    public IEnumerable<Admission> ChapterAdmitters { get; } = new List<Admission>();
 
     public IEnumerable<User> Authors { get; } = new List<User>();
 }

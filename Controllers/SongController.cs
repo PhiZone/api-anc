@@ -470,6 +470,30 @@ public class SongController : Controller
         return NoContent();
     }
 
+    [HttpPost("{id:guid}/chapters")]
+    [Produces("text/plain", "application/json")]
+    public async Task<IActionResult> CollectSongIntoChapter([FromRoute] Guid id,
+        [FromBody] AdmissionRequestDto dto)
+    {
+        if (!await _songRepository.SongExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+
+        var song = await _songRepository.GetSongAsync(id);
+
+        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if ((currentUser.Id == song.OwnerId && !await _userManager.IsInRoleAsync(currentUser, Roles.Member)) ||
+            (currentUser.Id != song.OwnerId && !await _userManager.IsInRoleAsync(currentUser, Roles.Administrator)))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+        return Ok();
+    }
+
     /// <summary>
     ///     Retrieves charts from a specific song.
     /// </summary>

@@ -431,7 +431,7 @@ public class UserController : Controller
         var followers =
             await _userRelationRepository.GetFollowersAsync(user.Id, dto.Order, dto.Desc, position, dto.PerPage,
                 predicateExpr);
-        var total = await _userRelationRepository.CountFollowersAsync(user, predicateExpr);
+        var total = await _userRelationRepository.CountFollowersAsync(user.Id, predicateExpr);
         var list = new List<UserDto>();
 
         foreach (var follower in followers) list.Add(await _dtoMapper.MapFollowerAsync<UserDto>(follower, currentUser));
@@ -485,7 +485,7 @@ public class UserController : Controller
         var followees =
             await _userRelationRepository.GetFolloweesAsync(user.Id, dto.Order, dto.Desc, position, dto.PerPage,
                 predicateExpr);
-        var total = await _userRelationRepository.CountFolloweesAsync(user, predicateExpr);
+        var total = await _userRelationRepository.CountFolloweesAsync(user.Id, predicateExpr);
         var list = new List<UserDto>();
 
         foreach (var followee in followees) list.Add(await _dtoMapper.MapFolloweeAsync<UserDto>(followee, currentUser));
@@ -640,6 +640,7 @@ public class UserController : Controller
         return Ok(new ResponseDto<UserBestRecordsDto>
         {
             Status = ResponseStatus.Ok,
+            Code = ResponseCodes.Ok,
             Data = new UserBestRecordsDto
             {
                 Phi1 = phi1Dto,

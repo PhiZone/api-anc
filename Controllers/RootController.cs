@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using PhiZoneApi.Constants;
 using PhiZoneApi.Dtos.Responses;
 using PhiZoneApi.Enums;
 using PhiZoneApi.Interfaces;
@@ -46,6 +47,7 @@ public class RootController : Controller
         return Ok(new ResponseDto<AbstractDto>
         {
             Status = ResponseStatus.Ok,
+            Code = ResponseCodes.Ok,
             Data = new AbstractDto
             {
                 UserCount = await _userRepository.CountUsersAsync(),

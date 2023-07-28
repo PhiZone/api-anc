@@ -21,6 +21,8 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, int>
 
     public DbSet<Song> Songs { get; set; } = null!;
 
+    public DbSet<Admission> Admissions { get; set; } = null!;
+
     public DbSet<Chart> Charts { get; set; } = null!;
 
     public DbSet<Record> Records { get; set; } = null!;
@@ -55,6 +57,12 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, int>
             .UsingEntity<UserRelation>(
                 l => l.HasOne<User>(e => e.Follower).WithMany(e => e.FolloweeRelations),
                 r => r.HasOne<User>(e => e.Followee).WithMany(e => e.FollowerRelations));
+
+        builder.Entity<Chapter>()
+            .HasMany(e => e.Songs)
+            .WithMany(e => e.Chapters)
+            .UsingEntity<Admission>(l => l.HasOne<Song>(e => (Song)e.Admittee).WithMany(e => e.ChapterAdmitters),
+                r => r.HasOne<Chapter>(e => (Chapter)e.Admitter).WithMany(e => e.SongAdmittees));
 
         builder.Entity<Resource>().UseTpcMappingStrategy();
 
