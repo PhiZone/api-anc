@@ -132,6 +132,14 @@ public class ChartController : Controller
             return NotFound(new ResponseDto<object>
                 { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
         var chart = await _chartRepository.GetChartAsync(id);
+
+        if ((currentUser == null || !await _userManager.IsInRoleAsync(currentUser, Roles.Administrator)) &&
+            chart.IsHidden)
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+
         var dto = await _dtoMapper.MapChartAsync<ChartDto>(chart, currentUser);
 
         return Ok(new ResponseDto<ChartDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
@@ -578,9 +586,20 @@ public class ChartController : Controller
             : _dataSettings.Value.PaginationPerPage;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser);
+
         if (!await _chartRepository.ChartExistsAsync(id))
             return NotFound(new ResponseDto<object>
                 { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
+
+        var chart = await _chartRepository.GetChartAsync(id);
+
+        if ((currentUser == null || !await _userManager.IsInRoleAsync(currentUser, Roles.Administrator)) &&
+            chart.IsHidden)
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+
         var records =
             await _chartRepository.GetChartRecordsAsync(id, dto.Order, dto.Desc, position, dto.PerPage, predicateExpr);
         var total = await _chartRepository.CountChartRecordsAsync(id, predicateExpr);
@@ -624,6 +643,16 @@ public class ChartController : Controller
         if (!await _chartRepository.ChartExistsAsync(id))
             return NotFound(new ResponseDto<object>
                 { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
+
+        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        var chart = await _chartRepository.GetChartAsync(id);
+        if ((currentUser == null || !await _userManager.IsInRoleAsync(currentUser, Roles.Administrator)) &&
+            chart.IsHidden)
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+
         var likes = await _likeRepository.GetLikesAsync(dto.Order, dto.Desc, position, dto.PerPage,
             e => e.ResourceId == id);
         var list = _mapper.Map<List<LikeDto>>(likes);
@@ -670,6 +699,18 @@ public class ChartController : Controller
             return NotFound(new ResponseDto<object>
                 { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
         var chart = await _chartRepository.GetChartAsync(id);
+
+        if (!await _userManager.IsInRoleAsync(currentUser, Roles.Administrator) && chart.IsHidden)
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+        if (chart.IsLocked)
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Locked
+            });
+
         if (!await _likeService.CreateLikeAsync(chart, currentUser.Id))
             return BadRequest(new ResponseDto<object>
             {
@@ -708,6 +749,18 @@ public class ChartController : Controller
             return NotFound(new ResponseDto<object>
                 { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
         var chart = await _chartRepository.GetChartAsync(id);
+
+        if (!await _userManager.IsInRoleAsync(currentUser, Roles.Administrator) && chart.IsHidden)
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+        if (chart.IsLocked)
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Locked
+            });
+
         if (!await _likeService.RemoveLikeAsync(chart, currentUser.Id))
             return BadRequest(new ResponseDto<object>
             {
@@ -739,9 +792,20 @@ public class ChartController : Controller
                 : _dataSettings.Value.PaginationMaxPerPage
             : _dataSettings.Value.PaginationPerPage;
         var position = dto.PerPage * (dto.Page - 1);
+
         if (!await _chartRepository.ChartExistsAsync(id))
             return NotFound(new ResponseDto<object>
                 { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
+
+        var chart = await _chartRepository.GetChartAsync(id);
+
+        if ((currentUser == null || !await _userManager.IsInRoleAsync(currentUser, Roles.Administrator)) &&
+            chart.IsHidden)
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+
         var comments = await _commentRepository.GetCommentsAsync(dto.Order, dto.Desc, position, dto.PerPage,
             e => e.ResourceId == id);
         var list = new List<CommentDto>();
@@ -794,6 +858,18 @@ public class ChartController : Controller
             return NotFound(new ResponseDto<object>
                 { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
         var chart = await _chartRepository.GetChartAsync(id);
+
+        if (!await _userManager.IsInRoleAsync(currentUser, Roles.Administrator) && chart.IsHidden)
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+        if (chart.IsLocked)
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Locked
+            });
+
         var comment = new Comment
         {
             ResourceId = chart.Id,
@@ -830,9 +906,25 @@ public class ChartController : Controller
                 : _dataSettings.Value.PaginationMaxPerPage
             : _dataSettings.Value.PaginationPerPage;
         var position = dto.PerPage * (dto.Page - 1);
+
         if (!await _chartRepository.ChartExistsAsync(id))
             return NotFound(new ResponseDto<object>
                 { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
+
+        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        var chart = await _chartRepository.GetChartAsync(id);
+        if ((currentUser == null || !await _userManager.IsInRoleAsync(currentUser, Roles.Administrator)) &&
+            chart.IsHidden)
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+        if (chart.IsLocked)
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Locked
+            });
+
         var votes = await _voteRepository.GetVotesAsync(dto.Order, dto.Desc, position, dto.PerPage,
             e => e.ChartId == id);
         var list = _mapper.Map<List<VoteDto>>(votes);
@@ -879,6 +971,18 @@ public class ChartController : Controller
             return NotFound(new ResponseDto<object>
                 { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
         var chart = await _chartRepository.GetChartAsync(id);
+
+        if (!await _userManager.IsInRoleAsync(currentUser, Roles.Administrator) && chart.IsHidden)
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+        if (chart.IsLocked)
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Locked
+            });
+
         if (!await _voteService.CreateVoteAsync(dto, chart, currentUser))
             return BadRequest(new ResponseDto<object>
             {
@@ -917,6 +1021,18 @@ public class ChartController : Controller
             return NotFound(new ResponseDto<object>
                 { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
         var chart = await _chartRepository.GetChartAsync(id);
+
+        if (!await _userManager.IsInRoleAsync(currentUser, Roles.Administrator) && chart.IsHidden)
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+        if (chart.IsLocked)
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Locked
+            });
+
         if (!await _voteService.RemoveVoteAsync(chart, currentUser.Id))
             return BadRequest(new ResponseDto<object>
             {

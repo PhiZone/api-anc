@@ -395,12 +395,12 @@ public class ApplicationController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> CreateLike([FromRoute] Guid id)
     {
-        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if (!await _applicationRepository.ApplicationExistsAsync(id))
             return NotFound(new ResponseDto<object>
                 { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
         var application = await _applicationRepository.GetApplicationAsync(id);
-        if (!await _likeService.CreateLikeAsync(application, currentUser!.Id))
+        if (!await _likeService.CreateLikeAsync(application, currentUser.Id))
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief,
@@ -428,12 +428,12 @@ public class ApplicationController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> RemoveLike([FromRoute] Guid id)
     {
-        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if (!await _applicationRepository.ApplicationExistsAsync(id))
             return NotFound(new ResponseDto<object>
                 { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
         var application = await _applicationRepository.GetApplicationAsync(id);
-        if (!await _likeService.RemoveLikeAsync(application, currentUser!.Id))
+        if (!await _likeService.RemoveLikeAsync(application, currentUser.Id))
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief,

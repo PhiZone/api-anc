@@ -141,7 +141,7 @@ public class ReplyController : Controller
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> RemoveReply([FromRoute] Guid id)
     {
-        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
 
         if (!await _replyRepository.ReplyExistsAsync(id))
             return NotFound(new ResponseDto<object>
@@ -150,7 +150,7 @@ public class ReplyController : Controller
             });
 
         var reply = await _replyRepository.GetReplyAsync(id);
-        if ((currentUser!.Id == reply.OwnerId && !await _userManager.IsInRoleAsync(currentUser, Roles.Member)) ||
+        if ((currentUser.Id == reply.OwnerId && !await _userManager.IsInRoleAsync(currentUser, Roles.Member)) ||
             (currentUser.Id != reply.OwnerId && !await _userManager.IsInRoleAsync(currentUser, Roles.Administrator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
@@ -224,12 +224,12 @@ public class ReplyController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> CreateLike([FromRoute] Guid id)
     {
-        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if (!await _replyRepository.ReplyExistsAsync(id))
             return NotFound(new ResponseDto<object>
                 { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
         var reply = await _replyRepository.GetReplyAsync(id);
-        if (!await _likeService.CreateLikeAsync(reply, currentUser!.Id))
+        if (!await _likeService.CreateLikeAsync(reply, currentUser.Id))
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
@@ -256,12 +256,12 @@ public class ReplyController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> RemoveLike([FromRoute] Guid id)
     {
-        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if (!await _replyRepository.ReplyExistsAsync(id))
             return NotFound(new ResponseDto<object>
                 { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
         var reply = await _replyRepository.GetReplyAsync(id);
-        if (!await _likeService.RemoveLikeAsync(reply, currentUser!.Id))
+        if (!await _likeService.RemoveLikeAsync(reply, currentUser.Id))
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone

@@ -346,6 +346,18 @@ public class PlayerController : Controller
         } while (await db.KeyExistsAsync($"PLAY:{token}"));
 
         var chart = await _chartRepository.GetChartAsync(chartId);
+
+        if (!await _userManager.IsInRoleAsync(currentUser, Roles.Administrator) && chart.IsHidden)
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+        if (chart.IsLocked)
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Locked
+            });
+
         var song = await _songRepository.GetSongAsync(chart.SongId);
         var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 

@@ -143,7 +143,7 @@ public class CommentController : Controller
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> RemoveComment([FromRoute] Guid id)
     {
-        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
 
         if (!await _commentRepository.CommentExistsAsync(id))
             return NotFound(new ResponseDto<object>
@@ -152,7 +152,7 @@ public class CommentController : Controller
             });
 
         var comment = await _commentRepository.GetCommentAsync(id);
-        if ((currentUser!.Id == comment.OwnerId && !await _userManager.IsInRoleAsync(currentUser, Roles.Member)) ||
+        if ((currentUser.Id == comment.OwnerId && !await _userManager.IsInRoleAsync(currentUser, Roles.Member)) ||
             (currentUser.Id != comment.OwnerId && !await _userManager.IsInRoleAsync(currentUser, Roles.Administrator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>

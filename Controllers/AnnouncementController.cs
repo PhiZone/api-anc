@@ -333,12 +333,12 @@ public class AnnouncementController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> CreateLike([FromRoute] Guid id)
     {
-        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if (!await _announcementRepository.AnnouncementExistsAsync(id))
             return NotFound(new ResponseDto<object>
                 { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
         var announcement = await _announcementRepository.GetAnnouncementAsync(id);
-        if (!await _likeService.CreateLikeAsync(announcement, currentUser!.Id))
+        if (!await _likeService.CreateLikeAsync(announcement, currentUser.Id))
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
@@ -365,12 +365,12 @@ public class AnnouncementController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> RemoveLike([FromRoute] Guid id)
     {
-        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if (!await _announcementRepository.AnnouncementExistsAsync(id))
             return NotFound(new ResponseDto<object>
                 { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
         var announcement = await _announcementRepository.GetAnnouncementAsync(id);
-        if (!await _likeService.RemoveLikeAsync(announcement, currentUser!.Id))
+        if (!await _likeService.RemoveLikeAsync(announcement, currentUser.Id))
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone

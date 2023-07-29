@@ -216,4 +216,9 @@ public static class ResponseCodes
     ///     The time relation is invalid.
     /// </summary>
     public const string InvalidTimeRelation = "InvalidTimeRelation";
+
+    /// <summary>
+    ///     The resource is currently locked.
+    /// </summary>
+    public const string Locked = "Locked";
 }
