@@ -32,5 +32,5 @@ public class ChartSubmission : Submission
 
     public Song Song { get; set; } = null!;
 
-    public IEnumerable<User> Authors { get; } = new List<User>();
+    public IEnumerable<int> AuthorsId { get; } = new List<int>();
 }

@@ -31,6 +31,7 @@ namespace PhiZoneApi.Controllers;
 public class SongController : Controller
 {
     private readonly IAdmissionRepository _admissionRepository;
+    private readonly IAuthorshipRepository _authorshipRepository;
     private readonly IChapterRepository _chapterRepository;
     private readonly ICommentRepository _commentRepository;
     private readonly IOptions<DataSettings> _dataSettings;
@@ -48,7 +49,7 @@ public class SongController : Controller
         UserManager<User> userManager, IFilterService filterService, IFileStorageService fileStorageService,
         IDtoMapper dtoMapper, IMapper mapper, ISongService songService, ILikeRepository likeRepository,
         ILikeService likeService, ICommentRepository commentRepository, IChapterRepository chapterRepository,
-        IAdmissionRepository admissionRepository)
+        IAdmissionRepository admissionRepository, IAuthorshipRepository authorshipRepository)
     {
         _songRepository = songRepository;
         _dataSettings = dataSettings;
@@ -62,6 +63,7 @@ public class SongController : Controller
         _commentRepository = commentRepository;
         _chapterRepository = chapterRepository;
         _admissionRepository = admissionRepository;
+        _authorshipRepository = authorshipRepository;
         _fileStorageService = fileStorageService;
     }
 
@@ -225,15 +227,18 @@ public class SongController : Controller
             DateUpdated = DateTimeOffset.UtcNow
         };
 
-        foreach (var authorId in dto.AuthorsId)
-        {
-            var author = (await _userManager.FindByIdAsync(authorId.ToString()))!;
-            song.Authors.Add(author);
-        }
-
         if (!await _songRepository.CreateSongAsync(song))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+
+        foreach (var authorship in dto.Authorships.Select(authorshipDto => new Authorship
+                 {
+                     ResourceId = song.Id,
+                     AuthorId = authorshipDto.AuthorId,
+                     Position = authorshipDto.Position,
+                     DateCreated = DateTimeOffset.UtcNow
+                 }))
+            await _authorshipRepository.CreateAuthorshipAsync(authorship);
 
         if (!wait) await _songService.PublishAsync(dto.File, song.Id);
 
@@ -318,15 +323,24 @@ public class SongController : Controller
         song.PreviewEnd = dto.PreviewEnd;
         song.DateUpdated = DateTimeOffset.UtcNow;
 
-        foreach (var authorId in dto.AuthorsId)
-        {
-            var author = (await _userManager.FindByIdAsync(authorId.ToString()))!;
-            song.Authors.Add(author);
-        }
-
         if (!await _songRepository.UpdateSongAsync(song))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+
+        foreach (var authorshipDto in dto.Authorships)
+        {
+            var authorship = new Authorship
+            {
+                ResourceId = id,
+                AuthorId = authorshipDto.AuthorId,
+                Position = authorshipDto.Position,
+                DateCreated = DateTimeOffset.UtcNow
+            };
+            if (await _authorshipRepository.AuthorshipExistsAsync(id, authorshipDto.AuthorId))
+                await _authorshipRepository.UpdateAuthorshipAsync(authorship);
+            else
+                await _authorshipRepository.CreateAuthorshipAsync(authorship);
+        }
 
         return NoContent();
     }

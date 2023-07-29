@@ -1,6 +1,7 @@
 ﻿using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using PhiZoneApi.Data;
+using PhiZoneApi.Enums;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 using PhiZoneApi.Utils;
@@ -19,7 +20,9 @@ public class UserRelationRepository : IUserRelationRepository
     public async Task<ICollection<UserRelation>> GetFollowersAsync(int userId, string order, bool desc, int position,
         int take, Expression<Func<UserRelation, bool>>? predicate = null)
     {
-        var result = _context.UserRelations.Where(relation => relation.FolloweeId == userId).OrderBy(order, desc);
+        var result = _context.UserRelations
+            .Where(relation => relation.Type != UserRelationType.Blacklisted && relation.FolloweeId == userId)
+            .OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
 
         return await result.Skip(position).Take(take).ToListAsync();
@@ -28,7 +31,9 @@ public class UserRelationRepository : IUserRelationRepository
     public async Task<ICollection<UserRelation>> GetFolloweesAsync(int userId, string order, bool desc, int position,
         int take, Expression<Func<UserRelation, bool>>? predicate = null)
     {
-        var result = _context.UserRelations.Where(relation => relation.FollowerId == userId).OrderBy(order, desc);
+        var result = _context.UserRelations
+            .Where(relation => relation.Type != UserRelationType.Blacklisted && relation.FollowerId == userId)
+            .OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
 
         return await result.Skip(position).Take(take).ToListAsync();
@@ -52,6 +57,12 @@ public class UserRelationRepository : IUserRelationRepository
     public async Task<bool> CreateRelationAsync(UserRelation userRelation)
     {
         await _context.UserRelations.AddAsync(userRelation);
+        return await SaveAsync();
+    }
+
+    public async Task<bool> UpdateRelationAsync(UserRelation userRelation)
+    {
+        _context.UserRelations.Update(userRelation);
         return await SaveAsync();
     }
 
@@ -83,20 +94,26 @@ public class UserRelationRepository : IUserRelationRepository
     public async Task<int> CountFollowersAsync(int userId, Expression<Func<UserRelation, bool>>? predicate = null)
     {
         if (predicate != null)
-            return await _context.UserRelations.Where(relation => relation.Followee.Id == userId)
+            return await _context.UserRelations.Where(relation =>
+                    relation.Type != UserRelationType.Blacklisted && relation.Followee.Id == userId)
                 .Where(predicate)
                 .CountAsync();
 
-        return await _context.UserRelations.Where(relation => relation.Followee.Id == userId).CountAsync();
+        return await _context.UserRelations
+            .Where(relation => relation.Type != UserRelationType.Blacklisted && relation.Followee.Id == userId)
+            .CountAsync();
     }
 
     public async Task<int> CountFolloweesAsync(int userId, Expression<Func<UserRelation, bool>>? predicate = null)
     {
         if (predicate != null)
-            return await _context.UserRelations.Where(relation => relation.Follower.Id == userId)
+            return await _context.UserRelations.Where(relation =>
+                    relation.Type != UserRelationType.Blacklisted && relation.Follower.Id == userId)
                 .Where(predicate)
                 .CountAsync();
 
-        return await _context.UserRelations.Where(relation => relation.Follower.Id == userId).CountAsync();
+        return await _context.UserRelations
+            .Where(relation => relation.Type != UserRelationType.Blacklisted && relation.Follower.Id == userId)
+            .CountAsync();
     }
 }

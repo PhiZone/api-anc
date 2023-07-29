@@ -221,4 +221,9 @@ public static class ResponseCodes
     ///     The resource is currently locked.
     /// </summary>
     public const string Locked = "Locked";
+
+    /// <summary>
+    ///     User has been blacklisted by the target user / resource owner.
+    /// </summary>
+    public const string Blacklisted = "Blacklisted";
 }

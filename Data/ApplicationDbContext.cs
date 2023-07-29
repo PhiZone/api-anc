@@ -25,6 +25,8 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, int>
 
     public DbSet<Chart> Charts { get; set; } = null!;
 
+    public DbSet<Authorship> Authorships { get; set; } = null!;
+
     public DbSet<Record> Records { get; set; } = null!;
 
     public DbSet<Comment> Comments { get; set; } = null!;
@@ -47,6 +49,8 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, int>
 
     public DbSet<ChartSubmission> ChartSubmissions { get; set; } = null!;
 
+    public DbSet<Notification> Notifications { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -54,8 +58,7 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, int>
         builder.Entity<User>()
             .HasMany(e => e.Followers)
             .WithMany(e => e.Followees)
-            .UsingEntity<UserRelation>(
-                l => l.HasOne<User>(e => e.Follower).WithMany(e => e.FolloweeRelations),
+            .UsingEntity<UserRelation>(l => l.HasOne<User>(e => e.Follower).WithMany(e => e.FolloweeRelations),
                 r => r.HasOne<User>(e => e.Followee).WithMany(e => e.FollowerRelations));
 
         builder.Entity<Chapter>()

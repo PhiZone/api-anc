@@ -512,11 +512,7 @@ public class UserController : Controller
     /// <param name="id">A user's ID.</param>
     /// <returns>An empty body.</returns>
     /// <response code="201">Returns an empty body.</response>
-    /// <response code="400">
-    ///     When the user
-    ///     1. follows themselves;
-    ///     2. has already followed the specified user.
-    /// </response>
+    /// <response code="400">When the user follows themselves or is blacklisted by the specified user.</response>
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="404">When the specified user is not found.</response>
     /// <response code="500">When an internal server error has occurred.</response>
@@ -527,7 +523,8 @@ public class UserController : Controller
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> Follow([FromRoute] int id)
+    public async Task<IActionResult> Follow([FromRoute] int id,
+        [FromQuery] UserRelationType type = UserRelationType.Following)
     {
         // Obtain user by id
         var user = await _userManager.FindByIdAsync(id.ToString());
@@ -549,20 +546,36 @@ public class UserController : Controller
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
             });
 
-        if (await _userRelationRepository.RelationExistsAsync(currentUser.Id, user.Id))
-            return BadRequest(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
-            });
+        if (await _userRelationRepository.RelationExistsAsync(user.Id, currentUser.Id))
+        {
+            var opposite = await _userRelationRepository.GetRelationAsync(user.Id, currentUser.Id);
+            if (opposite.Type == UserRelationType.Blacklisted)
+                return BadRequest(new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Blacklisted
+                });
+
+            if (type == UserRelationType.Blacklisted)
+                await _userRelationRepository.RemoveRelationAsync(user.Id, currentUser.Id);
+        }
 
         var relation = new UserRelation
         {
-            Followee = user, Follower = currentUser, DateCreated = DateTimeOffset.UtcNow
+            Followee = user, Follower = currentUser, Type = type, DateCreated = DateTimeOffset.UtcNow
         };
 
-        if (!await _userRelationRepository.CreateRelationAsync(relation))
-            return StatusCode(StatusCodes.Status500InternalServerError,
-                new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+        if (await _userRelationRepository.RelationExistsAsync(currentUser.Id, user.Id))
+        {
+            if (!await _userRelationRepository.UpdateRelationAsync(relation))
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+        }
+        else
+        {
+            if (!await _userRelationRepository.CreateRelationAsync(relation))
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+        }
 
         return StatusCode(StatusCodes.Status201Created);
     }

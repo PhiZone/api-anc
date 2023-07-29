@@ -58,5 +58,5 @@ public class SongUpdateDto
     public TimeSpan PreviewEnd { get; set; }
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
-    public List<int> AuthorsId { get; set; } = null!;
+    public List<AuthorshipRequestDto> Authorships { get; set; } = null!;
 }

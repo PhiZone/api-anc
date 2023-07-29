@@ -6,9 +6,9 @@ public class Collaboration
 {
     public Guid Id { get; set; }
 
-    public Guid ChartId { get; set; }
+    public Guid SubmissionId { get; set; }
 
-    public ChartSubmission Chart { get; set; } = null!;
+    public Submission Submission { get; set; } = null!;
 
     public int InviterId { get; set; }
 

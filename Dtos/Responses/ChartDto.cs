@@ -54,7 +54,7 @@ public class ChartDto
 
     public Guid SongId { get; set; }
 
-    public IEnumerable<int> AuthorsId { get; set; } = null!;
+    public List<int> AuthorsId { get; set; } = null!;
 
     public int OwnerId { get; set; }
 

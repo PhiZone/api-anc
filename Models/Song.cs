@@ -41,6 +41,4 @@ public class Song : PublicResource
     public IEnumerable<Chapter> Chapters { get; } = new List<Chapter>();
 
     public IEnumerable<Admission> ChapterAdmitters { get; } = new List<Admission>();
-
-    public List<User> Authors { get; } = new();
 }

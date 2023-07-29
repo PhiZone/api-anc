@@ -40,8 +40,4 @@ public class User : IdentityUser<int>
     public IEnumerable<User> Followees { get; } = new List<User>();
 
     public IEnumerable<UserRelation> FolloweeRelations { get; } = new List<UserRelation>();
-
-    public IEnumerable<Song> Songs { get; set; } = new List<Song>();
-
-    public IEnumerable<Chart> Charts { get; set; } = new List<Chart>();
 }

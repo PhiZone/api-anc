@@ -32,7 +32,7 @@ public class FilterService : IFilterService
         if (dto == null) return null;
 
         var entity = Expression.Parameter(typeof(T), "e");
-        
+
         Expression expression =
             Expression.OrElse(Expression.Constant(isAdmin || typeof(T).GetProperty("IsHidden") == null),
                 IsFalse(Property<T>(entity, "IsHidden")));

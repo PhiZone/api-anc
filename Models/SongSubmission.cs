@@ -40,5 +40,5 @@ public class SongSubmission : Submission
 
     public IEnumerable<Chapter> Chapters { get; } = new List<Chapter>();
 
-    public IEnumerable<User> Authors { get; } = new List<User>();
+    public IEnumerable<int> AuthorsId { get; } = new List<int>();
 }

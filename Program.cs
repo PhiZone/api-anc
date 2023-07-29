@@ -108,6 +108,8 @@ builder.Services.AddScoped<IVolunteerVoteRepository, VolunteerVoteRepository>();
 builder.Services.AddScoped<IApplicationRepository, ApplicationRepository>();
 builder.Services.AddScoped<IAnnouncementRepository, AnnouncementRepository>();
 builder.Services.AddScoped<IAdmissionRepository, AdmissionRepository>();
+builder.Services.AddScoped<IAuthorshipRepository, AuthorshipRepository>();
+builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 builder.Services.AddScoped<IPlayConfigurationRepository, PlayConfigurationRepository>();
 builder.Services.AddScoped<IFilterService, FilterService>();
 builder.Services.AddScoped<ILikeService, LikeService>();

@@ -30,6 +30,7 @@ namespace PhiZoneApi.Controllers;
     Policy = "AllowAnonymous")]
 public class ChartController : Controller
 {
+    private readonly IAuthorshipRepository _authorshipRepository;
     private readonly IChartRepository _chartRepository;
     private readonly IChartService _chartService;
     private readonly ICommentRepository _commentRepository;
@@ -49,7 +50,7 @@ public class ChartController : Controller
         UserManager<User> userManager, IFilterService filterService, IFileStorageService fileStorageService,
         IDtoMapper dtoMapper, IMapper mapper, IChartService chartService, ISongRepository songRepository,
         ILikeRepository likeRepository, ILikeService likeService, ICommentRepository commentRepository,
-        IVoteRepository voteRepository, IVoteService voteService)
+        IVoteRepository voteRepository, IVoteService voteService, IAuthorshipRepository authorshipRepository)
     {
         _chartRepository = chartRepository;
         _dataSettings = dataSettings;
@@ -64,6 +65,7 @@ public class ChartController : Controller
         _commentRepository = commentRepository;
         _voteRepository = voteRepository;
         _voteService = voteService;
+        _authorshipRepository = authorshipRepository;
         _fileStorageService = fileStorageService;
     }
 
@@ -130,7 +132,9 @@ public class ChartController : Controller
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         if (!await _chartRepository.ChartExistsAsync(id))
             return NotFound(new ResponseDto<object>
-                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
         var chart = await _chartRepository.GetChartAsync(id);
 
         if ((currentUser == null || !await _userManager.IsInRoleAsync(currentUser, Roles.Administrator)) &&
@@ -217,15 +221,18 @@ public class ChartController : Controller
             DateUpdated = DateTimeOffset.UtcNow
         };
 
-        foreach (var authorId in dto.AuthorsId)
-        {
-            var author = (await _userManager.FindByIdAsync(authorId.ToString()))!;
-            chart.Authors.Add(author);
-        }
-
         if (!await _chartRepository.CreateChartAsync(chart))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+
+        foreach (var authorship in dto.Authorships.Select(authorshipDto => new Authorship
+                 {
+                     ResourceId = chart.Id,
+                     AuthorId = authorshipDto.AuthorId,
+                     Position = authorshipDto.Position,
+                     DateCreated = DateTimeOffset.UtcNow
+                 }))
+            await _authorshipRepository.CreateAuthorshipAsync(authorship);
 
         return StatusCode(StatusCodes.Status201Created);
     }
@@ -296,15 +303,24 @@ public class ChartController : Controller
         chart.SongId = dto.SongId;
         chart.DateUpdated = DateTimeOffset.UtcNow;
 
-        foreach (var authorId in dto.AuthorsId)
-        {
-            var author = (await _userManager.FindByIdAsync(authorId.ToString()))!;
-            chart.Authors.Add(author);
-        }
-
         if (!await _chartRepository.UpdateChartAsync(chart))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+
+        foreach (var authorshipDto in dto.Authorships)
+        {
+            var authorship = new Authorship
+            {
+                ResourceId = id,
+                AuthorId = authorshipDto.AuthorId,
+                Position = authorshipDto.Position,
+                DateCreated = DateTimeOffset.UtcNow
+            };
+            if (await _authorshipRepository.AuthorshipExistsAsync(id, authorshipDto.AuthorId))
+                await _authorshipRepository.UpdateAuthorshipAsync(authorship);
+            else
+                await _authorshipRepository.CreateAuthorshipAsync(authorship);
+        }
 
         return NoContent();
     }
@@ -596,7 +612,9 @@ public class ChartController : Controller
 
         if (!await _chartRepository.ChartExistsAsync(id))
             return NotFound(new ResponseDto<object>
-                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
 
         var chart = await _chartRepository.GetChartAsync(id);
 
@@ -649,7 +667,9 @@ public class ChartController : Controller
         var position = dto.PerPage * (dto.Page - 1);
         if (!await _chartRepository.ChartExistsAsync(id))
             return NotFound(new ResponseDto<object>
-                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
 
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         var chart = await _chartRepository.GetChartAsync(id);
@@ -704,7 +724,9 @@ public class ChartController : Controller
                 });
         if (!await _chartRepository.ChartExistsAsync(id))
             return NotFound(new ResponseDto<object>
-                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
         var chart = await _chartRepository.GetChartAsync(id);
 
         if (!await _userManager.IsInRoleAsync(currentUser, Roles.Administrator) && chart.IsHidden)
@@ -754,7 +776,9 @@ public class ChartController : Controller
                 });
         if (!await _chartRepository.ChartExistsAsync(id))
             return NotFound(new ResponseDto<object>
-                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
         var chart = await _chartRepository.GetChartAsync(id);
 
         if (!await _userManager.IsInRoleAsync(currentUser, Roles.Administrator) && chart.IsHidden)
@@ -802,7 +826,9 @@ public class ChartController : Controller
 
         if (!await _chartRepository.ChartExistsAsync(id))
             return NotFound(new ResponseDto<object>
-                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
 
         var chart = await _chartRepository.GetChartAsync(id);
 
@@ -863,7 +889,9 @@ public class ChartController : Controller
                 });
         if (!await _chartRepository.ChartExistsAsync(id))
             return NotFound(new ResponseDto<object>
-                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
         var chart = await _chartRepository.GetChartAsync(id);
 
         if (!await _userManager.IsInRoleAsync(currentUser, Roles.Administrator) && chart.IsHidden)
@@ -916,7 +944,9 @@ public class ChartController : Controller
 
         if (!await _chartRepository.ChartExistsAsync(id))
             return NotFound(new ResponseDto<object>
-                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
 
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         var chart = await _chartRepository.GetChartAsync(id);
@@ -976,7 +1006,9 @@ public class ChartController : Controller
                 });
         if (!await _chartRepository.ChartExistsAsync(id))
             return NotFound(new ResponseDto<object>
-                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
         var chart = await _chartRepository.GetChartAsync(id);
 
         if (!await _userManager.IsInRoleAsync(currentUser, Roles.Administrator) && chart.IsHidden)
@@ -1026,7 +1058,9 @@ public class ChartController : Controller
                 });
         if (!await _chartRepository.ChartExistsAsync(id))
             return NotFound(new ResponseDto<object>
-                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
         var chart = await _chartRepository.GetChartAsync(id);
 
         if (!await _userManager.IsInRoleAsync(currentUser, Roles.Administrator) && chart.IsHidden)

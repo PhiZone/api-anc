@@ -8,6 +8,7 @@ namespace PhiZoneApi.Services;
 
 public class DtoMapper : IDtoMapper
 {
+    private readonly IAuthorshipRepository _authorshipRepository;
     private readonly IChapterRepository _chapterRepository;
     private readonly ICommentRepository _commentRepository;
     private readonly ILikeRepository _likeRepository;
@@ -22,7 +23,8 @@ public class DtoMapper : IDtoMapper
     public DtoMapper(IUserRelationRepository userRelationRepository, IRegionRepository regionRepository,
         ILikeRepository likeRepository, UserManager<User> userManager, IMapper mapper,
         ICommentRepository commentRepository, IReplyRepository replyRepository, IRecordRepository recordRepository,
-        IChapterRepository chapterRepository, ISongRepository songRepository)
+        IChapterRepository chapterRepository, ISongRepository songRepository,
+        IAuthorshipRepository authorshipRepository)
     {
         _userRelationRepository = userRelationRepository;
         _regionRepository = regionRepository;
@@ -34,6 +36,7 @@ public class DtoMapper : IDtoMapper
         _recordRepository = recordRepository;
         _chapterRepository = chapterRepository;
         _songRepository = songRepository;
+        _authorshipRepository = authorshipRepository;
     }
 
     public async Task<T> MapUserAsync<T>(User user, User? currentUser = null) where T : UserDto
@@ -70,15 +73,16 @@ public class DtoMapper : IDtoMapper
     }
 
     public async Task<AdmissionDto<TAdmitter, TAdmittee>> MapAdmissionAsync<TAdmitter, TAdmittee>(Admission admission,
-        User? currentUser = null)
-        where TAdmitter : ChapterDto where TAdmittee : SongDto
+        User? currentUser = null) where TAdmitter : ChapterDto where TAdmittee : SongDto
     {
         var dto = new AdmissionDto<TAdmitter, TAdmittee>
         {
-            Admitter = await MapChapterAsync<TAdmitter>(await _chapterRepository.GetChapterAsync(admission.AdmitterId),
-                currentUser),
-            Admittee = await MapSongAsync<TAdmittee>(await _songRepository.GetSongAsync(admission.AdmitteeId),
-                currentUser),
+            Admitter =
+                await MapChapterAsync<TAdmitter>(await _chapterRepository.GetChapterAsync(admission.AdmitterId),
+                    currentUser),
+            Admittee =
+                await MapSongAsync<TAdmittee>(await _songRepository.GetSongAsync(admission.AdmitteeId),
+                    currentUser),
             Status = admission.Status,
             Label = admission.Label,
             RequesterId = admission.RequesterId,
@@ -101,6 +105,10 @@ public class DtoMapper : IDtoMapper
     public async Task<T> MapSongAsync<T>(Song song, User? currentUser = null) where T : SongDto
     {
         var dto = _mapper.Map<T>(song);
+        dto.AuthorsId =
+            (await _authorshipRepository.GetAuthorshipsAsync("AuthorId", false, 0, -1,
+                authorship => authorship.ResourceId == song.Id)).Select(author => author.AuthorId)
+            .ToList();
         dto.CommentCount = await _commentRepository.CountCommentsAsync(comment => comment.ResourceId == song.Id);
         dto.DateLiked = currentUser != null && await _likeRepository.LikeExistsAsync(song.Id, currentUser.Id)
             ? (await _likeRepository.GetLikeAsync(song.Id, currentUser.Id)).DateCreated
@@ -118,6 +126,10 @@ public class DtoMapper : IDtoMapper
     public async Task<T> MapChartAsync<T>(Chart chart, User? currentUser = null) where T : ChartDto
     {
         var dto = _mapper.Map<T>(chart);
+        dto.AuthorsId =
+            (await _authorshipRepository.GetAuthorshipsAsync("AuthorId", false, 0, -1,
+                authorship => authorship.ResourceId == chart.Id)).Select(author => author.AuthorId)
+            .ToList();
         dto.CommentCount = await _commentRepository.CountCommentsAsync(comment => comment.ResourceId == chart.Id);
         dto.DateLiked = currentUser != null && await _likeRepository.LikeExistsAsync(chart.Id, currentUser.Id)
             ? (await _likeRepository.GetLikeAsync(chart.Id, currentUser.Id)).DateCreated
