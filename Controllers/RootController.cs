@@ -52,9 +52,9 @@ public class RootController : Controller
             {
                 UserCount = await _userRepository.CountUsersAsync(),
                 RecordCount = await _recordRepository.CountRecordsAsync(),
-                ChartCount = await _chartRepository.CountChartsAsync(),
-                SongCount = await _songRepository.CountSongsAsync(),
-                ChapterCount = await _chapterRepository.CountChaptersAsync(),
+                ChartCount = await _chartRepository.CountChartsAsync(predicate: e => !e.IsHidden),
+                SongCount = await _songRepository.CountSongsAsync(predicate: e => !e.IsHidden),
+                ChapterCount = await _chapterRepository.CountChaptersAsync(predicate: e => !e.IsHidden),
                 LikeCount = await _likeRepository.CountLikesAsync(),
                 CommentCount = await _commentRepository.CountCommentsAsync(),
                 ReplyCount = await _replyRepository.CountRepliesAsync()

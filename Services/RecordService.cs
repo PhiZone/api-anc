@@ -37,7 +37,7 @@ public class RecordService : IRecordService
         if (accuracy < 70) return 0;
 
         accuracy -= 55;
-        return accuracy * accuracy * difficulty / 2025 + 0.032 - stdDeviation / 2;
+        return accuracy * accuracy * difficulty / 2025 + 0.02 - stdDeviation / 2000;
     }
 
     public double CalculateRksFactor(int perfectJudgment, int goodJudgment)
