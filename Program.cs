@@ -120,6 +120,8 @@ builder.Services.AddScoped<IDtoMapper, DtoMapper>();
 builder.Services.AddScoped<ETagFilter>();
 builder.Services.AddScoped<ISongService, SongService>();
 builder.Services.AddScoped<IRecordService, RecordService>();
+builder.Services.AddScoped<ISubmissionService, SubmissionService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddSingleton<IChartService, ChartService>();
 builder.Services.AddSingleton<IMailService, MailService>();
 builder.Services.AddSingleton<IFileStorageService, FileStorageService>();
