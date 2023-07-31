@@ -6,5 +6,5 @@ public interface ISongService
 
     Task<(string, string, TimeSpan)?> UploadAsync(string fileName, byte[] file);
 
-    Task PublishAsync(IFormFile file, Guid songId);
+    Task PublishAsync(IFormFile file, Guid songId, bool isSubmission = false);
 }

@@ -9,14 +9,11 @@ public class SongService : ISongService
 {
     private readonly IFileStorageService _fileStorageService;
     private readonly IRabbitMqService _rabbitMqService;
-    private readonly ISongRepository _songRepository;
 
-    public SongService(IFileStorageService fileStorageService, IRabbitMqService rabbitMqService,
-        ISongRepository songRepository)
+    public SongService(IFileStorageService fileStorageService, IRabbitMqService rabbitMqService)
     {
         _fileStorageService = fileStorageService;
         _rabbitMqService = rabbitMqService;
-        _songRepository = songRepository;
     }
 
     public async Task<(string, string, TimeSpan)?> UploadAsync(string fileName, IFormFile file)
@@ -39,7 +36,7 @@ public class SongService : ISongService
         return (result.Item1, result.Item2, duration);
     }
 
-    public async Task PublishAsync(IFormFile file, Guid songId)
+    public async Task PublishAsync(IFormFile file, Guid songId, bool isSubmission = false)
     {
         await using var stream = file.OpenReadStream();
         using var memoryStream = new MemoryStream();
@@ -48,15 +45,9 @@ public class SongService : ISongService
         var properties = channel.CreateBasicProperties();
         properties.Headers = new Dictionary<string, object>
         {
-            { "SongId", songId.ToString() }
+            { "SongId", songId.ToString() },
+            { "IsSubmission", isSubmission.ToString()}
         };
         channel.BasicPublish("", "song", false, properties, memoryStream.ToArray());
-    }
-
-    public async Task<bool> UpdateSongAsync(Song song, (string, TimeSpan) songInfo)
-    {
-        song.File = songInfo.Item1;
-        song.Duration = songInfo.Item2;
-        return await _songRepository.UpdateSongAsync(song);
     }
 }

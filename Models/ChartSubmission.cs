@@ -32,5 +32,12 @@ public class ChartSubmission : Submission
 
     public Song Song { get; set; } = null!;
 
+    public RequestStatus AdmissionStatus { get; set; }
+
     public IEnumerable<int> AuthorsId { get; } = new List<int>();
+
+    public string GetDisplay()
+    {
+        return Title != null ? $"{Title} [{Level} {Math.Floor(Difficulty)}]" : $"{Song.Title} [{Level} {Math.Floor(Difficulty)}]";
+    }
 }

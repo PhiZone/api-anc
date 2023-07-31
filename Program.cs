@@ -111,6 +111,8 @@ builder.Services.AddScoped<IAdmissionRepository, AdmissionRepository>();
 builder.Services.AddScoped<IAuthorshipRepository, AuthorshipRepository>();
 builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
 builder.Services.AddScoped<IPlayConfigurationRepository, PlayConfigurationRepository>();
+builder.Services.AddScoped<ISongSubmissionRepository, SongSubmissionRepository>();
+builder.Services.AddScoped<IChartSubmissionRepository, ChartSubmissionRepository>();
 builder.Services.AddScoped<IFilterService, FilterService>();
 builder.Services.AddScoped<ILikeService, LikeService>();
 builder.Services.AddScoped<IVoteService, VoteService>();
@@ -131,7 +133,9 @@ builder.Services.AddSingleton<IHostedService>(provider => new MailSenderService(
 builder.Services.AddSingleton<IHostedService>(provider => new SongConverterService(
     provider.GetService<IRabbitMqService>()!,
     provider.GetService<IServiceScopeFactory>()!.CreateScope().ServiceProvider.GetService<ISongService>()!,
-    provider.GetService<IServiceScopeFactory>()!.CreateScope().ServiceProvider.GetService<ISongRepository>()!));
+    provider.GetService<IServiceScopeFactory>()!.CreateScope().ServiceProvider.GetService<ISongRepository>()!,
+    provider.GetService<IServiceScopeFactory>()!.CreateScope()
+        .ServiceProvider.GetService<ISongSubmissionRepository>()!));
 builder.Services.AddHostedService<DatabaseSeeder>();
 
 builder.Services.Configure<ApiBehaviorOptions>(options => { options.SuppressModelStateInvalidFilter = true; });
@@ -175,8 +179,6 @@ builder.Services.AddSwaggerGen(options =>
 
 builder.Services.AddSwaggerGenNewtonsoftSupport();
 
-builder.Services.AddCoreAdmin();
-
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -191,7 +193,5 @@ app.UseAuthorization();
 
 app.MapControllers();
 app.MapDefaultControllerRoute();
-
-// app.UseCoreAdminCdn("https://core-admin-demo.azurewebsites.net/_content/CoreAdmin");
 
 app.Run();

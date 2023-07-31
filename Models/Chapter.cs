@@ -13,4 +13,9 @@ public class Chapter : PublicResource
     public IEnumerable<Song> Songs { get; } = new List<Song>();
 
     public IEnumerable<Admission> SongAdmittees { get; } = new List<Admission>();
+
+    public string GetDisplay()
+    {
+        return $"{Title} - {Subtitle}";
+    }
 }

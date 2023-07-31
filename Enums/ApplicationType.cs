@@ -7,5 +7,6 @@ public enum ApplicationType
     MobilePlayer,
     MobileTool,
     DesktopPlayer,
-    DesktopTool
+    DesktopTool,
+    Service
 }

@@ -38,7 +38,16 @@ public class SongSubmission : Submission
 
     public TimeSpan PreviewEnd { get; set; }
 
-    public IEnumerable<Chapter> Chapters { get; } = new List<Chapter>();
-
     public IEnumerable<int> AuthorsId { get; } = new List<int>();
+    
+    public int ReviewerId { get; set; }
+    
+    public User Reviewer { get; set; } = null!;
+
+    public string? Message { get; set; }
+
+    public string GetDisplay()
+    {
+        return $"{AuthorName} - {Title}";
+    }
 }

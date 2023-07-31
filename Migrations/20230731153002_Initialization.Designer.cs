@@ -13,8 +13,8 @@ using PhiZoneApi.Data;
 namespace PhiZoneApi.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20230713155716_Vote")]
-    partial class Vote
+    [Migration("20230731153002_Initialization")]
+    partial class Initialization
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -25,36 +25,6 @@ namespace PhiZoneApi.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
-
-            modelBuilder.Entity("ChapterSong", b =>
-                {
-                    b.Property<Guid>("ChaptersId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("SongsId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("ChaptersId", "SongsId");
-
-                    b.HasIndex("SongsId");
-
-                    b.ToTable("ChapterSong");
-                });
-
-            modelBuilder.Entity("ChartUser", b =>
-                {
-                    b.Property<int>("AuthorsId")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("ChartsId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("AuthorsId", "ChartsId");
-
-                    b.HasIndex("ChartsId");
-
-                    b.ToTable("ChartUser");
-                });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<int>", b =>
                 {
@@ -365,6 +335,67 @@ namespace PhiZoneApi.Migrations
                     b.ToTable("OpenIddictTokens", (string)null);
                 });
 
+            modelBuilder.Entity("PhiZoneApi.Models.Admission", b =>
+                {
+                    b.Property<Guid>("AdmitteeId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AdmitterId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("DateCreated")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Label")
+                        .HasColumnType("text");
+
+                    b.Property<int>("RequesteeId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("RequesterId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.HasKey("AdmitteeId", "AdmitterId");
+
+                    b.HasIndex("AdmitterId");
+
+                    b.HasIndex("RequesteeId");
+
+                    b.HasIndex("RequesterId");
+
+                    b.ToTable("Admissions");
+                });
+
+            modelBuilder.Entity("PhiZoneApi.Models.Authorship", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("AuthorId")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("DateCreated")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Position")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("ResourceId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AuthorId");
+
+                    b.HasIndex("ResourceId");
+
+                    b.ToTable("Authorships");
+                });
+
             modelBuilder.Entity("PhiZoneApi.Models.Region", b =>
                 {
                     b.Property<int>("Id")
@@ -555,6 +586,9 @@ namespace PhiZoneApi.Migrations
                     b.Property<DateTimeOffset>("DateCreated")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
+
                     b.HasKey("FolloweeId", "FollowerId");
 
                     b.HasIndex("FollowerId");
@@ -562,19 +596,80 @@ namespace PhiZoneApi.Migrations
                     b.ToTable("UserRelations");
                 });
 
-            modelBuilder.Entity("SongUser", b =>
+            modelBuilder.Entity("PhiZoneApi.Models.ChartSubmission", b =>
                 {
-                    b.Property<int>("AuthorsId")
+                    b.HasBaseType("PhiZoneApi.Models.Resource");
+
+                    b.Property<int>("Accessibility")
                         .HasColumnType("integer");
 
-                    b.Property<Guid>("SongsId")
+                    b.Property<int>("AdmissionStatus")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("AuthorName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("CollabStatus")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("DateUpdated")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<double>("Difficulty")
+                        .HasColumnType("double precision");
+
+                    b.Property<string>("File")
+                        .HasColumnType("text");
+
+                    b.Property<string>("FileChecksum")
+                        .HasColumnType("text");
+
+                    b.Property<int>("Format")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Illustration")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Illustrator")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsRanked")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Level")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("LevelType")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("NoteCount")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid?>("RepresentationId")
                         .HasColumnType("uuid");
 
-                    b.HasKey("AuthorsId", "SongsId");
+                    b.Property<Guid>("SongId")
+                        .HasColumnType("uuid");
 
-                    b.HasIndex("SongsId");
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
 
-                    b.ToTable("SongUser");
+                    b.Property<string>("Title")
+                        .HasColumnType("text");
+
+                    b.Property<int>("VolunteerStatus")
+                        .HasColumnType("integer");
+
+                    b.HasIndex("RepresentationId");
+
+                    b.HasIndex("SongId");
+
+                    b.ToTable("ChartSubmissions");
                 });
 
             modelBuilder.Entity("PhiZoneApi.Models.Like", b =>
@@ -597,6 +692,28 @@ namespace PhiZoneApi.Migrations
                         .HasColumnType("integer");
 
                     b.ToTable((string)null);
+                });
+
+            modelBuilder.Entity("PhiZoneApi.Models.Notification", b =>
+                {
+                    b.HasBaseType("PhiZoneApi.Models.Resource");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("DateRead")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("OperatorId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
+
+                    b.HasIndex("OperatorId");
+
+                    b.ToTable("Notifications");
                 });
 
             modelBuilder.Entity("PhiZoneApi.Models.PlayConfiguration", b =>
@@ -644,6 +761,118 @@ namespace PhiZoneApi.Migrations
                         .HasColumnType("boolean");
 
                     b.ToTable("PlayConfigurations");
+                });
+
+            modelBuilder.Entity("PhiZoneApi.Models.SongSubmission", b =>
+                {
+                    b.HasBaseType("PhiZoneApi.Models.Resource");
+
+                    b.Property<int>("Accessibility")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("AuthorName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Bpm")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("CollabStatus")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("DateUpdated")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<TimeSpan?>("Duration")
+                        .HasColumnType("interval");
+
+                    b.Property<string>("Edition")
+                        .HasColumnType("text");
+
+                    b.Property<int>("EditionType")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("File")
+                        .HasColumnType("text");
+
+                    b.Property<string>("FileChecksum")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Illustration")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Illustrator")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Lyrics")
+                        .HasColumnType("text");
+
+                    b.Property<int>("MaxBpm")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Message")
+                        .HasColumnType("text");
+
+                    b.Property<int>("MinBpm")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Offset")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("OriginalityProof")
+                        .HasColumnType("text");
+
+                    b.Property<TimeSpan>("PreviewEnd")
+                        .HasColumnType("interval");
+
+                    b.Property<TimeSpan>("PreviewStart")
+                        .HasColumnType("interval");
+
+                    b.Property<Guid?>("RepresentationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("ReviewerId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("VolunteerStatus")
+                        .HasColumnType("integer");
+
+                    b.HasIndex("RepresentationId");
+
+                    b.HasIndex("ReviewerId");
+
+                    b.ToTable("SongSubmissions");
+                });
+
+            modelBuilder.Entity("PhiZoneApi.Models.VolunteerVote", b =>
+                {
+                    b.HasBaseType("PhiZoneApi.Models.Resource");
+
+                    b.Property<Guid>("ChartId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Score")
+                        .HasColumnType("integer");
+
+                    b.HasIndex("ChartId");
+
+                    b.ToTable("VolunteerVotes");
                 });
 
             modelBuilder.Entity("PhiZoneApi.Models.Vote", b =>
@@ -739,136 +968,6 @@ namespace PhiZoneApi.Migrations
                     b.ToTable("Applications");
                 });
 
-            modelBuilder.Entity("PhiZoneApi.Models.Chapter", b =>
-                {
-                    b.HasBaseType("PhiZoneApi.Models.LikeableResource");
-
-                    b.Property<int>("Accessibility")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTimeOffset>("DateUpdated")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Illustration")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Illustrator")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<bool>("IsHidden")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("IsLocked")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("Subtitle")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.ToTable("Chapters");
-                });
-
-            modelBuilder.Entity("PhiZoneApi.Models.Chart", b =>
-                {
-                    b.HasBaseType("PhiZoneApi.Models.LikeableResource");
-
-                    b.Property<int>("Accessibility")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("AuthorName")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTimeOffset>("DateUpdated")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("text");
-
-                    b.Property<double>("Difficulty")
-                        .HasColumnType("double precision");
-
-                    b.Property<string>("File")
-                        .HasColumnType("text");
-
-                    b.Property<string>("FileChecksum")
-                        .HasColumnType("text");
-
-                    b.Property<int>("Format")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Illustration")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Illustrator")
-                        .HasColumnType("text");
-
-                    b.Property<bool>("IsHidden")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("IsLocked")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("IsRanked")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("Level")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("LevelType")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("NoteCount")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("PlayCount")
-                        .HasColumnType("integer");
-
-                    b.Property<double>("Rating")
-                        .HasColumnType("double precision");
-
-                    b.Property<double>("RatingOnArrangement")
-                        .HasColumnType("double precision");
-
-                    b.Property<double>("RatingOnConcord")
-                        .HasColumnType("double precision");
-
-                    b.Property<double>("RatingOnCreativity")
-                        .HasColumnType("double precision");
-
-                    b.Property<double>("RatingOnFeel")
-                        .HasColumnType("double precision");
-
-                    b.Property<double>("RatingOnImpression")
-                        .HasColumnType("double precision");
-
-                    b.Property<double>("RatingOnVisualEffects")
-                        .HasColumnType("double precision");
-
-                    b.Property<double>("Score")
-                        .HasColumnType("double precision");
-
-                    b.Property<Guid>("SongId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Title")
-                        .HasColumnType("text");
-
-                    b.HasIndex("SongId");
-
-                    b.ToTable("Charts");
-                });
-
             modelBuilder.Entity("PhiZoneApi.Models.Comment", b =>
                 {
                     b.HasBaseType("PhiZoneApi.Models.LikeableResource");
@@ -887,6 +986,28 @@ namespace PhiZoneApi.Migrations
                     b.HasIndex("ResourceId");
 
                     b.ToTable("Comments");
+                });
+
+            modelBuilder.Entity("PhiZoneApi.Models.PublicResource", b =>
+                {
+                    b.HasBaseType("PhiZoneApi.Models.LikeableResource");
+
+                    b.Property<int>("Accessibility")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("DateUpdated")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsHidden")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsLocked")
+                        .HasColumnType("boolean");
+
+                    b.ToTable((string)null);
                 });
 
             modelBuilder.Entity("PhiZoneApi.Models.Record", b =>
@@ -965,12 +1086,109 @@ namespace PhiZoneApi.Migrations
                     b.ToTable("Replies");
                 });
 
+            modelBuilder.Entity("PhiZoneApi.Models.Chapter", b =>
+                {
+                    b.HasBaseType("PhiZoneApi.Models.PublicResource");
+
+                    b.Property<string>("Illustration")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Illustrator")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Subtitle")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.ToTable("Chapters");
+                });
+
+            modelBuilder.Entity("PhiZoneApi.Models.Chart", b =>
+                {
+                    b.HasBaseType("PhiZoneApi.Models.PublicResource");
+
+                    b.Property<string>("AuthorName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<double>("Difficulty")
+                        .HasColumnType("double precision");
+
+                    b.Property<string>("File")
+                        .HasColumnType("text");
+
+                    b.Property<string>("FileChecksum")
+                        .HasColumnType("text");
+
+                    b.Property<int>("Format")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Illustration")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Illustrator")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsRanked")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Level")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("LevelType")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("NoteCount")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("PlayCount")
+                        .HasColumnType("integer");
+
+                    b.Property<double>("Rating")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("RatingOnArrangement")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("RatingOnConcord")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("RatingOnCreativity")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("RatingOnFeel")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("RatingOnImpression")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("RatingOnVisualEffects")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("Score")
+                        .HasColumnType("double precision");
+
+                    b.Property<Guid>("SongId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Title")
+                        .HasColumnType("text");
+
+                    b.HasIndex("SongId");
+
+                    b.ToTable("Charts");
+                });
+
             modelBuilder.Entity("PhiZoneApi.Models.Song", b =>
                 {
-                    b.HasBaseType("PhiZoneApi.Models.LikeableResource");
-
-                    b.Property<int>("Accessibility")
-                        .HasColumnType("integer");
+                    b.HasBaseType("PhiZoneApi.Models.PublicResource");
 
                     b.Property<string>("AuthorName")
                         .IsRequired()
@@ -978,12 +1196,6 @@ namespace PhiZoneApi.Migrations
 
                     b.Property<int>("Bpm")
                         .HasColumnType("integer");
-
-                    b.Property<DateTimeOffset>("DateUpdated")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("text");
 
                     b.Property<TimeSpan?>("Duration")
                         .HasColumnType("interval");
@@ -1007,12 +1219,6 @@ namespace PhiZoneApi.Migrations
                     b.Property<string>("Illustrator")
                         .IsRequired()
                         .HasColumnType("text");
-
-                    b.Property<bool>("IsHidden")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("IsLocked")
-                        .HasColumnType("boolean");
 
                     b.Property<bool>("IsOriginal")
                         .HasColumnType("boolean");
@@ -1040,36 +1246,6 @@ namespace PhiZoneApi.Migrations
                         .HasColumnType("text");
 
                     b.ToTable("Songs");
-                });
-
-            modelBuilder.Entity("ChapterSong", b =>
-                {
-                    b.HasOne("PhiZoneApi.Models.Chapter", null)
-                        .WithMany()
-                        .HasForeignKey("ChaptersId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("PhiZoneApi.Models.Song", null)
-                        .WithMany()
-                        .HasForeignKey("SongsId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
-            modelBuilder.Entity("ChartUser", b =>
-                {
-                    b.HasOne("PhiZoneApi.Models.User", null)
-                        .WithMany()
-                        .HasForeignKey("AuthorsId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("PhiZoneApi.Models.Chart", null)
-                        .WithMany()
-                        .HasForeignKey("ChartsId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<int>", b =>
@@ -1147,6 +1323,60 @@ namespace PhiZoneApi.Migrations
                     b.Navigation("Authorization");
                 });
 
+            modelBuilder.Entity("PhiZoneApi.Models.Admission", b =>
+                {
+                    b.HasOne("PhiZoneApi.Models.Song", "Admittee")
+                        .WithMany("ChapterAdmitters")
+                        .HasForeignKey("AdmitteeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PhiZoneApi.Models.Chapter", "Admitter")
+                        .WithMany("SongAdmittees")
+                        .HasForeignKey("AdmitterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PhiZoneApi.Models.User", "Requestee")
+                        .WithMany()
+                        .HasForeignKey("RequesteeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PhiZoneApi.Models.User", "Requester")
+                        .WithMany()
+                        .HasForeignKey("RequesterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Admittee");
+
+                    b.Navigation("Admitter");
+
+                    b.Navigation("Requestee");
+
+                    b.Navigation("Requester");
+                });
+
+            modelBuilder.Entity("PhiZoneApi.Models.Authorship", b =>
+                {
+                    b.HasOne("PhiZoneApi.Models.User", "Author")
+                        .WithMany()
+                        .HasForeignKey("AuthorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PhiZoneApi.Models.PublicResource", "Resource")
+                        .WithMany()
+                        .HasForeignKey("ResourceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Author");
+
+                    b.Navigation("Resource");
+                });
+
             modelBuilder.Entity("PhiZoneApi.Models.Resource", b =>
                 {
                     b.HasOne("PhiZoneApi.Models.User", "Owner")
@@ -1186,19 +1416,21 @@ namespace PhiZoneApi.Migrations
                     b.Navigation("Follower");
                 });
 
-            modelBuilder.Entity("SongUser", b =>
+            modelBuilder.Entity("PhiZoneApi.Models.ChartSubmission", b =>
                 {
-                    b.HasOne("PhiZoneApi.Models.User", null)
+                    b.HasOne("PhiZoneApi.Models.PublicResource", "Representation")
                         .WithMany()
-                        .HasForeignKey("AuthorsId")
+                        .HasForeignKey("RepresentationId");
+
+                    b.HasOne("PhiZoneApi.Models.Song", "Song")
+                        .WithMany()
+                        .HasForeignKey("SongId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("PhiZoneApi.Models.Song", null)
-                        .WithMany()
-                        .HasForeignKey("SongsId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                    b.Navigation("Representation");
+
+                    b.Navigation("Song");
                 });
 
             modelBuilder.Entity("PhiZoneApi.Models.Like", b =>
@@ -1212,6 +1444,43 @@ namespace PhiZoneApi.Migrations
                     b.Navigation("Resource");
                 });
 
+            modelBuilder.Entity("PhiZoneApi.Models.Notification", b =>
+                {
+                    b.HasOne("PhiZoneApi.Models.User", "Operator")
+                        .WithMany()
+                        .HasForeignKey("OperatorId");
+
+                    b.Navigation("Operator");
+                });
+
+            modelBuilder.Entity("PhiZoneApi.Models.SongSubmission", b =>
+                {
+                    b.HasOne("PhiZoneApi.Models.PublicResource", "Representation")
+                        .WithMany()
+                        .HasForeignKey("RepresentationId");
+
+                    b.HasOne("PhiZoneApi.Models.User", "Reviewer")
+                        .WithMany()
+                        .HasForeignKey("ReviewerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Representation");
+
+                    b.Navigation("Reviewer");
+                });
+
+            modelBuilder.Entity("PhiZoneApi.Models.VolunteerVote", b =>
+                {
+                    b.HasOne("PhiZoneApi.Models.ChartSubmission", "Chart")
+                        .WithMany()
+                        .HasForeignKey("ChartId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Chart");
+                });
+
             modelBuilder.Entity("PhiZoneApi.Models.Vote", b =>
                 {
                     b.HasOne("PhiZoneApi.Models.Chart", "Chart")
@@ -1221,17 +1490,6 @@ namespace PhiZoneApi.Migrations
                         .IsRequired();
 
                     b.Navigation("Chart");
-                });
-
-            modelBuilder.Entity("PhiZoneApi.Models.Chart", b =>
-                {
-                    b.HasOne("PhiZoneApi.Models.Song", "Song")
-                        .WithMany()
-                        .HasForeignKey("SongId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Song");
                 });
 
             modelBuilder.Entity("PhiZoneApi.Models.Comment", b =>
@@ -1275,6 +1533,17 @@ namespace PhiZoneApi.Migrations
                     b.Navigation("Comment");
                 });
 
+            modelBuilder.Entity("PhiZoneApi.Models.Chart", b =>
+                {
+                    b.HasOne("PhiZoneApi.Models.Song", "Song")
+                        .WithMany()
+                        .HasForeignKey("SongId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Song");
+                });
+
             modelBuilder.Entity("OpenIddict.EntityFrameworkCore.Models.OpenIddictEntityFrameworkCoreApplication<int>", b =>
                 {
                     b.Navigation("Authorizations");
@@ -1292,6 +1561,16 @@ namespace PhiZoneApi.Migrations
                     b.Navigation("FolloweeRelations");
 
                     b.Navigation("FollowerRelations");
+                });
+
+            modelBuilder.Entity("PhiZoneApi.Models.Chapter", b =>
+                {
+                    b.Navigation("SongAdmittees");
+                });
+
+            modelBuilder.Entity("PhiZoneApi.Models.Song", b =>
+                {
+                    b.Navigation("ChapterAdmitters");
                 });
 #pragma warning restore 612, 618
         }

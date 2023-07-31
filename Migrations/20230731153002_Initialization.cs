@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -209,6 +210,79 @@ namespace PhiZoneApi.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Announcements",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    OwnerId = table.Column<int>(type: "integer", nullable: false),
+                    DateCreated = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    LikeCount = table.Column<int>(type: "integer", nullable: false),
+                    Title = table.Column<string>(type: "text", nullable: false),
+                    Content = table.Column<string>(type: "text", nullable: false),
+                    DateUpdated = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Announcements", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Announcements_Users_OwnerId",
+                        column: x => x.OwnerId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Applications",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    OwnerId = table.Column<int>(type: "integer", nullable: false),
+                    DateCreated = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    LikeCount = table.Column<int>(type: "integer", nullable: false),
+                    Name = table.Column<string>(type: "text", nullable: false),
+                    Illustration = table.Column<string>(type: "text", nullable: false),
+                    Illustrator = table.Column<string>(type: "text", nullable: false),
+                    Description = table.Column<string>(type: "text", nullable: true),
+                    Homepage = table.Column<string>(type: "text", nullable: false),
+                    ApiEndpoint = table.Column<string>(type: "text", nullable: true),
+                    Type = table.Column<int>(type: "integer", nullable: false),
+                    Secret = table.Column<string>(type: "text", nullable: false),
+                    DateUpdated = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Applications", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Applications_Users_OwnerId",
+                        column: x => x.OwnerId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Authorships",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    ResourceId = table.Column<Guid>(type: "uuid", nullable: false),
+                    AuthorId = table.Column<int>(type: "integer", nullable: false),
+                    Position = table.Column<string>(type: "text", nullable: true),
+                    DateCreated = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Authorships", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Authorships_Users_AuthorId",
+                        column: x => x.AuthorId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Chapters",
                 columns: table => new
                 {
@@ -222,9 +296,9 @@ namespace PhiZoneApi.Migrations
                     IsLocked = table.Column<bool>(type: "boolean", nullable: false),
                     DateUpdated = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     Title = table.Column<string>(type: "text", nullable: false),
+                    Subtitle = table.Column<string>(type: "text", nullable: false),
                     Illustration = table.Column<string>(type: "text", nullable: false),
-                    Illustrator = table.Column<string>(type: "text", nullable: false),
-                    Subtitle = table.Column<string>(type: "text", nullable: false)
+                    Illustrator = table.Column<string>(type: "text", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -281,6 +355,66 @@ namespace PhiZoneApi.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Notifications",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    OwnerId = table.Column<int>(type: "integer", nullable: false),
+                    DateCreated = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    Type = table.Column<int>(type: "integer", nullable: false),
+                    Content = table.Column<string>(type: "text", nullable: false),
+                    OperatorId = table.Column<int>(type: "integer", nullable: true),
+                    DateRead = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Notifications", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Notifications_Users_OperatorId",
+                        column: x => x.OperatorId,
+                        principalTable: "Users",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_Notifications_Users_OwnerId",
+                        column: x => x.OwnerId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "PlayConfigurations",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    OwnerId = table.Column<int>(type: "integer", nullable: false),
+                    DateCreated = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    Name = table.Column<string>(type: "text", nullable: true),
+                    PerfectJudgment = table.Column<int>(type: "integer", nullable: false),
+                    GoodJudgment = table.Column<int>(type: "integer", nullable: false),
+                    AspectRatio = table.Column<List<int>>(type: "integer[]", nullable: false),
+                    NoteSize = table.Column<double>(type: "double precision", nullable: false),
+                    ChartMirroring = table.Column<int>(type: "integer", nullable: false),
+                    BackgroundLuminance = table.Column<double>(type: "double precision", nullable: false),
+                    BackgroundBlur = table.Column<double>(type: "double precision", nullable: false),
+                    SimultaneousNoteHint = table.Column<bool>(type: "boolean", nullable: false),
+                    FcApIndicator = table.Column<bool>(type: "boolean", nullable: false),
+                    ChartOffset = table.Column<int>(type: "integer", nullable: false),
+                    HitSoundVolume = table.Column<double>(type: "double precision", nullable: false),
+                    MusicVolume = table.Column<double>(type: "double precision", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_PlayConfigurations", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_PlayConfigurations_Users_OwnerId",
+                        column: x => x.OwnerId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Songs",
                 columns: table => new
                 {
@@ -298,6 +432,7 @@ namespace PhiZoneApi.Migrations
                     Edition = table.Column<string>(type: "text", nullable: true),
                     AuthorName = table.Column<string>(type: "text", nullable: false),
                     File = table.Column<string>(type: "text", nullable: true),
+                    FileChecksum = table.Column<string>(type: "text", nullable: true),
                     Illustration = table.Column<string>(type: "text", nullable: false),
                     Illustrator = table.Column<string>(type: "text", nullable: false),
                     Lyrics = table.Column<string>(type: "text", nullable: true),
@@ -316,6 +451,57 @@ namespace PhiZoneApi.Migrations
                     table.ForeignKey(
                         name: "FK_Songs_Users_OwnerId",
                         column: x => x.OwnerId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "SongSubmissions",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    OwnerId = table.Column<int>(type: "integer", nullable: false),
+                    DateCreated = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    Title = table.Column<string>(type: "text", nullable: false),
+                    EditionType = table.Column<int>(type: "integer", nullable: false),
+                    Edition = table.Column<string>(type: "text", nullable: true),
+                    AuthorName = table.Column<string>(type: "text", nullable: false),
+                    File = table.Column<string>(type: "text", nullable: true),
+                    FileChecksum = table.Column<string>(type: "text", nullable: true),
+                    Illustration = table.Column<string>(type: "text", nullable: false),
+                    Illustrator = table.Column<string>(type: "text", nullable: false),
+                    Lyrics = table.Column<string>(type: "text", nullable: true),
+                    Bpm = table.Column<int>(type: "integer", nullable: false),
+                    MinBpm = table.Column<int>(type: "integer", nullable: false),
+                    MaxBpm = table.Column<int>(type: "integer", nullable: false),
+                    Offset = table.Column<int>(type: "integer", nullable: false),
+                    OriginalityProof = table.Column<string>(type: "text", nullable: true),
+                    Duration = table.Column<TimeSpan>(type: "interval", nullable: true),
+                    PreviewStart = table.Column<TimeSpan>(type: "interval", nullable: false),
+                    PreviewEnd = table.Column<TimeSpan>(type: "interval", nullable: false),
+                    ReviewerId = table.Column<int>(type: "integer", nullable: false),
+                    Message = table.Column<string>(type: "text", nullable: true),
+                    Description = table.Column<string>(type: "text", nullable: true),
+                    Accessibility = table.Column<int>(type: "integer", nullable: false),
+                    Status = table.Column<int>(type: "integer", nullable: false),
+                    VolunteerStatus = table.Column<int>(type: "integer", nullable: false),
+                    CollabStatus = table.Column<int>(type: "integer", nullable: false),
+                    RepresentationId = table.Column<Guid>(type: "uuid", nullable: true),
+                    DateUpdated = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_SongSubmissions", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_SongSubmissions_Users_OwnerId",
+                        column: x => x.OwnerId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_SongSubmissions_Users_ReviewerId",
+                        column: x => x.ReviewerId,
                         principalTable: "Users",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -368,6 +554,7 @@ namespace PhiZoneApi.Migrations
                 {
                     FollowerId = table.Column<int>(type: "integer", nullable: false),
                     FolloweeId = table.Column<int>(type: "integer", nullable: false),
+                    Type = table.Column<int>(type: "integer", nullable: false),
                     DateCreated = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
@@ -461,25 +648,42 @@ namespace PhiZoneApi.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "ChapterSong",
+                name: "Admissions",
                 columns: table => new
                 {
-                    ChaptersId = table.Column<Guid>(type: "uuid", nullable: false),
-                    SongsId = table.Column<Guid>(type: "uuid", nullable: false)
+                    AdmitterId = table.Column<Guid>(type: "uuid", nullable: false),
+                    AdmitteeId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Status = table.Column<int>(type: "integer", nullable: false),
+                    Label = table.Column<string>(type: "text", nullable: true),
+                    RequesterId = table.Column<int>(type: "integer", nullable: false),
+                    RequesteeId = table.Column<int>(type: "integer", nullable: false),
+                    DateCreated = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_ChapterSong", x => new { x.ChaptersId, x.SongsId });
+                    table.PrimaryKey("PK_Admissions", x => new { x.AdmitteeId, x.AdmitterId });
                     table.ForeignKey(
-                        name: "FK_ChapterSong_Chapters_ChaptersId",
-                        column: x => x.ChaptersId,
+                        name: "FK_Admissions_Chapters_AdmitterId",
+                        column: x => x.AdmitterId,
                         principalTable: "Chapters",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_ChapterSong_Songs_SongsId",
-                        column: x => x.SongsId,
+                        name: "FK_Admissions_Songs_AdmitteeId",
+                        column: x => x.AdmitteeId,
                         principalTable: "Songs",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Admissions_Users_RequesteeId",
+                        column: x => x.RequesteeId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Admissions_Users_RequesterId",
+                        column: x => x.RequesterId,
+                        principalTable: "Users",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -503,6 +707,7 @@ namespace PhiZoneApi.Migrations
                     Difficulty = table.Column<double>(type: "double precision", nullable: false),
                     Format = table.Column<int>(type: "integer", nullable: false),
                     File = table.Column<string>(type: "text", nullable: true),
+                    FileChecksum = table.Column<string>(type: "text", nullable: true),
                     AuthorName = table.Column<string>(type: "text", nullable: false),
                     Illustration = table.Column<string>(type: "text", nullable: true),
                     Illustrator = table.Column<string>(type: "text", nullable: true),
@@ -537,48 +742,46 @@ namespace PhiZoneApi.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "SongUser",
+                name: "ChartSubmissions",
                 columns: table => new
                 {
-                    AuthorsId = table.Column<int>(type: "integer", nullable: false),
-                    SongsId = table.Column<Guid>(type: "uuid", nullable: false)
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    OwnerId = table.Column<int>(type: "integer", nullable: false),
+                    DateCreated = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    Title = table.Column<string>(type: "text", nullable: true),
+                    LevelType = table.Column<int>(type: "integer", nullable: false),
+                    Level = table.Column<string>(type: "text", nullable: false),
+                    Difficulty = table.Column<double>(type: "double precision", nullable: false),
+                    Format = table.Column<int>(type: "integer", nullable: false),
+                    File = table.Column<string>(type: "text", nullable: true),
+                    FileChecksum = table.Column<string>(type: "text", nullable: true),
+                    AuthorName = table.Column<string>(type: "text", nullable: false),
+                    Illustration = table.Column<string>(type: "text", nullable: true),
+                    Illustrator = table.Column<string>(type: "text", nullable: true),
+                    IsRanked = table.Column<bool>(type: "boolean", nullable: false),
+                    NoteCount = table.Column<int>(type: "integer", nullable: false),
+                    SongId = table.Column<Guid>(type: "uuid", nullable: false),
+                    AdmissionStatus = table.Column<int>(type: "integer", nullable: false),
+                    Description = table.Column<string>(type: "text", nullable: true),
+                    Accessibility = table.Column<int>(type: "integer", nullable: false),
+                    Status = table.Column<int>(type: "integer", nullable: false),
+                    VolunteerStatus = table.Column<int>(type: "integer", nullable: false),
+                    CollabStatus = table.Column<int>(type: "integer", nullable: false),
+                    RepresentationId = table.Column<Guid>(type: "uuid", nullable: true),
+                    DateUpdated = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_SongUser", x => new { x.AuthorsId, x.SongsId });
+                    table.PrimaryKey("PK_ChartSubmissions", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_SongUser_Songs_SongsId",
-                        column: x => x.SongsId,
+                        name: "FK_ChartSubmissions_Songs_SongId",
+                        column: x => x.SongId,
                         principalTable: "Songs",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_SongUser_Users_AuthorsId",
-                        column: x => x.AuthorsId,
-                        principalTable: "Users",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "ChartUser",
-                columns: table => new
-                {
-                    AuthorsId = table.Column<int>(type: "integer", nullable: false),
-                    ChartsId = table.Column<Guid>(type: "uuid", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ChartUser", x => new { x.AuthorsId, x.ChartsId });
-                    table.ForeignKey(
-                        name: "FK_ChartUser_Charts_ChartsId",
-                        column: x => x.ChartsId,
-                        principalTable: "Charts",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_ChartUser_Users_AuthorsId",
-                        column: x => x.AuthorsId,
+                        name: "FK_ChartSubmissions_Users_OwnerId",
+                        column: x => x.OwnerId,
                         principalTable: "Users",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -602,13 +805,21 @@ namespace PhiZoneApi.Migrations
                     GoodLate = table.Column<int>(type: "integer", nullable: false),
                     Bad = table.Column<int>(type: "integer", nullable: false),
                     Miss = table.Column<int>(type: "integer", nullable: false),
+                    StdDeviation = table.Column<double>(type: "double precision", nullable: false),
                     Rks = table.Column<double>(type: "double precision", nullable: false),
                     PerfectJudgment = table.Column<int>(type: "integer", nullable: false),
-                    GoodJudgment = table.Column<int>(type: "integer", nullable: false)
+                    GoodJudgment = table.Column<int>(type: "integer", nullable: false),
+                    ApplicationId = table.Column<Guid>(type: "uuid", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Records", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Records_Applications_ApplicationId",
+                        column: x => x.ApplicationId,
+                        principalTable: "Applications",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_Records_Charts_ChartId",
                         column: x => x.ChartId,
@@ -623,15 +834,107 @@ namespace PhiZoneApi.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "Votes",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    OwnerId = table.Column<int>(type: "integer", nullable: false),
+                    DateCreated = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    ChartId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Arrangement = table.Column<int>(type: "integer", nullable: false),
+                    Feel = table.Column<int>(type: "integer", nullable: false),
+                    VisualEffects = table.Column<int>(type: "integer", nullable: false),
+                    Creativity = table.Column<int>(type: "integer", nullable: false),
+                    Concord = table.Column<int>(type: "integer", nullable: false),
+                    Impression = table.Column<int>(type: "integer", nullable: false),
+                    Total = table.Column<int>(type: "integer", nullable: false),
+                    Multiplier = table.Column<double>(type: "double precision", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Votes", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Votes_Charts_ChartId",
+                        column: x => x.ChartId,
+                        principalTable: "Charts",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Votes_Users_OwnerId",
+                        column: x => x.OwnerId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "VolunteerVotes",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    OwnerId = table.Column<int>(type: "integer", nullable: false),
+                    DateCreated = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    ChartId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Score = table.Column<int>(type: "integer", nullable: false),
+                    Message = table.Column<string>(type: "text", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_VolunteerVotes", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_VolunteerVotes_ChartSubmissions_ChartId",
+                        column: x => x.ChartId,
+                        principalTable: "ChartSubmissions",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_VolunteerVotes_Users_OwnerId",
+                        column: x => x.OwnerId,
+                        principalTable: "Users",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Admissions_AdmitterId",
+                table: "Admissions",
+                column: "AdmitterId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Admissions_RequesteeId",
+                table: "Admissions",
+                column: "RequesteeId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Admissions_RequesterId",
+                table: "Admissions",
+                column: "RequesterId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Announcements_OwnerId",
+                table: "Announcements",
+                column: "OwnerId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Applications_OwnerId",
+                table: "Applications",
+                column: "OwnerId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Authorships_AuthorId",
+                table: "Authorships",
+                column: "AuthorId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Authorships_ResourceId",
+                table: "Authorships",
+                column: "ResourceId");
+
             migrationBuilder.CreateIndex(
                 name: "IX_Chapters_OwnerId",
                 table: "Chapters",
                 column: "OwnerId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_ChapterSong_SongsId",
-                table: "ChapterSong",
-                column: "SongsId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Charts_OwnerId",
@@ -644,9 +947,19 @@ namespace PhiZoneApi.Migrations
                 column: "SongId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ChartUser_ChartsId",
-                table: "ChartUser",
-                column: "ChartsId");
+                name: "IX_ChartSubmissions_OwnerId",
+                table: "ChartSubmissions",
+                column: "OwnerId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ChartSubmissions_RepresentationId",
+                table: "ChartSubmissions",
+                column: "RepresentationId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ChartSubmissions_SongId",
+                table: "ChartSubmissions",
+                column: "SongId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Comments_OwnerId",
@@ -667,6 +980,16 @@ namespace PhiZoneApi.Migrations
                 name: "IX_Likes_ResourceId",
                 table: "Likes",
                 column: "ResourceId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Notifications_OperatorId",
+                table: "Notifications",
+                column: "OperatorId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Notifications_OwnerId",
+                table: "Notifications",
+                column: "OwnerId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_OpenIddictApplications_ClientId",
@@ -700,6 +1023,16 @@ namespace PhiZoneApi.Migrations
                 table: "OpenIddictTokens",
                 column: "ReferenceId",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PlayConfigurations_OwnerId",
+                table: "PlayConfigurations",
+                column: "OwnerId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Records_ApplicationId",
+                table: "Records",
+                column: "ApplicationId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Records_ChartId",
@@ -738,9 +1071,19 @@ namespace PhiZoneApi.Migrations
                 column: "OwnerId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_SongUser_SongsId",
-                table: "SongUser",
-                column: "SongsId");
+                name: "IX_SongSubmissions_OwnerId",
+                table: "SongSubmissions",
+                column: "OwnerId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SongSubmissions_RepresentationId",
+                table: "SongSubmissions",
+                column: "RepresentationId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SongSubmissions_ReviewerId",
+                table: "SongSubmissions",
+                column: "ReviewerId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_UserClaims_UserId",
@@ -777,25 +1120,54 @@ namespace PhiZoneApi.Migrations
                 table: "Users",
                 column: "NormalizedUserName",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_VolunteerVotes_ChartId",
+                table: "VolunteerVotes",
+                column: "ChartId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_VolunteerVotes_OwnerId",
+                table: "VolunteerVotes",
+                column: "OwnerId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Votes_ChartId",
+                table: "Votes",
+                column: "ChartId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Votes_OwnerId",
+                table: "Votes",
+                column: "OwnerId");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "ChapterSong");
+                name: "Admissions");
 
             migrationBuilder.DropTable(
-                name: "ChartUser");
+                name: "Announcements");
+
+            migrationBuilder.DropTable(
+                name: "Authorships");
 
             migrationBuilder.DropTable(
                 name: "Likes");
+
+            migrationBuilder.DropTable(
+                name: "Notifications");
 
             migrationBuilder.DropTable(
                 name: "OpenIddictScopes");
 
             migrationBuilder.DropTable(
                 name: "OpenIddictTokens");
+
+            migrationBuilder.DropTable(
+                name: "PlayConfigurations");
 
             migrationBuilder.DropTable(
                 name: "Records");
@@ -807,7 +1179,7 @@ namespace PhiZoneApi.Migrations
                 name: "RoleClaims");
 
             migrationBuilder.DropTable(
-                name: "SongUser");
+                name: "SongSubmissions");
 
             migrationBuilder.DropTable(
                 name: "UserClaims");
@@ -825,19 +1197,31 @@ namespace PhiZoneApi.Migrations
                 name: "UserTokens");
 
             migrationBuilder.DropTable(
+                name: "VolunteerVotes");
+
+            migrationBuilder.DropTable(
+                name: "Votes");
+
+            migrationBuilder.DropTable(
                 name: "Chapters");
 
             migrationBuilder.DropTable(
                 name: "OpenIddictAuthorizations");
 
             migrationBuilder.DropTable(
-                name: "Charts");
+                name: "Applications");
 
             migrationBuilder.DropTable(
                 name: "Comments");
 
             migrationBuilder.DropTable(
                 name: "Roles");
+
+            migrationBuilder.DropTable(
+                name: "ChartSubmissions");
+
+            migrationBuilder.DropTable(
+                name: "Charts");
 
             migrationBuilder.DropTable(
                 name: "OpenIddictApplications");

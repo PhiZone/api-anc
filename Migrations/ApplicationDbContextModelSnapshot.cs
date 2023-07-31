@@ -767,9 +767,6 @@ namespace PhiZoneApi.Migrations
                     b.Property<int>("Accessibility")
                         .HasColumnType("integer");
 
-                    b.Property<int>("AdmissionStatus")
-                        .HasColumnType("integer");
-
                     b.Property<string>("AuthorName")
                         .IsRequired()
                         .HasColumnType("text");
@@ -815,6 +812,9 @@ namespace PhiZoneApi.Migrations
                     b.Property<int>("MaxBpm")
                         .HasColumnType("integer");
 
+                    b.Property<string>("Message")
+                        .HasColumnType("text");
+
                     b.Property<int>("MinBpm")
                         .HasColumnType("integer");
 
@@ -833,6 +833,9 @@ namespace PhiZoneApi.Migrations
                     b.Property<Guid?>("RepresentationId")
                         .HasColumnType("uuid");
 
+                    b.Property<int>("ReviewerId")
+                        .HasColumnType("integer");
+
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
@@ -844,6 +847,8 @@ namespace PhiZoneApi.Migrations
                         .HasColumnType("integer");
 
                     b.HasIndex("RepresentationId");
+
+                    b.HasIndex("ReviewerId");
 
                     b.ToTable("SongSubmissions");
                 });
@@ -1090,9 +1095,6 @@ namespace PhiZoneApi.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<Guid?>("SongSubmissionId")
-                        .HasColumnType("uuid");
-
                     b.Property<string>("Subtitle")
                         .IsRequired()
                         .HasColumnType("text");
@@ -1100,8 +1102,6 @@ namespace PhiZoneApi.Migrations
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasColumnType("text");
-
-                    b.HasIndex("SongSubmissionId");
 
                     b.ToTable("Chapters");
                 });
@@ -1456,7 +1456,15 @@ namespace PhiZoneApi.Migrations
                         .WithMany()
                         .HasForeignKey("RepresentationId");
 
+                    b.HasOne("PhiZoneApi.Models.User", "Reviewer")
+                        .WithMany()
+                        .HasForeignKey("ReviewerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("Representation");
+
+                    b.Navigation("Reviewer");
                 });
 
             modelBuilder.Entity("PhiZoneApi.Models.VolunteerVote", b =>
@@ -1522,13 +1530,6 @@ namespace PhiZoneApi.Migrations
                     b.Navigation("Comment");
                 });
 
-            modelBuilder.Entity("PhiZoneApi.Models.Chapter", b =>
-                {
-                    b.HasOne("PhiZoneApi.Models.SongSubmission", null)
-                        .WithMany("Chapters")
-                        .HasForeignKey("SongSubmissionId");
-                });
-
             modelBuilder.Entity("PhiZoneApi.Models.Chart", b =>
                 {
                     b.HasOne("PhiZoneApi.Models.Song", "Song")
@@ -1557,11 +1558,6 @@ namespace PhiZoneApi.Migrations
                     b.Navigation("FolloweeRelations");
 
                     b.Navigation("FollowerRelations");
-                });
-
-            modelBuilder.Entity("PhiZoneApi.Models.SongSubmission", b =>
-                {
-                    b.Navigation("Chapters");
                 });
 
             modelBuilder.Entity("PhiZoneApi.Models.Chapter", b =>

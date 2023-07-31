@@ -21,7 +21,7 @@ public class FilterService : IFilterService
     }
 
     public async Task<Expression<Func<T, bool>>?> Parse<T>(FilterDto<T>? dto, string? predicate = null,
-        User? currentUser = null)
+        User? currentUser = null, Expression<Func<T, bool>>? requirement = null)
     {
         var isAdmin = currentUser != null && await _userManager.IsInRoleAsync(currentUser, Roles.Administrator);
 
@@ -36,6 +36,11 @@ public class FilterService : IFilterService
         Expression expression =
             Expression.OrElse(Expression.Constant(isAdmin || typeof(T).GetProperty("IsHidden") == null),
                 IsFalse(Property<T>(entity, "IsHidden")));
+
+        if (requirement != null)
+        {
+            expression = Expression.AndAlso(expression, requirement);
+        }
 
         foreach (var property in dto.GetType().GetProperties())
         {

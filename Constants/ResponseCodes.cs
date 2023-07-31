@@ -226,4 +226,15 @@ public static class ResponseCodes
     ///     User has been blacklisted by the target user / resource owner.
     /// </summary>
     public const string Blacklisted = "Blacklisted";
+
+    /// <summary>
+    ///     User has made a song / chart submission whose author info is inconsistent.
+    ///     This can happen to:
+    ///     1. song submissions with an originality proof uploaded;
+    ///     2. chart submissions;
+    ///     when:
+    ///     1. neither does the submission owner exist in AuthorName nor in Authorships;
+    ///     2. there exist users in AuthorName but not in Authorships, and vise versa.
+    /// </summary>
+    public const string InconsistentAuthorInfo = "InconsistentAuthorInfo";
 }

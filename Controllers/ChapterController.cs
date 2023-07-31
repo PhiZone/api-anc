@@ -271,7 +271,7 @@ public class ChapterController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> UpdateChapterIllustration([FromRoute] Guid id,
-        [FromForm] ResourceIllustrationDto dto)
+        [FromForm] FileDto dto)
     {
         if (!await _chapterRepository.ChapterExistsAsync(id))
             return NotFound(new ResponseDto<object>
@@ -288,10 +288,10 @@ public class ChapterController : Controller
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        if (dto.Illustration != null)
+        if (dto.File != null)
         {
             chapter.Illustration =
-                (await _fileStorageService.UploadImage<Chapter>(chapter.Title, dto.Illustration, (16, 9))).Item1;
+                (await _fileStorageService.UploadImage<Chapter>(chapter.Title, dto.File, (16, 9))).Item1;
             chapter.DateUpdated = DateTimeOffset.UtcNow;
         }
 

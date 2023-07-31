@@ -3,6 +3,7 @@
 public static class Roles
 {
     public const string Member = "Member";
+    public const string Sponsor = "Sponsor";
     public const string Qualified = "Qualified";
     public const string Volunteer = "Volunteer";
     public const string Moderator = "Moderator";

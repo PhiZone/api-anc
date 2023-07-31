@@ -460,7 +460,7 @@ public class ChartController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> UpdateChartIllustration([FromRoute] Guid id,
-        [FromForm] ResourceIllustrationDto dto)
+        [FromForm] FileDto dto)
     {
         if (!await _chartRepository.ChartExistsAsync(id))
             return NotFound(new ResponseDto<object>
@@ -478,10 +478,10 @@ public class ChartController : Controller
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
-        if (dto.Illustration != null)
+        if (dto.File != null)
         {
             chart.Illustration =
-                (await _fileStorageService.UploadImage<Chart>(chart.Title ?? chart.Song.Title, dto.Illustration,
+                (await _fileStorageService.UploadImage<Chart>(chart.Title ?? chart.Song.Title, dto.File,
                     (16, 9))).Item1;
             chart.DateUpdated = DateTimeOffset.UtcNow;
         }

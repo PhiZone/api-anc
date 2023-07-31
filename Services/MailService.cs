@@ -44,13 +44,13 @@ public class MailService : IMailService
 
         if (!await db.StringSetAsync($"EMAIL:{mode}:{code}", user.Email, TimeSpan.FromSeconds(305))) return null;
 
-        var template = _templateService.GetEmailTemplate(mode, user.Language);
+        var template = _templateService.GetEmailTemplate(mode, user.Language)!;
 
         return new MailTaskDto
         {
             User = user,
-            EmailSubject = template["Subject"],
-            EmailBody = _templateService.ReplacePlaceholders(template["Body"],
+            EmailSubject = template.Subject,
+            EmailBody = _templateService.ReplacePlaceholders(template.Body,
                 new Dictionary<string, string> { { "UserName", user.UserName }, { "Code", code } }),
             SucceedingAction = action
         };

@@ -14,8 +14,6 @@ public class Submission : Resource
 
     public RequestStatus CollabStatus { get; set; }
 
-    public RequestStatus AdmissionStatus { get; set; }
-
     public Guid? RepresentationId { get; set; }
 
     public PublicResource? Representation { get; set; }

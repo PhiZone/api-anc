@@ -441,7 +441,7 @@ public class SongController : Controller
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> UpdateSongIllustration([FromRoute] Guid id, [FromForm] ResourceIllustrationDto dto)
+    public async Task<IActionResult> UpdateSongIllustration([FromRoute] Guid id, [FromForm] FileDto dto)
     {
         if (!await _songRepository.SongExistsAsync(id))
             return NotFound(new ResponseDto<object>
@@ -459,9 +459,9 @@ public class SongController : Controller
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
-        if (dto.Illustration != null)
+        if (dto.File != null)
         {
-            song.Illustration = (await _fileStorageService.UploadImage<Song>(song.Title, dto.Illustration, (16, 9)))
+            song.Illustration = (await _fileStorageService.UploadImage<Song>(song.Title, dto.File, (16, 9)))
                 .Item1;
             song.DateUpdated = DateTimeOffset.UtcNow;
         }

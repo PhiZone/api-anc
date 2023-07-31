@@ -1,10 +1,72 @@
 ﻿{
-  "ConfirmationEmail": {
-    "Subject": "[PhiZone] 请确认你的邮件地址",
-    "Body": "敬爱的 {UserName}：\n\n　　请在验证页面输入框中输入代码 {Code} 来确认你的邮箱地址。该代码在 5 分钟内有效。\n\n　　如果你未预料到接收该封邮件，请忽略。\n\nPhiZone"
-  },
-  "PasswordResetEmail": {
-    "Subject": "[PhiZone] 你的密码将被重置",
-    "Body": "敬爱的 {UserName}：\n\n　　你刚刚申请重置你的密码。请在密码重置页面输入框中输入代码 {Code} 以继续。该代码在 5 分钟内有效。\n\n　　如果你未预料到接收该封邮件，请忽略。\n\nPhiZone"
-  }
+  "Emails": [
+    {
+      "Mode": 0,
+      "Subject": "[PhiZone] 请确认你的邮件地址",
+      "Body": "敬爱的 {UserName}：\n\n　　请在验证页面输入框中输入代码 {Code} 来确认你的邮箱地址。该代码在 5 分钟内有效。\n\n　　如果你未预料到接收该封邮件，请忽略。\n\nPhiZone"
+    },
+    {
+      "Mode": 1,
+      "Subject": "[PhiZone] 你的密码将被重置",
+      "Body": "敬爱的 {UserName}：\n\n　　你刚刚申请重置你的密码。请在密码重置页面输入框中输入代码 {Code} 以继续。该代码在 5 分钟内有效。\n\n　　如果你未预料到接收该封邮件，请忽略。\n\nPhiZone"
+    }
+  ],
+  "Messages": [
+    {
+      "Key": "song-submission-approval",
+      "Content": "你提交的曲目 {Song} 已通过！"
+    },
+    {
+      "Key": "song-submission-rejection",
+      "Content": "你提交的曲目 {Song} 被拒绝。原因：{Reason}"
+    },
+    {
+      "Key": "chart-submission-approval",
+      "Content": "你提交的谱面 {Chart} 已通过！"
+    },
+    {
+      "Key": "chart-submission-rejection",
+      "Content": "你提交的谱面 {Chart} 被拒绝。得分：{Score}"
+    },
+    {
+      "Key": "song-follower-update",
+      "Content": "{User} 发布了新曲目 {Song}！"
+    },
+    {
+      "Key": "chart-follower-update",
+      "Content": "{User} 发布了新谱面 {Chart}！"
+    },
+    {
+      "Key": "new-comment",
+      "Content": "{User} 在 {Resource} 下发布了评论：{Comment}"
+    },
+    {
+      "Key": "new-reply",
+      "Content": "{User} 回复了你：{Reply}"
+    },
+    {
+      "Key": "new-like",
+      "Content": "{User} 给 {Resource} 点赞了！"
+    },
+    {
+      "Key": "song-collab",
+      "Content": "{User} 邀请你联合发布曲目 {Song}！{Collaboration}"
+    },
+    {
+      "Key": "chart-collab",
+      "Content": "{User} 邀请你联合发布谱面 {Chart}！{Collaboration}"
+    },
+    {
+      "Key": "more-info",
+      "Content": "点击此处查看详情。"
+    },
+    {
+      "Key": "comment-mention",
+      "Content": "{User} 在评论中提到了你：{Comment}"
+    },
+    {
+      "Key": "reply-mention",
+      "Content": "{User} 在回复中提到了你：{Reply}"
+    }
+  ]
 }

@@ -9,13 +9,15 @@ public class SongConverterService : BackgroundService
 {
     private readonly IModel _channel;
     private readonly ISongRepository _songRepository;
+    private readonly ISongSubmissionRepository _songSubmissionRepository;
     private readonly ISongService _songService;
 
     public SongConverterService(IRabbitMqService rabbitMqService, ISongService songService,
-        ISongRepository songRepository)
+        ISongRepository songRepository, ISongSubmissionRepository songSubmissionRepository)
     {
         _songService = songService;
         _songRepository = songRepository;
+        _songSubmissionRepository = songSubmissionRepository;
         _channel = rabbitMqService.GetConnection().CreateModel();
     }
 
@@ -27,23 +29,48 @@ public class SongConverterService : BackgroundService
         consumer.Received += async (_, args) =>
         {
             if (args.BasicProperties.Headers == null ||
-                !args.BasicProperties.Headers.TryGetValue("SongId", out var songIdObj))
+                !args.BasicProperties.Headers.TryGetValue("SongId", out var songIdObj) ||
+                !args.BasicProperties.Headers.TryGetValue("IsSubmission", out var isSubmissionObj))
                 return;
 
             var songId = Encoding.UTF8.GetString((byte[])songIdObj);
+            var isSubmission = bool.Parse(Encoding.UTF8.GetString((byte[])isSubmissionObj));
             var body = args.Body.ToArray();
-            var song = await _songRepository.GetSongAsync(new Guid(songId));
-            var result = await _songService.UploadAsync(song.Title, body);
-            if (result != null)
+            if (isSubmission)
             {
-                song.File = result.Value.Item1;
-                song.FileChecksum = result.Value.Item2;
-                song.Duration = result.Value.Item3;
-                if (song.PreviewEnd > song.Duration) song.PreviewEnd = song.Duration.Value;
+                var song = await _songSubmissionRepository.GetSongSubmissionAsync(new Guid(songId));
+                var result = await _songService.UploadAsync(song.Title, body);
+                if (result != null)
+                {
+                    song.File = result.Value.Item1;
+                    song.FileChecksum = result.Value.Item2;
+                    song.Duration = result.Value.Item3;
+                    song.DateUpdated = DateTimeOffset.UtcNow;
 
-                if (song.PreviewStart > song.PreviewEnd) song.PreviewStart = TimeSpan.Zero;
+                    if (song.PreviewEnd > song.Duration) song.PreviewEnd = song.Duration.Value;
 
-                await _songRepository.UpdateSongAsync(song);
+                    if (song.PreviewStart > song.PreviewEnd) song.PreviewStart = TimeSpan.Zero;
+
+                    await _songSubmissionRepository.UpdateSongSubmissionAsync(song);
+                }
+            }
+            else
+            {
+                var song = await _songRepository.GetSongAsync(new Guid(songId));
+                var result = await _songService.UploadAsync(song.Title, body);
+                if (result != null)
+                {
+                    song.File = result.Value.Item1;
+                    song.FileChecksum = result.Value.Item2;
+                    song.Duration = result.Value.Item3;
+                    song.DateUpdated = DateTimeOffset.UtcNow;
+
+                    if (song.PreviewEnd > song.Duration) song.PreviewEnd = song.Duration.Value;
+
+                    if (song.PreviewStart > song.PreviewEnd) song.PreviewStart = TimeSpan.Zero;
+
+                    await _songRepository.UpdateSongAsync(song);
+                }
             }
 
             _channel.BasicAck(args.DeliveryTag, false);

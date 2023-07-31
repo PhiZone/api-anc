@@ -40,6 +40,7 @@ public class DatabaseSeeder : IHostedService
         var roles = new List<string>
         {
             Roles.Member,
+            Roles.Sponsor,
             Roles.Qualified,
             Roles.Volunteer,
             Roles.Moderator,

@@ -270,7 +270,7 @@ public class ApplicationController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> UpdateApplicationIllustration([FromRoute] Guid id,
-        [FromForm] ResourceIllustrationDto dto)
+        [FromForm] FileDto dto)
     {
         if (!await _applicationRepository.ApplicationExistsAsync(id))
             return NotFound(new ResponseDto<object>
@@ -287,10 +287,10 @@ public class ApplicationController : Controller
                 Status = ResponseStatus.ErrorBrief,
                 Code = ResponseCodes.InsufficientPermission
             });
-        if (dto.Illustration != null)
+        if (dto.File != null)
         {
             application.Illustration =
-                (await _fileStorageService.UploadImage<Application>(application.Name, dto.Illustration, (16, 9))).Item1;
+                (await _fileStorageService.UploadImage<Application>(application.Name, dto.File, (16, 9))).Item1;
             application.DateUpdated = DateTimeOffset.UtcNow;
         }
 

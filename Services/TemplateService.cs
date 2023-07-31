@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using PhiZoneApi.Configurations;
+using PhiZoneApi.Dtos.Deliverers;
 using PhiZoneApi.Enums;
 using PhiZoneApi.Interfaces;
 
@@ -8,13 +9,11 @@ namespace PhiZoneApi.Services;
 
 public class TemplateService : ITemplateService
 {
-    private readonly Dictionary<string, Dictionary<string, string>> _confirmationEmail;
-    private readonly Dictionary<string, Dictionary<string, string>> _passwordResetEmail;
+    private readonly Dictionary<string, TemplateDto> _templates;
 
     public TemplateService(IOptions<LanguageSettings> settings)
     {
-        _confirmationEmail = new Dictionary<string, Dictionary<string, string>>();
-        _passwordResetEmail = new Dictionary<string, Dictionary<string, string>>();
+        _templates = new Dictionary<string, TemplateDto>();
 
         var languageDir = Path.Combine(Directory.GetCurrentDirectory(), settings.Value.DirectoryPath);
         foreach (var language in settings.Value.SupportedLanguages)
@@ -22,20 +21,19 @@ public class TemplateService : ITemplateService
             var languageFile = Path.Combine(languageDir, $"{language}.json");
             if (!File.Exists(languageFile)) continue;
             var fileContent = File.ReadAllText(languageFile);
-            var json = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, string>>>(fileContent);
-            _confirmationEmail[language] = json!["ConfirmationEmail"];
-            _passwordResetEmail[language] = json["PasswordResetEmail"];
+            var json = JsonConvert.DeserializeObject<TemplateDto>(fileContent);
+            _templates[language] = json!;
         }
     }
 
-    public Dictionary<string, string> GetEmailTemplate(EmailRequestMode mode, string language)
+    public Email? GetEmailTemplate(EmailRequestMode mode, string language)
     {
-        return mode switch
-        {
-            EmailRequestMode.EmailConfirmation => _confirmationEmail[language],
-            EmailRequestMode.PasswordReset => _passwordResetEmail[language],
-            _ => throw new ArgumentOutOfRangeException(nameof(mode), mode, null)
-        };
+        return _templates[language].Emails.FirstOrDefault(email => email.Mode == mode);
+    }
+
+    public string? GetMessage(string key, string language)
+    {
+        return _templates[language].Messages.FirstOrDefault(message => message.Key == key)?.Content;
     }
 
     public string ReplacePlaceholders(string template, Dictionary<string, string> dictionary)
