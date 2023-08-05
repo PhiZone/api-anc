@@ -46,6 +46,7 @@ public class RecordController : Controller
     private readonly IRecordRepository _recordRepository;
     private readonly IRecordService _recordService;
     private readonly IConnectionMultiplexer _redis;
+    private readonly IResourceService _resourceService;
     private readonly UserManager<User> _userManager;
 
     public RecordController(IRecordRepository recordRepository, IOptions<DataSettings> dataSettings,
@@ -53,7 +54,7 @@ public class RecordController : Controller
         IChartRepository chartRepository, ILikeRepository likeRepository, ILikeService likeService,
         ICommentRepository commentRepository, IConnectionMultiplexer redis,
         IApplicationRepository applicationRepository, IPlayConfigurationRepository playConfigurationRepository,
-        IRecordService recordService)
+        IRecordService recordService, IResourceService resourceService)
     {
         _recordRepository = recordRepository;
         _dataSettings = dataSettings;
@@ -69,6 +70,7 @@ public class RecordController : Controller
         _applicationRepository = applicationRepository;
         _playConfigurationRepository = playConfigurationRepository;
         _recordService = recordService;
+        _resourceService = resourceService;
     }
 
     /// <summary>
@@ -182,7 +184,7 @@ public class RecordController : Controller
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ApplicationNotFound
             });
 
-        var secret = (await _applicationRepository.GetApplicationAsync(info.ApplicationId)).Secret;
+        var secret = (await _applicationRepository.GetApplicationAsync(info.ApplicationId)).Secret!;
         var digest =
             $"{info.ChartId}:{info.ConfigurationId}:{info.PlayerId}:{dto.MaxCombo}:{dto.Perfect}:{dto.GoodEarly}:{dto.GoodLate}:{dto.Bad}:{dto.Miss}:{info.Timestamp}";
         Console.WriteLine(digest);
@@ -335,9 +337,9 @@ public class RecordController : Controller
                     Score = score,
                     Accuracy = accuracy,
                     IsFullCombo = record.IsFullCombo,
+                    Player = await _dtoMapper.MapUserAsync<UserDto>(player),
                     ExperienceDelta = experienceDelta,
                     RksBefore = rksBefore,
-                    RksAfter = rksAfter,
                     DateCreated = record.DateCreated
                 }
             });
@@ -372,7 +374,7 @@ public class RecordController : Controller
             });
 
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _userManager.IsInRoleAsync(currentUser, Roles.Administrator))
+        if (!await _resourceService.HasPermission(currentUser, Roles.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -438,7 +440,7 @@ public class RecordController : Controller
     /// <response code="404">When the specified record is not found.</response>
     [HttpPost("{id:guid}/likes")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
-    [Produces("application/json")]
+    [Produces("text/plain", "application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -446,7 +448,7 @@ public class RecordController : Controller
     public async Task<IActionResult> CreateLike([FromRoute] Guid id)
     {
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _userManager.IsInRoleAsync(currentUser, Roles.Member))
+        if (!await _resourceService.HasPermission(currentUser, Roles.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -484,7 +486,7 @@ public class RecordController : Controller
     public async Task<IActionResult> RemoveLike([FromRoute] Guid id)
     {
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _userManager.IsInRoleAsync(currentUser, Roles.Member))
+        if (!await _resourceService.HasPermission(currentUser, Roles.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -560,7 +562,7 @@ public class RecordController : Controller
     /// <response code="500">When an internal server error has occurred.</response>
     [HttpPost("{id:guid}/comments")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
-    [Produces("application/json")]
+    [Produces("text/plain", "application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -570,7 +572,7 @@ public class RecordController : Controller
     public async Task<IActionResult> CreateComment([FromRoute] Guid id, [FromBody] CommentCreationDto dto)
     {
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _userManager.IsInRoleAsync(currentUser, Roles.Member))
+        if (!await _resourceService.HasPermission(currentUser, Roles.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {

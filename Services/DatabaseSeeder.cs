@@ -4,6 +4,7 @@ using OpenIddict.Abstractions;
 using PhiZoneApi.Constants;
 using PhiZoneApi.Data;
 using PhiZoneApi.Models;
+using Role = PhiZoneApi.Models.Role;
 
 // ReSharper disable StringLiteralTypo
 
@@ -37,15 +38,7 @@ public class DatabaseSeeder : IHostedService
     private async Task PopulateRoles(IServiceScope scope)
     {
         var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<Role>>();
-        var roles = new List<string>
-        {
-            Roles.Member,
-            Roles.Sponsor,
-            Roles.Qualified,
-            Roles.Volunteer,
-            Roles.Moderator,
-            Roles.Administrator
-        };
+        var roles = Roles.List.Select(role => role.Name);
         foreach (var role in roles)
             if (!await roleManager.RoleExistsAsync(role))
                 await roleManager.CreateAsync(new Role { Name = role });

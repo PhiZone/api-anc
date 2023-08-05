@@ -28,13 +28,15 @@ public class AuthenticationController : Controller
 {
     private readonly IMailService _mailService;
     private readonly IConnectionMultiplexer _redis;
+    private readonly IResourceService _resourceService;
     private readonly UserManager<User> _userManager;
 
     public AuthenticationController(UserManager<User> userManager, IConnectionMultiplexer redis,
-        IMailService mailService)
+        IMailService mailService, IResourceService resourceService)
     {
         _userManager = userManager;
         _mailService = mailService;
+        _resourceService = resourceService;
         _redis = redis;
     }
 
@@ -211,7 +213,7 @@ public class AuthenticationController : Controller
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNotFound
             });
 
-        if (dto.Mode != EmailRequestMode.EmailConfirmation && !await _userManager.IsInRoleAsync(user, Roles.Member))
+        if (dto.Mode != EmailRequestMode.EmailConfirmation && !await _resourceService.HasPermission(user, Roles.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -319,7 +321,7 @@ public class AuthenticationController : Controller
         user.EmailConfirmed = true;
         user.LockoutEnabled = false;
         await _userManager.UpdateAsync(user);
-        await _userManager.AddToRoleAsync(user, Roles.Member);
+        await _userManager.AddToRoleAsync(user, Roles.Member.Name);
         return NoContent();
     }
 

@@ -19,12 +19,14 @@ namespace PhiZoneApi.Controllers;
 public class UserInfoController : Controller
 {
     private readonly IDtoMapper _mapper;
+    private readonly IResourceService _resourceService;
     private readonly UserManager<User> _userManager;
 
-    public UserInfoController(UserManager<User> userManager, IDtoMapper mapper)
+    public UserInfoController(UserManager<User> userManager, IDtoMapper mapper, IResourceService resourceService)
     {
         _userManager = userManager;
         _mapper = mapper;
+        _resourceService = resourceService;
     }
 
     /// <summary>
@@ -48,7 +50,7 @@ public class UserInfoController : Controller
     {
         var user = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         if (user == null) return Unauthorized();
-        if (!await _userManager.IsInRoleAsync(user, Roles.Member))
+        if (!await _resourceService.HasPermission(user, Roles.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {

@@ -39,12 +39,13 @@ public class ChapterController : Controller
     private readonly ILikeRepository _likeRepository;
     private readonly ILikeService _likeService;
     private readonly IMapper _mapper;
+    private readonly IResourceService _resourceService;
     private readonly UserManager<User> _userManager;
 
     public ChapterController(IChapterRepository chapterRepository, IOptions<DataSettings> dataSettings,
         UserManager<User> userManager, IFilterService filterService, IFileStorageService fileStorageService,
         IDtoMapper dtoMapper, IMapper mapper, ILikeRepository likeRepository, ILikeService likeService,
-        ICommentRepository commentRepository)
+        ICommentRepository commentRepository, IResourceService resourceService)
     {
         _chapterRepository = chapterRepository;
         _dataSettings = dataSettings;
@@ -55,6 +56,7 @@ public class ChapterController : Controller
         _likeRepository = likeRepository;
         _likeService = likeService;
         _commentRepository = commentRepository;
+        _resourceService = resourceService;
         _fileStorageService = fileStorageService;
     }
 
@@ -142,7 +144,7 @@ public class ChapterController : Controller
     [HttpPost]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Consumes("multipart/form-data")]
-    [Produces("application/json")]
+    [Produces("text/plain", "application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -151,7 +153,7 @@ public class ChapterController : Controller
     public async Task<IActionResult> CreateChapter([FromForm] ChapterCreationDto dto)
     {
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _userManager.IsInRoleAsync(currentUser, Roles.Administrator))
+        if (!await _resourceService.HasPermission(currentUser, Roles.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -214,7 +216,7 @@ public class ChapterController : Controller
         var chapter = await _chapterRepository.GetChapterAsync(id);
 
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _userManager.IsInRoleAsync(currentUser, Roles.Administrator))
+        if (!await _resourceService.HasPermission(currentUser, Roles.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -282,7 +284,7 @@ public class ChapterController : Controller
         var chapter = await _chapterRepository.GetChapterAsync(id);
 
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _userManager.IsInRoleAsync(currentUser, Roles.Administrator))
+        if (!await _resourceService.HasPermission(currentUser, Roles.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -330,7 +332,7 @@ public class ChapterController : Controller
             });
 
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _userManager.IsInRoleAsync(currentUser, Roles.Administrator))
+        if (!await _resourceService.HasPermission(currentUser, Roles.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -375,7 +377,7 @@ public class ChapterController : Controller
             });
 
         var chapter = await _chapterRepository.GetChapterAsync(id);
-        if ((currentUser == null || !await _userManager.IsInRoleAsync(currentUser, Roles.Administrator)) &&
+        if ((currentUser == null || !await _resourceService.HasPermission(currentUser, Roles.Administrator)) &&
             chapter.IsHidden)
             return NotFound(new ResponseDto<object>
             {
@@ -432,7 +434,7 @@ public class ChapterController : Controller
 
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         var chapter = await _chapterRepository.GetChapterAsync(id);
-        if ((currentUser == null || !await _userManager.IsInRoleAsync(currentUser, Roles.Administrator)) &&
+        if ((currentUser == null || !await _resourceService.HasPermission(currentUser, Roles.Administrator)) &&
             chapter.IsHidden)
             return NotFound(new ResponseDto<object>
             {
@@ -467,7 +469,7 @@ public class ChapterController : Controller
     /// <response code="404">When the specified chapter is not found.</response>
     [HttpPost("{id:guid}/likes")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
-    [Produces("application/json")]
+    [Produces("text/plain", "application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -482,7 +484,7 @@ public class ChapterController : Controller
             });
         var chapter = await _chapterRepository.GetChapterAsync(id);
 
-        if (!await _userManager.IsInRoleAsync(currentUser, Roles.Administrator) && chapter.IsHidden)
+        if (!await _resourceService.HasPermission(currentUser, Roles.Administrator) && chapter.IsHidden)
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
@@ -526,7 +528,7 @@ public class ChapterController : Controller
             });
         var chapter = await _chapterRepository.GetChapterAsync(id);
 
-        if (!await _userManager.IsInRoleAsync(currentUser, Roles.Administrator) && chapter.IsHidden)
+        if (!await _resourceService.HasPermission(currentUser, Roles.Administrator) && chapter.IsHidden)
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
@@ -575,7 +577,7 @@ public class ChapterController : Controller
             });
 
         var chapter = await _chapterRepository.GetChapterAsync(id);
-        if ((currentUser == null || !await _userManager.IsInRoleAsync(currentUser, Roles.Administrator)) &&
+        if ((currentUser == null || !await _resourceService.HasPermission(currentUser, Roles.Administrator)) &&
             chapter.IsHidden)
             return NotFound(new ResponseDto<object>
             {
@@ -614,7 +616,7 @@ public class ChapterController : Controller
     /// <response code="500">When an internal server error has occurred.</response>
     [HttpPost("{id:guid}/comments")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
-    [Produces("application/json")]
+    [Produces("text/plain", "application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -624,7 +626,7 @@ public class ChapterController : Controller
     public async Task<IActionResult> CreateComment([FromRoute] Guid id, [FromBody] CommentCreationDto dto)
     {
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _userManager.IsInRoleAsync(currentUser, Roles.Member))
+        if (!await _resourceService.HasPermission(currentUser, Roles.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -637,7 +639,7 @@ public class ChapterController : Controller
             });
         var chapter = await _chapterRepository.GetChapterAsync(id);
 
-        if (!await _userManager.IsInRoleAsync(currentUser, Roles.Administrator) && chapter.IsHidden)
+        if (!await _resourceService.HasPermission(currentUser, Roles.Administrator) && chapter.IsHidden)
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound

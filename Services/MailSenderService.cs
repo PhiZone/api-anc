@@ -1,10 +1,8 @@
 ﻿using System.Text;
-using Microsoft.AspNetCore.Identity;
 using Newtonsoft.Json;
 using PhiZoneApi.Dtos.Deliverers;
 using PhiZoneApi.Enums;
 using PhiZoneApi.Interfaces;
-using PhiZoneApi.Models;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 
@@ -14,12 +12,12 @@ public class MailSenderService : BackgroundService
 {
     private readonly IModel _channel;
     private readonly IMailService _mailService;
-    private readonly UserManager<User> _userManager;
+    private readonly IUserService _userService;
 
-    public MailSenderService(IMailService mailService, IRabbitMqService rabbitMqService, UserManager<User> userManager)
+    public MailSenderService(IMailService mailService, IRabbitMqService rabbitMqService, IUserService userService)
     {
         _mailService = mailService;
-        _userManager = userManager;
+        _userService = userService;
         _channel = rabbitMqService.GetConnection().CreateModel();
     }
 
@@ -39,7 +37,7 @@ public class MailSenderService : BackgroundService
                 switch (mailDto!.SucceedingAction)
                 {
                     case SucceedingAction.Create:
-                        await _userManager.CreateAsync(mailDto.User);
+                        await _userService.CreateUser(mailDto.User);
                         break;
                     case SucceedingAction.Update:
                         break;

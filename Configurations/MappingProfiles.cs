@@ -35,5 +35,6 @@ public class MappingProfiles : Profile
         CreateMap<Vote, VoteDto>();
         CreateMap<SongSubmission, SongSubmissionDto>();
         CreateMap<ChartSubmission, ChartSubmissionDto>();
+        CreateMap<Collaboration, CollaborationDto>();
     }
 }

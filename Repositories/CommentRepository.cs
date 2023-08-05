@@ -21,8 +21,8 @@ public class CommentRepository : ICommentRepository
     {
         var result = _context.Comments.OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
-
-        return await result.Skip(position).Take(take).ToListAsync();
+        result = result.Skip(position);
+        return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
 
     public async Task<Comment> GetCommentAsync(Guid id)
@@ -35,10 +35,9 @@ public class CommentRepository : ICommentRepository
     {
         var comment = (await _context.Comments.FirstOrDefaultAsync(comment => comment.Id == id))!;
         var result = _context.Replies.Where(record => record.Comment.Id == comment.Id).OrderBy(order, desc);
-
         if (predicate != null) result = result.Where(predicate);
-
-        return await result.Skip(position).Take(take).ToListAsync();
+        result = result.Skip(position);
+        return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
 
     public async Task<bool> CommentExistsAsync(Guid id)

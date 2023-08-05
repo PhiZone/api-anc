@@ -10,7 +10,7 @@ public class SongSubmissionFilterDto : FilterDto<SongSubmission>
     public string? ContainsTitle { get; set; }
 
     public string? EqualsTitle { get; set; }
-    
+
     public List<EditionType>? RangeEditionType { get; set; }
 
     public string? ContainsEdition { get; set; }

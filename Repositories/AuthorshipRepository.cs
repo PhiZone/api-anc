@@ -21,8 +21,8 @@ public class AuthorshipRepository : IAuthorshipRepository
     {
         var result = _context.Authorships.Where(authorship => authorship.AuthorId == authorId).OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
-
-        return await result.Skip(position).Take(take).ToListAsync();
+        result = result.Skip(position);
+        return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
 
     public async Task<ICollection<Authorship>> GetAuthorsAsync(Guid resourceId, string order, bool desc, int position,
@@ -30,8 +30,8 @@ public class AuthorshipRepository : IAuthorshipRepository
     {
         var result = _context.Authorships.Where(authorship => authorship.ResourceId == resourceId).OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
-
-        return await result.Skip(position).Take(take).ToListAsync();
+        result = result.Skip(position);
+        return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
 
     public async Task<ICollection<Authorship>> GetAuthorshipsAsync(string order, bool desc, int position, int take,
@@ -47,6 +47,11 @@ public class AuthorshipRepository : IAuthorshipRepository
     {
         return (await _context.Authorships.FirstOrDefaultAsync(authorship =>
             authorship.ResourceId == resourceId && authorship.AuthorId == authorId))!;
+    }
+
+    public async Task<Authorship> GetAuthorshipAsync(Guid id)
+    {
+        return (await _context.Authorships.FirstOrDefaultAsync(authorship => authorship.Id == id))!;
     }
 
     public async Task<bool> CreateAuthorshipAsync(Authorship authorship)
@@ -68,6 +73,13 @@ public class AuthorshipRepository : IAuthorshipRepository
         return await SaveAsync();
     }
 
+    public async Task<bool> RemoveAuthorshipAsync(Guid id)
+    {
+        _context.Authorships.Remove(
+            (await _context.Authorships.FirstOrDefaultAsync(authorship => authorship.Id == id))!);
+        return await SaveAsync();
+    }
+
     public async Task<bool> SaveAsync()
     {
         var saved = await _context.SaveChangesAsync();
@@ -84,6 +96,11 @@ public class AuthorshipRepository : IAuthorshipRepository
     {
         return await _context.Authorships.AnyAsync(authorship =>
             authorship.ResourceId == resourceId && authorship.AuthorId == authorId);
+    }
+
+    public async Task<bool> AuthorshipExistsAsync(Guid id)
+    {
+        return await _context.Authorships.AnyAsync(authorship => authorship.Id == id);
     }
 
     public async Task<int> CountResourcesAsync(int authorId, Expression<Func<Authorship, bool>>? predicate = null)

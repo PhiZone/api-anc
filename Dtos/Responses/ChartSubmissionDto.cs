@@ -32,8 +32,6 @@ public class ChartSubmissionDto
 
     public RequestStatus VolunteerStatus { get; set; }
 
-    public RequestStatus CollabStatus { get; set; }
-
     public RequestStatus AdmissionStatus { get; set; }
 
     public Guid? RepresentationId { get; set; }
@@ -42,9 +40,9 @@ public class ChartSubmissionDto
 
     public int NoteCount { get; set; }
 
-    public Guid SongId { get; set; }
+    public Guid? SongId { get; set; }
 
-    public List<int> AuthorsId { get; set; } = null!;
+    public Guid? SongSubmissionId { get; set; }
 
     public int OwnerId { get; set; }
 

@@ -16,17 +16,23 @@ public interface IAuthorshipRepository
 
     Task<Authorship> GetAuthorshipAsync(Guid resourceId, int authorId);
 
+    Task<Authorship> GetAuthorshipAsync(Guid id);
+
     Task<bool> CreateAuthorshipAsync(Authorship authorship);
 
     Task<bool> UpdateAuthorshipAsync(Authorship authorship);
 
     Task<bool> RemoveAuthorshipAsync(Guid resourceId, int authorId);
 
+    Task<bool> RemoveAuthorshipAsync(Guid id);
+
     Task<bool> SaveAsync();
 
     Task<int> CountAuthorshipsAsync(Expression<Func<Authorship, bool>>? predicate = null);
 
     Task<bool> AuthorshipExistsAsync(Guid resourceId, int authorId);
+
+    Task<bool> AuthorshipExistsAsync(Guid id);
 
     Task<int> CountResourcesAsync(int authorId, Expression<Func<Authorship, bool>>? predicate = null);
 

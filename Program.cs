@@ -116,12 +116,15 @@ builder.Services.AddScoped<IChartSubmissionRepository, ChartSubmissionRepository
 builder.Services.AddScoped<IFilterService, FilterService>();
 builder.Services.AddScoped<ILikeService, LikeService>();
 builder.Services.AddScoped<IVoteService, VoteService>();
+builder.Services.AddScoped<IVolunteerVoteService, VolunteerVoteService>();
+builder.Services.AddScoped<IResourceService, ResourceService>();
 builder.Services.AddScoped<IDtoMapper, DtoMapper>();
 builder.Services.AddScoped<ETagFilter>();
 builder.Services.AddScoped<ISongService, SongService>();
 builder.Services.AddScoped<IRecordService, RecordService>();
 builder.Services.AddScoped<ISubmissionService, SubmissionService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddSingleton<IUserService, UserService>();
 builder.Services.AddSingleton<IChartService, ChartService>();
 builder.Services.AddSingleton<IMailService, MailService>();
 builder.Services.AddSingleton<IFileStorageService, FileStorageService>();
@@ -131,7 +134,7 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(
     ConnectionMultiplexer.Connect(builder.Configuration.GetValue<string>("RedisConnection") ?? "localhost"));
 builder.Services.AddSingleton<IHostedService>(provider => new MailSenderService(provider.GetService<IMailService>()!,
     provider.GetService<IRabbitMqService>()!,
-    provider.GetService<IServiceScopeFactory>()!.CreateScope().ServiceProvider.GetService<UserManager<User>>()!));
+    provider.GetService<IUserService>()!));
 builder.Services.AddSingleton<IHostedService>(provider => new SongConverterService(
     provider.GetService<IRabbitMqService>()!,
     provider.GetService<IServiceScopeFactory>()!.CreateScope().ServiceProvider.GetService<ISongService>()!,

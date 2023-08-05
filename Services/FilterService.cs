@@ -1,6 +1,5 @@
 ﻿using System.Linq.Expressions;
 using System.Reflection;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
 using PhiZoneApi.Constants;
@@ -13,17 +12,17 @@ namespace PhiZoneApi.Services;
 
 public class FilterService : IFilterService
 {
-    private readonly UserManager<User> _userManager;
+    private readonly IResourceService _resourceService;
 
-    public FilterService(UserManager<User> userManager)
+    public FilterService(IResourceService resourceService)
     {
-        _userManager = userManager;
+        _resourceService = resourceService;
     }
 
     public async Task<Expression<Func<T, bool>>?> Parse<T>(FilterDto<T>? dto, string? predicate = null,
         User? currentUser = null, Expression<Func<T, bool>>? requirement = null)
     {
-        var isAdmin = currentUser != null && await _userManager.IsInRoleAsync(currentUser, Roles.Administrator);
+        var isAdmin = currentUser != null && await _resourceService.HasPermission(currentUser, Roles.Administrator);
 
         if (isAdmin && predicate != null)
             return await CSharpScript.EvaluateAsync<Expression<Func<T, bool>>>(predicate,
@@ -37,10 +36,7 @@ public class FilterService : IFilterService
             Expression.OrElse(Expression.Constant(isAdmin || typeof(T).GetProperty("IsHidden") == null),
                 IsFalse(Property<T>(entity, "IsHidden")));
 
-        if (requirement != null)
-        {
-            expression = Expression.AndAlso(expression, requirement);
-        }
+        if (requirement != null) expression = Expression.AndAlso(expression, requirement);
 
         foreach (var property in dto.GetType().GetProperties())
         {

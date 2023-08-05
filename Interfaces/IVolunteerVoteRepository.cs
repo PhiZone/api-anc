@@ -20,6 +20,8 @@ public interface IVolunteerVoteRepository
 
     Task<bool> RemoveVolunteerVoteAsync(Guid id);
 
+    Task<bool> RemoveVolunteerVotesAsync(IEnumerable<VolunteerVote> votes);
+
     Task<bool> SaveAsync();
 
     Task<int> CountVolunteerVotesAsync(Expression<Func<VolunteerVote, bool>>? predicate = null);

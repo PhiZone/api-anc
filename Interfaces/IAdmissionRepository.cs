@@ -18,6 +18,8 @@ public interface IAdmissionRepository
 
     Task<bool> CreateAdmissionAsync(Admission admission);
 
+    Task<bool> UpdateAdmissionAsync(Admission admission);
+
     Task<bool> RemoveAdmissionAsync(Guid admitterId, Guid admitteeId);
 
     Task<bool> SaveAsync();

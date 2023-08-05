@@ -26,7 +26,7 @@
     },
     {
       "Key": "chart-submission-rejection",
-      "Content": "你提交的谱面 {Chart} 被拒绝。得分：{Score}"
+      "Content": "你提交的谱面 {Chart} 被拒绝。"
     },
     {
       "Key": "song-follower-update",
@@ -57,6 +57,30 @@
       "Content": "{User} 邀请你联合发布谱面 {Chart}！{Collaboration}"
     },
     {
+      "Key": "collab-approval",
+      "Content": "{User} 同意了你的合作邀请！{Collaboration}"
+    },
+    {
+      "Key": "collab-rejection",
+      "Content": "{User} 拒绝了你的合作邀请。{Collaboration}"
+    },
+    {
+      "Key": "song-admission",
+      "Content": "{User} 申请将曲目 {Song} 收录于章节 {Chapter}。{Admission}"
+    },
+    {
+      "Key": "chart-admission",
+      "Content": "{User} 申请将谱面 {Chart} 收录于曲目 {Song}。{Admission}"
+    },
+    {
+      "Key": "admission-approval",
+      "Content": "{User} 同意了你的收录申请！{Admission}"
+    },
+    {
+      "Key": "admission-rejection",
+      "Content": "{User} 拒绝了你的收录申请。{Admission}"
+    },
+    {
       "Key": "more-info",
       "Content": "点击此处查看详情。"
     },
@@ -67,6 +91,10 @@
     {
       "Key": "reply-mention",
       "Content": "{User} 在回复中提到了你：{Reply}"
+    },
+    {
+      "Key": "default",
+      "Content": "默认"
     }
   ]
 }

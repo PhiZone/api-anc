@@ -13,9 +13,11 @@ public interface IDtoMapper
 
     Task<T> MapUserRelationAsync<T>(UserRelation userRelation, User? currentUser = null) where T : UserRelationDto;
 
-    Task<AdmissionDto<TAdmitter, TAdmittee>> MapAdmissionAsync<TAdmitter, TAdmittee>(Admission admission,
-        User? currentUser = null)
-        where TAdmitter : ChapterDto where TAdmittee : SongDto;
+    Task<AdmissionDto<TAdmitter, TAdmittee>> MapSongAdmissionAsync<TAdmitter, TAdmittee>(Admission admission,
+        User? currentUser = null) where TAdmitter : ChapterDto where TAdmittee : SongDto;
+
+    Task<AdmissionDto<TAdmitter, TAdmittee>> MapChartAdmissionAsync<TAdmitter, TAdmittee>(Admission admission,
+        User? currentUser = null) where TAdmitter : SongDto where TAdmittee : ChartDto;
 
     Task<T> MapChapterAsync<T>(Chapter chapter, User? currentUser = null) where T : ChapterDto;
 

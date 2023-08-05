@@ -12,7 +12,7 @@ public class PlayConfigurationRequestDto
 
     public int GoodJudgment { get; set; } = 160;
 
-    public List<int> AspectRatio { get; set; } = new() { 16, 9 };
+    public List<int>? AspectRatio { get; set; }
 
     [Range(0.4, 2, ErrorMessage = ResponseCodes.ValueOutOfRange)]
     public double NoteSize { get; set; } = 1;
@@ -25,9 +25,9 @@ public class PlayConfigurationRequestDto
     [Range(0, 2, ErrorMessage = ResponseCodes.ValueOutOfRange)]
     public double BackgroundBlur { get; set; } = 1;
 
-    public bool SimultaneousNoteHint { get; set; } = false;
+    public bool SimultaneousNoteHint { get; set; } = true;
 
-    public bool FcApIndicator { get; set; } = false;
+    public bool FcApIndicator { get; set; } = true;
 
     [Range(-600, 600, ErrorMessage = ResponseCodes.ValueOutOfRange)]
     public int ChartOffset { get; set; } = 0;

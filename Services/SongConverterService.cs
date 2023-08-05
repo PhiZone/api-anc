@@ -9,8 +9,8 @@ public class SongConverterService : BackgroundService
 {
     private readonly IModel _channel;
     private readonly ISongRepository _songRepository;
-    private readonly ISongSubmissionRepository _songSubmissionRepository;
     private readonly ISongService _songService;
+    private readonly ISongSubmissionRepository _songSubmissionRepository;
 
     public SongConverterService(IRabbitMqService rabbitMqService, ISongService songService,
         ISongRepository songRepository, ISongSubmissionRepository songSubmissionRepository)

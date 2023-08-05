@@ -1,0 +1,323 @@
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.JsonPatch;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
+using OpenIddict.Abstractions;
+using OpenIddict.Validation.AspNetCore;
+using PhiZoneApi.Configurations;
+using PhiZoneApi.Constants;
+using PhiZoneApi.Dtos.Filters;
+using PhiZoneApi.Dtos.Requests;
+using PhiZoneApi.Dtos.Responses;
+using PhiZoneApi.Enums;
+using PhiZoneApi.Filters;
+using PhiZoneApi.Interfaces;
+using PhiZoneApi.Models;
+using PhiZoneApi.Utils;
+
+// ReSharper disable RouteTemplates.ActionRoutePrefixCanBeExtractedToControllerRoute
+
+namespace PhiZoneApi.Controllers;
+
+[Route("collaborations")]
+[ApiVersion("2.0")]
+[ApiController]
+[Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
+public class CollaborationController : Controller
+{
+    private readonly ICollaborationRepository _collaborationRepository;
+    private readonly IOptions<DataSettings> _dataSettings;
+    private readonly IFilterService _filterService;
+    private readonly IMapper _mapper;
+    private readonly INotificationService _notificationService;
+    private readonly IResourceService _resourceService;
+    private readonly ITemplateService _templateService;
+    private readonly UserManager<User> _userManager;
+
+    public CollaborationController(ICollaborationRepository collaborationRepository, UserManager<User> userManager,
+        IMapper mapper, IResourceService resourceService, IOptions<DataSettings> dataSettings,
+        IFilterService filterService, ITemplateService templateService, INotificationService notificationService)
+    {
+        _collaborationRepository = collaborationRepository;
+        _userManager = userManager;
+        _mapper = mapper;
+        _resourceService = resourceService;
+        _dataSettings = dataSettings;
+        _filterService = filterService;
+        _templateService = templateService;
+        _notificationService = notificationService;
+    }
+
+    /// <summary>
+    ///     Retrieves collaborations.
+    /// </summary>
+    /// <returns>An array of collaborations.</returns>
+    /// <response code="200">Returns an array of collaborations.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    [HttpGet]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<CollaborationDto>>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> GetCollaborations([FromQuery] ArrayRequestDto dto,
+        [FromQuery] CollaborationFilterDto? filterDto = null)
+    {
+        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!await _resourceService.HasPermission(currentUser, Roles.Qualified))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+        dto.PerPage = dto.PerPage > 0
+            ? dto.PerPage <= _dataSettings.Value.PaginationMaxPerPage
+                ? dto.PerPage
+                : _dataSettings.Value.PaginationMaxPerPage
+            : _dataSettings.Value.PaginationPerPage;
+        var position = dto.PerPage * (dto.Page - 1);
+        var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser,
+            collaboration => collaboration.InviteeId == currentUser.Id || collaboration.InviterId == currentUser.Id);
+        var list = _mapper.Map<List<CollaborationDto>>(
+            await _collaborationRepository.GetCollaborationsAsync(dto.Order, dto.Desc, position, dto.PerPage,
+                predicateExpr));
+        var total = await _collaborationRepository.CountCollaborationsAsync(predicateExpr);
+
+        return Ok(new ResponseDto<IEnumerable<CollaborationDto>>
+        {
+            Status = ResponseStatus.Ok,
+            Code = ResponseCodes.Ok,
+            Total = total,
+            PerPage = dto.PerPage,
+            HasPrevious = position > 0,
+            HasNext = position < total - total % dto.PerPage,
+            Data = list
+        });
+    }
+
+    /// <summary>
+    ///     Retrieves a specific collaboration.
+    /// </summary>
+    /// <param name="id">A collaboration's ID.</param>
+    /// <returns>A collaboration.</returns>
+    /// <response code="200">Returns a collaboration.</response>
+    /// <response code="304">
+    ///     When the resource has not been updated since last retrieval. Requires <c>If-None-Match</c>.
+    /// </response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="404">When the specified collaboration is not found.</response>
+    [HttpGet("{id:guid}")]
+    [ServiceFilter(typeof(ETagFilter))]
+    [Produces("application/json", "text/plain")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<CollaborationDto>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status304NotModified, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> GetCollaboration([FromRoute] Guid id)
+    {
+        if (!await _collaborationRepository.CollaborationExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+        var collaboration = await _collaborationRepository.GetCollaborationAsync(id);
+        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (((collaboration.InviterId == currentUser.Id || collaboration.InviteeId == currentUser.Id) &&
+             !await _resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+            (collaboration.InviterId != currentUser.Id && collaboration.InviteeId != currentUser.Id &&
+             !await _resourceService.HasPermission(currentUser, Roles.Administrator)))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+        var dto = _mapper.Map<CollaborationDto>(collaboration);
+
+        return Ok(new ResponseDto<CollaborationDto>
+        {
+            Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto
+        });
+    }
+
+    /// <summary>
+    ///     Updates a collaboration.
+    /// </summary>
+    /// <returns>An empty body.</returns>
+    /// <response code="201">Returns an empty body.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
+    /// <response code="404">When the specified collaboration or invitee is not found.</response>
+    /// <response code="500">When an internal server error has occurred.</response>
+    [HttpPatch("{id:guid}")]
+    [Consumes("application/json")]
+    [Produces("text/plain", "application/json")]
+    [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> UpdateCollaboration([FromRoute] Guid id,
+        [FromBody] JsonPatchDocument<CollaborationUpdateDto> patchDocument)
+    {
+        if (!await _collaborationRepository.CollaborationExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+        var collaboration = await _collaborationRepository.GetCollaborationAsync(id);
+        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if ((collaboration.InviterId == currentUser.Id &&
+             !await _resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+            (collaboration.InviterId != currentUser.Id &&
+             !await _resourceService.HasPermission(currentUser, Roles.Administrator)))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+
+        var dto = _mapper.Map<CollaborationUpdateDto>(collaboration);
+        patchDocument.ApplyTo(dto, ModelState);
+
+        if (!TryValidateModel(dto))
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorDetailed,
+                Code = ResponseCodes.InvalidData,
+                Errors = ModelErrorTranslator.Translate(ModelState)
+            });
+
+        collaboration.Position = dto.Position;
+
+        if (!await _collaborationRepository.UpdateCollaborationAsync(collaboration))
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+
+        return NoContent();
+    }
+
+    /// <summary>
+    ///     Reviews a collaboration.
+    /// </summary>
+    /// <param name="id">A collaboration's ID.</param>
+    /// <returns>An empty body.</returns>
+    /// <response code="204">Returns an empty body.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
+    /// <response code="404">When the specified collaboration is not found.</response>
+    /// <response code="500">When an internal server error has occurred.</response>
+    [HttpPost("{id:guid}/review")]
+    [Consumes("application/json")]
+    [Produces("text/plain", "application/json")]
+    [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> ReviewCollaboration([FromRoute] Guid id, bool approve)
+    {
+        if (!await _collaborationRepository.CollaborationExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+        var collaboration = await _collaborationRepository.GetCollaborationAsync(id);
+        if (collaboration.Status != RequestStatus.Waiting)
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief,
+                Code = ResponseCodes.InvalidOperation
+            });
+        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if ((collaboration.InviteeId == currentUser.Id &&
+             !await _resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+            (collaboration.InviteeId != currentUser.Id &&
+             !await _resourceService.HasPermission(currentUser, Roles.Administrator)))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+        string key;
+        if (approve)
+        {
+            collaboration.Status = RequestStatus.Approved;
+            key = "collab-approval";
+        }
+        else
+        {
+            collaboration.Status = RequestStatus.Rejected;
+            key = "collab-rejection";
+        }
+
+        if (!await _collaborationRepository.UpdateCollaborationAsync(collaboration))
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+
+        await _notificationService.Notify(collaboration.Inviter, collaboration.Invitee, NotificationType.Requests,
+            key, new Dictionary<string, string>
+            {
+                {
+                    "User",
+                    _resourceService.GetRichText<User>(collaboration.InviteeId.ToString(),
+                        collaboration.Invitee.UserName!)
+                },
+                {
+                    "Collaboration",
+                    _resourceService.GetRichText<Collaboration>(collaboration.Id.ToString(),
+                        _templateService.GetMessage("more-info", collaboration.Invitee.Language)!)
+                }
+            });
+
+        return NoContent();
+    }
+
+    /// <summary>
+    ///     Removes a collaboration.
+    /// </summary>
+    /// <param name="id">A collaboration's ID.</param>
+    /// <returns>An empty body.</returns>
+    /// <response code="204">Returns an empty body.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
+    /// <response code="404">When the specified collaboration is not found.</response>
+    /// <response code="500">When an internal server error has occurred.</response>
+    [HttpDelete("{id:guid}")]
+    [Produces("text/plain", "application/json")]
+    [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> RemoveCollaboration([FromRoute] Guid id)
+    {
+        if (!await _collaborationRepository.CollaborationExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+
+        var collaboration = await _collaborationRepository.GetCollaborationAsync(id);
+        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if ((collaboration.InviterId == currentUser.Id &&
+             !await _resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+            (collaboration.InviterId != currentUser.Id &&
+             !await _resourceService.HasPermission(currentUser, Roles.Administrator)))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+        if (!await _collaborationRepository.RemoveCollaborationAsync(id))
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+
+        return NoContent();
+    }
+}

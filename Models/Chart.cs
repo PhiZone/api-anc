@@ -30,19 +30,19 @@ public class Chart : PublicResource
 
     public double Score { get; set; }
 
-    public double Rating { get; set; }
+    public double Rating { get; set; } = 2.5;
 
-    public double RatingOnArrangement { get; set; }
+    public double RatingOnArrangement { get; set; } = 2.5;
 
-    public double RatingOnFeel { get; set; }
+    public double RatingOnFeel { get; set; } = 2.5;
 
-    public double RatingOnVisualEffects { get; set; }
+    public double RatingOnVisualEffects { get; set; } = 2.5;
 
-    public double RatingOnCreativity { get; set; }
+    public double RatingOnCreativity { get; set; } = 2.5;
 
-    public double RatingOnConcord { get; set; }
+    public double RatingOnConcord { get; set; } = 2.5;
 
-    public double RatingOnImpression { get; set; }
+    public double RatingOnImpression { get; set; } = 2.5;
 
     public Guid SongId { get; set; }
 
@@ -52,6 +52,8 @@ public class Chart : PublicResource
 
     public string GetDisplay()
     {
-        return Title != null ? $"{Title} [{Level} {Math.Floor(Difficulty)}]" : $"{Song.Title} [{Level} {Math.Floor(Difficulty)}]";
+        return Title != null
+            ? $"{Title} [{Level} {Math.Floor(Difficulty)}]"
+            : $"{Song.Title} [{Level} {Math.Floor(Difficulty)}]";
     }
 }

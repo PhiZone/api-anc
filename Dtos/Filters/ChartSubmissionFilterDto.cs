@@ -14,7 +14,7 @@ public class ChartSubmissionFilterDto : FilterDto<ChartSubmission>
     public string? ContainsIllustrator { get; set; }
 
     public string? EqualsIllustrator { get; set; }
-    
+
     public List<ChartLevel>? RangeLevelType { get; set; }
 
     public string? ContainsLevel { get; set; } = null!;

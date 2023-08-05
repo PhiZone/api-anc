@@ -6,11 +6,11 @@ public class RecordFilterDto : FilterDto<Record>
 {
     public List<Guid>? RangeId { get; set; }
 
-    public int? MinPlayerId { get; set; }
+    public int? MinOwnerId { get; set; }
 
-    public int? MaxPlayerId { get; set; }
+    public int? MaxOwnerId { get; set; }
 
-    public List<int>? RangePlayerId { get; set; }
+    public List<int>? RangeOwnerId { get; set; }
 
     public List<Guid>? RangeChartId { get; set; }
 

@@ -23,10 +23,9 @@ public class VolunteerVoteRepository : IVolunteerVoteRepository
         Expression<Func<VolunteerVote, bool>>? predicate = null)
     {
         var result = _context.VolunteerVotes.OrderBy(order, desc);
-
         if (predicate != null) result = result.Where(predicate);
-
-        return await result.Skip(position).Take(take).ToListAsync();
+        result = result.Skip(position);
+        return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
 
     public async Task<VolunteerVote> GetVolunteerVoteAsync(Guid id)
@@ -60,6 +59,12 @@ public class VolunteerVoteRepository : IVolunteerVoteRepository
     public async Task<bool> RemoveVolunteerVoteAsync(Guid id)
     {
         _context.VolunteerVotes.Remove((await _context.VolunteerVotes.FirstOrDefaultAsync(vote => vote.Id == id))!);
+        return await SaveAsync();
+    }
+
+    public async Task<bool> RemoveVolunteerVotesAsync(IEnumerable<VolunteerVote> votes)
+    {
+        _context.VolunteerVotes.RemoveRange(votes);
         return await SaveAsync();
     }
 

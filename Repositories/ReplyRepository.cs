@@ -21,8 +21,8 @@ public class ReplyRepository : IReplyRepository
     {
         var result = _context.Replies.OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
-
-        return await result.Skip(position).Take(take).ToListAsync();
+        result = result.Skip(position);
+        return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
 
     public async Task<Reply> GetReplyAsync(Guid id)

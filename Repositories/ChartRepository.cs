@@ -52,10 +52,9 @@ public class ChartRepository : IChartRepository
     {
         var chart = (await _context.Charts.FirstOrDefaultAsync(chart => chart.Id == id))!;
         var result = _context.Records.Where(record => record.Chart.Id == chart.Id).OrderBy(order, desc);
-
         if (predicate != null) result = result.Where(predicate);
-
-        return await result.Skip(position).Take(take).ToListAsync();
+        result = result.Skip(position);
+        return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
 
     public async Task<bool> ChartExistsAsync(Guid id)

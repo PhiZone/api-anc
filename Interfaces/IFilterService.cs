@@ -6,5 +6,6 @@ namespace PhiZoneApi.Interfaces;
 
 public interface IFilterService
 {
-    Task<Expression<Func<T, bool>>?> Parse<T>(FilterDto<T>? dto, string? predicate = null, User? currentUser = null, Expression<Func<T, bool>>? requirement = null);
+    Task<Expression<Func<T, bool>>?> Parse<T>(FilterDto<T>? dto, string? predicate = null, User? currentUser = null,
+        Expression<Func<T, bool>>? requirement = null);
 }

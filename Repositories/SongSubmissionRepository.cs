@@ -18,7 +18,8 @@ public class SongSubmissionRepository : ISongSubmissionRepository
         _context = context;
     }
 
-    public async Task<ICollection<SongSubmission>> GetSongSubmissionsAsync(string order, bool desc, int position, int take,
+    public async Task<ICollection<SongSubmission>> GetSongSubmissionsAsync(string order, bool desc, int position,
+        int take,
         string? search = null, Expression<Func<SongSubmission, bool>>? predicate = null)
     {
         var result = _context.SongSubmissions.OrderBy(order, desc);
@@ -37,7 +38,8 @@ public class SongSubmissionRepository : ISongSubmissionRepository
         return await result.Skip(position).Take(take).ToListAsync();
     }
 
-    public async Task<ICollection<SongSubmission>> GetUserSongSubmissionsAsync(int userId, string order, bool desc, int position, int take,
+    public async Task<ICollection<SongSubmission>> GetUserSongSubmissionsAsync(int userId, string order, bool desc,
+        int position, int take,
         string? search = null, Expression<Func<SongSubmission, bool>>? predicate = null)
     {
         var result = _context.SongSubmissions.Where(song => song.OwnerId == userId).OrderBy(order, desc);
@@ -90,7 +92,8 @@ public class SongSubmissionRepository : ISongSubmissionRepository
         return saved > 0;
     }
 
-    public async Task<int> CountSongSubmissionsAsync(string? search = null, Expression<Func<SongSubmission, bool>>? predicate = null)
+    public async Task<int> CountSongSubmissionsAsync(string? search = null,
+        Expression<Func<SongSubmission, bool>>? predicate = null)
     {
         var result = _context.SongSubmissions.AsQueryable();
 
@@ -108,7 +111,8 @@ public class SongSubmissionRepository : ISongSubmissionRepository
         return await result.CountAsync();
     }
 
-    public async Task<int> CountUserSongSubmissionsAsync(int userId, string? search = null, Expression<Func<SongSubmission, bool>>? predicate = null)
+    public async Task<int> CountUserSongSubmissionsAsync(int userId, string? search = null,
+        Expression<Func<SongSubmission, bool>>? predicate = null)
     {
         var result = _context.SongSubmissions.Where(song => song.OwnerId == userId).AsQueryable();
 

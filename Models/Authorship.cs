@@ -6,9 +6,9 @@ public class Authorship
 
     public Guid ResourceId { get; set; }
 
-    public int AuthorId { get; set; }
-
     public PublicResource Resource { get; set; } = null!;
+
+    public int AuthorId { get; set; }
 
     public User Author { get; set; } = null!;
 

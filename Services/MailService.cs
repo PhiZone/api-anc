@@ -87,9 +87,6 @@ public class MailService : IMailService
         var emailTo = new MailboxAddress(mailTaskDto.User.UserName, mailTaskDto.User.Email);
         emailMessage.To.Add(emailTo);
 
-        // emailMessage.Cc.Add(new MailboxAddress("Cc Receiver", "cc@example.com"));
-        // emailMessage.Bcc.Add(new MailboxAddress("Bcc Receiver", "bcc@example.com"));
-
         emailMessage.Subject = mailTaskDto.EmailSubject;
 
         var emailBodyBuilder = new BodyBuilder { TextBody = mailTaskDto.EmailBody };

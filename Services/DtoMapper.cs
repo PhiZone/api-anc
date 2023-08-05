@@ -10,6 +10,7 @@ public class DtoMapper : IDtoMapper
 {
     private readonly IAuthorshipRepository _authorshipRepository;
     private readonly IChapterRepository _chapterRepository;
+    private readonly IChartRepository _chartRepository;
     private readonly ICommentRepository _commentRepository;
     private readonly ILikeRepository _likeRepository;
     private readonly IMapper _mapper;
@@ -24,7 +25,7 @@ public class DtoMapper : IDtoMapper
         ILikeRepository likeRepository, UserManager<User> userManager, IMapper mapper,
         ICommentRepository commentRepository, IReplyRepository replyRepository, IRecordRepository recordRepository,
         IChapterRepository chapterRepository, ISongRepository songRepository,
-        IAuthorshipRepository authorshipRepository)
+        IAuthorshipRepository authorshipRepository, IChartRepository chartRepository)
     {
         _userRelationRepository = userRelationRepository;
         _regionRepository = regionRepository;
@@ -37,6 +38,7 @@ public class DtoMapper : IDtoMapper
         _chapterRepository = chapterRepository;
         _songRepository = songRepository;
         _authorshipRepository = authorshipRepository;
+        _chartRepository = chartRepository;
     }
 
     public async Task<T> MapUserAsync<T>(User user, User? currentUser = null) where T : UserDto
@@ -72,7 +74,8 @@ public class DtoMapper : IDtoMapper
         return dto;
     }
 
-    public async Task<AdmissionDto<TAdmitter, TAdmittee>> MapAdmissionAsync<TAdmitter, TAdmittee>(Admission admission,
+    public async Task<AdmissionDto<TAdmitter, TAdmittee>> MapSongAdmissionAsync<TAdmitter, TAdmittee>(
+        Admission admission,
         User? currentUser = null) where TAdmitter : ChapterDto where TAdmittee : SongDto
     {
         var dto = new AdmissionDto<TAdmitter, TAdmittee>
@@ -82,6 +85,27 @@ public class DtoMapper : IDtoMapper
                     currentUser),
             Admittee =
                 await MapSongAsync<TAdmittee>(await _songRepository.GetSongAsync(admission.AdmitteeId),
+                    currentUser),
+            Status = admission.Status,
+            Label = admission.Label,
+            RequesterId = admission.RequesterId,
+            RequesteeId = admission.RequesteeId,
+            DateCreated = admission.DateCreated
+        };
+        return dto;
+    }
+
+    public async Task<AdmissionDto<TAdmitter, TAdmittee>> MapChartAdmissionAsync<TAdmitter, TAdmittee>(
+        Admission admission,
+        User? currentUser = null) where TAdmitter : SongDto where TAdmittee : ChartDto
+    {
+        var dto = new AdmissionDto<TAdmitter, TAdmittee>
+        {
+            Admitter =
+                await MapSongAsync<TAdmitter>(await _songRepository.GetSongAsync(admission.AdmitterId),
+                    currentUser),
+            Admittee =
+                await MapChartAsync<TAdmittee>(await _chartRepository.GetChartAsync(admission.AdmitteeId),
                     currentUser),
             Status = admission.Status,
             Label = admission.Label,
@@ -105,10 +129,6 @@ public class DtoMapper : IDtoMapper
     public async Task<T> MapSongAsync<T>(Song song, User? currentUser = null) where T : SongDto
     {
         var dto = _mapper.Map<T>(song);
-        dto.AuthorsId =
-            (await _authorshipRepository.GetAuthorshipsAsync("AuthorId", false, 0, -1,
-                authorship => authorship.ResourceId == song.Id)).Select(author => author.AuthorId)
-            .ToList();
         dto.CommentCount = await _commentRepository.CountCommentsAsync(comment => comment.ResourceId == song.Id);
         dto.DateLiked = currentUser != null && await _likeRepository.LikeExistsAsync(song.Id, currentUser.Id)
             ? (await _likeRepository.GetLikeAsync(song.Id, currentUser.Id)).DateCreated
@@ -126,10 +146,6 @@ public class DtoMapper : IDtoMapper
     public async Task<T> MapChartAsync<T>(Chart chart, User? currentUser = null) where T : ChartDto
     {
         var dto = _mapper.Map<T>(chart);
-        dto.AuthorsId =
-            (await _authorshipRepository.GetAuthorshipsAsync("AuthorId", false, 0, -1,
-                authorship => authorship.ResourceId == chart.Id)).Select(author => author.AuthorId)
-            .ToList();
         dto.CommentCount = await _commentRepository.CountCommentsAsync(comment => comment.ResourceId == chart.Id);
         dto.DateLiked = currentUser != null && await _likeRepository.LikeExistsAsync(chart.Id, currentUser.Id)
             ? (await _likeRepository.GetLikeAsync(chart.Id, currentUser.Id)).DateCreated

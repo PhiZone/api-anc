@@ -12,29 +12,19 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, int>
     }
 
     public override DbSet<User> Users { get; set; } = null!;
-
     public DbSet<UserRelation> UserRelations { get; set; } = null!;
-
     public DbSet<Region> Regions { get; set; } = null!;
-
     public DbSet<Chapter> Chapters { get; set; } = null!;
-
     public DbSet<Song> Songs { get; set; } = null!;
-
     public DbSet<Admission> Admissions { get; set; } = null!;
-
     public DbSet<Chart> Charts { get; set; } = null!;
 
+    public DbSet<ChartAsset> ChartAssets { get; set; } = null!;
     public DbSet<Authorship> Authorships { get; set; } = null!;
-
     public DbSet<Record> Records { get; set; } = null!;
-
     public DbSet<Comment> Comments { get; set; } = null!;
-
     public DbSet<Reply> Replies { get; set; } = null!;
-
     public DbSet<Like> Likes { get; set; } = null!;
-
     public DbSet<Vote> Votes { get; set; } = null!;
 
     public DbSet<PlayConfiguration> PlayConfigurations { get; set; } = null!;
@@ -48,6 +38,10 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, int>
     public DbSet<SongSubmission> SongSubmissions { get; set; } = null!;
 
     public DbSet<ChartSubmission> ChartSubmissions { get; set; } = null!;
+
+    public DbSet<ChartAssetSubmission> ChartAssetSubmissions { get; set; } = null!;
+
+    public DbSet<Collaboration> Collaborations { get; set; } = null!;
 
     public DbSet<Notification> Notifications { get; set; } = null!;
 

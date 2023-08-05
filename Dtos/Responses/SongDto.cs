@@ -46,8 +46,6 @@ public class SongDto
 
     public TimeSpan PreviewEnd { get; set; }
 
-    public List<int> AuthorsId { get; set; } = null!;
-
     public int OwnerId { get; set; }
 
     public DateTimeOffset DateCreated { get; set; }

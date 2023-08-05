@@ -26,10 +26,6 @@ public class SongSubmissionDto
 
     public RequestStatus Status { get; set; }
 
-    public RequestStatus VolunteerStatus { get; set; }
-
-    public RequestStatus CollabStatus { get; set; }
-
     public Guid? RepresentationId { get; set; }
 
     public string? Lyrics { get; set; }
@@ -50,8 +46,6 @@ public class SongSubmissionDto
 
     public TimeSpan PreviewEnd { get; set; }
 
-    public List<int> AuthorsId { get; set; } = null!;
-    
     public string? Message { get; set; }
 
     public int OwnerId { get; set; }

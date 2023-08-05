@@ -10,11 +10,11 @@ public class RecordResponseDto
 
     public bool IsFullCombo { get; set; }
 
+    public UserDto Player { get; set; } = null!;
+
     public int ExperienceDelta { get; set; }
 
     public double RksBefore { get; set; }
-
-    public double RksAfter { get; set; }
 
     public DateTimeOffset DateCreated { get; set; }
 }

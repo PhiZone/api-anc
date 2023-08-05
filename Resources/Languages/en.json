@@ -26,7 +26,7 @@
     },
     {
       "Key": "chart-submission-rejection",
-      "Content": "Your chart submission {Chart} has been rejected with a score of {Score}."
+      "Content": "Your chart submission {Chart} has been rejected."
     },
     {
       "Key": "song-follower-update",
@@ -57,6 +57,30 @@
       "Content": "{User} has invited you to collaborate on the chart {Chart}! {Collaboration}"
     },
     {
+      "Key": "collab-approval",
+      "Content": "{User} has accepted your collaboration invite! {Collaboration}"
+    },
+    {
+      "Key": "collab-rejection",
+      "Content": "{User} has declined your collaboration invite. {Collaboration}"
+    },
+    {
+      "Key": "song-admission",
+      "Content": "{User} wants the song {Song} admitted to the chapter {Chapter}. {Admission}"
+    },
+    {
+      "Key": "chart-admission",
+      "Content": "{User} wants the chart {Chart} admitted to the song {Song}. {Admission}"
+    },
+    {
+      "Key": "admission-approval",
+      "Content": "{User} has accepted your admission request! {Admission}"
+    },
+    {
+      "Key": "admission-rejection",
+      "Content": "{User} has declined your admission request. {Admission}"
+    },
+    {
       "Key": "more-info",
       "Content": "Click here for more information."
     },
@@ -67,6 +91,10 @@
     {
       "Key": "reply-mention",
       "Content": "{User} has mentioned you in the reply: {Reply}"
+    },
+    {
+      "Key": "default",
+      "Content": "Default"
     }
   ]
 }

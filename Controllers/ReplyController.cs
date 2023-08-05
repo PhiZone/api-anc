@@ -33,11 +33,12 @@ public class ReplyController : Controller
     private readonly ILikeService _likeService;
     private readonly IMapper _mapper;
     private readonly IReplyRepository _replyRepository;
+    private readonly IResourceService _resourceService;
     private readonly UserManager<User> _userManager;
 
     public ReplyController(IReplyRepository replyRepository, IOptions<DataSettings> dataSettings,
         IDtoMapper dtoMapper, IFilterService filterService, UserManager<User> userManager,
-        ILikeRepository likeRepository, ILikeService likeService, IMapper mapper)
+        ILikeRepository likeRepository, ILikeService likeService, IMapper mapper, IResourceService resourceService)
     {
         _replyRepository = replyRepository;
         _dataSettings = dataSettings;
@@ -47,6 +48,7 @@ public class ReplyController : Controller
         _likeRepository = likeRepository;
         _likeService = likeService;
         _mapper = mapper;
+        _resourceService = resourceService;
     }
 
     /// <summary>
@@ -150,8 +152,9 @@ public class ReplyController : Controller
             });
 
         var reply = await _replyRepository.GetReplyAsync(id);
-        if ((currentUser.Id == reply.OwnerId && !await _userManager.IsInRoleAsync(currentUser, Roles.Member)) ||
-            (currentUser.Id != reply.OwnerId && !await _userManager.IsInRoleAsync(currentUser, Roles.Administrator)))
+        if ((currentUser.Id == reply.OwnerId && !await _resourceService.HasPermission(currentUser, Roles.Member)) ||
+            (currentUser.Id != reply.OwnerId &&
+             !await _resourceService.HasPermission(currentUser, Roles.Administrator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -217,7 +220,7 @@ public class ReplyController : Controller
     /// <response code="404">When the specified reply is not found.</response>
     [HttpPost("{id:guid}/likes")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
-    [Produces("application/json")]
+    [Produces("text/plain", "application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]

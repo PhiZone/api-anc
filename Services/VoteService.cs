@@ -90,8 +90,8 @@ public class VoteService : IVoteService
         var r = GetReliability(amount);
         var votes = await _voteRepository.GetVotesAsync("DateCreated", false, 0, amount,
             vote => vote.ChartId == chart.Id);
-        chart.Score = votes.Sum(vote => vote.Total * vote.Multiplier);
-        chart.Rating = GetRating(chart.Score, amount, r, 15);
+        chart.Score = votes.Sum(vote => vote.Total * vote.Multiplier) / 6;
+        chart.Rating = GetRating(chart.Score, amount, r);
         chart.RatingOnArrangement = GetRating(votes.Sum(vote => vote.Arrangement * vote.Multiplier), amount, r);
         chart.RatingOnFeel = GetRating(votes.Sum(vote => vote.Feel * vote.Multiplier), amount, r);
         chart.RatingOnVisualEffects = GetRating(votes.Sum(vote => vote.VisualEffects * vote.Multiplier), amount, r);

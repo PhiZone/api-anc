@@ -21,8 +21,8 @@ public class AdmissionRepository : IAdmissionRepository
     {
         var result = _context.Admissions.Where(admission => admission.AdmitteeId == admitteeId).OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
-
-        return await result.Skip(position).Take(take).ToListAsync();
+        result = result.Skip(position);
+        return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
 
     public async Task<ICollection<Admission>> GetAdmitteesAsync(Guid admitterId, string order, bool desc, int position,
@@ -30,8 +30,8 @@ public class AdmissionRepository : IAdmissionRepository
     {
         var result = _context.Admissions.Where(admission => admission.AdmitterId == admitterId).OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
-
-        return await result.Skip(position).Take(take).ToListAsync();
+        result = result.Skip(position);
+        return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
 
     public async Task<ICollection<Admission>> GetAdmissionsAsync(string order, bool desc, int position, int take,
@@ -39,8 +39,8 @@ public class AdmissionRepository : IAdmissionRepository
     {
         var result = _context.Admissions.OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
-
-        return await result.Skip(position).Take(take).ToListAsync();
+        result = result.Skip(position);
+        return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
 
     public async Task<Admission> GetAdmissionAsync(Guid admitterId, Guid admitteeId)
@@ -52,6 +52,12 @@ public class AdmissionRepository : IAdmissionRepository
     public async Task<bool> CreateAdmissionAsync(Admission admission)
     {
         await _context.Admissions.AddAsync(admission);
+        return await SaveAsync();
+    }
+
+    public async Task<bool> UpdateAdmissionAsync(Admission admission)
+    {
+        _context.Admissions.Update(admission);
         return await SaveAsync();
     }
 

@@ -7,7 +7,8 @@ namespace PhiZoneApi.Interfaces;
 
 public interface IChartSubmissionRepository
 {
-    Task<ICollection<ChartSubmission>> GetChartSubmissionsAsync(string order, bool desc, int position, int take, string? search = null,
+    Task<ICollection<ChartSubmission>> GetChartSubmissionsAsync(string order, bool desc, int position, int take,
+        string? search = null,
         Expression<Func<ChartSubmission, bool>>? predicate = null);
 
     Task<ChartSubmission> GetChartSubmissionAsync(Guid id);
@@ -26,7 +27,8 @@ public interface IChartSubmissionRepository
 
     Task<bool> SaveAsync();
 
-    Task<int> CountChartSubmissionsAsync(string? search = null, Expression<Func<ChartSubmission, bool>>? predicate = null);
+    Task<int> CountChartSubmissionsAsync(string? search = null,
+        Expression<Func<ChartSubmission, bool>>? predicate = null);
 
     Task<int> CountUserChartSubmissionsAsync(int userId, string? search = null,
         Expression<Func<ChartSubmission, bool>>? predicate = null);

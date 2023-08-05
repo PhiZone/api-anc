@@ -39,12 +39,13 @@ public class ApplicationController : Controller
     private readonly ILikeRepository _likeRepository;
     private readonly ILikeService _likeService;
     private readonly IMapper _mapper;
+    private readonly IResourceService _resourceService;
     private readonly UserManager<User> _userManager;
 
     public ApplicationController(IApplicationRepository applicationRepository, IOptions<DataSettings> dataSettings,
         UserManager<User> userManager, IFilterService filterService, IFileStorageService fileStorageService,
         IDtoMapper dtoMapper, IMapper mapper, ILikeRepository likeRepository, ILikeService likeService,
-        ICommentRepository commentRepository)
+        ICommentRepository commentRepository, IResourceService resourceService)
     {
         _applicationRepository = applicationRepository;
         _dataSettings = dataSettings;
@@ -55,6 +56,7 @@ public class ApplicationController : Controller
         _likeRepository = likeRepository;
         _likeService = likeService;
         _commentRepository = commentRepository;
+        _resourceService = resourceService;
         _fileStorageService = fileStorageService;
     }
 
@@ -150,7 +152,7 @@ public class ApplicationController : Controller
     public async Task<IActionResult> CreateApplication([FromForm] ApplicationCreationDto dto)
     {
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _userManager.IsInRoleAsync(currentUser, Roles.Administrator))
+        if (!await _resourceService.HasPermission(currentUser, Roles.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden, new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief,
@@ -213,7 +215,7 @@ public class ApplicationController : Controller
         var application = await _applicationRepository.GetApplicationAsync(id);
 
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _userManager.IsInRoleAsync(currentUser, Roles.Administrator))
+        if (!await _resourceService.HasPermission(currentUser, Roles.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden, new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief,
@@ -281,7 +283,7 @@ public class ApplicationController : Controller
         var application = await _applicationRepository.GetApplicationAsync(id);
 
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _userManager.IsInRoleAsync(currentUser, Roles.Administrator))
+        if (!await _resourceService.HasPermission(currentUser, Roles.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden, new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief,
@@ -329,7 +331,7 @@ public class ApplicationController : Controller
             });
 
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _userManager.IsInRoleAsync(currentUser, Roles.Administrator))
+        if (!await _resourceService.HasPermission(currentUser, Roles.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -395,7 +397,7 @@ public class ApplicationController : Controller
     /// <response code="404">When the specified application is not found.</response>
     [HttpPost("{id:guid}/likes")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
-    [Produces("application/json")]
+    [Produces("text/plain", "application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -508,7 +510,7 @@ public class ApplicationController : Controller
     /// <response code="500">When an internal server error has occurred.</response>
     [HttpPost("{id:guid}/comments")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
-    [Produces("application/json")]
+    [Produces("text/plain", "application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -518,7 +520,7 @@ public class ApplicationController : Controller
     public async Task<IActionResult> CreateComment([FromRoute] Guid id, [FromBody] CommentCreationDto dto)
     {
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _userManager.IsInRoleAsync(currentUser, Roles.Member))
+        if (!await _resourceService.HasPermission(currentUser, Roles.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {

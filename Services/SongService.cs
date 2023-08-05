@@ -46,7 +46,7 @@ public class SongService : ISongService
         properties.Headers = new Dictionary<string, object>
         {
             { "SongId", songId.ToString() },
-            { "IsSubmission", isSubmission.ToString()}
+            { "IsSubmission", isSubmission.ToString() }
         };
         channel.BasicPublish("", "song", false, properties, memoryStream.ToArray());
     }

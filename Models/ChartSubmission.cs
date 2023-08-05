@@ -28,9 +28,15 @@ public class ChartSubmission : Submission
 
     public int NoteCount { get; set; }
 
-    public Guid SongId { get; set; }
+    public Guid? SongId { get; set; }
 
-    public Song Song { get; set; } = null!;
+    public Song? Song { get; set; }
+
+    public Guid? SongSubmissionId { get; set; }
+
+    public SongSubmission? SongSubmission { get; set; }
+
+    public RequestStatus VolunteerStatus { get; set; }
 
     public RequestStatus AdmissionStatus { get; set; }
 
@@ -38,6 +44,11 @@ public class ChartSubmission : Submission
 
     public string GetDisplay()
     {
-        return Title != null ? $"{Title} [{Level} {Math.Floor(Difficulty)}]" : $"{Song.Title} [{Level} {Math.Floor(Difficulty)}]";
+        return Title != null
+            ? $"{Title} [{Level} {Math.Floor(Difficulty)}]"
+            : $"{
+                Title ?? (Song != null
+                    ? Song.Title
+                    : SongSubmission!.Title)} [{Level} {Math.Floor(Difficulty)}]";
     }
 }

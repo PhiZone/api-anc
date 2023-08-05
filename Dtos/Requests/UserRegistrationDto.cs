@@ -35,6 +35,7 @@ public class UserRegistrationDto
     [LanguageValidator(ErrorMessage = ResponseCodes.UnsupportedLanguage)]
     public string Language { get; set; } = null!;
 
+    [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     [RegularExpression(@"^[A-Z]{2}$", ErrorMessage = ResponseCodes.InvalidRegionCode)]
     [RegionValidator(ErrorMessage = ResponseCodes.UnsupportedRegion)]
     public string RegionCode { get; set; } = null!;

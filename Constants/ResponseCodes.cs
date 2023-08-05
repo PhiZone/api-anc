@@ -228,13 +228,16 @@ public static class ResponseCodes
     public const string Blacklisted = "Blacklisted";
 
     /// <summary>
-    ///     User has made a song / chart submission whose author info is inconsistent.
+    ///     User has made a song / chart submission whose author info is invalid.
     ///     This can happen to:
     ///     1. song submissions with an originality proof uploaded;
     ///     2. chart submissions;
-    ///     when:
-    ///     1. neither does the submission owner exist in AuthorName nor in Authorships;
-    ///     2. there exist users in AuthorName but not in Authorships, and vise versa.
+    ///     when the uploader is not present in <c>AuthorName</c>.
     /// </summary>
-    public const string InconsistentAuthorInfo = "InconsistentAuthorInfo";
+    public const string InvalidAuthorInfo = "InvalidAuthorInfo";
+
+    /// <summary>
+    ///     The parent resource is private.
+    /// </summary>
+    public const string ParentIsPrivate = "ParentIsPrivate";
 }

@@ -18,6 +18,8 @@ public class Collaboration
 
     public User Invitee { get; set; } = null!;
 
+    public string? Position { get; set; }
+
     public RequestStatus Status { get; set; }
 
     public DateTimeOffset DateCreated { get; set; }

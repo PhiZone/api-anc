@@ -12,7 +12,7 @@ public class PlayConfigurationResponseDto
 
     public int GoodJudgment { get; set; }
 
-    public List<int> AspectRatio { get; set; } = new(2);
+    public List<int>? AspectRatio { get; set; } = new(2);
 
     public double NoteSize { get; set; }
 

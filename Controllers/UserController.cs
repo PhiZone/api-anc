@@ -37,6 +37,7 @@ public class UserController : Controller
     private readonly IRecordRepository _recordRepository;
     private readonly IRecordService _recordService;
     private readonly IRegionRepository _regionRepository;
+    private readonly IResourceService _resourceService;
     private readonly UserManager<User> _userManager;
     private readonly IUserRelationRepository _userRelationRepository;
     private readonly IUserRepository _userRepository;
@@ -45,7 +46,7 @@ public class UserController : Controller
         UserManager<User> userManager, IMailService mailService, IFilterService filterService,
         IFileStorageService fileStorageService, IOptions<DataSettings> dataSettings, IMapper mapper,
         IDtoMapper dtoMapper, IRegionRepository regionRepository, IRecordRepository recordRepository,
-        IRecordService recordService)
+        IRecordService recordService, IResourceService resourceService)
     {
         _userRepository = userRepository;
         _userRelationRepository = userRelationRepository;
@@ -59,6 +60,7 @@ public class UserController : Controller
         _regionRepository = regionRepository;
         _recordRepository = recordRepository;
         _recordService = recordService;
+        _resourceService = resourceService;
     }
 
     /// <summary>
@@ -239,8 +241,8 @@ public class UserController : Controller
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         if (currentUser == null) return Unauthorized();
 
-        if ((currentUser.Id == id && !await _userManager.IsInRoleAsync(currentUser, Roles.Member)) ||
-            (currentUser.Id != id && !await _userManager.IsInRoleAsync(currentUser, Roles.Administrator)))
+        if ((currentUser.Id == id && !await _resourceService.HasPermission(currentUser, Roles.Member)) ||
+            (currentUser.Id != id && !await _resourceService.HasPermission(currentUser, Roles.Administrator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -335,8 +337,8 @@ public class UserController : Controller
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         if (currentUser == null) return Unauthorized();
 
-        if ((currentUser.Id == id && !await _userManager.IsInRoleAsync(currentUser, Roles.Member)) ||
-            (currentUser.Id != id && !await _userManager.IsInRoleAsync(currentUser, Roles.Administrator)))
+        if ((currentUser.Id == id && !await _resourceService.HasPermission(currentUser, Roles.Member)) ||
+            (currentUser.Id != id && !await _resourceService.HasPermission(currentUser, Roles.Administrator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -384,8 +386,8 @@ public class UserController : Controller
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         if (currentUser == null) return Unauthorized();
 
-        if ((currentUser.Id == id && !await _userManager.IsInRoleAsync(currentUser, Roles.Member)) ||
-            (currentUser.Id != id && !await _userManager.IsInRoleAsync(currentUser, Roles.Administrator)))
+        if ((currentUser.Id == id && !await _resourceService.HasPermission(currentUser, Roles.Member)) ||
+            (currentUser.Id != id && !await _resourceService.HasPermission(currentUser, Roles.Administrator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {

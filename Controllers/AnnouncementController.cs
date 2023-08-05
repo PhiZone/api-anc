@@ -36,11 +36,13 @@ public class AnnouncementController : Controller
     private readonly ILikeRepository _likeRepository;
     private readonly ILikeService _likeService;
     private readonly IMapper _mapper;
+    private readonly IResourceService _resourceService;
     private readonly UserManager<User> _userManager;
 
     public AnnouncementController(IAnnouncementRepository announcementRepository, IOptions<DataSettings> dataSettings,
         IDtoMapper dtoMapper, IFilterService filterService, UserManager<User> userManager,
-        ILikeRepository likeRepository, ILikeService likeService, IMapper mapper, ICommentRepository commentRepository)
+        ILikeRepository likeRepository, ILikeService likeService, IMapper mapper, ICommentRepository commentRepository,
+        IResourceService resourceService)
     {
         _announcementRepository = announcementRepository;
         _dataSettings = dataSettings;
@@ -51,6 +53,7 @@ public class AnnouncementController : Controller
         _likeService = likeService;
         _mapper = mapper;
         _commentRepository = commentRepository;
+        _resourceService = resourceService;
     }
 
     /// <summary>
@@ -145,7 +148,7 @@ public class AnnouncementController : Controller
     public async Task<IActionResult> CreateAnnouncement([FromBody] AnnouncementRequestDto dto)
     {
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _userManager.IsInRoleAsync(currentUser, Roles.Administrator))
+        if (!await _resourceService.HasPermission(currentUser, Roles.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden, new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief,
@@ -201,7 +204,7 @@ public class AnnouncementController : Controller
         var announcement = await _announcementRepository.GetAnnouncementAsync(id);
 
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _userManager.IsInRoleAsync(currentUser, Roles.Administrator))
+        if (!await _resourceService.HasPermission(currentUser, Roles.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden, new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief,
@@ -260,7 +263,7 @@ public class AnnouncementController : Controller
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        if (!await _userManager.IsInRoleAsync(currentUser, Roles.Moderator))
+        if (!await _resourceService.HasPermission(currentUser, Roles.Moderator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -326,7 +329,7 @@ public class AnnouncementController : Controller
     /// <response code="404">When the specified announcement is not found.</response>
     [HttpPost("{id:guid}/likes")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
-    [Produces("application/json")]
+    [Produces("text/plain", "application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -437,7 +440,7 @@ public class AnnouncementController : Controller
     /// <response code="500">When an internal server error has occurred.</response>
     [HttpPost("{id:guid}/comments")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
-    [Produces("application/json")]
+    [Produces("text/plain", "application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -447,7 +450,7 @@ public class AnnouncementController : Controller
     public async Task<IActionResult> CreateComment([FromRoute] Guid id, [FromBody] CommentCreationDto dto)
     {
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _userManager.IsInRoleAsync(currentUser, Roles.Member))
+        if (!await _resourceService.HasPermission(currentUser, Roles.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {

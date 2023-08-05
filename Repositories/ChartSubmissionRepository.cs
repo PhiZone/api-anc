@@ -18,8 +18,8 @@ public class ChartSubmissionRepository : IChartSubmissionRepository
         _context = context;
     }
 
-    public async Task<ICollection<ChartSubmission>> GetChartSubmissionsAsync(string order, bool desc, int position, int take,
-        string? search = null, Expression<Func<ChartSubmission, bool>>? predicate = null)
+    public async Task<ICollection<ChartSubmission>> GetChartSubmissionsAsync(string order, bool desc, int position,
+        int take, string? search = null, Expression<Func<ChartSubmission, bool>>? predicate = null)
     {
         var result = _context.ChartSubmissions.OrderBy(order, desc);
 
@@ -28,22 +28,28 @@ public class ChartSubmissionRepository : IChartSubmissionRepository
         if (search != null)
         {
             search = search.Trim().ToUpper();
-            result = result.Where(chart => chart.Song.Title.ToUpper().Contains(search) ||
-                                           (chart.Song.Edition != null &&
-                                            chart.Song.Edition.ToUpper().Contains(search)) ||
-                                           chart.Song.AuthorName.ToUpper().Contains(search) ||
-                                           (chart.Song.Description != null &&
-                                            chart.Song.Description.ToUpper().Contains(search)) ||
-                                           (chart.Title != null && chart.Title.ToUpper().Contains(search)) ||
-                                           chart.AuthorName.ToUpper().Contains(search) || (chart.Description != null &&
-                                               chart.Description.ToUpper().Contains(search)));
+            result = result.Where(chart =>
+                (chart.Song != null
+                    ? chart.Song.Title.ToUpper().Contains(search) ||
+                      (chart.Song.Edition != null && chart.Song.Edition.ToUpper().Contains(search)) ||
+                      chart.Song.AuthorName.ToUpper().Contains(search) ||
+                      (chart.Song.Description != null && chart.Song.Description.ToUpper().Contains(search))
+                    : chart.SongSubmission!.Title.ToUpper().Contains(search) ||
+                      (chart.SongSubmission.Edition != null &&
+                       chart.SongSubmission.Edition.ToUpper().Contains(search)) ||
+                      chart.SongSubmission.AuthorName.ToUpper().Contains(search) ||
+                      (chart.SongSubmission.Description != null &&
+                       chart.SongSubmission.Description.ToUpper().Contains(search))) ||
+                (chart.Title != null && chart.Title.ToUpper().Contains(search)) ||
+                chart.AuthorName.ToUpper().Contains(search) || (chart.Description != null &&
+                                                                chart.Description.ToUpper().Contains(search)));
         }
 
         return await result.Skip(position).Take(take).ToListAsync();
     }
 
-    public async Task<ICollection<ChartSubmission>> GetUserChartSubmissionsAsync(int userId, string order, bool desc, int position, int take,
-        string? search = null, Expression<Func<ChartSubmission, bool>>? predicate = null)
+    public async Task<ICollection<ChartSubmission>> GetUserChartSubmissionsAsync(int userId, string order, bool desc,
+        int position, int take, string? search = null, Expression<Func<ChartSubmission, bool>>? predicate = null)
     {
         var result = _context.ChartSubmissions.Where(chart => chart.OwnerId == userId).OrderBy(order, desc);
 
@@ -52,12 +58,19 @@ public class ChartSubmissionRepository : IChartSubmissionRepository
         if (search != null)
         {
             search = search.Trim().ToUpper();
-            result = result.Where(chart => chart.Song.Title.ToUpper().Contains(search) ||
-                                           (chart.Song.Edition != null &&
-                                            chart.Song.Edition.ToUpper().Contains(search)) ||
-                                           chart.Song.AuthorName.ToUpper().Contains(search) ||
-                                           (chart.Song.Description != null &&
-                                            chart.Song.Description.ToUpper().Contains(search)) ||
+            result = result.Where(chart => (chart.Song != null
+                                               ? chart.Song.Title.ToUpper().Contains(search) ||
+                                                 (chart.Song.Edition != null &&
+                                                  chart.Song.Edition.ToUpper().Contains(search)) ||
+                                                 chart.Song.AuthorName.ToUpper().Contains(search) ||
+                                                 (chart.Song.Description != null &&
+                                                  chart.Song.Description.ToUpper().Contains(search))
+                                               : chart.SongSubmission!.Title.ToUpper().Contains(search) ||
+                                                 (chart.SongSubmission.Edition != null &&
+                                                  chart.SongSubmission.Edition.ToUpper().Contains(search)) ||
+                                                 chart.SongSubmission.AuthorName.ToUpper().Contains(search) ||
+                                                 (chart.SongSubmission.Description != null &&
+                                                  chart.SongSubmission.Description.ToUpper().Contains(search))) ||
                                            (chart.Title != null && chart.Title.ToUpper().Contains(search)) ||
                                            chart.AuthorName.ToUpper().Contains(search) || (chart.Description != null &&
                                                chart.Description.ToUpper().Contains(search)));
@@ -90,7 +103,8 @@ public class ChartSubmissionRepository : IChartSubmissionRepository
 
     public async Task<bool> RemoveChartSubmissionAsync(Guid id)
     {
-        _context.ChartSubmissions.Remove((await _context.ChartSubmissions.FirstOrDefaultAsync(chart => chart.Id == id))!);
+        _context.ChartSubmissions.Remove(
+            (await _context.ChartSubmissions.FirstOrDefaultAsync(chart => chart.Id == id))!);
         return await SaveAsync();
     }
 
@@ -100,7 +114,8 @@ public class ChartSubmissionRepository : IChartSubmissionRepository
         return saved > 0;
     }
 
-    public async Task<int> CountChartSubmissionsAsync(string? search = null, Expression<Func<ChartSubmission, bool>>? predicate = null)
+    public async Task<int> CountChartSubmissionsAsync(string? search = null,
+        Expression<Func<ChartSubmission, bool>>? predicate = null)
     {
         var result = _context.ChartSubmissions.AsQueryable();
 
@@ -109,12 +124,19 @@ public class ChartSubmissionRepository : IChartSubmissionRepository
         if (search != null)
         {
             search = search.Trim().ToUpper();
-            result = result.Where(chart => chart.Song.Title.ToUpper().Contains(search) ||
-                                           (chart.Song.Edition != null &&
-                                            chart.Song.Edition.ToUpper().Contains(search)) ||
-                                           chart.Song.AuthorName.ToUpper().Contains(search) ||
-                                           (chart.Song.Description != null &&
-                                            chart.Song.Description.ToUpper().Contains(search)) ||
+            result = result.Where(chart => (chart.Song != null
+                                               ? chart.Song.Title.ToUpper().Contains(search) ||
+                                                 (chart.Song.Edition != null &&
+                                                  chart.Song.Edition.ToUpper().Contains(search)) ||
+                                                 chart.Song.AuthorName.ToUpper().Contains(search) ||
+                                                 (chart.Song.Description != null &&
+                                                  chart.Song.Description.ToUpper().Contains(search))
+                                               : chart.SongSubmission!.Title.ToUpper().Contains(search) ||
+                                                 (chart.SongSubmission.Edition != null &&
+                                                  chart.SongSubmission.Edition.ToUpper().Contains(search)) ||
+                                                 chart.SongSubmission.AuthorName.ToUpper().Contains(search) ||
+                                                 (chart.SongSubmission.Description != null &&
+                                                  chart.SongSubmission.Description.ToUpper().Contains(search))) ||
                                            (chart.Title != null && chart.Title.ToUpper().Contains(search)) ||
                                            chart.AuthorName.ToUpper().Contains(search) || (chart.Description != null &&
                                                chart.Description.ToUpper().Contains(search)));
@@ -123,7 +145,8 @@ public class ChartSubmissionRepository : IChartSubmissionRepository
         return await result.CountAsync();
     }
 
-    public async Task<int> CountUserChartSubmissionsAsync(int userId, string? search = null, Expression<Func<ChartSubmission, bool>>? predicate = null)
+    public async Task<int> CountUserChartSubmissionsAsync(int userId, string? search = null,
+        Expression<Func<ChartSubmission, bool>>? predicate = null)
     {
         var result = _context.ChartSubmissions.Where(chart => chart.OwnerId == userId).AsQueryable();
 
@@ -132,12 +155,19 @@ public class ChartSubmissionRepository : IChartSubmissionRepository
         if (search != null)
         {
             search = search.Trim().ToUpper();
-            result = result.Where(chart => chart.Song.Title.ToUpper().Contains(search) ||
-                                           (chart.Song.Edition != null &&
-                                            chart.Song.Edition.ToUpper().Contains(search)) ||
-                                           chart.Song.AuthorName.ToUpper().Contains(search) ||
-                                           (chart.Song.Description != null &&
-                                            chart.Song.Description.ToUpper().Contains(search)) ||
+            result = result.Where(chart => (chart.Song != null
+                                               ? chart.Song.Title.ToUpper().Contains(search) ||
+                                                 (chart.Song.Edition != null &&
+                                                  chart.Song.Edition.ToUpper().Contains(search)) ||
+                                                 chart.Song.AuthorName.ToUpper().Contains(search) ||
+                                                 (chart.Song.Description != null &&
+                                                  chart.Song.Description.ToUpper().Contains(search))
+                                               : chart.SongSubmission!.Title.ToUpper().Contains(search) ||
+                                                 (chart.SongSubmission.Edition != null &&
+                                                  chart.SongSubmission.Edition.ToUpper().Contains(search)) ||
+                                                 chart.SongSubmission.AuthorName.ToUpper().Contains(search) ||
+                                                 (chart.SongSubmission.Description != null &&
+                                                  chart.SongSubmission.Description.ToUpper().Contains(search))) ||
                                            (chart.Title != null && chart.Title.ToUpper().Contains(search)) ||
                                            chart.AuthorName.ToUpper().Contains(search) || (chart.Description != null &&
                                                chart.Description.ToUpper().Contains(search)));

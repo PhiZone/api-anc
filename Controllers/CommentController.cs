@@ -34,11 +34,13 @@ public class CommentController : Controller
     private readonly ILikeService _likeService;
     private readonly IMapper _mapper;
     private readonly IReplyRepository _replyRepository;
+    private readonly IResourceService _resourceService;
     private readonly UserManager<User> _userManager;
 
     public CommentController(ICommentRepository commentRepository, IOptions<DataSettings> dataSettings,
         IDtoMapper dtoMapper, IFilterService filterService, UserManager<User> userManager,
-        IReplyRepository replyRepository, ILikeRepository likeRepository, ILikeService likeService, IMapper mapper)
+        IReplyRepository replyRepository, ILikeRepository likeRepository, ILikeService likeService, IMapper mapper,
+        IResourceService resourceService)
     {
         _commentRepository = commentRepository;
         _dataSettings = dataSettings;
@@ -49,6 +51,7 @@ public class CommentController : Controller
         _likeRepository = likeRepository;
         _likeService = likeService;
         _mapper = mapper;
+        _resourceService = resourceService;
     }
 
     /// <summary>
@@ -152,8 +155,9 @@ public class CommentController : Controller
             });
 
         var comment = await _commentRepository.GetCommentAsync(id);
-        if ((currentUser.Id == comment.OwnerId && !await _userManager.IsInRoleAsync(currentUser, Roles.Member)) ||
-            (currentUser.Id != comment.OwnerId && !await _userManager.IsInRoleAsync(currentUser, Roles.Administrator)))
+        if ((currentUser.Id == comment.OwnerId && !await _resourceService.HasPermission(currentUser, Roles.Member)) ||
+            (currentUser.Id != comment.OwnerId &&
+             !await _resourceService.HasPermission(currentUser, Roles.Administrator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -226,7 +230,7 @@ public class CommentController : Controller
     /// <response code="404">When the specified comment is not found.</response>
     [HttpPost("{id:guid}/replies")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
-    [Produces("application/json")]
+    [Produces("text/plain", "application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -235,7 +239,7 @@ public class CommentController : Controller
     public async Task<IActionResult> CreateReply([FromRoute] Guid id, [FromBody] ReplyCreationDto dto)
     {
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _userManager.IsInRoleAsync(currentUser, Roles.Member))
+        if (!await _resourceService.HasPermission(currentUser, Roles.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -314,7 +318,7 @@ public class CommentController : Controller
     /// <response code="404">When the specified comment is not found.</response>
     [HttpPost("{id:guid}/likes")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
-    [Produces("application/json")]
+    [Produces("text/plain", "application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -322,7 +326,7 @@ public class CommentController : Controller
     public async Task<IActionResult> CreateLike([FromRoute] Guid id)
     {
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _userManager.IsInRoleAsync(currentUser, Roles.Member))
+        if (!await _resourceService.HasPermission(currentUser, Roles.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -360,7 +364,7 @@ public class CommentController : Controller
     public async Task<IActionResult> RemoveLike([FromRoute] Guid id)
     {
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _userManager.IsInRoleAsync(currentUser, Roles.Member))
+        if (!await _resourceService.HasPermission(currentUser, Roles.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {

@@ -56,7 +56,4 @@ public class SongUpdateDto
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     public TimeSpan PreviewEnd { get; set; }
-
-    [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
-    public List<AuthorshipRequestDto> Authorships { get; set; } = null!;
 }
