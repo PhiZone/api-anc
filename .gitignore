@@ -11,9 +11,6 @@
 *.sln.docstates
 deploy.sh
 
-# User-specific files (MonoDevelop/Xamarin Studio)
-*.userprefs
-
 # Mono auto generated files
 mono_crash.*
 
@@ -305,10 +302,6 @@ node_modules/
 *.dsw
 *.dsp
 
-# Visual Studio 6 technical files
-*.ncb
-*.aps
-
 # Visual Studio LightSwitch build output
 **/*.HTMLClient/GeneratedArtifacts
 **/*.DesktopClient/GeneratedArtifacts
@@ -390,13 +383,6 @@ FodyWeavers.xsd
 
 # Local History for Visual Studio Code
 .history/
-
-# Windows Installer files from build outputs
-*.cab
-*.msi
-*.msix
-*.msm
-*.msp
 
 # JetBrains Rider
 *.sln.iml
