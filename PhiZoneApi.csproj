@@ -14,33 +14,32 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="AutoMapper" Version="12.0.1"/>
-        <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.1"/>
-        <PackageReference Include="MailKit" Version="4.1.0"/>
-        <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="7.0.9"/>
-        <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="7.0.9"/>
-        <PackageReference Include="Microsoft.AspNetCore.Mvc.Versioning" Version="5.1.0"/>
-        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="7.0.9"/>
-        <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.7.0-2.final"/>
+        <PackageReference Include="AutoMapper" Version="12.0.1" />
+        <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.1" />
+        <PackageReference Include="MailKit" Version="4.1.0" />
+        <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="7.0.9" />
+        <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="7.0.9" />
+        <PackageReference Include="Microsoft.AspNetCore.Mvc.Versioning" Version="5.1.0" />
+        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="7.0.9" />
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.7.0-2.final" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="7.0.7">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="7.0.9"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="7.0.7">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-        <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.18.1"/>
-        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="7.0.4"/>
-        <PackageReference Include="NVorbis" Version="0.10.5"/>
-        <PackageReference Include="OpenIddict.AspNetCore" Version="4.6.0"/>
-        <PackageReference Include="OpenIddict.EntityFrameworkCore" Version="4.5.0"/>
-        <PackageReference Include="RabbitMQ.Client" Version="6.5.0"/>
-        <PackageReference Include="SixLabors.ImageSharp" Version="3.0.1"/>
-        <PackageReference Include="StackExchange.Redis" Version="2.6.116"/>
-        <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0"/>
-        <PackageReference Include="Swashbuckle.AspNetCore.Newtonsoft" Version="6.5.0"/>
+        <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.18.1" />
+        <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="7.0.4" />
+        <PackageReference Include="NVorbis" Version="0.10.5" />
+        <PackageReference Include="OpenIddict.AspNetCore" Version="4.6.0" />
+        <PackageReference Include="OpenIddict.EntityFrameworkCore" Version="4.5.0" />
+        <PackageReference Include="RabbitMQ.Client" Version="6.5.0" />
+        <PackageReference Include="SixLabors.ImageSharp" Version="3.0.1" />
+        <PackageReference Include="StackExchange.Redis" Version="2.6.122" />
+        <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
+        <PackageReference Include="Swashbuckle.AspNetCore.Newtonsoft" Version="6.5.0" />
     </ItemGroup>
 
     <ItemGroup>
