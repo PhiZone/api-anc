@@ -16,18 +16,20 @@ namespace PhiZoneApi.Services;
 
 public class MailService : IMailService
 {
+    private readonly ILogger<MailService> _logger;
     private readonly IRabbitMqService _rabbitMqService;
     private readonly IConnectionMultiplexer _redis;
     private readonly MailSettings _settings;
     private readonly ITemplateService _templateService;
 
     public MailService(IOptions<MailSettings> options, ITemplateService templateService,
-        IRabbitMqService rabbitMqService, IConnectionMultiplexer redis)
+        IRabbitMqService rabbitMqService, IConnectionMultiplexer redis, ILogger<MailService> logger)
     {
         _settings = options.Value;
         _templateService = templateService;
         _rabbitMqService = rabbitMqService;
         _redis = redis;
+        _logger = logger;
     }
 
     public async Task<MailTaskDto?> GenerateEmailAsync(User user, EmailRequestMode mode, SucceedingAction? action)
@@ -103,7 +105,8 @@ public class MailService : IMailService
         }
         catch (Exception ex)
         {
-            Console.WriteLine(ex);
+            _logger.LogWarning(LogEvents.MailFailure, ex, "Failed to send an email to {Email} for {User}",
+                mailTaskDto.User.Email, mailTaskDto.User.UserName);
             return ex.Message;
         }
 

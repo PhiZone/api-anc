@@ -41,7 +41,7 @@ public class UserInfoController : Controller
     /// <response code="403">When the user does not have sufficient permission.</response>
     [HttpGet]
     [ServiceFilter(typeof(ETagFilter))]
-    [Produces("application/json", "text/plain")]
+    [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<UserDetailedDto>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status304NotModified, "text/plain")]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]

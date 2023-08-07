@@ -23,14 +23,14 @@ using PhiZoneApi.Utils;
 
 namespace PhiZoneApi.Controllers;
 
-[Route("chartSubmissions")]
+[Route("submissions/charts")]
 [ApiVersion("2.0")]
 [ApiController]
-[Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme,
-    Policy = "AllowAnonymous")]
+[Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
 public class ChartSubmissionController : Controller
 {
     private readonly IAdmissionRepository _admissionRepository;
+    private readonly IChartAssetSubmissionRepository _chartAssetSubmissionRepository;
     private readonly IChartService _chartService;
     private readonly IChartSubmissionRepository _chartSubmissionRepository;
     private readonly ICollaborationRepository _collaborationRepository;
@@ -49,14 +49,13 @@ public class ChartSubmissionController : Controller
 
     public ChartSubmissionController(IChartSubmissionRepository chartSubmissionRepository,
         IOptions<DataSettings> dataSettings, UserManager<User> userManager, IFilterService filterService,
-        IFileStorageService fileStorageService, IDtoMapper dtoMapper, IMapper mapper,
-        ISubmissionService submissionService, ISongRepository songRepository, ILikeRepository likeRepository,
-        ILikeService likeService, IVolunteerVoteService volunteerVoteService,
-        IAuthorshipRepository authorshipRepository, IResourceService resourceService,
+        IFileStorageService fileStorageService, IMapper mapper, ISongRepository songRepository,
+        IVolunteerVoteService volunteerVoteService, IResourceService resourceService,
         ISongSubmissionRepository songSubmissionRepository, IChartService chartService,
         IVolunteerVoteRepository volunteerVoteRepository, IAdmissionRepository admissionRepository,
         INotificationService notificationService, ITemplateService templateService,
-        ICollaborationRepository collaborationRepository)
+        ICollaborationRepository collaborationRepository,
+        IChartAssetSubmissionRepository chartAssetSubmissionRepository)
     {
         _chartSubmissionRepository = chartSubmissionRepository;
         _dataSettings = dataSettings;
@@ -73,6 +72,7 @@ public class ChartSubmissionController : Controller
         _notificationService = notificationService;
         _templateService = templateService;
         _collaborationRepository = collaborationRepository;
+        _chartAssetSubmissionRepository = chartAssetSubmissionRepository;
         _fileStorageService = fileStorageService;
     }
 
@@ -82,10 +82,14 @@ public class ChartSubmissionController : Controller
     /// <returns>An array of chart submissions.</returns>
     /// <response code="200">Returns an array of chart submissions.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
     [HttpGet]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<ChartSubmissionDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetChartSubmissions([FromQuery] ArrayWithTimeRequestDto dto,
         [FromQuery] ChartSubmissionFilterDto? filterDto = null)
     {
@@ -133,13 +137,17 @@ public class ChartSubmissionController : Controller
     ///     When the resource has not been updated since last retrieval. Requires <c>If-None-Match</c>.
     /// </response>
     /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
     /// <response code="404">When the specified chart submission is not found.</response>
     [HttpGet("{id:guid}")]
     [ServiceFilter(typeof(ETagFilter))]
-    [Produces("application/json", "text/plain")]
+    [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<ChartSubmissionDto>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status304NotModified, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetChartSubmission([FromRoute] Guid id)
     {
@@ -175,9 +183,8 @@ public class ChartSubmissionController : Controller
     /// <response code="403">When the user does not have sufficient permission.</response>
     /// <response code="500">When an internal server error has occurred.</response>
     [HttpPost]
-    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Consumes("multipart/form-data")]
-    [Produces("text/plain", "application/json")]
+    [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -192,6 +199,12 @@ public class ChartSubmissionController : Controller
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
+
+        if (!_resourceService.GetAuthorIds(dto.AuthorName).Contains(currentUser.Id))
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidAuthorInfo
+            });
 
         Song? song = null;
         if (dto.SongId != null)
@@ -225,6 +238,11 @@ public class ChartSubmissionController : Controller
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentIsPrivate
                 });
+            if (songSubmission.RepresentationId != null)
+            {
+                song = await _songRepository.GetSongAsync(songSubmission.RepresentationId.Value);
+                songSubmission = null;
+            }
         }
 
         if ((song != null && songSubmission != null) || (song == null && songSubmission == null))
@@ -236,7 +254,7 @@ public class ChartSubmissionController : Controller
             });
 
         var illustrationUrl = dto.Illustration != null
-            ? (await _fileStorageService.UploadImage<ChartSubmission>(
+            ? (await _fileStorageService.UploadImage<Chart>(
                 dto.Title ?? (song != null ? song.Title : songSubmission!.Title), dto.Illustration, (16, 9))).Item1
             : null;
 
@@ -310,7 +328,7 @@ public class ChartSubmissionController : Controller
                     {
                         "Chart",
                         _resourceService.GetRichText<ChartSubmission>(chartSubmission.Id.ToString(),
-                            chartSubmission.GetDisplay())
+                            await _chartService.GetDisplayName(chartSubmission))
                     },
                     { "Song", _resourceService.GetRichText<Song>(song.Id.ToString(), song.GetDisplay()) },
                     {
@@ -338,9 +356,8 @@ public class ChartSubmissionController : Controller
     /// <response code="404">When the specified chart submission is not found.</response>
     /// <response code="500">When an internal server error has occurred.</response>
     [HttpPatch("{id:guid}")]
-    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Consumes("application/json")]
-    [Produces("text/plain", "application/json")]
+    [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -380,6 +397,12 @@ public class ChartSubmissionController : Controller
                 Errors = ModelErrorTranslator.Translate(ModelState)
             });
 
+        if (!_resourceService.GetAuthorIds(dto.AuthorName).Contains(currentUser.Id))
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidAuthorInfo
+            });
+
         chartSubmission.Title = dto.Title;
         chartSubmission.LevelType = dto.LevelType;
         chartSubmission.Level = dto.Level;
@@ -397,10 +420,6 @@ public class ChartSubmissionController : Controller
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
-        await _volunteerVoteRepository.RemoveVolunteerVotesAsync(
-            await _volunteerVoteRepository.GetVolunteerVotesAsync("DateCreated", true, 0, -1,
-                e => e.ChartId == chartSubmission.Id));
-
         return NoContent();
     }
 
@@ -417,9 +436,8 @@ public class ChartSubmissionController : Controller
     /// <response code="404">When the specified chartSubmission is not found.</response>
     /// <response code="500">When an internal server error has occurred.</response>
     [HttpPatch("{id:guid}/file")]
-    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Consumes("multipart/form-data")]
-    [Produces("text/plain", "application/json")]
+    [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -472,68 +490,6 @@ public class ChartSubmissionController : Controller
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
-        await _volunteerVoteRepository.RemoveVolunteerVotesAsync(
-            await _volunteerVoteRepository.GetVolunteerVotesAsync("DateCreated", true, 0, -1,
-                e => e.ChartId == chartSubmission.Id));
-
-        return NoContent();
-    }
-
-    /// <summary>
-    ///     Removes a chart submission's file.
-    /// </summary>
-    /// <param name="id">A chart submission's ID.</param>
-    /// <returns>An empty body.</returns>
-    /// <response code="204">Returns an empty body.</response>
-    /// <response code="400">When any of the parameters is invalid.</response>
-    /// <response code="401">When the user is not authorized.</response>
-    /// <response code="403">When the user does not have sufficient permission.</response>
-    /// <response code="404">When the specified chartSubmission is not found.</response>
-    /// <response code="500">When an internal server error has occurred.</response>
-    [HttpDelete("{id:guid}/file")]
-    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
-    [Consumes("multipart/form-data")]
-    [Produces("text/plain", "application/json")]
-    [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
-    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
-    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
-    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
-    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> RemoveChartSubmissionFile([FromRoute] Guid id)
-    {
-        if (!await _chartSubmissionRepository.ChartSubmissionExistsAsync(id))
-            return NotFound(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
-            });
-
-        var chartSubmission = await _chartSubmissionRepository.GetChartSubmissionAsync(id);
-
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if ((chartSubmission.OwnerId == currentUser.Id &&
-             !await _resourceService.HasPermission(currentUser, Roles.Qualified)) ||
-            (chartSubmission.OwnerId != currentUser.Id &&
-             !await _resourceService.HasPermission(currentUser, Roles.Moderator)))
-            return StatusCode(StatusCodes.Status403Forbidden,
-                new ResponseDto<object>
-                {
-                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
-                });
-
-        chartSubmission.File = null;
-        chartSubmission.Status = RequestStatus.Waiting;
-        chartSubmission.VolunteerStatus = RequestStatus.Waiting;
-        chartSubmission.DateUpdated = DateTimeOffset.UtcNow;
-
-        if (!await _chartSubmissionRepository.UpdateChartSubmissionAsync(chartSubmission))
-            return StatusCode(StatusCodes.Status500InternalServerError,
-                new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
-
-        await _volunteerVoteRepository.RemoveVolunteerVotesAsync(
-            await _volunteerVoteRepository.GetVolunteerVotesAsync("DateCreated", true, 0, -1,
-                e => e.ChartId == chartSubmission.Id));
-
         return NoContent();
     }
 
@@ -550,9 +506,8 @@ public class ChartSubmissionController : Controller
     /// <response code="404">When the specified chartSubmission is not found.</response>
     /// <response code="500">When an internal server error has occurred.</response>
     [HttpPatch("{id:guid}/illustration")]
-    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Consumes("multipart/form-data")]
-    [Produces("text/plain", "application/json")]
+    [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -582,7 +537,7 @@ public class ChartSubmissionController : Controller
 
         if (dto.File != null)
         {
-            chartSubmission.Illustration = (await _fileStorageService.UploadImage<ChartSubmission>(
+            chartSubmission.Illustration = (await _fileStorageService.UploadImage<Chart>(
                 chartSubmission.Title ?? (chartSubmission.Song != null
                     ? chartSubmission.Song.Title
                     : chartSubmission.SongSubmission!.Title), dto.File, (16, 9))).Item1;
@@ -594,10 +549,6 @@ public class ChartSubmissionController : Controller
         if (!await _chartSubmissionRepository.UpdateChartSubmissionAsync(chartSubmission))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
-
-        await _volunteerVoteRepository.RemoveVolunteerVotesAsync(
-            await _volunteerVoteRepository.GetVolunteerVotesAsync("DateCreated", true, 0, -1,
-                e => e.ChartId == chartSubmission.Id));
 
         return NoContent();
     }
@@ -614,9 +565,8 @@ public class ChartSubmissionController : Controller
     /// <response code="404">When the specified chartSubmission is not found.</response>
     /// <response code="500">When an internal server error has occurred.</response>
     [HttpDelete("{id:guid}/illustration")]
-    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Consumes("multipart/form-data")]
-    [Produces("text/plain", "application/json")]
+    [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -653,10 +603,6 @@ public class ChartSubmissionController : Controller
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
-        await _volunteerVoteRepository.RemoveVolunteerVotesAsync(
-            await _volunteerVoteRepository.GetVolunteerVotesAsync("DateCreated", true, 0, -1,
-                e => e.ChartId == chartSubmission.Id));
-
         return NoContent();
     }
 
@@ -672,8 +618,7 @@ public class ChartSubmissionController : Controller
     /// <response code="404">When the specified chart submission is not found.</response>
     /// <response code="500">When an internal server error has occurred.</response>
     [HttpDelete("{id:guid}")]
-    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
-    [Produces("text/plain", "application/json")]
+    [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -709,6 +654,401 @@ public class ChartSubmissionController : Controller
     }
 
     /// <summary>
+    ///     Retrieves chart submission's assets.
+    /// </summary>
+    /// <returns>An array of chart submission's assets.</returns>
+    /// <response code="200">Returns an array of chart assets.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
+    [HttpGet("{id:guid}/assets")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<ChartAssetDto>>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> GetChartSubmissionAssets([FromRoute] Guid id,
+        [FromQuery] ArrayWithTimeRequestDto dto,
+        [FromQuery] ChartAssetSubmissionFilterDto? filterDto = null)
+    {
+        if (!await _chartSubmissionRepository.ChartSubmissionExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
+            });
+
+        var chartSubmission = await _chartSubmissionRepository.GetChartSubmissionAsync(id);
+
+        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if ((chartSubmission.OwnerId == currentUser.Id &&
+             !await _resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+            (chartSubmission.OwnerId != currentUser.Id &&
+             !await _resourceService.HasPermission(currentUser, Roles.Moderator)))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+        dto.PerPage = dto.PerPage > 0
+            ? dto.PerPage <= _dataSettings.Value.PaginationMaxPerPage
+                ? dto.PerPage
+                : _dataSettings.Value.PaginationMaxPerPage
+            : _dataSettings.Value.PaginationPerPage;
+        var position = dto.PerPage * (dto.Page - 1);
+        var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser,
+            e => e.ChartSubmissionId == id);
+        var chartAssets = await _chartAssetSubmissionRepository.GetChartAssetSubmissionsAsync(dto.Order, dto.Desc,
+            position,
+            dto.PerPage, predicateExpr);
+        var total = await _chartAssetSubmissionRepository.CountChartAssetSubmissionsAsync(predicateExpr);
+        var list = chartAssets.Select(chartAsset => _mapper.Map<ChartAssetDto>(chartAsset)).ToList();
+
+        return Ok(new ResponseDto<IEnumerable<ChartAssetDto>>
+        {
+            Status = ResponseStatus.Ok,
+            Code = ResponseCodes.Ok,
+            Total = total,
+            PerPage = dto.PerPage,
+            HasPrevious = position > 0,
+            HasNext = position < total - total % dto.PerPage,
+            Data = list
+        });
+    }
+
+    /// <summary>
+    ///     Retrieves a specific chart submission's asset.
+    /// </summary>
+    /// <param name="id">A chart submission's ID.</param>
+    /// <param name="assetId">A chart submission asset's ID.</param>
+    /// <returns>A chart submission's asset.</returns>
+    /// <response code="200">Returns a chart submission's asset.</response>
+    /// <response code="304">
+    ///     When the resource has not been updated since last retrieval. Requires <c>If-None-Match</c>.
+    /// </response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
+    /// <response code="404">When the specified chart submission or the asset is not found.</response>
+    /// <response code="500">When an internal server error has occurred.</response>
+    [HttpGet("{id:guid}/assets/{assetId:guid}")]
+    [ServiceFilter(typeof(ETagFilter))]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<ChartAssetDto>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status304NotModified, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> GetChartSubmissionAsset([FromRoute] Guid id, [FromRoute] Guid assetId)
+    {
+        if (!await _chartSubmissionRepository.ChartSubmissionExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
+            });
+
+        var chartSubmission = await _chartSubmissionRepository.GetChartSubmissionAsync(id);
+
+        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if ((chartSubmission.OwnerId == currentUser.Id &&
+             !await _resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+            (chartSubmission.OwnerId != currentUser.Id &&
+             !await _resourceService.HasPermission(currentUser, Roles.Moderator)))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+
+        if (!await _chartAssetSubmissionRepository.ChartAssetSubmissionExistsAsync(assetId))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+
+        var chartAsset = await _chartAssetSubmissionRepository.GetChartAssetSubmissionAsync(assetId);
+
+        var dto = _mapper.Map<ChartAssetDto>(chartAsset);
+
+        return Ok(new ResponseDto<ChartAssetDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
+    }
+
+    /// <summary>
+    ///     Creates a chart submission's asset.
+    /// </summary>
+    /// <param name="id">A chart submission's ID.</param>
+    /// <param name="dto">The new asset.</param>
+    /// <returns>An empty body.</returns>
+    /// <response code="201">Returns an empty body.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
+    /// <response code="404">When the specified chart submission is not found.</response>
+    /// <response code="500">When an internal server error has occurred.</response>
+    [HttpPatch("{id:guid}/assets")]
+    [Consumes("multipart/form-data")]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> CreateChartSubmissionAsset([FromRoute] Guid id,
+        [FromForm] ChartAssetCreationDto dto)
+    {
+        if (!await _chartSubmissionRepository.ChartSubmissionExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
+            });
+
+        var chartSubmission = await _chartSubmissionRepository.GetChartSubmissionAsync(id);
+
+        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if ((chartSubmission.OwnerId == currentUser.Id &&
+             !await _resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+            (chartSubmission.OwnerId != currentUser.Id &&
+             !await _resourceService.HasPermission(currentUser, Roles.Moderator)))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+
+        var chartAsset = new ChartAssetSubmission
+        {
+            ChartSubmissionId = id,
+            Type = dto.Type,
+            Name = dto.Name,
+            File = (await _fileStorageService.Upload<ChartAsset>(
+                chartSubmission.Title ?? (chartSubmission.Song != null
+                    ? chartSubmission.Song.Title
+                    : chartSubmission.SongSubmission!.Title), dto.File)).Item1,
+            OwnerId = currentUser.Id,
+            DateCreated = DateTimeOffset.UtcNow,
+            DateUpdated = DateTimeOffset.UtcNow
+        };
+
+        if (!await _chartAssetSubmissionRepository.CreateChartAssetSubmissionAsync(chartAsset) ||
+            !await _chartSubmissionRepository.UpdateChartSubmissionAsync(chartSubmission))
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+
+        return StatusCode(StatusCodes.Status201Created);
+    }
+
+    /// <summary>
+    ///     Updates a chart submission's asset.
+    /// </summary>
+    /// <param name="id">A chart submission's ID.</param>
+    /// <param name="assetId">A chart submission asset's ID.</param>
+    /// <param name="patchDocument">A JSON Patch Document.</param>
+    /// <returns>An empty body.</returns>
+    /// <response code="204">Returns an empty body.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
+    /// <response code="404">When the specified chart submission or the asset is not found.</response>
+    /// <response code="500">When an internal server error has occurred.</response>
+    [HttpPatch("{id:guid}/assets/{assetId:guid}")]
+    [Consumes("multipart/form-data")]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> UpdateChartSubmissionAsset([FromRoute] Guid id, [FromRoute] Guid assetId,
+        [FromBody] JsonPatchDocument<ChartAssetUpdateDto> patchDocument)
+    {
+        if (!await _chartSubmissionRepository.ChartSubmissionExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
+            });
+
+        var chartSubmission = await _chartSubmissionRepository.GetChartSubmissionAsync(id);
+
+        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if ((chartSubmission.OwnerId == currentUser.Id &&
+             !await _resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+            (chartSubmission.OwnerId != currentUser.Id &&
+             !await _resourceService.HasPermission(currentUser, Roles.Moderator)))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+
+        if (!await _chartAssetSubmissionRepository.ChartAssetSubmissionExistsAsync(assetId))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+
+        var chartAsset = await _chartAssetSubmissionRepository.GetChartAssetSubmissionAsync(assetId);
+
+        var dto = _mapper.Map<ChartAssetUpdateDto>(chartAsset);
+        patchDocument.ApplyTo(dto, ModelState);
+
+        if (!TryValidateModel(dto))
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorDetailed,
+                Code = ResponseCodes.InvalidData,
+                Errors = ModelErrorTranslator.Translate(ModelState)
+            });
+
+        chartAsset.Type = dto.Type;
+        chartAsset.Name = dto.Name;
+        chartAsset.DateUpdated = DateTimeOffset.UtcNow;
+        chartSubmission.Status = RequestStatus.Waiting;
+        chartSubmission.VolunteerStatus = RequestStatus.Waiting;
+        chartSubmission.DateUpdated = DateTimeOffset.UtcNow;
+
+        if (!await _chartAssetSubmissionRepository.UpdateChartAssetSubmissionAsync(chartAsset) ||
+            !await _chartSubmissionRepository.UpdateChartSubmissionAsync(chartSubmission))
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+
+        return NoContent();
+    }
+
+    /// <summary>
+    ///     Updates the file for a chart submission's asset.
+    /// </summary>
+    /// <param name="id">A chart submission's ID.</param>
+    /// <param name="assetId">A chart submission asset's ID.</param>
+    /// <param name="dto">The new file.</param>
+    /// <returns>An empty body.</returns>
+    /// <response code="204">Returns an empty body.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
+    /// <response code="404">When the specified chart submission or the asset is not found.</response>
+    /// <response code="500">When an internal server error has occurred.</response>
+    [HttpPatch("{id:guid}/assets/{assetId:guid}/file")]
+    [Consumes("multipart/form-data")]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> UpdateChartSubmissionAssetFile([FromRoute] Guid id, [FromRoute] Guid assetId,
+        [FromForm] FileDto dto)
+    {
+        if (!await _chartSubmissionRepository.ChartSubmissionExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
+            });
+
+        var chartSubmission = await _chartSubmissionRepository.GetChartSubmissionAsync(id);
+
+        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if ((chartSubmission.OwnerId == currentUser.Id &&
+             !await _resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+            (chartSubmission.OwnerId != currentUser.Id &&
+             !await _resourceService.HasPermission(currentUser, Roles.Moderator)))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+
+        if (!await _chartAssetSubmissionRepository.ChartAssetSubmissionExistsAsync(assetId))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+
+        var chartAsset = await _chartAssetSubmissionRepository.GetChartAssetSubmissionAsync(assetId);
+
+        if (dto.File != null)
+        {
+            chartAsset.File = (await _fileStorageService.Upload<ChartAsset>(
+                chartSubmission.Title ?? (chartSubmission.Song != null
+                    ? chartSubmission.Song.Title
+                    : chartSubmission.SongSubmission!.Title), dto.File)).Item1;
+            chartAsset.DateUpdated = DateTimeOffset.UtcNow;
+            chartSubmission.Status = RequestStatus.Waiting;
+            chartSubmission.VolunteerStatus = RequestStatus.Waiting;
+            chartSubmission.DateUpdated = DateTimeOffset.UtcNow;
+        }
+
+        if (!await _chartAssetSubmissionRepository.UpdateChartAssetSubmissionAsync(chartAsset) ||
+            !await _chartSubmissionRepository.UpdateChartSubmissionAsync(chartSubmission))
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+
+        return NoContent();
+    }
+
+    /// <summary>
+    ///     Removes a chart submission's asset.
+    /// </summary>
+    /// <param name="id">A chart submission's ID.</param>
+    /// <param name="assetId">A chart submission asset's ID.</param>
+    /// <returns>An empty body.</returns>
+    /// <response code="204">Returns an empty body.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
+    /// <response code="404">When the specified chart submission or the asset is not found.</response>
+    /// <response code="500">When an internal server error has occurred.</response>
+    [HttpDelete("{id:guid}/assets/{assetId:guid}")]
+    [Consumes("multipart/form-data")]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> RemoveChartSubmissionAsset([FromRoute] Guid id, [FromRoute] Guid assetId)
+    {
+        if (!await _chartSubmissionRepository.ChartSubmissionExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
+            });
+
+        var chartSubmission = await _chartSubmissionRepository.GetChartSubmissionAsync(id);
+
+        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if ((chartSubmission.OwnerId == currentUser.Id &&
+             !await _resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+            (chartSubmission.OwnerId != currentUser.Id &&
+             !await _resourceService.HasPermission(currentUser, Roles.Moderator)))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+
+        if (!await _chartAssetSubmissionRepository.ChartAssetSubmissionExistsAsync(assetId))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+
+        chartSubmission.Status = RequestStatus.Waiting;
+        chartSubmission.VolunteerStatus = RequestStatus.Waiting;
+        chartSubmission.DateUpdated = DateTimeOffset.UtcNow;
+
+        if (!await _chartAssetSubmissionRepository.RemoveChartAssetSubmissionAsync(assetId) ||
+            !await _chartSubmissionRepository.UpdateChartSubmissionAsync(chartSubmission))
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+
+        return NoContent();
+    }
+
+    /// <summary>
     ///     Creates a new collaboration for a chart.
     /// </summary>
     /// <returns>An empty body.</returns>
@@ -720,7 +1060,7 @@ public class ChartSubmissionController : Controller
     /// <response code="500">When an internal server error has occurred.</response>
     [HttpPost("{id:guid}/collaborations")]
     [Consumes("application/json")]
-    [Produces("text/plain", "application/json")]
+    [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -779,7 +1119,7 @@ public class ChartSubmissionController : Controller
                 {
                     "Chart",
                     _resourceService.GetRichText<ChartSubmission>(chartSubmission.Id.ToString(),
-                        chartSubmission.GetDisplay())
+                        await _chartService.GetDisplayName(chartSubmission))
                 },
                 {
                     "Collaboration",
@@ -800,7 +1140,7 @@ public class ChartSubmissionController : Controller
     /// <response code="404">When the specified chart submission is not found.</response>
     [HttpGet("{id:guid}/votes")]
     [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<VoteDto>>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<VolunteerVoteDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetChartSubmissionVotes([FromRoute] Guid id,
@@ -833,10 +1173,10 @@ public class ChartSubmissionController : Controller
 
         var votes = await _volunteerVoteRepository.GetVolunteerVotesAsync(dto.Order, dto.Desc, position, dto.PerPage,
             e => e.ChartId == id);
-        var list = _mapper.Map<List<VoteDto>>(votes);
+        var list = _mapper.Map<List<VolunteerVoteDto>>(votes);
         var total = await _volunteerVoteRepository.CountVolunteerVotesAsync(e => e.ChartId == id);
 
-        return Ok(new ResponseDto<IEnumerable<VoteDto>>
+        return Ok(new ResponseDto<IEnumerable<VolunteerVoteDto>>
         {
             Status = ResponseStatus.Ok,
             Code = ResponseCodes.Ok,
@@ -858,8 +1198,7 @@ public class ChartSubmissionController : Controller
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="404">When the specified chartSubmission is not found.</response>
     [HttpPost("{id:guid}/votes")]
-    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
-    [Produces("text/plain", "application/json")]
+    [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -903,7 +1242,6 @@ public class ChartSubmissionController : Controller
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="404">When the specified chartSubmission is not found.</response>
     [HttpDelete("{id:guid}/votes")]
-    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]

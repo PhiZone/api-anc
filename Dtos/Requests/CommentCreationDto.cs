@@ -7,6 +7,7 @@ namespace PhiZoneApi.Dtos.Requests;
 public class CommentCreationDto
 {
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
+    [MaxLength(3000, ErrorMessage = ResponseCodes.ValueTooLong)]
     public string Content { get; set; } = null!;
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]

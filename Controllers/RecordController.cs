@@ -35,12 +35,14 @@ public class RecordController : Controller
 {
     private readonly IApplicationRepository _applicationRepository;
     private readonly IChartRepository _chartRepository;
+    private readonly IChartService _chartService;
     private readonly ICommentRepository _commentRepository;
     private readonly IOptions<DataSettings> _dataSettings;
     private readonly IDtoMapper _dtoMapper;
     private readonly IFilterService _filterService;
     private readonly ILikeRepository _likeRepository;
     private readonly ILikeService _likeService;
+    private readonly ILogger<RecordController> _logger;
     private readonly IMapper _mapper;
     private readonly IPlayConfigurationRepository _playConfigurationRepository;
     private readonly IRecordRepository _recordRepository;
@@ -51,10 +53,10 @@ public class RecordController : Controller
 
     public RecordController(IRecordRepository recordRepository, IOptions<DataSettings> dataSettings,
         UserManager<User> userManager, IFilterService filterService, IDtoMapper dtoMapper, IMapper mapper,
-        IChartRepository chartRepository, ILikeRepository likeRepository, ILikeService likeService,
-        ICommentRepository commentRepository, IConnectionMultiplexer redis,
+        IChartRepository chartRepository, IChartService chartService, ILikeRepository likeRepository,
+        ILikeService likeService, ICommentRepository commentRepository, IConnectionMultiplexer redis,
         IApplicationRepository applicationRepository, IPlayConfigurationRepository playConfigurationRepository,
-        IRecordService recordService, IResourceService resourceService)
+        IRecordService recordService, IResourceService resourceService, ILogger<RecordController> logger)
     {
         _recordRepository = recordRepository;
         _dataSettings = dataSettings;
@@ -71,6 +73,8 @@ public class RecordController : Controller
         _playConfigurationRepository = playConfigurationRepository;
         _recordService = recordService;
         _resourceService = resourceService;
+        _logger = logger;
+        _chartService = chartService;
     }
 
     /// <summary>
@@ -136,7 +140,9 @@ public class RecordController : Controller
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         if (!await _recordRepository.RecordExistsAsync(id))
             return NotFound(new ResponseDto<object>
-                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
         var record = await _recordRepository.GetRecordAsync(id);
         var dto = await _dtoMapper.MapRecordAsync<RecordDto>(record, currentUser);
 
@@ -184,20 +190,11 @@ public class RecordController : Controller
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ApplicationNotFound
             });
 
-        var secret = (await _applicationRepository.GetApplicationAsync(info.ApplicationId)).Secret!;
-        var digest =
-            $"{info.ChartId}:{info.ConfigurationId}:{info.PlayerId}:{dto.MaxCombo}:{dto.Perfect}:{dto.GoodEarly}:{dto.GoodLate}:{dto.Bad}:{dto.Miss}:{info.Timestamp}";
-        Console.WriteLine(digest);
-        using var hasher = new HMACSHA256(Encoding.UTF8.GetBytes(secret));
-        var hmac = Convert.ToBase64String(
-            await hasher.ComputeHashAsync(new MemoryStream(Encoding.UTF8.GetBytes(digest))));
-        Console.WriteLine(hmac);
-        if (!dto.Hmac.Equals(hmac, StringComparison.OrdinalIgnoreCase))
-            return BadRequest(new ResponseDto<object>
+        var player = await _userManager.FindByIdAsync(info.PlayerId.ToString());
+        if (player == null)
+            return NotFound(new ResponseDto<object>
             {
-                Status = ResponseStatus.ErrorWithMessage,
-                Code = ResponseCodes.InvalidData,
-                Message = "HMAC validation has failed."
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNotFound
             });
 
         if (!await _chartRepository.ChartExistsAsync(info.ChartId))
@@ -213,6 +210,21 @@ public class RecordController : Controller
                 Status = ResponseStatus.ErrorWithMessage,
                 Code = ResponseCodes.InvalidData,
                 Message = "File checksum validation has failed."
+            });
+
+        var secret = (await _applicationRepository.GetApplicationAsync(info.ApplicationId)).Secret!;
+        var digest =
+            $"{info.ChartId}:{info.ConfigurationId}:{info.PlayerId}:{dto.MaxCombo}:{dto.Perfect}:{dto.GoodEarly}:{dto.GoodLate}:{dto.Bad}:{dto.Miss}:{info.Timestamp}";
+        using var hasher = new HMACSHA256(Encoding.UTF8.GetBytes(secret));
+        var hmac = Convert.ToBase64String(
+            await hasher.ComputeHashAsync(new MemoryStream(Encoding.UTF8.GetBytes(digest))));
+        _logger.LogDebug(LogEvents.RecordDebug, "{Digest} - {Hmac}", digest, hmac);
+        if (!dto.Hmac.Equals(hmac, StringComparison.OrdinalIgnoreCase))
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorWithMessage,
+                Code = ResponseCodes.InvalidData,
+                Message = "HMAC validation has failed."
             });
 
         var judgmentCount = dto.Perfect + dto.GoodEarly + dto.GoodLate + dto.Bad + dto.Miss;
@@ -237,12 +249,6 @@ public class RecordController : Controller
             });
 
         db.KeyDelete($"PLAY:{dto.Token}");
-        var player = await _userManager.FindByIdAsync(info.PlayerId.ToString());
-        if (player == null)
-            return NotFound(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNotFound
-            });
 
         if (!await _playConfigurationRepository.PlayConfigurationExistsAsync(info.ConfigurationId))
             return NotFound(new ResponseDto<object>
@@ -265,6 +271,10 @@ public class RecordController : Controller
                 record.ChartId == info.ChartId && record.OwnerId == player.Id) > 0)
             highestAccuracy = (await _recordRepository.GetRecordsAsync("Accuracy", true, 0, 1,
                 record => record.ChartId == info.ChartId && record.OwnerId == player.Id)).FirstOrDefault()!.Accuracy;
+
+        _logger.LogInformation(LogEvents.RecordInfo, "{User} - {Chart} {Score} {Accuracy} {Rks} {StdDeviation}ms",
+            player.UserName, await _chartService.GetDisplayName(chart), score, accuracy.ToString("P"),
+            rks.ToString("N3"), dto.StdDeviation.ToString("N3"));
 
         var record = new Record
         {
@@ -358,7 +368,7 @@ public class RecordController : Controller
     /// <response code="500">When an internal server error has occurred.</response>
     [HttpDelete("{id:guid}")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
-    [Produces("text/plain", "application/json")]
+    [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -411,7 +421,9 @@ public class RecordController : Controller
         var position = dto.PerPage * (dto.Page - 1);
         if (!await _recordRepository.RecordExistsAsync(id))
             return NotFound(new ResponseDto<object>
-                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
         var likes = await _likeRepository.GetLikesAsync(dto.Order, dto.Desc, position, dto.PerPage,
             e => e.ResourceId == id);
         var list = _mapper.Map<List<LikeDto>>(likes);
@@ -440,7 +452,7 @@ public class RecordController : Controller
     /// <response code="404">When the specified record is not found.</response>
     [HttpPost("{id:guid}/likes")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
-    [Produces("text/plain", "application/json")]
+    [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -456,7 +468,9 @@ public class RecordController : Controller
                 });
         if (!await _recordRepository.RecordExistsAsync(id))
             return NotFound(new ResponseDto<object>
-                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
         var record = await _recordRepository.GetRecordAsync(id);
         if (!await _likeService.CreateLikeAsync(record, currentUser.Id))
             return BadRequest(new ResponseDto<object>
@@ -494,7 +508,9 @@ public class RecordController : Controller
                 });
         if (!await _recordRepository.RecordExistsAsync(id))
             return NotFound(new ResponseDto<object>
-                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
         var record = await _recordRepository.GetRecordAsync(id);
         if (!await _likeService.RemoveLikeAsync(record, currentUser.Id))
             return BadRequest(new ResponseDto<object>
@@ -529,7 +545,9 @@ public class RecordController : Controller
         var position = dto.PerPage * (dto.Page - 1);
         if (!await _recordRepository.RecordExistsAsync(id))
             return NotFound(new ResponseDto<object>
-                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
         var comments = await _commentRepository.GetCommentsAsync(dto.Order, dto.Desc, position, dto.PerPage,
             e => e.ResourceId == id);
         var list = new List<CommentDto>();
@@ -562,7 +580,7 @@ public class RecordController : Controller
     /// <response code="500">When an internal server error has occurred.</response>
     [HttpPost("{id:guid}/comments")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
-    [Produces("text/plain", "application/json")]
+    [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -580,7 +598,9 @@ public class RecordController : Controller
                 });
         if (!await _recordRepository.RecordExistsAsync(id))
             return NotFound(new ResponseDto<object>
-                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
         var record = await _recordRepository.GetRecordAsync(id);
         var comment = new Comment
         {

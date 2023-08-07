@@ -12,5 +12,5 @@ public class Notification : Resource
 
     public User? Operator { get; set; }
 
-    public DateTimeOffset DateRead { get; set; }
+    public DateTimeOffset? DateRead { get; set; }
 }

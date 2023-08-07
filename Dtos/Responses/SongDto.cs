@@ -30,11 +30,11 @@ public class SongDto
 
     public string? Lyrics { get; set; }
 
-    public int Bpm { get; set; }
+    public double Bpm { get; set; }
 
-    public int MinBpm { get; set; }
+    public double MinBpm { get; set; }
 
-    public int MaxBpm { get; set; }
+    public double MaxBpm { get; set; }
 
     public int Offset { get; set; }
 
@@ -45,6 +45,8 @@ public class SongDto
     public TimeSpan PreviewStart { get; set; }
 
     public TimeSpan PreviewEnd { get; set; }
+
+    public List<ChartLevelDto> ChartLevels { get; set; } = new(5);
 
     public int OwnerId { get; set; }
 
@@ -57,4 +59,11 @@ public class SongDto
     public int LikeCount { get; set; }
 
     public DateTimeOffset? DateLiked { get; set; }
+}
+
+public class ChartLevelDto
+{
+    public ChartLevel LevelType { get; set; }
+
+    public int Count { get; set; }
 }

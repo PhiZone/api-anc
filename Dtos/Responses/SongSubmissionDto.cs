@@ -30,11 +30,11 @@ public class SongSubmissionDto
 
     public string? Lyrics { get; set; }
 
-    public int Bpm { get; set; }
+    public double Bpm { get; set; }
 
-    public int MinBpm { get; set; }
+    public double MinBpm { get; set; }
 
-    public int MaxBpm { get; set; }
+    public double MaxBpm { get; set; }
 
     public int Offset { get; set; }
 

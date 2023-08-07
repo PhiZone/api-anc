@@ -22,11 +22,11 @@ public class SongSubmission : Submission
 
     public string? Lyrics { get; set; }
 
-    public int Bpm { get; set; }
+    public double Bpm { get; set; }
 
-    public int MinBpm { get; set; }
+    public double MinBpm { get; set; }
 
-    public int MaxBpm { get; set; }
+    public double MaxBpm { get; set; }
 
     public int Offset { get; set; }
 
@@ -38,16 +38,14 @@ public class SongSubmission : Submission
 
     public TimeSpan PreviewEnd { get; set; }
 
-    public IEnumerable<int> AuthorsId { get; } = new List<int>();
+    public int? ReviewerId { get; set; }
 
-    public int ReviewerId { get; set; }
-
-    public User Reviewer { get; set; } = null!;
+    public User? Reviewer { get; set; }
 
     public string? Message { get; set; }
 
     public string GetDisplay()
     {
-        return $"{AuthorName} - {Title}";
+        return Title;
     }
 }

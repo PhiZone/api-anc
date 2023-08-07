@@ -1,11 +1,15 @@
-﻿namespace PhiZoneApi.Dtos.Requests;
+﻿using System.ComponentModel.DataAnnotations;
+using PhiZoneApi.Constants;
+
+namespace PhiZoneApi.Dtos.Requests;
 
 public class ArrayRequestDto
 {
     /// <summary>
-    ///     The field by which the result is sorted. Defaults to <c>id</c>.
+    ///     The field by which the result is sorted. Defaults to <c>Id</c>.
     /// </summary>
-    public string Order { get; set; } = "id";
+    [MaxLength(2000, ErrorMessage = ResponseCodes.ValueTooLong)]
+    public string Order { get; set; } = "Id";
 
     /// <summary>
     ///     Whether or not the result is sorted in descending order. Defaults to <c>false</c>.
@@ -25,11 +29,13 @@ public class ArrayRequestDto
     /// <summary>
     ///     A string that filters the query result in multiple fields. Optional.
     /// </summary>
+    [MaxLength(30000, ErrorMessage = ResponseCodes.ValueTooLong)]
     public string? Search { get; set; } = null;
 
     /// <summary>
     ///     A string that will be evaluated into a <c>Func</c>, which filters the query result.
     ///     Optional. Administrators only.
     /// </summary>
+    [MaxLength(50000, ErrorMessage = ResponseCodes.ValueTooLong)]
     public string? Predicate { get; set; } = null;
 }

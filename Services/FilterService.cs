@@ -36,7 +36,7 @@ public class FilterService : IFilterService
             Expression.OrElse(Expression.Constant(isAdmin || typeof(T).GetProperty("IsHidden") == null),
                 IsFalse(Property<T>(entity, "IsHidden")));
 
-        if (requirement != null) expression = Expression.AndAlso(expression, requirement);
+        if (requirement != null) expression = Expression.AndAlso(expression, Expression.Invoke(requirement, entity));
 
         foreach (var property in dto.GetType().GetProperties())
         {
@@ -58,7 +58,7 @@ public class FilterService : IFilterService
 
             if (name.StartsWith(Actions.Range))
                 expression = Expression.AndAlso(expression,
-                    Expression.Call(condition, Method(type, "Contains"), Property<T>(entity, property, Actions.Range)));
+                    Call(condition, type, Method(type, "Contains"), Property<T>(entity, property, Actions.Range)));
 
             if (name.StartsWith(Actions.Is))
                 expression = Expression.AndAlso(expression, Expression.Equal(Property<T>(entity, property), condition));
@@ -69,7 +69,7 @@ public class FilterService : IFilterService
 
             if (name.StartsWith(Actions.Equals))
                 expression = Expression.AndAlso(expression,
-                    Expression.Call(ToUpper(Property<T>(entity, property, Actions.Equals)), Method(type, "Equals", 1),
+                    Call(ToUpper(Property<T>(entity, property, Actions.Equals)), type, Method(type, "Equals", 1),
                         ToUpper(condition)));
 
             if (name.StartsWith(Actions.Contains))
@@ -92,6 +92,20 @@ public class FilterService : IFilterService
         return Expression.Lambda<Func<T, bool>>(expression, entity);
     }
 
+    private static Expression Call(Expression? instance, Type type, MethodInfo method, Expression? argument)
+    {
+        if (argument == null) return Expression.Call(instance, method);
+
+        if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(List<>))
+            type = type.GetGenericArguments()[0];
+        var underlyingType = Nullable.GetUnderlyingType(argument.Type);
+
+        return Expression.Call(instance, method,
+            !type.IsEnum
+                ? underlyingType == null ? argument : Expression.Convert(argument, underlyingType)
+                : Expression.Convert(argument, type));
+    }
+
     private static Expression IsFalse(Expression? expression)
     {
         var falseExpr = Expression.Constant(false);
@@ -105,7 +119,7 @@ public class FilterService : IFilterService
         return property != null ? Expression.Property(entity, property) : null;
     }
 
-    private static MemberExpression Property<T>(Expression entity, MemberInfo property, string? action = null)
+    private static Expression Property<T>(Expression entity, MemberInfo property, string? action = null)
     {
         return Expression.Property(entity,
             typeof(T).GetProperty(action != null ? property.Name[action.Length..] : property.Name)!);
@@ -118,10 +132,14 @@ public class FilterService : IFilterService
 
     private static Expression CompareDate(Expression property, Expression condition)
     {
-        return Expression.Call(null, typeof(DateTimeOffset).GetMethod("Compare")!, property,
-            condition.Type == typeof(DateTimeOffset)
-                ? condition
-                : Expression.Call(condition, Method(typeof(DateTimeOffset?), "GetValueOrDefault")));
+        return Expression.Call(null, typeof(DateTimeOffset).GetMethod("Compare")!, GetValue(property),
+            GetValue(condition));
+    }
+
+    private static Expression GetValue(Expression argument)
+    {
+        var underlyingType = Nullable.GetUnderlyingType(argument.Type);
+        return underlyingType == null ? argument : Expression.Convert(argument, underlyingType);
     }
 
     private static MethodInfo Method(Type type, string name, int i = 0)

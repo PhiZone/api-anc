@@ -18,31 +18,22 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, int>
     public DbSet<Song> Songs { get; set; } = null!;
     public DbSet<Admission> Admissions { get; set; } = null!;
     public DbSet<Chart> Charts { get; set; } = null!;
-
     public DbSet<ChartAsset> ChartAssets { get; set; } = null!;
     public DbSet<Authorship> Authorships { get; set; } = null!;
     public DbSet<Record> Records { get; set; } = null!;
+    public DbSet<Tag> Tags { get; set; } = null!;
     public DbSet<Comment> Comments { get; set; } = null!;
     public DbSet<Reply> Replies { get; set; } = null!;
     public DbSet<Like> Likes { get; set; } = null!;
     public DbSet<Vote> Votes { get; set; } = null!;
-
     public DbSet<PlayConfiguration> PlayConfigurations { get; set; } = null!;
-
     public DbSet<Application> Applications { get; set; } = null!;
-
     public DbSet<Announcement> Announcements { get; set; } = null!;
-
     public DbSet<VolunteerVote> VolunteerVotes { get; set; } = null!;
-
     public DbSet<SongSubmission> SongSubmissions { get; set; } = null!;
-
     public DbSet<ChartSubmission> ChartSubmissions { get; set; } = null!;
-
     public DbSet<ChartAssetSubmission> ChartAssetSubmissions { get; set; } = null!;
-
     public DbSet<Collaboration> Collaborations { get; set; } = null!;
-
     public DbSet<Notification> Notifications { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder builder)

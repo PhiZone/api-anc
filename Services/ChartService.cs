@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json;
+using PhiZoneApi.Constants;
 using PhiZoneApi.Dtos.ChartFormats;
 using PhiZoneApi.Enums;
 using PhiZoneApi.Interfaces;
@@ -13,10 +14,17 @@ namespace PhiZoneApi.Services;
 public partial class ChartService : IChartService
 {
     private readonly IFileStorageService _fileStorageService;
+    private readonly ILogger<ChartService> _logger;
+    private readonly ISongRepository _songRepository;
+    private readonly ISongSubmissionRepository _songSubmissionRepository;
 
-    public ChartService(IFileStorageService fileStorageService)
+    public ChartService(IFileStorageService fileStorageService, ISongRepository songRepository,
+        ISongSubmissionRepository songSubmissionRepository, ILogger<ChartService> logger)
     {
         _fileStorageService = fileStorageService;
+        _songRepository = songRepository;
+        _songSubmissionRepository = songSubmissionRepository;
+        _logger = logger;
     }
 
     public async Task<(string, string, ChartFormat, int)?> Upload(string fileName, IFormFile file)
@@ -44,6 +52,20 @@ public partial class ChartService : IChartService
         var pec = ReadPec(content);
         if (pec != null) return new ValueTuple<ChartFormat, ChartFormatDto, int>(ChartFormat.Pec, pec, CountNotes(pec));
         return null;
+    }
+
+    public async Task<string> GetDisplayName(Chart chart)
+    {
+        var title = chart.Title ?? (await _songRepository.GetSongAsync(chart.SongId)).Title;
+        return $"{title} [{chart.Level} {Math.Floor(chart.Difficulty)}]";
+    }
+
+    public async Task<string> GetDisplayName(ChartSubmission chart)
+    {
+        var title = chart.Title ?? (chart.SongId != null
+            ? (await _songRepository.GetSongAsync(chart.SongId.Value)).Title
+            : (await _songSubmissionRepository.GetSongSubmissionAsync(chart.SongSubmissionId!.Value)).Title);
+        return $"{title} [{chart.Level} {Math.Floor(chart.Difficulty)}]";
     }
 
     private static RpeJsonDto Standardize(RpeJsonDto dto)
@@ -175,7 +197,7 @@ public partial class ChartService : IChartService
         return dto.NoteCommands.Count(command => !command.IsFake);
     }
 
-    private static RpeJsonDto? ReadRpe(string input)
+    private RpeJsonDto? ReadRpe(string input)
     {
         try
         {
@@ -282,13 +304,14 @@ public partial class ChartService : IChartService
 
             return dto;
         }
-        catch (JsonException)
+        catch (Exception ex)
         {
+            _logger.LogError(LogEvents.RpeJsonFailure, ex, "Failed to parse RPE JSON");
             return null;
         }
     }
 
-    private static PecDto? ReadPec(string input)
+    private PecDto? ReadPec(string input)
     {
         var dto = new PecDto
         {
@@ -442,7 +465,7 @@ public partial class ChartService : IChartService
         }
         catch (Exception ex)
         {
-            Console.WriteLine(ex);
+            _logger.LogError(LogEvents.PecFailure, ex, "Failed to parse PEC");
             return null;
         }
     }

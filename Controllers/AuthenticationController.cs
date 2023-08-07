@@ -198,7 +198,7 @@ public class AuthenticationController : Controller
     /// <response code="500">When a Redis / Mail Service error has occurred.</response>
     [HttpPost("sendEmail")]
     [Consumes("application/json")]
-    [Produces("text/plain", "application/json")]
+    [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
@@ -268,7 +268,7 @@ public class AuthenticationController : Controller
     /// <response code="400">When the input code is invalid.</response>
     [HttpPost("resetPassword")]
     [Consumes("application/json")]
-    [Produces("text/plain", "application/json")]
+    [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> ResetPassword([FromBody] UserPasswordResetDto dto)
@@ -298,7 +298,7 @@ public class AuthenticationController : Controller
     /// </response>
     [HttpPost("activate")]
     [Consumes("application/json")]
-    [Produces("text/plain", "application/json")]
+    [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> Activate([FromBody] UserActivationDto dto)

@@ -71,10 +71,14 @@ public class SongSubmissionController : Controller
     /// <returns>An array of song submissions.</returns>
     /// <response code="200">Returns an array of song submissions.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
     [HttpGet]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<SongSubmissionDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetSongSubmissions([FromQuery] ArrayWithTimeRequestDto dto,
         [FromQuery] SongSubmissionFilterDto? filterDto = null)
     {
@@ -121,13 +125,17 @@ public class SongSubmissionController : Controller
     ///     When the resource has not been updated since last retrieval. Requires <c>If-None-Match</c>.
     /// </response>
     /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
     /// <response code="404">When the specified song submission is not found.</response>
     [HttpGet("{id:guid}")]
     [ServiceFilter(typeof(ETagFilter))]
-    [Produces("application/json", "text/plain")]
+    [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<SongSubmissionDto>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status304NotModified, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetSongSubmission([FromRoute] Guid id)
     {
@@ -161,7 +169,7 @@ public class SongSubmissionController : Controller
     /// <response code="500">When an internal server error has occurred.</response>
     [HttpPost]
     [Consumes("multipart/form-data")]
-    [Produces("text/plain", "application/json")]
+    [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -275,7 +283,7 @@ public class SongSubmissionController : Controller
     /// <response code="500">When an internal server error has occurred.</response>
     [HttpPatch("{id:guid}")]
     [Consumes("application/json")]
-    [Produces("text/plain", "application/json")]
+    [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -367,7 +375,7 @@ public class SongSubmissionController : Controller
     /// <response code="500">When an internal server error has occurred.</response>
     [HttpPatch("{id:guid}/file")]
     [Consumes("multipart/form-data")]
-    [Produces("text/plain", "application/json")]
+    [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -447,7 +455,7 @@ public class SongSubmissionController : Controller
     /// <response code="500">When an internal server error has occurred.</response>
     [HttpPatch("{id:guid}/illustration")]
     [Consumes("multipart/form-data")]
-    [Produces("text/plain", "application/json")]
+    [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -477,7 +485,7 @@ public class SongSubmissionController : Controller
         if (dto.File != null)
         {
             songSubmission.Illustration =
-                (await _fileStorageService.UploadImage<SongSubmission>(songSubmission.Title, dto.File, (16, 9))).Item1;
+                (await _fileStorageService.UploadImage<Song>(songSubmission.Title, dto.File, (16, 9))).Item1;
             songSubmission.DateUpdated = DateTimeOffset.UtcNow;
             songSubmission.Status = RequestStatus.Waiting;
         }
@@ -503,7 +511,7 @@ public class SongSubmissionController : Controller
     /// <response code="500">When an internal server error has occurred.</response>
     [HttpPatch("{id:guid}/originalityProof")]
     [Consumes("multipart/form-data")]
-    [Produces("text/plain", "application/json")]
+    [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -558,7 +566,7 @@ public class SongSubmissionController : Controller
     /// <response code="404">When the specified song submission is not found.</response>
     /// <response code="500">When an internal server error has occurred.</response>
     [HttpDelete("{id:guid}/originalityProof")]
-    [Produces("text/plain", "application/json")]
+    [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -607,7 +615,7 @@ public class SongSubmissionController : Controller
     /// <response code="404">When the specified song submission is not found.</response>
     /// <response code="500">When an internal server error has occurred.</response>
     [HttpDelete("{id:guid}")]
-    [Produces("text/plain", "application/json")]
+    [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -654,7 +662,7 @@ public class SongSubmissionController : Controller
     /// <response code="500">When an internal server error has occurred.</response>
     [HttpPost("{id:guid}/collaborations")]
     [Consumes("application/json")]
-    [Produces("text/plain", "application/json")]
+    [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -740,7 +748,7 @@ public class SongSubmissionController : Controller
     /// <response code="500">When an internal server error has occurred.</response>
     [HttpPost("{id:guid}/review")]
     [Consumes("application/json")]
-    [Produces("text/plain", "application/json")]
+    [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]

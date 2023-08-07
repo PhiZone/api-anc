@@ -15,7 +15,7 @@ public class NotificationService : INotificationService
         _templateService = templateService;
     }
 
-    public async Task Notify(User receiver, User sender, NotificationType type, string key,
+    public async Task Notify(User receiver, User? sender, NotificationType type, string key,
         Dictionary<string, string> replacements)
     {
         var notification = new Notification
@@ -24,7 +24,7 @@ public class NotificationService : INotificationService
             Content = _templateService.ReplacePlaceholders(_templateService.GetMessage(key, receiver.Language)!,
                 replacements),
             OwnerId = receiver.Id,
-            OperatorId = sender.Id,
+            OperatorId = sender?.Id,
             DateCreated = DateTimeOffset.UtcNow
         };
         await _notificationRepository.CreateNotificationAsync(notification);

@@ -39,16 +39,4 @@ public class ChartSubmission : Submission
     public RequestStatus VolunteerStatus { get; set; }
 
     public RequestStatus AdmissionStatus { get; set; }
-
-    public IEnumerable<int> AuthorsId { get; } = new List<int>();
-
-    public string GetDisplay()
-    {
-        return Title != null
-            ? $"{Title} [{Level} {Math.Floor(Difficulty)}]"
-            : $"{
-                Title ?? (Song != null
-                    ? Song.Title
-                    : SongSubmission!.Title)} [{Level} {Math.Floor(Difficulty)}]";
-    }
 }

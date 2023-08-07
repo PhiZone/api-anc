@@ -18,7 +18,7 @@ namespace PhiZoneApi.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "7.0.7")
+                .HasAnnotation("ProductVersion", "7.0.9")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -499,6 +499,31 @@ namespace PhiZoneApi.Migrations
                     b.ToTable("Roles", (string)null);
                 });
 
+            modelBuilder.Entity("PhiZoneApi.Models.Tag", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset>("DateCreated")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("NormalizedName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Tags");
+                });
+
             modelBuilder.Entity("PhiZoneApi.Models.User", b =>
                 {
                     b.Property<int>("Id")
@@ -628,6 +653,21 @@ namespace PhiZoneApi.Migrations
                     b.ToTable("UserRelations");
                 });
 
+            modelBuilder.Entity("PublicResourceTag", b =>
+                {
+                    b.Property<Guid>("ResourcesId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TagsId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("ResourcesId", "TagsId");
+
+                    b.HasIndex("TagsId");
+
+                    b.ToTable("PublicResourceTag");
+                });
+
             modelBuilder.Entity("PhiZoneApi.Models.ChartAsset", b =>
                 {
                     b.HasBaseType("PhiZoneApi.Models.Resource");
@@ -635,7 +675,14 @@ namespace PhiZoneApi.Migrations
                     b.Property<Guid>("ChartId")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTimeOffset>("DateUpdated")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("File")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -654,7 +701,14 @@ namespace PhiZoneApi.Migrations
                     b.Property<Guid>("ChartSubmissionId")
                         .HasColumnType("uuid");
 
+                    b.Property<DateTimeOffset>("DateUpdated")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("File")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -696,7 +750,7 @@ namespace PhiZoneApi.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<DateTimeOffset>("DateRead")
+                    b.Property<DateTimeOffset?>("DateRead")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<int?>("OperatorId")
@@ -1128,7 +1182,7 @@ namespace PhiZoneApi.Migrations
                     b.Property<TimeSpan>("PreviewStart")
                         .HasColumnType("interval");
 
-                    b.Property<int>("ReviewerId")
+                    b.Property<int?>("ReviewerId")
                         .HasColumnType("integer");
 
                     b.Property<string>("Title")
@@ -1497,6 +1551,21 @@ namespace PhiZoneApi.Migrations
                     b.Navigation("Follower");
                 });
 
+            modelBuilder.Entity("PublicResourceTag", b =>
+                {
+                    b.HasOne("PhiZoneApi.Models.PublicResource", null)
+                        .WithMany()
+                        .HasForeignKey("ResourcesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PhiZoneApi.Models.Tag", null)
+                        .WithMany()
+                        .HasForeignKey("TagsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("PhiZoneApi.Models.ChartAsset", b =>
                 {
                     b.HasOne("PhiZoneApi.Models.Chart", "Chart")
@@ -1630,9 +1699,7 @@ namespace PhiZoneApi.Migrations
                 {
                     b.HasOne("PhiZoneApi.Models.User", "Reviewer")
                         .WithMany()
-                        .HasForeignKey("ReviewerId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("ReviewerId");
 
                     b.Navigation("Reviewer");
                 });

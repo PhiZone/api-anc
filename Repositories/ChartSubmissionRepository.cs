@@ -45,7 +45,8 @@ public class ChartSubmissionRepository : IChartSubmissionRepository
                                                                 chart.Description.ToUpper().Contains(search)));
         }
 
-        return await result.Skip(position).Take(take).ToListAsync();
+        result = result.Skip(position);
+        return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
 
     public async Task<ICollection<ChartSubmission>> GetUserChartSubmissionsAsync(int userId, string order, bool desc,
@@ -76,7 +77,8 @@ public class ChartSubmissionRepository : IChartSubmissionRepository
                                                chart.Description.ToUpper().Contains(search)));
         }
 
-        return await result.Skip(position).Take(take).ToListAsync();
+        result = result.Skip(position);
+        return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
 
     public async Task<ChartSubmission> GetChartSubmissionAsync(Guid id)

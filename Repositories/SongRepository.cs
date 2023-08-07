@@ -34,7 +34,8 @@ public class SongRepository : ISongRepository
                                               song.Description.ToUpper().Contains(search)));
         }
 
-        return await result.Skip(position).Take(take).ToListAsync();
+        result = result.Skip(position);
+        return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
 
     public async Task<Song> GetSongAsync(Guid id)
@@ -59,7 +60,8 @@ public class SongRepository : ISongRepository
                 (chart.Description != null && chart.Description.ToUpper().Contains(search)));
         }
 
-        return await result.Skip(position).Take(take).ToListAsync();
+        result = result.Skip(position);
+        return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
 
     public async Task<bool> SongExistsAsync(Guid id)

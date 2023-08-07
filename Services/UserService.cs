@@ -7,21 +7,21 @@ namespace PhiZoneApi.Services;
 
 public class UserService : IUserService
 {
-    private readonly IPlayConfigurationRepository _playConfigurationRepository;
+    private readonly IServiceProvider _provider;
     private readonly ITemplateService _templateService;
-    private readonly UserManager<User> _userManager;
 
-    public UserService(ITemplateService templateService, IServiceProvider serviceProvider)
+    public UserService(IServiceProvider provider, ITemplateService templateService)
     {
+        _provider = provider;
         _templateService = templateService;
-        using var scope = serviceProvider.CreateScope();
-        _userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
-        _playConfigurationRepository = scope.ServiceProvider.GetRequiredService<IPlayConfigurationRepository>();
     }
 
     public async Task CreateUser(User user)
     {
-        await _userManager.CreateAsync(user);
+        using var scope = _provider.CreateScope();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+        var playConfigurationRepository = scope.ServiceProvider.GetRequiredService<IPlayConfigurationRepository>();
+        await userManager.CreateAsync(user);
         var configuration = new PlayConfiguration
         {
             Name = _templateService.GetMessage("default", user.Language),
@@ -40,11 +40,6 @@ public class UserService : IUserService
             OwnerId = user.Id,
             DateCreated = DateTimeOffset.UtcNow
         };
-        await _playConfigurationRepository.CreatePlayConfigurationAsync(configuration);
-    }
-
-    public async Task<User> GetOfficial()
-    {
-        return (await _userManager.FindByIdAsync("1"))!;
+        await playConfigurationRepository.CreatePlayConfigurationAsync(configuration);
     }
 }

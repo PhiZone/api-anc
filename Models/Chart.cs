@@ -49,11 +49,4 @@ public class Chart : PublicResource
     public Song Song { get; set; } = null!;
 
     public int PlayCount { get; set; }
-
-    public string GetDisplay()
-    {
-        return Title != null
-            ? $"{Title} [{Level} {Math.Floor(Difficulty)}]"
-            : $"{Song.Title} [{Level} {Math.Floor(Difficulty)}]";
-    }
 }

@@ -3,6 +3,8 @@ using PhiZoneApi.Enums;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 
+// ReSharper disable InvertIf
+
 namespace PhiZoneApi.Services;
 
 public class VolunteerVoteService : IVolunteerVoteService
@@ -20,10 +22,11 @@ public class VolunteerVoteService : IVolunteerVoteService
         _submissionService = submissionService;
         _voteScoreDictionary = new Dictionary<int, (double, double)>
         {
-            { 2, (-5, 5) },
-            { 3, (-4, 3) },
-            { 4, (-3, 2) },
-            { 5, (-1, 0) }
+            { 2, (-2, 2.5) },
+            { 3, (-1.6, 1.6) },
+            { 4, (-1.5, 1) },
+            { 5, (-0.8, 0.5) },
+            { 6, (0, 0) }
         };
     }
 
@@ -55,23 +58,24 @@ public class VolunteerVoteService : IVolunteerVoteService
     private async Task<bool> UpdateChartSubmissionAsync(ChartSubmission chartSubmission)
     {
         var votes = await _volunteerVolunteerVoteRepository.GetVolunteerVotesAsync("DateCreated", false, 0, -1,
-            vote => vote.ChartId == chartSubmission.Id);
-        var score = votes.Average(vote => vote.Score);
-        var scoreRange = _voteScoreDictionary[votes.Count];
-        if (score <= scoreRange.Item1)
+            vote => vote.ChartId == chartSubmission.Id && vote.DateCreated > chartSubmission.DateUpdated);
+        if (_voteScoreDictionary.TryGetValue(votes.Count, out var scoreRange))
         {
-            chartSubmission.VolunteerStatus = RequestStatus.Rejected;
-            chartSubmission.Status = RequestStatus.Rejected;
-            await _submissionService.RejectChart(chartSubmission);
-        }
-        else if (score >= scoreRange.Item2)
-        {
-            chartSubmission.VolunteerStatus = RequestStatus.Approved;
-            // ReSharper disable once InvertIf
-            if (chartSubmission.AdmissionStatus == RequestStatus.Approved)
+            var score = votes.Average(vote => vote.Score);
+            if (score < scoreRange.Item1)
             {
-                chartSubmission.Status = RequestStatus.Approved;
-                await _submissionService.ApproveChart(chartSubmission);
+                chartSubmission.VolunteerStatus = RequestStatus.Rejected;
+                chartSubmission.Status = RequestStatus.Rejected;
+                await _submissionService.RejectChart(chartSubmission);
+            }
+            else if (score >= scoreRange.Item2)
+            {
+                chartSubmission.VolunteerStatus = RequestStatus.Approved;
+                if (chartSubmission.AdmissionStatus == RequestStatus.Approved)
+                {
+                    chartSubmission.Status = RequestStatus.Approved;
+                    await _submissionService.ApproveChart(chartSubmission);
+                }
             }
         }
 

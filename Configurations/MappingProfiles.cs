@@ -33,8 +33,11 @@ public class MappingProfiles : Profile
         CreateMap<PlayConfiguration, PlayConfigurationResponseDto>();
         CreateMap<PlayConfigurationRequestDto, PlayConfiguration>();
         CreateMap<Vote, VoteDto>();
+        CreateMap<VolunteerVote, VolunteerVoteDto>();
         CreateMap<SongSubmission, SongSubmissionDto>();
         CreateMap<ChartSubmission, ChartSubmissionDto>();
         CreateMap<Collaboration, CollaborationDto>();
+        CreateMap<Collaboration, CollaborationUpdateDto>();
+        CreateMap<Notification, NotificationDto>();
     }
 }

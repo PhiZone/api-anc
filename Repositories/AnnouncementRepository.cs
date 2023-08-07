@@ -30,7 +30,8 @@ public class AnnouncementRepository : IAnnouncementRepository
                                                   announcement.Content.ToUpper().Contains(search));
         }
 
-        return await result.Skip(position).Take(take).ToListAsync();
+        result = result.Skip(position);
+        return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
 
     public async Task<Announcement> GetAnnouncementAsync(Guid id)

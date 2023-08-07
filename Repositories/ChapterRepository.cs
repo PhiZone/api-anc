@@ -34,7 +34,8 @@ public class ChapterRepository : IChapterRepository
                 (chapter.Description != null && chapter.Description.ToUpper().Contains(search)));
         }
 
-        return await result.Skip(position).Take(take).ToListAsync();
+        result = result.Skip(position);
+        return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
 
     public async Task<Chapter> GetChapterAsync(Guid id)
@@ -57,7 +58,8 @@ public class ChapterRepository : IChapterRepository
             result = result.Where(admission => admission.Label != null && admission.Label.ToUpper().Contains(search));
         }
 
-        return await result.Skip(position).Take(take).ToListAsync();
+        result = result.Skip(position);
+        return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
 
     public async Task<bool> ChapterExistsAsync(Guid id)

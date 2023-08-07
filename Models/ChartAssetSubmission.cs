@@ -10,5 +10,9 @@ public class ChartAssetSubmission : Resource
 
     public ChartAssetType Type { get; set; }
 
+    public string Name { get; set; } = null!;
+
     public string File { get; set; } = null!;
+
+    public DateTimeOffset DateUpdated { get; set; }
 }

@@ -1,24 +1,21 @@
-﻿using System.ComponentModel.DataAnnotations;
-using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Identity;
 
 namespace PhiZoneApi.Models;
 
 public class User : IdentityUser<int>
 {
-    [Url] public string? Avatar { get; set; }
+    public string? Avatar { get; set; }
 
-    [Required] [Range(0, 2)] public int Gender { get; set; }
+    public int Gender { get; set; }
 
-    [MaxLength(2000)] public string? Biography { get; set; }
+    public string? Biography { get; set; }
 
     public int Experience { get; set; }
 
-    [MaxLength(16)] public string? Tag { get; set; }
+    public string? Tag { get; set; }
 
     public double Rks { get; set; }
 
-    [Required]
-    [RegularExpression(@"^[a-z]{2}(?:-[A-Z]{2})?$")]
     public required string Language { get; set; }
 
     public DateTimeOffset? DateLastLoggedIn { get; set; }
@@ -27,7 +24,7 @@ public class User : IdentityUser<int>
 
     public DateTimeOffset DateJoined { get; set; }
 
-    [DataType(DataType.Date)] public DateTimeOffset? DateOfBirth { get; set; }
+    public DateTimeOffset? DateOfBirth { get; set; }
 
     public int? RegionId { get; set; }
 

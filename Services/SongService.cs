@@ -1,24 +1,26 @@
 ﻿using NVorbis;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
-using PhiZoneApi.Utils;
 
 namespace PhiZoneApi.Services;
 
 public class SongService : ISongService
 {
     private readonly IFileStorageService _fileStorageService;
+    private readonly IMultimediaService _multimediaService;
     private readonly IRabbitMqService _rabbitMqService;
 
-    public SongService(IFileStorageService fileStorageService, IRabbitMqService rabbitMqService)
+    public SongService(IFileStorageService fileStorageService, IRabbitMqService rabbitMqService,
+        IMultimediaService multimediaService)
     {
         _fileStorageService = fileStorageService;
         _rabbitMqService = rabbitMqService;
+        _multimediaService = multimediaService;
     }
 
     public async Task<(string, string, TimeSpan)?> UploadAsync(string fileName, IFormFile file)
     {
-        var stream = await MultimediaUtil.ConvertAudio(file);
+        var stream = await _multimediaService.ConvertAudio(file);
         if (stream == null) return null;
         using var vorbis = new VorbisReader(stream, false);
         var duration = vorbis.TotalTime;
@@ -28,7 +30,7 @@ public class SongService : ISongService
 
     public async Task<(string, string, TimeSpan)?> UploadAsync(string fileName, byte[] buffer)
     {
-        var stream = await MultimediaUtil.ConvertAudio(buffer);
+        var stream = await _multimediaService.ConvertAudio(buffer);
         if (stream == null) return null;
         using var vorbis = new VorbisReader(stream, false);
         var duration = vorbis.TotalTime;

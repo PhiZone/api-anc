@@ -15,6 +15,7 @@ public class UserRegistrationDto
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     [EmailAddress(ErrorMessage = ResponseCodes.InvalidEmailAddress)]
+    [MaxLength(1000, ErrorMessage = ResponseCodes.ValueTooLong)]
     public string Email { get; set; } = null!;
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]

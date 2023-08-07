@@ -5,6 +5,4 @@ namespace PhiZoneApi.Interfaces;
 public interface IUserService
 {
     Task CreateUser(User user);
-
-    Task<User> GetOfficial();
 }

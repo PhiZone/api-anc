@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Identity;
 using PhiZoneApi.Dtos.Responses;
+using PhiZoneApi.Enums;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 
@@ -75,8 +76,7 @@ public class DtoMapper : IDtoMapper
     }
 
     public async Task<AdmissionDto<TAdmitter, TAdmittee>> MapSongAdmissionAsync<TAdmitter, TAdmittee>(
-        Admission admission,
-        User? currentUser = null) where TAdmitter : ChapterDto where TAdmittee : SongDto
+        Admission admission, User? currentUser = null) where TAdmitter : ChapterDto where TAdmittee : SongDto
     {
         var dto = new AdmissionDto<TAdmitter, TAdmittee>
         {
@@ -96,8 +96,7 @@ public class DtoMapper : IDtoMapper
     }
 
     public async Task<AdmissionDto<TAdmitter, TAdmittee>> MapChartAdmissionAsync<TAdmitter, TAdmittee>(
-        Admission admission,
-        User? currentUser = null) where TAdmitter : SongDto where TAdmittee : ChartDto
+        Admission admission, User? currentUser = null) where TAdmitter : SongDto where TAdmittee : ChartDto
     {
         var dto = new AdmissionDto<TAdmitter, TAdmittee>
         {
@@ -129,6 +128,15 @@ public class DtoMapper : IDtoMapper
     public async Task<T> MapSongAsync<T>(Song song, User? currentUser = null) where T : SongDto
     {
         var dto = _mapper.Map<T>(song);
+
+        foreach (var levelType in Enum.GetValues<ChartLevel>())
+            dto.ChartLevels.Add(new ChartLevelDto
+            {
+                LevelType = levelType,
+                Count = await _chartRepository.CountChartsAsync(predicate: chart =>
+                    chart.SongId == song.Id && chart.LevelType == levelType)
+            });
+
         dto.CommentCount = await _commentRepository.CountCommentsAsync(comment => comment.ResourceId == song.Id);
         dto.DateLiked = currentUser != null && await _likeRepository.LikeExistsAsync(song.Id, currentUser.Id)
             ? (await _likeRepository.GetLikeAsync(song.Id, currentUser.Id)).DateCreated

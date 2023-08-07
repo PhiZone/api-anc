@@ -35,7 +35,8 @@ public class SongSubmissionRepository : ISongSubmissionRepository
                                               song.Description.ToUpper().Contains(search)));
         }
 
-        return await result.Skip(position).Take(take).ToListAsync();
+        result = result.Skip(position);
+        return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
 
     public async Task<ICollection<SongSubmission>> GetUserSongSubmissionsAsync(int userId, string order, bool desc,
@@ -55,7 +56,8 @@ public class SongSubmissionRepository : ISongSubmissionRepository
                                               song.Description.ToUpper().Contains(search)));
         }
 
-        return await result.Skip(position).Take(take).ToListAsync();
+        result = result.Skip(position);
+        return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
 
     public async Task<SongSubmission> GetSongSubmissionAsync(Guid id)

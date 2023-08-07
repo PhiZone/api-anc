@@ -127,7 +127,7 @@ public class SongController : Controller
     /// <response code="404">When the specified song is not found.</response>
     [HttpGet("{id:guid}")]
     [ServiceFilter(typeof(ETagFilter))]
-    [Produces("application/json", "text/plain")]
+    [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<SongDto>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status304NotModified, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
@@ -166,7 +166,7 @@ public class SongController : Controller
     [HttpPost]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Consumes("multipart/form-data")]
-    [Produces("text/plain", "application/json")]
+    [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -260,7 +260,7 @@ public class SongController : Controller
     [HttpPatch("{id:guid}")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Consumes("application/json")]
-    [Produces("text/plain", "application/json")]
+    [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -345,7 +345,7 @@ public class SongController : Controller
     [HttpPatch("{id:guid}/file")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Consumes("multipart/form-data")]
-    [Produces("text/plain", "application/json")]
+    [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -419,7 +419,7 @@ public class SongController : Controller
     [HttpPatch("{id:guid}/illustration")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Consumes("multipart/form-data")]
-    [Produces("text/plain", "application/json")]
+    [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -469,7 +469,7 @@ public class SongController : Controller
     /// <response code="404">When the specified song is not found.</response>
     /// <response code="500">When an internal server error has occurred.</response>
     [HttpDelete("{id:guid}")]
-    [Produces("text/plain", "application/json")]
+    [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -512,7 +512,7 @@ public class SongController : Controller
     [HttpPost("{id:guid}/authorships")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Consumes("application/json")]
-    [Produces("text/plain", "application/json")]
+    [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -568,7 +568,7 @@ public class SongController : Controller
     /// <response code="404">When the specified song is not found.</response>
     [HttpGet("{id:guid}/chapters")]
     [Consumes("application/json")]
-    [Produces("text/plain", "application/json")]
+    [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK,
         Type = typeof(ResponseDto<IEnumerable<AdmissionDto<ChapterDto, SongDto>>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
@@ -638,7 +638,7 @@ public class SongController : Controller
     [HttpGet("{id:guid}/chapters/{chapterId:guid}")]
     [ServiceFilter(typeof(ETagFilter))]
     [Consumes("application/json")]
-    [Produces("text/plain", "application/json")]
+    [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<AdmissionDto<ChapterDto, SongDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
@@ -701,7 +701,7 @@ public class SongController : Controller
     /// <response code="500">When an internal server error has occurred.</response>
     [HttpPost("{id:guid}/chapters")]
     [Consumes("application/json")]
-    [Produces("text/plain", "application/json")]
+    [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -764,19 +764,20 @@ public class SongController : Controller
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
-        await _notificationService.Notify(chapter.Owner, currentUser, NotificationType.Requests, "song-admission",
-            new Dictionary<string, string>
-            {
-                { "User", _resourceService.GetRichText<User>(currentUser.Id.ToString(), currentUser.UserName!) },
-                { "Song", _resourceService.GetRichText<Song>(song.Id.ToString(), song.GetDisplay()) },
-                { "Chapter", _resourceService.GetRichText<Chapter>(chapter.Id.ToString(), chapter.GetDisplay()) },
+        if (chapter.OwnerId != currentUser.Id && chapter.Accessibility == Accessibility.RequireReview)
+            await _notificationService.Notify(chapter.Owner, currentUser, NotificationType.Requests, "song-admission",
+                new Dictionary<string, string>
                 {
-                    "Admission",
-                    _resourceService.GetComplexRichText<Admission>(admission.AdmitteeId.ToString(),
-                        admission.AdmitterId.ToString(),
-                        _templateService.GetMessage("more-info", admission.Requestee.Language)!)
-                }
-            });
+                    { "User", _resourceService.GetRichText<User>(currentUser.Id.ToString(), currentUser.UserName!) },
+                    { "Song", _resourceService.GetRichText<Song>(song.Id.ToString(), song.GetDisplay()) },
+                    { "Chapter", _resourceService.GetRichText<Chapter>(chapter.Id.ToString(), chapter.GetDisplay()) },
+                    {
+                        "Admission",
+                        _resourceService.GetComplexRichText<Admission>(admission.AdmitteeId.ToString(),
+                            admission.AdmitterId.ToString(),
+                            _templateService.GetMessage("more-info", admission.Requestee.Language)!)
+                    }
+                });
 
         return StatusCode(StatusCodes.Status201Created);
     }
@@ -795,7 +796,7 @@ public class SongController : Controller
     /// <response code="500">When an internal server error has occurred.</response>
     [HttpDelete("{id:guid}/chapters/{chapterId:guid}")]
     [Consumes("application/json")]
-    [Produces("text/plain", "application/json")]
+    [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -961,7 +962,7 @@ public class SongController : Controller
     /// <response code="404">When the specified song is not found.</response>
     [HttpPost("{id:guid}/likes")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
-    [Produces("text/plain", "application/json")]
+    [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -1007,7 +1008,7 @@ public class SongController : Controller
     /// <response code="404">When the specified song is not found.</response>
     [HttpDelete("{id:guid}/likes")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
-    [Produces("text/plain", "application/json")]
+    [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -1109,7 +1110,7 @@ public class SongController : Controller
     /// <response code="500">When an internal server error has occurred.</response>
     [HttpPost("{id:guid}/comments")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
-    [Produces("text/plain", "application/json")]
+    [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]

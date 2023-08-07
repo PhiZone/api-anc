@@ -1,17 +1,68 @@
 ﻿using System.Diagnostics;
+using PhiZoneApi.Constants;
+using PhiZoneApi.Interfaces;
 
-namespace PhiZoneApi.Utils;
+namespace PhiZoneApi.Services;
 
-public static class MultimediaUtil
+public class MultimediaService : IMultimediaService
 {
-    public static MemoryStream CropImage(IFormFile file, (int, int) aspectRatio)
+    private readonly ILogger<MultimediaService> _logger;
+
+    public MultimediaService(ILogger<MultimediaService> logger)
+    {
+        _logger = logger;
+    }
+
+    public MemoryStream CropImage(IFormFile file, (int, int) aspectRatio)
     {
         return CropImage(Image.Load(file.OpenReadStream()), aspectRatio);
     }
 
-    public static MemoryStream CropImage(byte[] buffer, (int, int) aspectRatio)
+    public MemoryStream CropImage(byte[] buffer, (int, int) aspectRatio)
     {
         return CropImage(Image.Load(buffer), aspectRatio);
+    }
+
+    public async Task<MemoryStream?> ConvertAudio(IFormFile file)
+    {
+        var tempInputPath = Path.GetTempFileName();
+        try
+        {
+            await using (var stream = new FileStream(tempInputPath, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
+
+            var outputStream = ConvertToStream(tempInputPath);
+            File.Delete(tempInputPath);
+            return outputStream;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(LogEvents.AudioFailure, ex, "Failed to convert audio for {File}", file.FileName);
+            return null;
+        }
+    }
+
+    public async Task<MemoryStream?> ConvertAudio(byte[] buffer)
+    {
+        var tempInputPath = Path.GetTempFileName();
+        try
+        {
+            await using (var stream = new FileStream(tempInputPath, FileMode.Create))
+            {
+                await stream.WriteAsync(buffer);
+            }
+
+            var outputStream = ConvertToStream(tempInputPath);
+            File.Delete(tempInputPath);
+            return outputStream;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(LogEvents.AudioFailure, ex, "Failed to convert audio from bytes");
+            return null;
+        }
     }
 
     private static MemoryStream CropImage(Image image, (int, int) aspectRatio)
@@ -37,48 +88,6 @@ public static class MultimediaUtil
         var stream = new MemoryStream();
         image.SaveAsWebpAsync(stream);
         return stream;
-    }
-
-    public static async Task<MemoryStream?> ConvertAudio(IFormFile file)
-    {
-        var tempInputPath = Path.GetTempFileName();
-        try
-        {
-            await using (var stream = new FileStream(tempInputPath, FileMode.Create))
-            {
-                await file.CopyToAsync(stream);
-            }
-
-            var outputStream = ConvertToStream(tempInputPath);
-            File.Delete(tempInputPath);
-            return outputStream;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex);
-            return null;
-        }
-    }
-
-    public static async Task<MemoryStream?> ConvertAudio(byte[] buffer)
-    {
-        var tempInputPath = Path.GetTempFileName();
-        try
-        {
-            await using (var stream = new FileStream(tempInputPath, FileMode.Create))
-            {
-                await stream.WriteAsync(buffer);
-            }
-
-            var outputStream = ConvertToStream(tempInputPath);
-            File.Delete(tempInputPath);
-            return outputStream;
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine(ex);
-            return null;
-        }
     }
 
     private static MemoryStream ConvertToStream(string inputFilePath)

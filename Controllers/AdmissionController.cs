@@ -72,7 +72,7 @@ public class AdmissionController : Controller
     [HttpGet("songs/{songId:guid}/{chapterId:guid}")]
     [ServiceFilter(typeof(ETagFilter))]
     [Consumes("application/json")]
-    [Produces("text/plain", "application/json")]
+    [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<AdmissionDto<ChapterDto, SongDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
@@ -139,7 +139,7 @@ public class AdmissionController : Controller
     [ServiceFilter(typeof(ETagFilter))]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Consumes("application/json")]
-    [Produces("text/plain", "application/json")]
+    [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<AdmissionDto<SongDto, ChartDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
@@ -195,7 +195,7 @@ public class AdmissionController : Controller
     /// <response code="404">When the specified admission is not found.</response>
     /// <response code="500">When an internal server error has occurred.</response>
     [HttpDelete("songs/{songId:guid}/{chapterId:guid}")]
-    [Produces("text/plain", "application/json")]
+    [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -252,7 +252,7 @@ public class AdmissionController : Controller
     /// <response code="404">When the specified admission is not found.</response>
     /// <response code="500">When an internal server error has occurred.</response>
     [HttpDelete("charts/{chartId:guid}/{songId:guid}")]
-    [Produces("text/plain", "application/json")]
+    [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -310,7 +310,7 @@ public class AdmissionController : Controller
     /// <response code="500">When an internal server error has occurred.</response>
     [HttpPost("songs/{songId:guid}/{chapterId:guid}/review")]
     [Consumes("application/json")]
-    [Produces("text/plain", "application/json")]
+    [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -401,7 +401,7 @@ public class AdmissionController : Controller
     /// <response code="500">When an internal server error has occurred.</response>
     [HttpPost("charts/{chartId:guid}/{songId:guid}/review")]
     [Consumes("application/json")]
-    [Produces("text/plain", "application/json")]
+    [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]

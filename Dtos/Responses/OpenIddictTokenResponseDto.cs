@@ -2,9 +2,6 @@
 
 namespace PhiZoneApi.Dtos.Responses;
 
-/// <summary>
-///     A DTO specially made for Swagger, just to ensure that the documentation is working properly.
-/// </summary>
 public class OpenIddictTokenResponseDto
 {
     [JsonProperty("access_token")] public string AccessToken { get; set; } = null!;

@@ -32,7 +32,8 @@ public class RegionRepository : IRegionRepository
                 region.Code.ToUpper().Contains(search) || region.Name.ToUpper().Contains(search));
         }
 
-        return await result.Skip(position).Take(take).ToListAsync();
+        result = result.Skip(position);
+        return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
 
     public async Task<Region> GetRegionAsync(int id)
@@ -63,7 +64,8 @@ public class RegionRepository : IRegionRepository
                 user.Language.ToUpper().Contains(search));
         }
 
-        return await result.Skip(position).Take(take).ToListAsync();
+        result = result.Skip(position);
+        return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
 
     public async Task<ICollection<User>> GetRegionUsersAsync(string code, string order, bool desc, int position,
@@ -85,7 +87,8 @@ public class RegionRepository : IRegionRepository
                 user.Language.ToUpper().Contains(search));
         }
 
-        return await result.Skip(position).Take(take).ToListAsync();
+        result = result.Skip(position);
+        return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
 
     public async Task<bool> RegionExistsAsync(int id)

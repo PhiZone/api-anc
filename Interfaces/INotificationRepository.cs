@@ -15,6 +15,10 @@ public interface INotificationRepository
 
     Task<bool> CreateNotificationAsync(Notification notification);
 
+    Task<bool> UpdateNotificationAsync(Notification notification);
+
+    Task<bool> UpdateNotificationsAsync(IEnumerable<Notification> notifications);
+
     Task<bool> RemoveNotificationAsync(Guid id);
 
     Task<bool> SaveAsync();

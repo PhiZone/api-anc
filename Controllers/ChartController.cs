@@ -31,6 +31,7 @@ namespace PhiZoneApi.Controllers;
 public class ChartController : Controller
 {
     private readonly IAuthorshipRepository _authorshipRepository;
+    private readonly IChartAssetRepository _chartAssetRepository;
     private readonly IChartRepository _chartRepository;
     private readonly IChartService _chartService;
     private readonly ICommentRepository _commentRepository;
@@ -52,7 +53,7 @@ public class ChartController : Controller
         IDtoMapper dtoMapper, IMapper mapper, IChartService chartService, ISongRepository songRepository,
         ILikeRepository likeRepository, ILikeService likeService, ICommentRepository commentRepository,
         IVoteRepository voteRepository, IVoteService voteService, IAuthorshipRepository authorshipRepository,
-        IResourceService resourceService)
+        IResourceService resourceService, IChartAssetRepository chartAssetRepository)
     {
         _chartRepository = chartRepository;
         _dataSettings = dataSettings;
@@ -69,6 +70,7 @@ public class ChartController : Controller
         _voteService = voteService;
         _authorshipRepository = authorshipRepository;
         _resourceService = resourceService;
+        _chartAssetRepository = chartAssetRepository;
         _fileStorageService = fileStorageService;
     }
 
@@ -125,7 +127,7 @@ public class ChartController : Controller
     /// <response code="404">When the specified chart is not found.</response>
     [HttpGet("{id:guid}")]
     [ServiceFilter(typeof(ETagFilter))]
-    [Produces("application/json", "text/plain")]
+    [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<ChartDto>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status304NotModified, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
@@ -164,7 +166,7 @@ public class ChartController : Controller
     [HttpPost]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Consumes("multipart/form-data")]
-    [Produces("text/plain", "application/json")]
+    [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -246,7 +248,7 @@ public class ChartController : Controller
     [HttpPatch("{id:guid}")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Consumes("application/json")]
-    [Produces("text/plain", "application/json")]
+    [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -319,7 +321,7 @@ public class ChartController : Controller
     [HttpPatch("{id:guid}/file")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Consumes("multipart/form-data")]
-    [Produces("text/plain", "application/json")]
+    [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -381,7 +383,7 @@ public class ChartController : Controller
     [HttpDelete("{id:guid}/file")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Consumes("multipart/form-data")]
-    [Produces("text/plain", "application/json")]
+    [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -431,7 +433,7 @@ public class ChartController : Controller
     [HttpPatch("{id:guid}/illustration")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Consumes("multipart/form-data")]
-    [Produces("text/plain", "application/json")]
+    [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -486,7 +488,7 @@ public class ChartController : Controller
     [HttpDelete("{id:guid}/illustration")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Consumes("multipart/form-data")]
-    [Produces("text/plain", "application/json")]
+    [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -534,7 +536,7 @@ public class ChartController : Controller
     /// <response code="500">When an internal server error has occurred.</response>
     [HttpDelete("{id:guid}")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
-    [Produces("text/plain", "application/json")]
+    [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -565,6 +567,389 @@ public class ChartController : Controller
     }
 
     /// <summary>
+    ///     Retrieves chart's assets.
+    /// </summary>
+    /// <returns>An array of chart's assets.</returns>
+    /// <response code="200">Returns an array of chart assets.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
+    [HttpGet("{id:guid}/assets")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<ChartAssetDto>>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> GetChartAssets([FromRoute] Guid id, [FromQuery] ArrayWithTimeRequestDto dto,
+        [FromQuery] ChartAssetFilterDto? filterDto = null)
+    {
+        if (!await _chartRepository.ChartExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
+            });
+
+        var chart = await _chartRepository.GetChartAsync(id);
+
+        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if ((chart.OwnerId == currentUser.Id &&
+             !await _resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+            (chart.OwnerId != currentUser.Id &&
+             !await _resourceService.HasPermission(currentUser, Roles.Moderator)))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+        dto.PerPage = dto.PerPage > 0
+            ? dto.PerPage <= _dataSettings.Value.PaginationMaxPerPage
+                ? dto.PerPage
+                : _dataSettings.Value.PaginationMaxPerPage
+            : _dataSettings.Value.PaginationPerPage;
+        var position = dto.PerPage * (dto.Page - 1);
+        var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser,
+            e => e.ChartId == id);
+        var chartAssets = await _chartAssetRepository.GetChartAssetsAsync(dto.Order, dto.Desc, position,
+            dto.PerPage, predicateExpr);
+        var total = await _chartAssetRepository.CountChartAssetsAsync(predicateExpr);
+        var list = chartAssets.Select(chartAsset => _mapper.Map<ChartAssetDto>(chartAsset)).ToList();
+
+        return Ok(new ResponseDto<IEnumerable<ChartAssetDto>>
+        {
+            Status = ResponseStatus.Ok,
+            Code = ResponseCodes.Ok,
+            Total = total,
+            PerPage = dto.PerPage,
+            HasPrevious = position > 0,
+            HasNext = position < total - total % dto.PerPage,
+            Data = list
+        });
+    }
+
+    /// <summary>
+    ///     Retrieves a specific chart's asset.
+    /// </summary>
+    /// <param name="id">A chart's ID.</param>
+    /// <param name="assetId">A chart asset's ID.</param>
+    /// <returns>A chart's asset.</returns>
+    /// <response code="200">Returns a chart's asset.</response>
+    /// <response code="304">
+    ///     When the resource has not been updated since last retrieval. Requires <c>If-None-Match</c>.
+    /// </response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
+    /// <response code="404">When the specified chart or the asset is not found.</response>
+    /// <response code="500">When an internal server error has occurred.</response>
+    [HttpGet("{id:guid}/assets/{assetId:guid}")]
+    [ServiceFilter(typeof(ETagFilter))]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<ChartAssetDto>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status304NotModified, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> GetChartAsset([FromRoute] Guid id, [FromRoute] Guid assetId)
+    {
+        if (!await _chartRepository.ChartExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
+            });
+
+        var chart = await _chartRepository.GetChartAsync(id);
+
+        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if ((chart.OwnerId == currentUser.Id &&
+             !await _resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+            (chart.OwnerId != currentUser.Id &&
+             !await _resourceService.HasPermission(currentUser, Roles.Moderator)))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+
+        if (!await _chartAssetRepository.ChartAssetExistsAsync(assetId))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+
+        var chartAsset = await _chartAssetRepository.GetChartAssetAsync(assetId);
+
+        var dto = _mapper.Map<ChartAssetDto>(chartAsset);
+
+        return Ok(new ResponseDto<ChartAssetDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
+    }
+
+    /// <summary>
+    ///     Creates a chart's asset.
+    /// </summary>
+    /// <param name="id">A chart's ID.</param>
+    /// <param name="dto">The new asset.</param>
+    /// <returns>An empty body.</returns>
+    /// <response code="201">Returns an empty body.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
+    /// <response code="404">When the specified chart is not found.</response>
+    /// <response code="500">When an internal server error has occurred.</response>
+    [HttpPatch("{id:guid}/assets")]
+    [Consumes("multipart/form-data")]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> CreateChartAsset([FromRoute] Guid id,
+        [FromForm] ChartAssetCreationDto dto)
+    {
+        if (!await _chartRepository.ChartExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
+            });
+
+        var chart = await _chartRepository.GetChartAsync(id);
+
+        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if ((chart.OwnerId == currentUser.Id &&
+             !await _resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+            (chart.OwnerId != currentUser.Id &&
+             !await _resourceService.HasPermission(currentUser, Roles.Moderator)))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+
+        var chartAsset = new ChartAsset
+        {
+            ChartId = id,
+            Type = dto.Type,
+            Name = dto.Name,
+            File = (await _fileStorageService.Upload<ChartAsset>(
+                chart.Title ?? chart.Song.Title, dto.File)).Item1,
+            OwnerId = currentUser.Id,
+            DateCreated = DateTimeOffset.UtcNow,
+            DateUpdated = DateTimeOffset.UtcNow
+        };
+
+        if (!await _chartAssetRepository.CreateChartAssetAsync(chartAsset) ||
+            !await _chartRepository.UpdateChartAsync(chart))
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+
+        return StatusCode(StatusCodes.Status201Created);
+    }
+
+    /// <summary>
+    ///     Updates a chart's asset.
+    /// </summary>
+    /// <param name="id">A chart's ID.</param>
+    /// <param name="assetId">A chart asset's ID.</param>
+    /// <param name="patchDocument">A JSON Patch Document.</param>
+    /// <returns>An empty body.</returns>
+    /// <response code="204">Returns an empty body.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
+    /// <response code="404">When the specified chart or the asset is not found.</response>
+    /// <response code="500">When an internal server error has occurred.</response>
+    [HttpPatch("{id:guid}/assets/{assetId:guid}")]
+    [Consumes("multipart/form-data")]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> UpdateChartAsset([FromRoute] Guid id, [FromRoute] Guid assetId,
+        [FromBody] JsonPatchDocument<ChartAssetUpdateDto> patchDocument)
+    {
+        if (!await _chartRepository.ChartExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
+            });
+
+        var chart = await _chartRepository.GetChartAsync(id);
+
+        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if ((chart.OwnerId == currentUser.Id &&
+             !await _resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+            (chart.OwnerId != currentUser.Id &&
+             !await _resourceService.HasPermission(currentUser, Roles.Moderator)))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+
+        if (!await _chartAssetRepository.ChartAssetExistsAsync(assetId))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+
+        var chartAsset = await _chartAssetRepository.GetChartAssetAsync(assetId);
+
+        var dto = _mapper.Map<ChartAssetUpdateDto>(chartAsset);
+        patchDocument.ApplyTo(dto, ModelState);
+
+        if (!TryValidateModel(dto))
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorDetailed,
+                Code = ResponseCodes.InvalidData,
+                Errors = ModelErrorTranslator.Translate(ModelState)
+            });
+
+        chartAsset.Type = dto.Type;
+        chartAsset.Name = dto.Name;
+        chartAsset.DateUpdated = DateTimeOffset.UtcNow;
+        chart.DateUpdated = DateTimeOffset.UtcNow;
+
+        if (!await _chartAssetRepository.UpdateChartAssetAsync(chartAsset) ||
+            !await _chartRepository.UpdateChartAsync(chart))
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+
+        return NoContent();
+    }
+
+    /// <summary>
+    ///     Updates the file for a chart's asset.
+    /// </summary>
+    /// <param name="id">A chart's ID.</param>
+    /// <param name="assetId">A chart asset's ID.</param>
+    /// <param name="dto">The new file.</param>
+    /// <returns>An empty body.</returns>
+    /// <response code="204">Returns an empty body.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
+    /// <response code="404">When the specified chart or the asset is not found.</response>
+    /// <response code="500">When an internal server error has occurred.</response>
+    [HttpPatch("{id:guid}/assets/{assetId:guid}/file")]
+    [Consumes("multipart/form-data")]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> UpdateChartAssetFile([FromRoute] Guid id, [FromRoute] Guid assetId,
+        [FromForm] FileDto dto)
+    {
+        if (!await _chartRepository.ChartExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
+            });
+
+        var chart = await _chartRepository.GetChartAsync(id);
+
+        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if ((chart.OwnerId == currentUser.Id &&
+             !await _resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+            (chart.OwnerId != currentUser.Id &&
+             !await _resourceService.HasPermission(currentUser, Roles.Moderator)))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+
+        if (!await _chartAssetRepository.ChartAssetExistsAsync(assetId))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+
+        var chartAsset = await _chartAssetRepository.GetChartAssetAsync(assetId);
+
+        if (dto.File != null)
+        {
+            chartAsset.File = (await _fileStorageService.Upload<ChartAsset>(
+                chart.Title ?? chart.Song.Title, dto.File)).Item1;
+            chartAsset.DateUpdated = DateTimeOffset.UtcNow;
+            chart.DateUpdated = DateTimeOffset.UtcNow;
+        }
+
+        if (!await _chartAssetRepository.UpdateChartAssetAsync(chartAsset) ||
+            !await _chartRepository.UpdateChartAsync(chart))
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+
+        return NoContent();
+    }
+
+    /// <summary>
+    ///     Removes a chart's asset.
+    /// </summary>
+    /// <param name="id">A chart's ID.</param>
+    /// <param name="assetId">A chart asset's ID.</param>
+    /// <returns>An empty body.</returns>
+    /// <response code="204">Returns an empty body.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
+    /// <response code="404">When the specified chart or the asset is not found.</response>
+    /// <response code="500">When an internal server error has occurred.</response>
+    [HttpDelete("{id:guid}/assets/{assetId:guid}")]
+    [Consumes("multipart/form-data")]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> RemoveChartAsset([FromRoute] Guid id, [FromRoute] Guid assetId)
+    {
+        if (!await _chartRepository.ChartExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
+            });
+
+        var chart = await _chartRepository.GetChartAsync(id);
+
+        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if ((chart.OwnerId == currentUser.Id &&
+             !await _resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+            (chart.OwnerId != currentUser.Id &&
+             !await _resourceService.HasPermission(currentUser, Roles.Moderator)))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+
+        if (!await _chartAssetRepository.ChartAssetExistsAsync(assetId))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+
+        chart.DateUpdated = DateTimeOffset.UtcNow;
+
+        if (!await _chartAssetRepository.RemoveChartAssetAsync(assetId) ||
+            !await _chartRepository.UpdateChartAsync(chart))
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+
+        return NoContent();
+    }
+
+    /// <summary>
     ///     Creates a new authorship for a chart.
     /// </summary>
     /// <returns>An empty body.</returns>
@@ -577,7 +962,7 @@ public class ChartController : Controller
     [HttpPost("{id:guid}/authorships")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Consumes("application/json")]
-    [Produces("text/plain", "application/json")]
+    [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -747,7 +1132,7 @@ public class ChartController : Controller
     /// <response code="404">When the specified chart is not found.</response>
     [HttpPost("{id:guid}/likes")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
-    [Produces("text/plain", "application/json")]
+    [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -910,7 +1295,7 @@ public class ChartController : Controller
     /// <response code="500">When an internal server error has occurred.</response>
     [HttpPost("{id:guid}/comments")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
-    [Produces("text/plain", "application/json")]
+    [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -1029,7 +1414,7 @@ public class ChartController : Controller
     /// <response code="404">When the specified chart is not found.</response>
     [HttpPost("{id:guid}/votes")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
-    [Produces("text/plain", "application/json")]
+    [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]

@@ -22,7 +22,6 @@ public class NotificationRepository : INotificationRepository
         string? search = null, Expression<Func<Notification, bool>>? predicate = null)
     {
         var result = _context.Notifications.OrderBy(order, desc);
-
         if (predicate != null) result = result.Where(predicate);
 
         if (search != null)
@@ -31,7 +30,8 @@ public class NotificationRepository : INotificationRepository
             result = result.Where(notification => notification.Content.ToUpper().Contains(search));
         }
 
-        return await result.Skip(position).Take(take).ToListAsync();
+        result = result.Skip(position);
+        return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
 
     public async Task<Notification> GetNotificationAsync(Guid id)
@@ -47,6 +47,18 @@ public class NotificationRepository : INotificationRepository
     public async Task<bool> CreateNotificationAsync(Notification notification)
     {
         await _context.Notifications.AddAsync(notification);
+        return await SaveAsync();
+    }
+
+    public async Task<bool> UpdateNotificationAsync(Notification notification)
+    {
+        _context.Notifications.Update(notification);
+        return await SaveAsync();
+    }
+
+    public async Task<bool> UpdateNotificationsAsync(IEnumerable<Notification> notifications)
+    {
+        _context.Notifications.UpdateRange(notifications);
         return await SaveAsync();
     }
 

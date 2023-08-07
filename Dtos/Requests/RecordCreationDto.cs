@@ -30,8 +30,10 @@ public class RecordCreationDto
     public double StdDeviation { get; set; }
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
+    [MaxLength(100, ErrorMessage = ResponseCodes.ValueTooLong)]
     public string Hmac { get; set; } = null!;
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
+    [MaxLength(100, ErrorMessage = ResponseCodes.ValueTooLong)]
     public string Checksum { get; set; } = null!;
 }

@@ -1,4 +1,6 @@
-﻿namespace PhiZoneApi.Configurations;
+﻿using PhiZoneApi.Enums;
+
+namespace PhiZoneApi.Configurations;
 
 /// <summary>
 ///     Determines how the data is presented.
@@ -16,10 +18,11 @@ public class DataSettings
     public int PaginationMaxPerPage { get; set; }
 
     /// <summary>
-    ///     Determines the mode for pagination.
-    ///     0 = Offset Pagination (https://learn.microsoft.com/en-us/ef/core/querying/pagination#offset-pagination);
-    ///     not 0 = Keyset Pagination (https://learn.microsoft.com/en-us/ef/core/querying/pagination#keyset-pagination).
+    ///     Determines the pagination mode.
+    ///     Options:
+    ///     Offset Pagination (https://learn.microsoft.com/en-us/ef/core/querying/pagination#offset-pagination);
+    ///     Keyset Pagination (https://learn.microsoft.com/en-us/ef/core/querying/pagination#keyset-pagination).
     /// </summary>
-    /// TODO implement this (at the moment this value is constantly regarded as 0)
-    public int PaginationMode { get; set; }
+    /// TODO implement this
+    public PaginationMode PaginationMode { get; set; }
 }

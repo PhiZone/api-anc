@@ -7,22 +7,22 @@ namespace PhiZoneApi.Services;
 public class SubmissionService : ISubmissionService
 {
     private readonly IChartRepository _chartRepository;
+    private readonly IChartService _chartService;
     private readonly IChartSubmissionRepository _chartSubmissionRepository;
     private readonly INotificationService _notificationService;
     private readonly IResourceService _resourceService;
     private readonly ISongRepository _songRepository;
-    private readonly IUserService _userService;
 
     public SubmissionService(ISongRepository songRepository, INotificationService notificationService,
-        IResourceService resourceService, IUserService userService, IChartRepository chartRepository,
-        IChartSubmissionRepository chartSubmissionRepository)
+        IResourceService resourceService, IChartRepository chartRepository,
+        IChartSubmissionRepository chartSubmissionRepository, IChartService chartService)
     {
         _songRepository = songRepository;
         _notificationService = notificationService;
         _resourceService = resourceService;
-        _userService = userService;
         _chartRepository = chartRepository;
         _chartSubmissionRepository = chartSubmissionRepository;
+        _chartService = chartService;
     }
 
     public async Task<Song> ApproveSong(SongSubmission songSubmission, bool isOriginal)
@@ -58,6 +58,12 @@ public class SubmissionService : ISubmissionService
                 DateUpdated = DateTimeOffset.UtcNow
             };
             await _songRepository.CreateSongAsync(song);
+
+            foreach (var chartSubmission in await _chartSubmissionRepository.GetChartSubmissionsAsync("DateCreated",
+                         false,
+                         0, -1, predicate:
+                         e => e.Status == RequestStatus.Approved))
+                await ApproveChart(chartSubmission);
         }
         else
         {
@@ -90,7 +96,7 @@ public class SubmissionService : ISubmissionService
             await _songRepository.UpdateSongAsync(song);
         }
 
-        await _notificationService.Notify(songSubmission.Owner, await _userService.GetOfficial(),
+        await _notificationService.Notify(songSubmission.Owner, null,
             NotificationType.System, "song-submission-approval",
             new Dictionary<string, string>
             {
@@ -100,17 +106,12 @@ public class SubmissionService : ISubmissionService
                         songSubmission.GetDisplay())
                 }
             });
-
-        foreach (var chartSubmission in await _chartSubmissionRepository.GetChartSubmissionsAsync("DateCreated", false,
-                     0, -1, predicate:
-                     e => e.Status == RequestStatus.Approved))
-            await ApproveChart(chartSubmission);
         return song;
     }
 
     public async Task RejectSong(SongSubmission songSubmission)
     {
-        await _notificationService.Notify(songSubmission.Owner, await _userService.GetOfficial(),
+        await _notificationService.Notify(songSubmission.Owner, null,
             NotificationType.System, "song-submission-rejection",
             new Dictionary<string, string>
             {
@@ -127,57 +128,86 @@ public class SubmissionService : ISubmissionService
     {
         if (chartSubmission.SongId == null) return;
 
-        var chart = new Chart
+        Chart chart;
+        if (chartSubmission.RepresentationId == null)
         {
-            Title = chartSubmission.Title,
-            LevelType = chartSubmission.LevelType,
-            Level = chartSubmission.Level,
-            Difficulty = chartSubmission.Difficulty,
-            Format = chartSubmission.Format,
-            File = chartSubmission.File,
-            FileChecksum = chartSubmission.FileChecksum,
-            AuthorName = chartSubmission.AuthorName,
-            Illustration = chartSubmission.Illustration,
-            Illustrator = chartSubmission.Illustrator,
-            Description = chartSubmission.Description,
-            Accessibility = chartSubmission.Accessibility,
-            IsRanked = chartSubmission.IsRanked,
-            IsHidden = false,
-            IsLocked = false,
-            NoteCount = chartSubmission.NoteCount,
-            SongId = chartSubmission.SongId.Value,
-            OwnerId = chartSubmission.OwnerId,
-            DateCreated = DateTimeOffset.UtcNow,
-            DateUpdated = DateTimeOffset.UtcNow
-        };
-        await _chartRepository.CreateChartAsync(chart);
+            chart = new Chart
+            {
+                Title = chartSubmission.Title,
+                LevelType = chartSubmission.LevelType,
+                Level = chartSubmission.Level,
+                Difficulty = chartSubmission.Difficulty,
+                Format = chartSubmission.Format,
+                File = chartSubmission.File,
+                FileChecksum = chartSubmission.FileChecksum,
+                AuthorName = chartSubmission.AuthorName,
+                Illustration = chartSubmission.Illustration,
+                Illustrator = chartSubmission.Illustrator,
+                Description = chartSubmission.Description,
+                Accessibility = chartSubmission.Accessibility,
+                IsRanked = chartSubmission.IsRanked,
+                IsHidden = false,
+                IsLocked = false,
+                NoteCount = chartSubmission.NoteCount,
+                SongId = chartSubmission.SongId.Value,
+                OwnerId = chartSubmission.OwnerId,
+                DateCreated = DateTimeOffset.UtcNow,
+                DateUpdated = DateTimeOffset.UtcNow
+            };
+            await _chartRepository.CreateChartAsync(chart);
+            chartSubmission.RepresentationId = chart.Id;
+        }
+        else
+        {
+            chart = await _chartRepository.GetChartAsync(chartSubmission.RepresentationId.Value);
+            chart.Title = chartSubmission.Title;
+            chart.LevelType = chartSubmission.LevelType;
+            chart.Level = chartSubmission.Level;
+            chart.Difficulty = chartSubmission.Difficulty;
+            chart.Format = chartSubmission.Format;
+            chart.File = chartSubmission.File;
+            chart.FileChecksum = chartSubmission.FileChecksum;
+            chart.AuthorName = chartSubmission.AuthorName;
+            chart.Illustration = chartSubmission.Illustration;
+            chart.Illustrator = chartSubmission.Illustrator;
+            chart.Description = chartSubmission.Description;
+            chart.Accessibility = chartSubmission.Accessibility;
+            chart.IsRanked = chartSubmission.IsRanked;
+            chart.IsHidden = false;
+            chart.IsLocked = false;
+            chart.NoteCount = chartSubmission.NoteCount;
+            chart.SongId = chartSubmission.SongId.Value;
+            chart.OwnerId = chartSubmission.OwnerId;
+            chart.DateCreated = DateTimeOffset.UtcNow;
+            chart.DateUpdated = DateTimeOffset.UtcNow;
+            await _chartRepository.UpdateChartAsync(chart);
+        }
 
-        await _notificationService.Notify(chartSubmission.Owner, await _userService.GetOfficial(),
+        await _notificationService.Notify(chartSubmission.Owner, null,
             NotificationType.System, "chart-submission-approval",
             new Dictionary<string, string>
             {
                 {
                     "Chart",
                     _resourceService.GetRichText<ChartSubmission>(chartSubmission.Id.ToString(),
-                        chartSubmission.GetDisplay())
+                        await _chartService.GetDisplayName(chartSubmission))
                 }
             });
 
-        chartSubmission.RepresentationId = chart.Id;
         chartSubmission.DateUpdated = DateTimeOffset.UtcNow;
         await _chartSubmissionRepository.UpdateChartSubmissionAsync(chartSubmission);
     }
 
     public async Task RejectChart(ChartSubmission chartSubmission)
     {
-        await _notificationService.Notify(chartSubmission.Owner, await _userService.GetOfficial(),
+        await _notificationService.Notify(chartSubmission.Owner, null,
             NotificationType.System, "chart-submission-rejection",
             new Dictionary<string, string>
             {
                 {
                     "Chart",
                     _resourceService.GetRichText<ChartSubmission>(chartSubmission.Id.ToString(),
-                        chartSubmission.GetDisplay())
+                        await _chartService.GetDisplayName(chartSubmission))
                 }
             });
     }
