@@ -6,5 +6,6 @@ public enum ResponseStatus
     ErrorBrief,
     ErrorDetailed,
     ErrorWithMessage,
-    ErrorTemporarilyUnavailable
+    ErrorTemporarilyUnavailable,
+    ErrorWithData
 }

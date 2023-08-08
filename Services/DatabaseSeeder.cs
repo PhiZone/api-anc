@@ -35,7 +35,7 @@ public class DatabaseSeeder : IHostedService
         return Task.CompletedTask;
     }
 
-    private async Task PopulateRoles(IServiceScope scope)
+    private static async Task PopulateRoles(IServiceScope scope)
     {
         var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<Role>>();
         var roles = Roles.List.Select(role => role.Name);
@@ -44,7 +44,7 @@ public class DatabaseSeeder : IHostedService
                 await roleManager.CreateAsync(new Role { Name = role });
     }
 
-    private async Task PopulateScopes(IServiceScope scope, CancellationToken cancellationToken)
+    private static async Task PopulateScopes(IServiceScope scope, CancellationToken cancellationToken)
     {
         var scopeManager = scope.ServiceProvider.GetRequiredService<IOpenIddictScopeManager>();
         var scopeDescriptor = new OpenIddictScopeDescriptor { Name = "basic_access" };
@@ -55,32 +55,53 @@ public class DatabaseSeeder : IHostedService
             await scopeManager.UpdateAsync(scopeInstance, scopeDescriptor, cancellationToken);
     }
 
-    private async Task PopulateInternalApps(IServiceScope scopeService, CancellationToken cancellationToken)
+    private static async Task PopulateInternalApps(IServiceScope scopeService, CancellationToken cancellationToken)
     {
         var appManager = scopeService.ServiceProvider.GetRequiredService<IOpenIddictApplicationManager>();
-        var appDescriptor = new OpenIddictApplicationDescriptor
+        var appDescriptors = new List<OpenIddictApplicationDescriptor>
         {
-            ClientId = "regular",
-            ClientSecret = "c29b1587-80f9-475f-b97b-dca1884eb0e3",
-            Type = OpenIddictConstants.ClientTypes.Confidential,
-            Permissions =
+            new()
             {
-                OpenIddictConstants.Permissions.Endpoints.Token,
-                OpenIddictConstants.Permissions.Endpoints.Introspection,
-                OpenIddictConstants.Permissions.Endpoints.Revocation,
-                OpenIddictConstants.Permissions.GrantTypes.Password,
-                OpenIddictConstants.Permissions.GrantTypes.RefreshToken,
-                OpenIddictConstants.Permissions.Prefixes.Scope + "basic_access"
+                ClientId = "regular",
+                ClientSecret = "c29b1587-80f9-475f-b97b-dca1884eb0e3",
+                Type = OpenIddictConstants.ClientTypes.Confidential,
+                Permissions =
+                {
+                    OpenIddictConstants.Permissions.Endpoints.Token,
+                    OpenIddictConstants.Permissions.Endpoints.Introspection,
+                    OpenIddictConstants.Permissions.Endpoints.Revocation,
+                    OpenIddictConstants.Permissions.GrantTypes.Password,
+                    OpenIddictConstants.Permissions.GrantTypes.RefreshToken,
+                    OpenIddictConstants.Permissions.Prefixes.Scope + "basic_access"
+                }
+            },
+            new()
+            {
+                ClientId = "taptap",
+                ClientSecret = "d11641d7-0d50-4607-9e96-204922573a0f",
+                Type = OpenIddictConstants.ClientTypes.Confidential,
+                Permissions =
+                {
+                    OpenIddictConstants.Permissions.Endpoints.Token,
+                    OpenIddictConstants.Permissions.Endpoints.Introspection,
+                    OpenIddictConstants.Permissions.Endpoints.Revocation,
+                    OpenIddictConstants.Permissions.GrantTypes.Password,
+                    OpenIddictConstants.Permissions.GrantTypes.RefreshToken,
+                    OpenIddictConstants.Permissions.Prefixes.Scope + "basic_access"
+                }
             }
         };
-        var client = await appManager.FindByClientIdAsync(appDescriptor.ClientId, cancellationToken);
-        if (client == null)
-            await appManager.CreateAsync(appDescriptor, cancellationToken);
-        else
-            await appManager.UpdateAsync(client, appDescriptor, cancellationToken);
+        foreach (var appDescriptor in appDescriptors)
+        {
+            var client = await appManager.FindByClientIdAsync(appDescriptor.ClientId!, cancellationToken);
+            if (client == null)
+                await appManager.CreateAsync(appDescriptor, cancellationToken);
+            else
+                await appManager.UpdateAsync(client, appDescriptor, cancellationToken);
+        }
     }
 
-    private async Task PopulateRegions(IServiceScope scope, CancellationToken cancellationToken)
+    private static async Task PopulateRegions(IServiceScope scope, CancellationToken cancellationToken)
     {
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var regions = new Dictionary<string, string>

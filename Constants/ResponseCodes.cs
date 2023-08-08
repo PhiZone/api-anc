@@ -57,7 +57,7 @@ public static class ResponseCodes
     ///     The username can only contain numbers, underscores and English / Chinese / Japanese / Korean characters, and must
     ///     be between 4 and 12 characters in length.
     /// </summary>
-    /// <code>^([a-zA-Z0-9_\u4e00-\u9fa5\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af]{3,12})|([\u4e00-\u9fa5\u3040-\u309f\u30a0-\u30ff\uac00-\ud7af]{2,12})|([A-Za-z0-9_]{4,18})$</code>
+    /// <code>^([a-zA-Z0-9_\u4e00-\u9fff\u3041-\u309f\u30a0-\u30ff\uac00-\ud7a3]{3,12})|([\u4e00-\u9fff\u3041-\u309f\u30a0-\u30ff\uac00-\ud7a3]{2,12})|([A-Za-z0-9_]{4,18})$</code>
     public const string InvalidUserName = "InvalidUserName";
 
     /// <summary>
@@ -240,4 +240,14 @@ public static class ResponseCodes
     ///     The parent resource is private.
     /// </summary>
     public const string ParentIsPrivate = "ParentIsPrivate";
+
+    /// <summary>
+    ///     Errors occurred whilst contacting remote servers.
+    /// </summary>
+    public const string RemoteFailure = "RemoteFailure";
+
+    /// <summary>
+    ///     The remote account has already been bound to another user.
+    /// </summary>
+    public const string BindingOccupied = "BindingOccupied";
 }

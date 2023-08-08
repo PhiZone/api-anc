@@ -11,10 +11,6 @@ public class ChartSubmissionFilterDto : FilterDto<ChartSubmission>
 
     public string? EqualsTitle { get; set; }
 
-    public string? ContainsIllustrator { get; set; }
-
-    public string? EqualsIllustrator { get; set; }
-
     public List<ChartLevel>? RangeLevelType { get; set; }
 
     public string? ContainsLevel { get; set; } = null!;
@@ -33,6 +29,10 @@ public class ChartSubmissionFilterDto : FilterDto<ChartSubmission>
 
     public string? EqualsAuthorName { get; set; } = null!;
 
+    public string? ContainsIllustrator { get; set; }
+
+    public string? EqualsIllustrator { get; set; }
+
     public bool? IsRanked { get; set; }
 
     public int? MinNoteCount { get; set; }
@@ -46,6 +46,16 @@ public class ChartSubmissionFilterDto : FilterDto<ChartSubmission>
     public string? EqualsDescription { get; set; }
 
     public List<Accessibility>? RangeAccessibility { get; set; }
+
+    public List<Guid>? RangeSongId { get; set; }
+
+    public List<Guid>? RangeSongSubmissionId { get; set; }
+
+    public List<RequestStatus>? RangeStatus { get; set; }
+
+    public List<RequestStatus>? RangeVolunteerStatus { get; set; }
+
+    public List<RequestStatus>? RangeAdmissionStatus { get; set; }
 
     public int? MinOwnerId { get; set; }
 

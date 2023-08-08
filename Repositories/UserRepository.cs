@@ -39,6 +39,11 @@ public class UserRepository : IUserRepository
         return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
 
+    public async Task<User?> GetUserByTapUnionId(string unionId)
+    {
+        return await _context.Users.FirstOrDefaultAsync(user => user.TapUnionId == unionId);
+    }
+
     public async Task<int> CountUsersAsync(string? search = null, Expression<Func<User, bool>>? predicate = null)
     {
         var result = _context.Users.AsQueryable();

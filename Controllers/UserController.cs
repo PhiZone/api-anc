@@ -4,10 +4,12 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using OpenIddict.Abstractions;
 using OpenIddict.Validation.AspNetCore;
 using PhiZoneApi.Configurations;
 using PhiZoneApi.Constants;
+using PhiZoneApi.Dtos.Deliverers;
 using PhiZoneApi.Dtos.Filters;
 using PhiZoneApi.Dtos.Requests;
 using PhiZoneApi.Dtos.Responses;
@@ -38,6 +40,7 @@ public class UserController : Controller
     private readonly IRecordService _recordService;
     private readonly IRegionRepository _regionRepository;
     private readonly IResourceService _resourceService;
+    private readonly ITapTapService _tapTapService;
     private readonly UserManager<User> _userManager;
     private readonly IUserRelationRepository _userRelationRepository;
     private readonly IUserRepository _userRepository;
@@ -46,7 +49,7 @@ public class UserController : Controller
         UserManager<User> userManager, IMailService mailService, IFilterService filterService,
         IFileStorageService fileStorageService, IOptions<DataSettings> dataSettings, IMapper mapper,
         IDtoMapper dtoMapper, IRegionRepository regionRepository, IRecordRepository recordRepository,
-        IRecordService recordService, IResourceService resourceService)
+        IRecordService recordService, IResourceService resourceService, ITapTapService tapTapService)
     {
         _userRepository = userRepository;
         _userRelationRepository = userRelationRepository;
@@ -61,6 +64,7 @@ public class UserController : Controller
         _recordRepository = recordRepository;
         _recordService = recordService;
         _resourceService = resourceService;
+        _tapTapService = tapTapService;
     }
 
     /// <summary>
@@ -227,17 +231,14 @@ public class UserController : Controller
     public async Task<IActionResult> UpdateUser([FromRoute] int id,
         [FromBody] JsonPatchDocument<UserUpdateDto> patchDocument)
     {
-        // Obtain user by id
         var user = await _userManager.FindByIdAsync(id.ToString());
 
-        // Check user's existence
         if (user == null)
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNotFound
             });
 
-        // Check permission
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         if (currentUser == null) return Unauthorized();
 
@@ -323,17 +324,14 @@ public class UserController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> UpdateUserAvatar([FromRoute] int id, [FromForm] UserAvatarDto dto)
     {
-        // Obtain user by id
         var user = await _userManager.FindByIdAsync(id.ToString());
 
-        // Check user's existence
         if (user == null)
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNotFound
             });
 
-        // Check permission
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         if (currentUser == null) return Unauthorized();
 
@@ -372,17 +370,14 @@ public class UserController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> RemoveUserAvatar([FromRoute] int id)
     {
-        // Obtain user by id
         var user = await _userManager.FindByIdAsync(id.ToString());
 
-        // Check user's existence
         if (user == null)
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNotFound
             });
 
-        // Check permission
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         if (currentUser == null) return Unauthorized();
 
@@ -397,6 +392,148 @@ public class UserController : Controller
         user.Avatar = null;
 
         await _userManager.UpdateAsync(user);
+        return NoContent();
+    }
+
+    /// <summary>
+    ///     Binds a user to a TapTap account.
+    /// </summary>
+    /// <param name="id">A user's ID.</param>
+    /// <returns>An empty body.</returns>
+    /// <response code="204">Returns an empty body.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
+    /// <response code="404">When the specified user is not found.</response>
+    [HttpPost("{id:int}/bindings/tapTap")]
+    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
+    [Consumes("application/json")]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> BindTapTap([FromRoute] int id, [FromBody] TapLoginRequestDto dto)
+    {
+        var user = await _userManager.FindByIdAsync(id.ToString());
+
+        if (user == null)
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNotFound
+            });
+
+        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+
+        if ((currentUser.Id == id && !await _resourceService.HasPermission(currentUser, Roles.Member)) ||
+            (currentUser.Id != id && !await _resourceService.HasPermission(currentUser, Roles.Administrator)))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+
+        var response = await _tapTapService.Login(dto);
+
+        if (!response.IsSuccessStatusCode)
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorWithData,
+                Code = ResponseCodes.RemoteFailure,
+                Data = JsonConvert.DeserializeObject(await response.Content.ReadAsStringAsync())
+            });
+
+        var responseDto =
+            JsonConvert.DeserializeObject<TapLoginDelivererDto>(await response.Content.ReadAsStringAsync())!;
+        var targetUser = await _userRepository.GetUserByTapUnionId(responseDto.Unionid);
+        if (targetUser != null)
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief,
+                Code = targetUser.Id == currentUser.Id ? ResponseCodes.AlreadyDone : ResponseCodes.BindingOccupied
+            });
+
+        user.TapUnionId = responseDto.Unionid;
+        await _userManager.UpdateAsync(user);
+        return NoContent();
+    }
+
+    /// <summary>
+    ///     Unbinds a user from a TapTap account.
+    /// </summary>
+    /// <param name="id">A user's ID.</param>
+    /// <returns>An empty body.</returns>
+    /// <response code="204">Returns an empty body.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
+    /// <response code="404">When the specified user is not found.</response>
+    [HttpDelete("{id:int}/bindings/tapTap")]
+    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> UnbindTapTap([FromRoute] int id)
+    {
+        var user = await _userManager.FindByIdAsync(id.ToString());
+
+        if (user == null)
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNotFound
+            });
+
+        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+
+        if ((currentUser.Id == id && !await _resourceService.HasPermission(currentUser, Roles.Member)) ||
+            (currentUser.Id != id && !await _resourceService.HasPermission(currentUser, Roles.Administrator)))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+
+        if (user.TapUnionId == null)
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief,
+                Code = ResponseCodes.AlreadyDone
+            });
+
+        user.TapUnionId = null;
+        await _userManager.UpdateAsync(user);
+        return NoContent();
+    }
+
+    /// <summary>
+    ///     FOR DEVELOPMENT TESTS ONLY.
+    /// </summary>
+    [HttpGet("{id:int}/tokens")]
+    public async Task<IActionResult> GetTokens([FromRoute] int id)
+    {
+        var user = await _userManager.FindByIdAsync(id.ToString());
+
+        if (user == null)
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNotFound
+            });
+
+        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+
+        if ((currentUser.Id == id && !await _resourceService.HasPermission(currentUser, Roles.Member)) ||
+            (currentUser.Id != id && !await _resourceService.HasPermission(currentUser, Roles.Administrator)))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+        // var tokens = await _tapTapService.GetTokens(user);
+        // return Ok($"AccessToken: {tokens.Item1}\nRefreshToken: {tokens.Item2}");
         return NoContent();
     }
 
@@ -416,10 +553,8 @@ public class UserController : Controller
     public async Task<IActionResult> GetFollowers([FromRoute] int id, [FromQuery] ArrayWithTimeRequestDto dto,
         [FromQuery] UserRelationFilterDto? filterDto = null)
     {
-        // Obtain user by id
         var user = await _userManager.FindByIdAsync(id.ToString());
 
-        // Check user's existence
         if (user == null)
             return NotFound(new ResponseDto<object>
             {
@@ -470,10 +605,8 @@ public class UserController : Controller
     public async Task<IActionResult> GetFollowees([FromRoute] int id, [FromQuery] ArrayWithTimeRequestDto dto,
         [FromQuery] UserRelationFilterDto? filterDto = null)
     {
-        // Obtain user by id
         var user = await _userManager.FindByIdAsync(id.ToString());
 
-        // Check user's existence
         if (user == null)
             return NotFound(new ResponseDto<object>
             {
@@ -528,17 +661,14 @@ public class UserController : Controller
     public async Task<IActionResult> Follow([FromRoute] int id,
         [FromQuery] UserRelationType type = UserRelationType.Following)
     {
-        // Obtain user by id
         var user = await _userManager.FindByIdAsync(id.ToString());
 
-        // Check user's existence
         if (user == null)
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNotFound
             });
 
-        // Check permission
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         if (currentUser == null) return Unauthorized();
 
@@ -605,17 +735,14 @@ public class UserController : Controller
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> Unfollow([FromRoute] int id)
     {
-        // Obtain user by id
         var user = await _userManager.FindByIdAsync(id.ToString());
 
-        // Check user's existence
         if (user == null)
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNotFound
             });
 
-        // Check permission
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         if (currentUser == null) return Unauthorized();
 

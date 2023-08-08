@@ -12,7 +12,7 @@ Based on ASP.NET Core.
     - [x] ETag
 2. Data Persistence
     - [x] Inheritance
-    - [ ] File Digest
+    - [x] File Digest
 3. Authentication
     - [x] Registration
     - [x] Login
@@ -22,6 +22,8 @@ Based on ASP.NET Core.
     - [x] Password Reset
     - [ ] Two-factor Authentication
     - [ ] Phone Number Confirmation
+4. TapTap
+    - [ ] Login & Account Binding
 
 ## Configuration
 
@@ -41,10 +43,11 @@ File `appsettings.Development.json` is ignored by git using `.gitignore`. You sh
     "UserName": "example@example.com",
     "Password": "yourpassword"
   },
-  "FileStorageSettings": {
+  "TapTapSettings": {
     "ClientId": "yourid",
     "ClientToken": "yourtoken",
-    "ServerUrl": "https://example.com"
+     "TapApiUrl": "https://openapi.taptap.com",
+    "FileStorageUrl": "https://example.com"
   },
   "RabbitMQSettings": {
     "HostName": "localhost",
@@ -58,7 +61,7 @@ File `appsettings.Development.json` is ignored by git using `.gitignore`. You sh
 
 1. Database: Configure your own PostgreSQL server before filling in `DefaultConnection`.
 2. File Storage: We use the file storage service provided by TapTap, courtesy of Phigrim. Ask anyone who has access to
-   the service for credentials before filling in `FileStorageSettings`.
+   the service for credentials before filling in `TapTapSettings`.
 3. RabbitMQ: Setup your own RabbitMQ server before filling in `RabbitMQSettings`.
 
 ## Data Processing

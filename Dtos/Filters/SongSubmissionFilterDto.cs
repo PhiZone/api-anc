@@ -33,12 +33,6 @@ public class SongSubmissionFilterDto : FilterDto<SongSubmission>
 
     public List<RequestStatus>? RangeStatus { get; set; }
 
-    public List<RequestStatus>? RangeVolunteerStatus { get; set; }
-
-    public List<RequestStatus>? RangeCollabStatus { get; set; }
-
-    public List<RequestStatus>? RangeAdmissionStatus { get; set; }
-
     public List<Guid>? RangeRepresentationId { get; set; }
 
     public string? ContainsLyrics { get; set; }
@@ -69,8 +63,6 @@ public class SongSubmissionFilterDto : FilterDto<SongSubmission>
 
     public List<int>? RangeOffset { get; set; }
 
-    public bool? IsOriginal { get; set; }
-
     public TimeSpan? MinDuration { get; set; }
 
     public TimeSpan? MaxDuration { get; set; }
@@ -82,6 +74,16 @@ public class SongSubmissionFilterDto : FilterDto<SongSubmission>
     public TimeSpan? MinPreviewEnd { get; set; }
 
     public TimeSpan? MaxPreviewEnd { get; set; }
+
+    public int? MinReviewerId { get; set; }
+
+    public int? MaxReviewerId { get; set; }
+
+    public List<int>? RangeReviewerId { get; set; }
+
+    public string? ContainsMessage { get; set; }
+
+    public string? EqualsMessage { get; set; }
 
     public int? MinOwnerId { get; set; }
 

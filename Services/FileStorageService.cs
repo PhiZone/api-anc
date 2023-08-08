@@ -12,10 +12,10 @@ public class FileStorageService : IFileStorageService
 {
     private readonly IMultimediaService _multimediaService;
 
-    public FileStorageService(IOptions<FileStorageSettings> options, IMultimediaService multimediaService)
+    public FileStorageService(IOptions<TapTapSettings> options, IMultimediaService multimediaService)
     {
         _multimediaService = multimediaService;
-        LCApplication.Initialize(options.Value.ClientId, options.Value.ClientToken, options.Value.ServerUrl);
+        LCApplication.Initialize(options.Value.ClientId, options.Value.ClientToken, options.Value.FileStorageUrl);
     }
 
     public async Task<(string, string)> Upload<T>(string fileName, IFormFile formFile)

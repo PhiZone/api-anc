@@ -79,6 +79,8 @@ public class ChartFilterDto : PublicResourceFilterDto<Chart>
 
     public List<double>? RangeRatingOnImpression { get; set; }
 
+    public List<Guid>? RangeSongId { get; set; }
+
     public int? MinPlayCount { get; set; }
 
     public int? MaxPlayCount { get; set; }

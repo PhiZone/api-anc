@@ -5,9 +5,11 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
+using Newtonsoft.Json;
 using OpenIddict.Abstractions;
 using OpenIddict.Server.AspNetCore;
 using PhiZoneApi.Constants;
+using PhiZoneApi.Dtos.Deliverers;
 using PhiZoneApi.Dtos.Requests;
 using PhiZoneApi.Dtos.Responses;
 using PhiZoneApi.Enums;
@@ -29,14 +31,19 @@ public class AuthenticationController : Controller
     private readonly IMailService _mailService;
     private readonly IConnectionMultiplexer _redis;
     private readonly IResourceService _resourceService;
+    private readonly ITapTapService _tapTapService;
     private readonly UserManager<User> _userManager;
+    private readonly IUserRepository _userRepository;
 
     public AuthenticationController(UserManager<User> userManager, IConnectionMultiplexer redis,
-        IMailService mailService, IResourceService resourceService)
+        IMailService mailService, IResourceService resourceService,
+        ITapTapService tapTapService, IUserRepository userRepository)
     {
         _userManager = userManager;
         _mailService = mailService;
         _resourceService = resourceService;
+        _tapTapService = tapTapService;
+        _userRepository = userRepository;
         _redis = redis;
     }
 
@@ -81,7 +88,7 @@ public class AuthenticationController : Controller
             var user = await _userManager.FindByEmailAsync(request.Username!);
             if (user == null) return NotFound(null);
 
-            var actionResult = CheckUserLockoutState(user);
+            var actionResult = await CheckUserLockoutState(user);
             if (actionResult != null) return actionResult;
 
             if (!await _userManager.CheckPasswordAsync(user, request.Password!))
@@ -128,7 +135,7 @@ public class AuthenticationController : Controller
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.RefreshTokenOutdated
                 });
 
-            var actionResult = CheckUserLockoutState(user);
+            var actionResult = await CheckUserLockoutState(user);
             if (actionResult != null) return actionResult;
 
             var identity = new ClaimsIdentity(result.Principal!.Claims,
@@ -288,7 +295,7 @@ public class AuthenticationController : Controller
     /// <summary>
     ///     Activates user's account.
     /// </summary>
-    /// <param name="dto">Code from the confirmation email</param>
+    /// <param name="dto">Code from the confirmation email.</param>
     /// <returns>An empty body.</returns>
     /// <response code="204">Returns an empty body.</response>
     /// <response code="400">
@@ -323,6 +330,55 @@ public class AuthenticationController : Controller
         await _userManager.UpdateAsync(user);
         await _userManager.AddToRoleAsync(user, Roles.Member.Name);
         return NoContent();
+    }
+
+    /// <summary>
+    ///     Retrieves tokens with TapTap credentials.
+    /// </summary>
+    /// <returns>Login credentials with TapTap user info.</returns>
+    /// <response code="200">Returns login credentials with TapTap user info.</response>
+    /// <response code="400">When errors have occurred whilst contacting TapTap.</response>
+    [HttpPost("tapLogin")]
+    [Consumes("application/json")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<TapLoginResponseDto>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> LoginWithTapTap([FromBody] TapLoginRequestDto dto)
+    {
+        var response = await _tapTapService.Login(dto);
+
+        if (!response.IsSuccessStatusCode)
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorWithData,
+                Code = ResponseCodes.RemoteFailure,
+                Data = JsonConvert.DeserializeObject(await response.Content.ReadAsStringAsync())
+            });
+
+        var responseDto =
+            JsonConvert.DeserializeObject<TapLoginDelivererDto>(await response.Content.ReadAsStringAsync())!;
+        // (string, string)? tokens = null;
+        var user = await _userRepository.GetUserByTapUnionId(responseDto.Unionid);
+        // if (user != null)
+        // {
+        //     tokens = await _tapTapService.GetTokens(user);
+        // }
+
+        return Ok(new ResponseDto<TapLoginResponseDto>
+        {
+            Status = ResponseStatus.Ok,
+            Code = ResponseCodes.Ok,
+            Data = new TapLoginResponseDto
+            {
+                CanLogin = user != null,
+                // AccessToken = tokens?.Item1,
+                // RefreshToken = tokens?.Item2,
+                UserName = responseDto.Name,
+                Avatar = responseDto.Avatar,
+                OpenId = responseDto.Openid,
+                UnionId = responseDto.Unionid
+            }
+        });
     }
 
     private async Task<User?> RedeemCode(string code, EmailRequestMode mode)
@@ -370,7 +426,7 @@ public class AuthenticationController : Controller
         }
     }
 
-    private IActionResult? CheckUserLockoutState(User user)
+    private async Task<IActionResult?> CheckUserLockoutState(User user)
     {
         if (!user.LockoutEnabled) return null;
 
@@ -389,6 +445,7 @@ public class AuthenticationController : Controller
             }
 
             user.LockoutEnabled = false;
+            await _userManager.UpdateAsync(user);
         }
         else // permanent
         {

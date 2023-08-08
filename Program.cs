@@ -128,6 +128,7 @@ builder.Services.AddScoped<IChartService, ChartService>();
 builder.Services.AddScoped<IRecordService, RecordService>();
 builder.Services.AddScoped<ISubmissionService, SubmissionService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<TapTapService>();
 builder.Services.AddSingleton<IMailService, MailService>();
 builder.Services.AddSingleton<IMultimediaService, MultimediaService>();
 builder.Services.AddSingleton<IFileStorageService, FileStorageService>();
@@ -150,7 +151,7 @@ builder.Services.AddHostedService<DatabaseSeeder>();
 builder.Services.Configure<ApiBehaviorOptions>(options => { options.SuppressModelStateInvalidFilter = true; });
 builder.Services.Configure<DataSettings>(builder.Configuration.GetSection("DataSettings"));
 builder.Services.Configure<MailSettings>(builder.Configuration.GetSection("MailSettings"));
-builder.Services.Configure<FileStorageSettings>(builder.Configuration.GetSection("FileStorageSettings"));
+builder.Services.Configure<TapTapSettings>(builder.Configuration.GetSection("TapTapSettings"));
 builder.Services.Configure<LanguageSettings>(builder.Configuration.GetSection("LanguageSettings"));
 builder.Services.Configure<RabbitMqSettings>(builder.Configuration.GetSection("RabbitMQSettings"));
 builder.Services.Configure<FormOptions>(options =>

@@ -24,6 +24,8 @@ public class User : IdentityUser<int>
 
     public DateTimeOffset DateJoined { get; set; }
 
+    public string? TapUnionId { get; set; }
+
     public DateTimeOffset? DateOfBirth { get; set; }
 
     public int? RegionId { get; set; }
