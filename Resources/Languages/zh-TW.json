@@ -1,0 +1,100 @@
+{
+    "Emails": [
+      {
+        "Mode": 0,
+        "Subject": "[PhiZone] 請確認你的郵件地址",
+        "Body": "敬愛的 {UserName}：\n\n　　請在驗證頁面輸入框中輸入代碼 {Code} 來確認你的郵件地址。該代碼在 5 分鐘內有效。\n\n　　如果你未申請接收此封郵件，請忽略。\n\nPhiZone"
+      },
+      {
+        "Mode": 1,
+        "Subject": "[PhiZone] 你的密碼將被重設",
+        "Body": "敬愛的 {UserName}：\n\n　　你剛剛申請重設你的密碼。請在密碼重設頁面輸入框中輸入代碼 {Code} 以繼續。該代碼在 5 分鐘內有效。\n\n　　如果你未申請接收此封郵件，請忽略。\n\nPhiZone"
+      }
+    ],
+    "Messages": [
+      {
+        "Key": "song-submission-approval",
+        "Content": "你提交的曲目 {Song} 已通過！"
+      },
+      {
+        "Key": "song-submission-rejection",
+        "Content": "你提交的曲目 {Song} 被拒絕。原因：{Reason}"
+      },
+      {
+        "Key": "chart-submission-approval",
+        "Content": "你提交的譜面 {Chart} 已通過！"
+      },
+      {
+        "Key": "chart-submission-rejection",
+        "Content": "你提交的譜面 {Chart} 被拒絕。"
+      },
+      {
+        "Key": "song-follower-update",
+        "Content": "{User} 發佈了新曲目 {Song}！"
+      },
+      {
+        "Key": "chart-follower-update",
+        "Content": "{User} 發佈了新譜面 {Chart}！"
+      },
+      {
+        "Key": "new-comment",
+        "Content": "{User} 在 {Resource} 下發表了留言：{Comment}"
+      },
+      {
+        "Key": "new-reply",
+        "Content": "{User} 回覆了你：{Reply}"
+      },
+      {
+        "Key": "new-like",
+        "Content": "{User} 給 {Resource} 點讚了！"
+      },
+      {
+        "Key": "song-collab",
+        "Content": "{User} 邀請你聯合發佈曲目 {Song}！{Collaboration}"
+      },
+      {
+        "Key": "chart-collab",
+        "Content": "{User} 邀請你聯合發佈譜面 {Chart}！{Collaboration}"
+      },
+      {
+        "Key": "collab-approval",
+        "Content": "{User} 同意了你的合作邀請！{Collaboration}"
+      },
+      {
+        "Key": "collab-rejection",
+        "Content": "{User} 拒絕了你的合作邀請。{Collaboration}"
+      },
+      {
+        "Key": "song-admission",
+        "Content": "{User} 申請將曲目 {Song} 收錄於章節 {Chapter}。{Admission}"
+      },
+      {
+        "Key": "chart-admission",
+        "Content": "{User} 申請將譜面 {Chart} 收錄於曲目 {Song}。{Admission}"
+      },
+      {
+        "Key": "admission-approval",
+        "Content": "{User} 同意了你的收錄申請！{Admission}"
+      },
+      {
+        "Key": "admission-rejection",
+        "Content": "{User} 拒絕了你的收錄申請。{Admission}"
+      },
+      {
+        "Key": "more-info",
+        "Content": "點擊此處查看詳情。"
+      },
+      {
+        "Key": "comment-mention",
+        "Content": "{User} 在留言中提到了你：{Comment}"
+      },
+      {
+        "Key": "reply-mention",
+        "Content": "{User} 在回覆中提到了你：{Reply}"
+      },
+      {
+        "Key": "default",
+        "Content": "預設"
+      }
+    ]
+  }
