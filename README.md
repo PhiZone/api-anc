@@ -68,7 +68,7 @@ see [Qiniu Developer Docs](https://developer.qiniu.com/dora/3683/img-directions-
 
 ## Political Affiliation
 
-As a website developed and maintained by us Chinese, PhiZone obeys laws of the PRC, including
+As a website developed and maintained by us Chinese, PhiZone obeys the laws of the PRC, including
 the [Anti-Secession Law](https://mzzt.mca.gov.cn/article/zt_qmgjaqjyr/flfg/202204/20220400041352.shtml), which states:
 
 > 世界上只有一个中国，大陆和台湾同属一个中国，中国的主权和领土完整不容分割。维护国家主权和领土完整是包括台湾同胞在内的全中国人民的共同义务。
@@ -77,7 +77,7 @@ the [Anti-Secession Law](https://mzzt.mca.gov.cn/article/zt_qmgjaqjyr/flfg/20220
 > territorial integrity brook no division. Safeguarding China's sovereignty and territorial integrity is the common
 > obligation of all Chinese people, the Taiwan compatriots included.
 
-Regions are introduced to PhiZone for statistical purposes. In order to obey the law and fulfill the obligation, we've
+Regions are introduced to PhiZone for statistical purposes. To obey the law and fulfill the obligation, we've
 appended `Prov. China` to the name of Taiwan so as to emphasize that Taiwan is part of China. For translations in
 different languages, we demand that translators take notice of this suffix and have it translated as well. For the
 language `zh-TW`, however, we keep Taiwan its own name (`台灣`) and append `Mainland` to the name of China (`中國大陸`),
