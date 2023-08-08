@@ -128,7 +128,7 @@ builder.Services.AddScoped<IChartService, ChartService>();
 builder.Services.AddScoped<IRecordService, RecordService>();
 builder.Services.AddScoped<ISubmissionService, SubmissionService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
-builder.Services.AddScoped<TapTapService>();
+builder.Services.AddScoped<ITapTapService, TapTapService>();
 builder.Services.AddSingleton<IMailService, MailService>();
 builder.Services.AddSingleton<IMultimediaService, MultimediaService>();
 builder.Services.AddSingleton<IFileStorageService, FileStorageService>();

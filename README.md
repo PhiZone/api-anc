@@ -45,8 +45,8 @@ File `appsettings.Development.json` is ignored by git using `.gitignore`. You sh
   },
   "TapTapSettings": {
     "ClientId": "yourid",
-    "ClientToken": "yourtoken",
-     "TapApiUrl": "https://openapi.taptap.com",
+    "ClientToken": "yourtoken", 
+    "TapApiUrl": "https://openapi.taptap.com",
     "FileStorageUrl": "https://example.com"
   },
   "RabbitMQSettings": {
