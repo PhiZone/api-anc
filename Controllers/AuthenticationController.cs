@@ -109,7 +109,7 @@ public class AuthenticationController : Controller
 
             var responseDto =
                 JsonConvert.DeserializeObject<TapTapDelivererDto>(await response.Content.ReadAsStringAsync())!;
-            var user = await _userRepository.GetUserByTapUnionId(responseDto.Unionid);
+            var user = await _userRepository.GetUserByTapUnionId(responseDto.Data.Unionid);
             if (user == null) return NotFound(null);
 
             var actionResult = await CheckUserLockoutState(user);
@@ -408,7 +408,7 @@ public class AuthenticationController : Controller
 
         var responseDto =
             JsonConvert.DeserializeObject<TapTapDelivererDto>(await response.Content.ReadAsStringAsync())!;
-        var user = await _userRepository.GetUserByTapUnionId(responseDto.Unionid);
+        var user = await _userRepository.GetUserByTapUnionId(responseDto.Data.Unionid);
 
         return Ok(new ResponseDto<TapTapResponseDto>
         {
@@ -416,10 +416,10 @@ public class AuthenticationController : Controller
             Code = ResponseCodes.Ok,
             Data = new TapTapResponseDto
             {
-                UserName = responseDto.Name,
-                Avatar = responseDto.Avatar,
-                OpenId = responseDto.Openid,
-                UnionId = responseDto.Unionid,
+                UserName = responseDto.Data.Name,
+                Avatar = responseDto.Data.Avatar,
+                OpenId = responseDto.Data.Openid,
+                UnionId = responseDto.Data.Unionid,
                 User = user != null ? await _dtoMapper.MapUserAsync<UserDetailedDto>(user) : null
             }
         });

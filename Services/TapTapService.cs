@@ -46,8 +46,7 @@ public class TapTapService : ITapTapService
         {
             Method = HttpMethod.Get, RequestUri = new Uri($"{_tapTapSettings.Value.TapApiUrl}{path}")
         };
-        request.Headers.Authorization =
-            new AuthenticationHeaderValue($"MAC id={dto.AccessToken},ts={timestamp},nonce={nonce},mac={hmac}");
+        request.Headers.TryAddWithoutValidation("Authorization", $"MAC id=\"{dto.AccessToken}\",ts=\"{timestamp}\",nonce=\"{nonce}\",mac=\"{hmac}\"");
         return await _client.SendAsync(request);
     }
 }

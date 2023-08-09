@@ -446,7 +446,7 @@ public class UserController : Controller
 
         var responseDto =
             JsonConvert.DeserializeObject<TapTapDelivererDto>(await response.Content.ReadAsStringAsync())!;
-        var targetUser = await _userRepository.GetUserByTapUnionId(responseDto.Unionid);
+        var targetUser = await _userRepository.GetUserByTapUnionId(responseDto.Data.Unionid);
         if (targetUser != null)
             return BadRequest(new ResponseDto<object>
             {
@@ -454,7 +454,7 @@ public class UserController : Controller
                 Code = targetUser.Id == currentUser.Id ? ResponseCodes.AlreadyDone : ResponseCodes.BindingOccupied
             });
 
-        user.TapUnionId = responseDto.Unionid;
+        user.TapUnionId = responseDto.Data.Unionid;
         await _userManager.UpdateAsync(user);
         return NoContent();
     }
