@@ -1,6 +1,6 @@
 ﻿namespace PhiZoneApi.Dtos.Deliverers;
 
-public class TapLoginDelivererDto
+public class TapTapDelivererDto
 {
     public string Name { get; set; } = null!;
     public string Avatar { get; set; } = null!;

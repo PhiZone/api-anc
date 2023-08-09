@@ -28,6 +28,7 @@ namespace PhiZoneApi.Controllers;
 [Produces("application/json")]
 public class AuthenticationController : Controller
 {
+    private readonly IDtoMapper _dtoMapper;
     private readonly IMailService _mailService;
     private readonly IConnectionMultiplexer _redis;
     private readonly IResourceService _resourceService;
@@ -37,13 +38,14 @@ public class AuthenticationController : Controller
 
     public AuthenticationController(UserManager<User> userManager, IConnectionMultiplexer redis,
         IMailService mailService, IResourceService resourceService,
-        ITapTapService tapTapService, IUserRepository userRepository)
+        ITapTapService tapTapService, IUserRepository userRepository, IDtoMapper dtoMapper)
     {
         _userManager = userManager;
         _mailService = mailService;
         _resourceService = resourceService;
         _tapTapService = tapTapService;
         _userRepository = userRepository;
+        _dtoMapper = dtoMapper;
         _redis = redis;
     }
 
@@ -68,7 +70,11 @@ public class AuthenticationController : Controller
     ///     4. has not yet confirmed their email address (<c>interaction_required</c>), in which case the client should direct
     ///     the user to request a confirmation mail.
     /// </response>
-    /// <response code="404">When the user has input an email address that does not match any existing user.</response>
+    /// <response code="404">
+    ///     When
+    ///     1. using Direct mode and the user has input an email address that does not match any existing user;
+    ///     2. using TapTap mode and the union ID does not match any existing user.
+    /// </response>
     [HttpPost("token")]
     [IgnoreAntiforgeryToken]
     [Consumes("application/x-www-form-urlencoded")]
@@ -79,9 +85,54 @@ public class AuthenticationController : Controller
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(OpenIddictErrorDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     // ReSharper disable once UnusedParameter.Global
-    public async Task<IActionResult> Exchange([FromForm] OpenIddictTokenRequestDto dto)
+    public async Task<IActionResult> Exchange([FromForm] OpenIddictTokenRequestDto dto,
+        [FromQuery] LoginMode mode = LoginMode.Direct)
     {
         var request = HttpContext.GetOpenIddictServerRequest()!;
+
+        if (mode == LoginMode.TapTap)
+        {
+            var response = await _tapTapService.Login(new TapTapRequestDto
+            {
+                MacKey = dto.username!,
+                AccessToken = dto.password!
+            });
+
+            if (!response.IsSuccessStatusCode)
+                return Forbid(
+                    new AuthenticationProperties(new Dictionary<string, string>
+                    {
+                        [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidRequest,
+                        [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
+                            "Unable to log into TapTap with provided credentials."
+                    }!));
+
+            var responseDto =
+                JsonConvert.DeserializeObject<TapTapDelivererDto>(await response.Content.ReadAsStringAsync())!;
+            var user = await _userRepository.GetUserByTapUnionId(responseDto.Unionid);
+            if (user == null) return NotFound(null);
+
+            var actionResult = await CheckUserLockoutState(user);
+            if (actionResult != null) return actionResult;
+
+            var identity = new ClaimsIdentity(TokenValidationParameters.DefaultAuthenticationType, Claims.Name,
+                Claims.Role);
+
+            identity.AddClaim(Claims.Subject, user.Id.ToString(), Destinations.AccessToken);
+            identity.AddClaim(Claims.Username, user.UserName!, Destinations.AccessToken);
+
+            foreach (var role in await _userManager.GetRolesAsync(user))
+                identity.AddClaim(Claims.Role, role, Destinations.AccessToken);
+
+            var claimsPrincipal = new ClaimsPrincipal(identity);
+            claimsPrincipal.SetScopes(Scopes.Roles, Scopes.OfflineAccess, Scopes.Email, Scopes.Profile);
+
+            user.DateLastLoggedIn = DateTimeOffset.UtcNow;
+            user.AccessFailedCount = 0;
+            await _userManager.UpdateAsync(user);
+
+            return SignIn(claimsPrincipal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+        }
 
         if (request.IsPasswordGrantType())
         {
@@ -160,7 +211,7 @@ public class AuthenticationController : Controller
             {
                 [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidRequest,
                 [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
-                    "The specified grant type is not implemented."
+                    "The specified 'grant_type' is not supported."
             }!), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
     }
 
@@ -333,17 +384,17 @@ public class AuthenticationController : Controller
     }
 
     /// <summary>
-    ///     Retrieves tokens with TapTap credentials.
+    ///     Retrieves TapTap user info.
     /// </summary>
-    /// <returns>Login credentials with TapTap user info.</returns>
-    /// <response code="200">Returns login credentials with TapTap user info.</response>
+    /// <returns>TapTap user info.</returns>
+    /// <response code="200">Returns TapTap user info.</response>
     /// <response code="400">When errors have occurred whilst contacting TapTap.</response>
-    [HttpPost("tapLogin")]
+    [HttpPost("tapTap")]
     [Consumes("application/json")]
     [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<TapLoginResponseDto>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<TapTapResponseDto>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> LoginWithTapTap([FromBody] TapLoginRequestDto dto)
+    public async Task<IActionResult> RetrieveTapTapInfo([FromBody] TapTapRequestDto dto)
     {
         var response = await _tapTapService.Login(dto);
 
@@ -356,27 +407,20 @@ public class AuthenticationController : Controller
             });
 
         var responseDto =
-            JsonConvert.DeserializeObject<TapLoginDelivererDto>(await response.Content.ReadAsStringAsync())!;
-        // (string, string)? tokens = null;
+            JsonConvert.DeserializeObject<TapTapDelivererDto>(await response.Content.ReadAsStringAsync())!;
         var user = await _userRepository.GetUserByTapUnionId(responseDto.Unionid);
-        // if (user != null)
-        // {
-        //     tokens = await _tapTapService.GetTokens(user);
-        // }
 
-        return Ok(new ResponseDto<TapLoginResponseDto>
+        return Ok(new ResponseDto<TapTapResponseDto>
         {
             Status = ResponseStatus.Ok,
             Code = ResponseCodes.Ok,
-            Data = new TapLoginResponseDto
+            Data = new TapTapResponseDto
             {
-                CanLogin = user != null,
-                // AccessToken = tokens?.Item1,
-                // RefreshToken = tokens?.Item2,
                 UserName = responseDto.Name,
                 Avatar = responseDto.Avatar,
                 OpenId = responseDto.Openid,
-                UnionId = responseDto.Unionid
+                UnionId = responseDto.Unionid,
+                User = user != null ? await _dtoMapper.MapUserAsync<UserDetailedDto>(user) : null
             }
         });
     }

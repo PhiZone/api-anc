@@ -4,7 +4,5 @@ namespace PhiZoneApi.Interfaces;
 
 public interface ITapTapService
 {
-    Task<HttpResponseMessage> Login(TapLoginRequestDto dto);
-
-    // Task<(string, string)> GetTokens(User user);
+    Task<HttpResponseMessage> Login(TapTapRequestDto dto);
 }

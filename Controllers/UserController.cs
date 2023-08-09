@@ -414,7 +414,7 @@ public class UserController : Controller
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> BindTapTap([FromRoute] int id, [FromBody] TapLoginRequestDto dto)
+    public async Task<IActionResult> BindTapTap([FromRoute] int id, [FromBody] TapTapRequestDto dto)
     {
         var user = await _userManager.FindByIdAsync(id.ToString());
 
@@ -445,7 +445,7 @@ public class UserController : Controller
             });
 
         var responseDto =
-            JsonConvert.DeserializeObject<TapLoginDelivererDto>(await response.Content.ReadAsStringAsync())!;
+            JsonConvert.DeserializeObject<TapTapDelivererDto>(await response.Content.ReadAsStringAsync())!;
         var targetUser = await _userRepository.GetUserByTapUnionId(responseDto.Unionid);
         if (targetUser != null)
             return BadRequest(new ResponseDto<object>

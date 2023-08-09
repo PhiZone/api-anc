@@ -28,4 +28,6 @@ public class OpenIddictTokenRequestDto
 
     ///<summary>The user's refresh token, when the grant type is <c>refresh_token</c>.</summary>
     public string? refresh_token { get; set; }
+
+    public string? user_id { get; set; }
 }

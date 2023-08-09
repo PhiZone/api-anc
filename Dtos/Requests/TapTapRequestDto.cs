@@ -1,6 +1,6 @@
 ﻿namespace PhiZoneApi.Dtos.Requests;
 
-public class TapLoginRequestDto
+public class TapTapRequestDto
 {
     public string AccessToken { get; set; } = null!;
 
