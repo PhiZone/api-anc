@@ -15,6 +15,7 @@ using PhiZoneApi.Dtos.Responses;
 using PhiZoneApi.Enums;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
+using PhiZoneApi.Utils;
 using StackExchange.Redis;
 using static OpenIddict.Abstractions.OpenIddictConstants;
 
@@ -144,16 +145,22 @@ public class AuthenticationController : Controller
 
             if (!await _userManager.CheckPasswordAsync(user, request.Password!))
             {
-                user.AccessFailedCount++;
-                await _userManager.UpdateAsync(user);
+                // to be removed
+                if (!ObsoletePasswordUtil.Check(request.Password!, user.PasswordHash!))
+                {
+                    user.AccessFailedCount++;
+                    await _userManager.UpdateAsync(user);
 
-                return Forbid(
-                    new AuthenticationProperties(new Dictionary<string, string>
-                    {
-                        [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidGrant,
-                        [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
-                            "The password is incorrect."
-                    }!), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+                    return Forbid(
+                        new AuthenticationProperties(new Dictionary<string, string>
+                        {
+                            [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidGrant,
+                            [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
+                                "The password is incorrect."
+                        }!), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+                }
+                
+                user.PasswordHash = _userManager.PasswordHasher.HashPassword(user, request.Password!);
             }
 
             var identity = new ClaimsIdentity(TokenValidationParameters.DefaultAuthenticationType, Claims.Name,

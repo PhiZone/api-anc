@@ -74,21 +74,6 @@ public class DatabaseSeeder : IHostedService
                     OpenIddictConstants.Permissions.GrantTypes.RefreshToken,
                     OpenIddictConstants.Permissions.Prefixes.Scope + "basic_access"
                 }
-            },
-            new()
-            {
-                ClientId = "taptap",
-                ClientSecret = "d11641d7-0d50-4607-9e96-204922573a0f",
-                Type = OpenIddictConstants.ClientTypes.Confidential,
-                Permissions =
-                {
-                    OpenIddictConstants.Permissions.Endpoints.Token,
-                    OpenIddictConstants.Permissions.Endpoints.Introspection,
-                    OpenIddictConstants.Permissions.Endpoints.Revocation,
-                    OpenIddictConstants.Permissions.GrantTypes.Password,
-                    OpenIddictConstants.Permissions.GrantTypes.RefreshToken,
-                    OpenIddictConstants.Permissions.Prefixes.Scope + "basic_access"
-                }
             }
         };
         foreach (var appDescriptor in appDescriptors)
