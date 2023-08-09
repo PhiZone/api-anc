@@ -79,6 +79,10 @@ public class DataMigrationService : IHostedService
             {
                 index = reader.GetInt32("id");
                 var userName = reader.GetString("username");
+                if (await _userManager.FindByNameAsync(userName) != null)
+                {
+                    continue;
+                }
                 _logger.LogInformation(LogEvents.DataMigration, "Migrating #{Id} {UserName}", index, userName);
                 var avatarPath = reader.GetString("avatar");
                 avatarPath = avatarPath == "user/default.webp" ? null : Path.Combine(_mediaPath, avatarPath);
@@ -96,6 +100,7 @@ public class DataMigrationService : IHostedService
                 {
                     SecurityStamp = Guid.NewGuid().ToString(),
                     UserName = userName,
+                    PasswordHash = reader.GetString("password"),
                     Email = reader.GetString("email"),
                     Avatar = avatar,
                     Language = reader.GetString("language") switch
@@ -114,15 +119,19 @@ public class DataMigrationService : IHostedService
                     DateOfBirth = null,
                     DateJoined = reader.GetDateTimeOffset("date_joined"),
                     DateLastLoggedIn = await reader.GetTime("last_login"),
-                    DateLastModifiedUserName = await reader.GetTime("username_last_modified"),
+                    DateLastModifiedUserName = await reader.GetTime("username_last_modified")
                 };
-                user.PasswordHash = reader.GetString("password");
                 await _userManager.CreateAsync(user);
                 user.LockoutEnabled = false;
                 await _userManager.UpdateAsync(user);
             }
         }
         catch (SocketException ex)
+        {
+            _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after #{Index}", index);
+            await MigrateUsers(mysqlConnection, index);
+        }
+        catch (IOException ex)
         {
             _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after #{Index}", index);
             await MigrateUsers(mysqlConnection, index);
