@@ -10,4 +10,6 @@ public class LogEvents
     public const int PecFailure = 2003;
 
     public const int RecordDebug = 3000;
+    
+    public const int DataMigration = 4000;
 }

@@ -138,8 +138,7 @@ builder.Services.AddSingleton<IUserService, UserService>();
 builder.Services.AddSingleton<IConnectionMultiplexer>(
     ConnectionMultiplexer.Connect(builder.Configuration.GetValue<string>("RedisConnection") ?? "localhost"));
 builder.Services.AddSingleton<IHostedService>(provider => new MailSenderService(provider.GetService<IMailService>()!,
-    provider.GetService<IRabbitMqService>()!,
-    provider.GetService<IUserService>()!));
+    provider.GetService<IRabbitMqService>()!, provider.GetService<IUserService>()!));
 builder.Services.AddSingleton<IHostedService>(provider => new SongConverterService(
     provider.GetService<IRabbitMqService>()!,
     provider.GetService<IServiceScopeFactory>()!.CreateScope().ServiceProvider.GetService<ISongService>()!,
@@ -147,6 +146,11 @@ builder.Services.AddSingleton<IHostedService>(provider => new SongConverterServi
     provider.GetService<IServiceScopeFactory>()!.CreateScope()
         .ServiceProvider.GetService<ISongSubmissionRepository>()!));
 builder.Services.AddHostedService<DatabaseSeeder>();
+
+if (args.Length >= 1 && string.Equals(args[0], "migrate", StringComparison.InvariantCultureIgnoreCase))
+{
+    builder.Services.AddHostedService<DataMigrationService>();
+}
 
 builder.Services.Configure<ApiBehaviorOptions>(options => { options.SuppressModelStateInvalidFilter = true; });
 builder.Services.Configure<DataSettings>(builder.Configuration.GetSection("DataSettings"));
