@@ -510,34 +510,6 @@ public class UserController : Controller
     }
 
     /// <summary>
-    ///     FOR DEVELOPMENT TESTS ONLY.
-    /// </summary>
-    [HttpGet("{id:int}/tokens")]
-    public async Task<IActionResult> GetTokens([FromRoute] int id)
-    {
-        var user = await _userManager.FindByIdAsync(id.ToString());
-
-        if (user == null)
-            return NotFound(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNotFound
-            });
-
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-
-        if ((currentUser.Id == id && !await _resourceService.HasPermission(currentUser, Roles.Member)) ||
-            (currentUser.Id != id && !await _resourceService.HasPermission(currentUser, Roles.Administrator)))
-            return StatusCode(StatusCodes.Status403Forbidden,
-                new ResponseDto<object>
-                {
-                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
-                });
-        // var tokens = await _tapTapService.GetTokens(user);
-        // return Ok($"AccessToken: {tokens.Item1}\nRefreshToken: {tokens.Item2}");
-        return NoContent();
-    }
-
-    /// <summary>
     ///     Retrieves followers of user.
     /// </summary>
     /// <param name="id">A user's ID.</param>
