@@ -514,6 +514,7 @@ public partial class DataMigrationService : IHostedService
                 index = reader.GetInt32("id");
                 var song = await _songRepository.GetSongAsync(_songDictionary[reader.GetInt32("song_id")]);
                 _logger.LogInformation(LogEvents.DataMigration, "Migrating Chart #{Id} {Title}", index, song.Title);
+
                 var chartFile = reader.GetString("chart");
                 (string, string, ChartFormat, int)? chartInfo = null;
                 if (!chartFile.IsNullOrEmpty())
@@ -522,9 +523,6 @@ public partial class DataMigrationService : IHostedService
                     chartInfo = await _chartService.Upload(song.Title, filePath);
                 }
 
-                var illustrationPath = Path.Combine(_mediaPath, reader.GetString("illustration"));
-                var illustration = (await _fileStorageService.UploadImage<User>(song.Title,
-                    await File.ReadAllBytesAsync(illustrationPath, cancellationToken), (16, 9))).Item1;
                 var authorName = string.Join("",
                     SplitAuthorName(reader.GetString("charter"))
                         .Select(s =>
@@ -544,8 +542,6 @@ public partial class DataMigrationService : IHostedService
                     FileChecksum = chartInfo?.Item2 ?? string.Empty,
                     Format = chartInfo?.Item3 ?? ChartFormat.Phigrim,
                     NoteCount = chartInfo?.Item4 ?? reader.GetInt32("notes"),
-                    Illustration = illustration,
-                    Illustrator = reader.GetString("illustrator"),
                     Description = await reader.GetStr("description"),
                     Accessibility = (Accessibility)reader.GetInt32("accessibility"),
                     IsRanked = reader.GetBoolean("ranked"),
@@ -1027,13 +1023,13 @@ public partial class DataMigrationService : IHostedService
         }
         catch (SocketException ex)
         {
-            _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after SongSubmission #{Index}", index);
+            _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after Song Submission #{Index}", index);
             if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateSongSubmissions(mysqlConnection, cancellationToken, index);
         }
         catch (IOException ex)
         {
-            _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after SongSubmission #{Index}", index);
+            _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after Song Submission #{Index}", index);
             if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateSongSubmissions(mysqlConnection, cancellationToken, index);
         }
@@ -1067,9 +1063,7 @@ public partial class DataMigrationService : IHostedService
 
                 var filePath = Path.Combine(_mediaPath, reader.GetString("chartupload"));
                 var chartSubmissionInfo = await _chartService.Upload(title, filePath);
-                var illustrationPath = Path.Combine(_mediaPath, reader.GetString("illustration"));
-                var illustration = (await _fileStorageService.UploadImage<User>(title,
-                    await File.ReadAllBytesAsync(illustrationPath, cancellationToken), (16, 9))).Item1;
+                
                 var authorName = string.Join("",
                     SplitAuthorName(reader.GetString("charter"))
                         .Select(s =>
@@ -1092,8 +1086,6 @@ public partial class DataMigrationService : IHostedService
                     FileChecksum = chartSubmissionInfo.Value.Item2,
                     Format = chartSubmissionInfo.Value.Item3,
                     NoteCount = chartSubmissionInfo.Value.Item4,
-                    Illustration = illustration,
-                    Illustrator = reader.GetString("illustrator"),
                     Description = await reader.GetStr("description"),
                     Accessibility = (Accessibility)reader.GetInt32("accessibility"),
                     IsRanked =
