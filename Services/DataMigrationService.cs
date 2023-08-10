@@ -543,7 +543,6 @@ public partial class DataMigrationService : IHostedService
                     Format = chartInfo?.Item3 ?? ChartFormat.Phigrim,
                     NoteCount = chartInfo?.Item4 ?? reader.GetInt32("notes"),
                     Description = await reader.GetStr("description"),
-                    Accessibility = (Accessibility)reader.GetInt32("accessibility"),
                     IsRanked = reader.GetBoolean("ranked"),
                     IsHidden = reader.GetBoolean("hidden"),
                     IsLocked = false,
@@ -1087,7 +1086,6 @@ public partial class DataMigrationService : IHostedService
                     Format = chartSubmissionInfo.Value.Item3,
                     NoteCount = chartSubmissionInfo.Value.Item4,
                     Description = await reader.GetStr("description"),
-                    Accessibility = (Accessibility)reader.GetInt32("accessibility"),
                     IsRanked =
                         representationId != null &&
                         (await _chartRepository.GetChartAsync(representationId.Value)).IsRanked,
