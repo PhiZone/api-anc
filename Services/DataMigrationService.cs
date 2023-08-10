@@ -1091,7 +1091,7 @@ public partial class DataMigrationService : IHostedService
                 _logger.LogInformation(LogEvents.DataMigration, "Migrating Chart Submission #{Id} {Title}", index,
                     title);
 
-                var filePath = Path.Combine(_mediaPath, reader.GetString("chartupload"));
+                var filePath = Path.Combine(_mediaPath, reader.GetString("chart"));
                 var chartSubmissionInfo = await _chartService.Upload(title, filePath);
 
                 var authorName = string.Join("",
