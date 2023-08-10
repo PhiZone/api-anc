@@ -117,17 +117,17 @@ public partial class DataMigrationService : IHostedService
         await using var mysqlConnection = new MySqlConnection(_configuration.GetConnectionString("MySQLConnection"));
         if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
         await MigrateUsers(mysqlConnection, cancellationToken);
-        await MigrateUserRelations(mysqlConnection, cancellationToken);
+        // await MigrateUserRelations(mysqlConnection, cancellationToken);
         await MigrateChapters(mysqlConnection, cancellationToken);
         await MigrateSongs(mysqlConnection, cancellationToken);
         await MigrateSongAdmissions(mysqlConnection, cancellationToken);
         await MigrateCharts(mysqlConnection, cancellationToken);
-        await MigratePlayConfigurations(mysqlConnection, cancellationToken);
-        await MigrateRecords(mysqlConnection, cancellationToken);
-        await MigrateComments(mysqlConnection, cancellationToken);
-        await MigrateReplies(mysqlConnection, cancellationToken);
-        await MigrateVotes(mysqlConnection, cancellationToken);
-        await MigrateLikes(mysqlConnection, cancellationToken);
+        // await MigratePlayConfigurations(mysqlConnection, cancellationToken);
+        // await MigrateRecords(mysqlConnection, cancellationToken);
+        // await MigrateComments(mysqlConnection, cancellationToken);
+        // await MigrateReplies(mysqlConnection, cancellationToken);
+        // await MigrateVotes(mysqlConnection, cancellationToken);
+        // await MigrateLikes(mysqlConnection, cancellationToken);
         await MigrateSongSubmissions(mysqlConnection, cancellationToken);
         await MigrateChartSubmissions(mysqlConnection, cancellationToken);
         await MigrateVolunteerVotes(mysqlConnection, cancellationToken);
@@ -899,6 +899,7 @@ public partial class DataMigrationService : IHostedService
                 var id = await reader.GetInt("chapter_id");
                 if (id != null)
                 {
+                    if (!_chapterDictionary.ContainsKey(id.Value)) continue;
                     var resource = await _chapterRepository.GetChapterAsync(_chapterDictionary[id.Value]);
                     await _likeService.CreateLikeAsync(resource, _userDictionary[reader.GetInt32("user_id")],
                         reader.GetDateTimeOffset("time"));
@@ -908,6 +909,7 @@ public partial class DataMigrationService : IHostedService
                 id = await reader.GetInt("song_id");
                 if (id != null)
                 {
+                    if (!_songDictionary.ContainsKey(id.Value)) continue;
                     var resource = await _songRepository.GetSongAsync(_songDictionary[id.Value]);
                     await _likeService.CreateLikeAsync(resource, _userDictionary[reader.GetInt32("user_id")],
                         reader.GetDateTimeOffset("time"));
@@ -917,6 +919,7 @@ public partial class DataMigrationService : IHostedService
                 id = await reader.GetInt("chart_id");
                 if (id != null)
                 {
+                    if (!_chartDictionary.ContainsKey(id.Value)) continue;
                     var resource = await _chartRepository.GetChartAsync(_chartDictionary[id.Value]);
                     await _likeService.CreateLikeAsync(resource, _userDictionary[reader.GetInt32("user_id")],
                         reader.GetDateTimeOffset("time"));
@@ -926,6 +929,7 @@ public partial class DataMigrationService : IHostedService
                 id = await reader.GetInt("comment_id");
                 if (id != null)
                 {
+                    if (!_commentDictionary.ContainsKey(id.Value)) continue;
                     var resource = await _commentRepository.GetCommentAsync(_commentDictionary[id.Value]);
                     await _likeService.CreateLikeAsync(resource, _userDictionary[reader.GetInt32("user_id")],
                         reader.GetDateTimeOffset("time"));
@@ -936,6 +940,7 @@ public partial class DataMigrationService : IHostedService
                 // ReSharper disable once InvertIf
                 if (id != null)
                 {
+                    if (!_replyDictionary.ContainsKey(id.Value)) continue;
                     var resource = await _replyRepository.GetReplyAsync(_replyDictionary[id.Value]);
                     await _likeService.CreateLikeAsync(resource, _userDictionary[reader.GetInt32("user_id")],
                         reader.GetDateTimeOffset("time"));
@@ -972,6 +977,15 @@ public partial class DataMigrationService : IHostedService
             {
                 index = reader.GetInt32("id");
                 var title = reader.GetString("name");
+                
+                if (await _songSubmissionRepository.CountSongSubmissionsAsync(
+                        predicate: e => e.Title == title && e.AuthorName == reader.GetString("composer")) > 0)
+                {
+                    _songSubmissionDictionary.Add(index,
+                        (await _songSubmissionRepository.GetSongSubmissionsAsync("DateCreated", false, 0, -1, null,
+                            e => e.Title == title && e.AuthorName == reader.GetString("composer"))).FirstOrDefault()!.Id);
+                    continue;
+                }
 
                 _logger.LogInformation(LogEvents.DataMigration, "Migrating Song Submission #{Id} {Title}", index,
                     title);
