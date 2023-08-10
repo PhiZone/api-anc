@@ -547,7 +547,7 @@ public partial class DataMigrationService : IHostedService
                     IsHidden = reader.GetBoolean("hidden"),
                     IsLocked = false,
                     SongId = _songDictionary[reader.GetInt32("song_id")],
-                    OwnerId = _userDictionary[reader.GetInt32("uploader_id")],
+                    OwnerId = _userDictionary[reader.GetInt32("owner_id")],
                     DateCreated = date,
                     DateUpdated = date,
                     LikeCount = reader.GetInt32("like_count")
