@@ -514,9 +514,14 @@ public partial class DataMigrationService : IHostedService
                 index = reader.GetInt32("id");
                 var song = await _songRepository.GetSongAsync(_songDictionary[reader.GetInt32("song_id")]);
                 _logger.LogInformation(LogEvents.DataMigration, "Migrating Chart #{Id} {Title}", index, song.Title);
+                var chartFile = reader.GetString("chart");
+                (string, string, ChartFormat, int)? chartInfo = null;
+                if (!chartFile.IsNullOrEmpty())
+                {
+                    var filePath = Path.Combine(_mediaPath, chartFile);
+                    chartInfo = await _chartService.Upload(song.Title, filePath);
+                }
 
-                var filePath = Path.Combine(_mediaPath, reader.GetString("chart"));
-                var chartInfo = await _chartService.Upload(song.Title, filePath);
                 var illustrationPath = Path.Combine(_mediaPath, reader.GetString("illustration"));
                 var illustration = (await _fileStorageService.UploadImage<User>(song.Title,
                     await File.ReadAllBytesAsync(illustrationPath, cancellationToken), (16, 9))).Item1;
@@ -535,10 +540,10 @@ public partial class DataMigrationService : IHostedService
                     Level = reader.GetString("level"),
                     Difficulty = reader.GetDouble("difficulty"),
                     AuthorName = authorName,
-                    File = chartInfo!.Value.Item1,
-                    FileChecksum = chartInfo.Value.Item2,
-                    Format = chartInfo.Value.Item3,
-                    NoteCount = chartInfo.Value.Item4,
+                    File = chartInfo?.Item1,
+                    FileChecksum = chartInfo?.Item2 ?? string.Empty,
+                    Format = chartInfo?.Item3 ?? ChartFormat.Phigrim,
+                    NoteCount = chartInfo?.Item4 ?? reader.GetInt32("notes"),
                     Illustration = illustration,
                     Illustrator = reader.GetString("illustrator"),
                     Description = await reader.GetStr("description"),
