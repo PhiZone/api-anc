@@ -10,6 +10,8 @@ public interface IChartService
 
     Task<(string, string, ChartFormat, int)?> Upload(string fileName, IFormFile file);
 
+    Task<(string, string, ChartFormat, int)?> Upload(string fileName, string filePath);
+
     Task<string> GetDisplayName(Chart chart);
 
     Task<string> GetDisplayName(ChartSubmission chart);

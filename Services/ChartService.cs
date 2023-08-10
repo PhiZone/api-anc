@@ -31,20 +31,43 @@ public partial class ChartService : IChartService
     {
         var validationResult = await Validate(file);
         if (validationResult == null) return null;
+        return await Upload(validationResult.Value, fileName);
+    }
 
-        var serialized = validationResult.Value.Item1 == ChartFormat.RpeJson
-            ? Serialize(Standardize((RpeJsonDto)validationResult.Value.Item2))
-            : Serialize(Standardize((PecDto)validationResult.Value.Item2));
+    public async Task<(string, string, ChartFormat, int)?> Upload(string fileName, string filePath)
+    {
+        var validationResult = await Validate(filePath);
+        if (validationResult == null) return null;
+        return await Upload(validationResult.Value, fileName);
+    }
+
+    private async Task<(string, string, ChartFormat, int)> Upload((ChartFormat, ChartFormatDto, int) validationResult, string fileName)
+    {
+        var serialized = validationResult.Item1 == ChartFormat.RpeJson
+            ? Serialize(Standardize((RpeJsonDto)validationResult.Item2))
+            : Serialize(Standardize((PecDto)validationResult.Item2));
         var stream = new MemoryStream(Encoding.UTF8.GetBytes(serialized));
         var uploadResult =
-            await _fileStorageService.Upload<Chart>(fileName, stream, GetExtension(validationResult.Value.Item1));
+            await _fileStorageService.Upload<Chart>(fileName, stream, GetExtension(validationResult.Item1));
         return new ValueTuple<string, string, ChartFormat, int>(uploadResult.Item1, uploadResult.Item2,
-            validationResult.Value.Item1, validationResult.Value.Item3);
+            validationResult.Item1, validationResult.Item3);
     }
 
     public async Task<(ChartFormat, ChartFormatDto, int)?> Validate(IFormFile file)
     {
         using var reader = new StreamReader(file.OpenReadStream());
+        var content = await reader.ReadToEndAsync();
+        var rpeJson = ReadRpe(content);
+        if (rpeJson != null)
+            return new ValueTuple<ChartFormat, ChartFormatDto, int>(ChartFormat.RpeJson, rpeJson, CountNotes(rpeJson));
+        var pec = ReadPec(content);
+        if (pec != null) return new ValueTuple<ChartFormat, ChartFormatDto, int>(ChartFormat.Pec, pec, CountNotes(pec));
+        return null;
+    }
+
+    public async Task<(ChartFormat, ChartFormatDto, int)?> Validate(string filePath)
+    {
+        using var reader = new StreamReader(filePath);
         var content = await reader.ReadToEndAsync();
         var rpeJson = ReadRpe(content);
         if (rpeJson != null)

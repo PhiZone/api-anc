@@ -171,7 +171,7 @@ public class ChapterController : Controller
             Accessibility = dto.Accessibility,
             IsHidden = dto.IsHidden,
             IsLocked = dto.IsLocked,
-            Owner = currentUser,
+            OwnerId = currentUser.Id,
             DateCreated = DateTimeOffset.UtcNow,
             DateUpdated = DateTimeOffset.UtcNow
         };

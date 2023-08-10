@@ -665,7 +665,7 @@ public class UserController : Controller
 
         var relation = new UserRelation
         {
-            Followee = user, Follower = currentUser, Type = type, DateCreated = DateTimeOffset.UtcNow
+            FolloweeId = user.Id, FollowerId = currentUser.Id, Type = type, DateCreated = DateTimeOffset.UtcNow
         };
 
         if (await _userRelationRepository.RelationExistsAsync(currentUser.Id, user.Id))

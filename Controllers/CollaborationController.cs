@@ -34,11 +34,18 @@ public class CollaborationController : Controller
     private readonly INotificationService _notificationService;
     private readonly IResourceService _resourceService;
     private readonly ITemplateService _templateService;
+    private readonly ISongRepository _songRepository;
+    private readonly IChartRepository _chartRepository;
+    private readonly ISongSubmissionRepository _songSubmissionRepository;
+    private readonly IChartSubmissionRepository _chartSubmissionRepository;
+    private readonly IAuthorshipRepository _authorshipRepository;
     private readonly UserManager<User> _userManager;
 
     public CollaborationController(ICollaborationRepository collaborationRepository, UserManager<User> userManager,
         IMapper mapper, IResourceService resourceService, IOptions<DataSettings> dataSettings,
-        IFilterService filterService, ITemplateService templateService, INotificationService notificationService)
+        IFilterService filterService, ITemplateService templateService, INotificationService notificationService,
+        ISongSubmissionRepository songSubmissionRepository, IChartSubmissionRepository chartSubmissionRepository,
+        IAuthorshipRepository authorshipRepository, ISongRepository songRepository, IChartRepository chartRepository)
     {
         _collaborationRepository = collaborationRepository;
         _userManager = userManager;
@@ -48,6 +55,11 @@ public class CollaborationController : Controller
         _filterService = filterService;
         _templateService = templateService;
         _notificationService = notificationService;
+        _songSubmissionRepository = songSubmissionRepository;
+        _chartSubmissionRepository = chartSubmissionRepository;
+        _authorshipRepository = authorshipRepository;
+        _songRepository = songRepository;
+        _chartRepository = chartRepository;
     }
 
     /// <summary>
@@ -229,8 +241,7 @@ public class CollaborationController : Controller
         if (collaboration.Status != RequestStatus.Waiting)
             return BadRequest(new ResponseDto<object>
             {
-                Status = ResponseStatus.ErrorBrief,
-                Code = ResponseCodes.InvalidOperation
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
             });
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if ((collaboration.InviteeId == currentUser.Id &&
@@ -247,6 +258,46 @@ public class CollaborationController : Controller
         {
             collaboration.Status = RequestStatus.Approved;
             key = "collab-approval";
+            Submission submission;
+            PublicResource? resource = null;
+            if (await _songSubmissionRepository.SongSubmissionExistsAsync(collaboration.SubmissionId))
+            {
+                submission = await _songSubmissionRepository.GetSongSubmissionAsync(collaboration.SubmissionId);
+                if (submission is { Status: RequestStatus.Approved, RepresentationId: not null })
+                {
+                    resource = await _songRepository.GetSongAsync(submission.RepresentationId.Value);
+                }
+            }
+            else
+            {
+                submission = await _chartSubmissionRepository.GetChartSubmissionAsync(collaboration.SubmissionId);
+                if (submission is { Status: RequestStatus.Approved, RepresentationId: not null })
+                {
+                    resource = await _chartRepository.GetChartAsync(submission.RepresentationId.Value);
+                }
+            }
+
+            if (resource != null)
+            {
+                if (await _authorshipRepository.AuthorshipExistsAsync(resource.Id, collaboration.InviteeId))
+                {
+                    var authorship =
+                        await _authorshipRepository.GetAuthorshipAsync(resource.Id, collaboration.InviteeId);
+                    authorship.Position = collaboration.Position;
+                    await _authorshipRepository.UpdateAuthorshipAsync(authorship);
+                }
+                else
+                {
+                    var authorship = new Authorship
+                    {
+                        ResourceId = resource.Id,
+                        AuthorId = collaboration.InviteeId,
+                        Position = collaboration.Position,
+                        DateCreated = DateTimeOffset.UtcNow
+                    };
+                    await _authorshipRepository.CreateAuthorshipAsync(authorship);
+                }
+            }
         }
         else
         {
@@ -258,8 +309,8 @@ public class CollaborationController : Controller
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
-        await _notificationService.Notify(collaboration.Inviter, collaboration.Invitee, NotificationType.Requests,
-            key, new Dictionary<string, string>
+        await _notificationService.Notify(collaboration.Inviter, collaboration.Invitee, NotificationType.Requests, key,
+            new Dictionary<string, string>
             {
                 {
                     "User",

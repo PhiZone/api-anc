@@ -12,10 +12,12 @@ public class SubmissionService : ISubmissionService
     private readonly INotificationService _notificationService;
     private readonly IResourceService _resourceService;
     private readonly ISongRepository _songRepository;
+    private readonly IAuthorshipRepository _authorshipRepository;
+    private readonly ICollaborationRepository _collaborationRepository;
 
     public SubmissionService(ISongRepository songRepository, INotificationService notificationService,
         IResourceService resourceService, IChartRepository chartRepository,
-        IChartSubmissionRepository chartSubmissionRepository, IChartService chartService)
+        IChartSubmissionRepository chartSubmissionRepository, IChartService chartService, ICollaborationRepository collaborationRepository, IAuthorshipRepository authorshipRepository)
     {
         _songRepository = songRepository;
         _notificationService = notificationService;
@@ -23,6 +25,8 @@ public class SubmissionService : ISubmissionService
         _chartRepository = chartRepository;
         _chartSubmissionRepository = chartSubmissionRepository;
         _chartService = chartService;
+        _collaborationRepository = collaborationRepository;
+        _authorshipRepository = authorshipRepository;
     }
 
     public async Task<Song> ApproveSong(SongSubmission songSubmission, bool isOriginal)
@@ -106,6 +110,17 @@ public class SubmissionService : ISubmissionService
                         songSubmission.GetDisplay())
                 }
             });
+
+        foreach (var collaboration in await _collaborationRepository.GetCollaborationsAsync("DateCreated", false, 0, -1,
+                     e => e.SubmissionId == songSubmission.Id && e.Status == RequestStatus.Approved))
+        {
+            if (await _authorshipRepository.AuthorshipExistsAsync(song.Id, collaboration.InviteeId)) continue;
+            var authorship = new Authorship
+            {
+                ResourceId = song.Id, AuthorId = collaboration.InviteeId, Position = collaboration.Position, DateCreated = DateTimeOffset.UtcNow
+            };
+            await _authorshipRepository.CreateAuthorshipAsync(authorship);
+        }
         return song;
     }
 
@@ -196,6 +211,17 @@ public class SubmissionService : ISubmissionService
 
         chartSubmission.DateUpdated = DateTimeOffset.UtcNow;
         await _chartSubmissionRepository.UpdateChartSubmissionAsync(chartSubmission);
+
+        foreach (var collaboration in await _collaborationRepository.GetCollaborationsAsync("DateCreated", false, 0, -1,
+                     e => e.SubmissionId == chartSubmission.Id && e.Status == RequestStatus.Approved))
+        {
+            if (await _authorshipRepository.AuthorshipExistsAsync(chart.Id, collaboration.InviteeId)) continue;
+            var authorship = new Authorship
+            {
+                ResourceId = chart.Id, AuthorId = collaboration.InviteeId, Position = collaboration.Position, DateCreated = DateTimeOffset.UtcNow
+            };
+            await _authorshipRepository.CreateAuthorshipAsync(authorship);
+        }
     }
 
     public async Task RejectChart(ChartSubmission chartSubmission)

@@ -84,7 +84,7 @@ public class VoteService : IVoteService
         return _experienceList.FindLastIndex(exp => exp <= user.Experience);
     }
 
-    private async Task<bool> UpdateChartAsync(Chart chart)
+    public async Task<bool> UpdateChartAsync(Chart chart)
     {
         var amount = await _voteRepository.CountVotesAsync(vote => vote.ChartId == chart.Id);
         var r = GetReliability(amount);
