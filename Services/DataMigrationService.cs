@@ -298,7 +298,12 @@ public partial class DataMigrationService : IHostedService
                 var subtitle = reader.GetString("subtitle");
                 if (await _chapterRepository.CountChaptersAsync(predicate: e =>
                         e.Title == title && e.Subtitle == subtitle) > 0)
+                {
+                    _chapterDictionary.Add(index,
+                        (await _chapterRepository.GetChaptersAsync("DateCreated", false, 0, -1, null,
+                            e => e.Title == title && e.Subtitle == subtitle)).FirstOrDefault()!.Id);
                     continue;
+                }
 
                 _logger.LogInformation(LogEvents.DataMigration, "Migrating Chapter #{Id} {Title} - {Subtitle}", index,
                     title, subtitle);
@@ -357,9 +362,14 @@ public partial class DataMigrationService : IHostedService
                 var title = reader.GetString("name");
                 var edition = reader.GetString("edition");
                 var authorName = reader.GetString("composer");
-                if (await _songRepository.CountSongsAsync(predicate: e =>
-                        e.Title == title && e.AuthorName == authorName) > 0)
+                if (await _songRepository.CountSongsAsync(
+                        predicate: e => e.Title == title && e.AuthorName == authorName) > 0)
+                {
+                    _songDictionary.Add(index,
+                        (await _songRepository.GetSongsAsync("DateCreated", false, 0, -1, null,
+                            e => e.Title == title && e.AuthorName == authorName)).FirstOrDefault()!.Id);
                     continue;
+                }
 
                 _logger.LogInformation(LogEvents.DataMigration, "Migrating Song #{Id} {Title}", index, title);
                 var filePath = Path.Combine(_mediaPath, reader.GetString("song"));
@@ -453,9 +463,14 @@ public partial class DataMigrationService : IHostedService
             while (await reader.ReadAsync(cancellationToken))
             {
                 index = reader.GetInt32("id");
-                _logger.LogInformation(LogEvents.DataMigration, "Migrating Song Admission #{Id}", index);
                 var chapterId = _chapterDictionary[reader.GetInt32("chapter_id")];
                 var songId = _songDictionary[reader.GetInt32("song_id")];
+                if (await _admissionRepository.AdmissionExistsAsync(chapterId, songId))
+                {
+                    continue;
+                }
+
+                _logger.LogInformation(LogEvents.DataMigration, "Migrating Song Admission #{Id}", index);
 
                 var admission = new Admission
                 {
