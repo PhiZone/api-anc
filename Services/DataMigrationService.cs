@@ -522,13 +522,13 @@ public partial class DataMigrationService : IHostedService
                 {
                     _chartDictionary.Add(index,
                         (await _chartRepository.GetChartsAsync("DateCreated", false, 0, -1, null,
-                            e =>
-                                e.SongId == song.Id && e.LevelType == levelType && e.Level == level &&
-                                e.OwnerId == _userDictionary[reader.GetInt32("owner_id")])).FirstOrDefault()!.Id);
+                            e => e.SongId == song.Id && e.LevelType == levelType && e.Level == level &&
+                                 e.OwnerId == _userDictionary[reader.GetInt32("owner_id")])).FirstOrDefault()!.Id);
                     continue;
                 }
-                
-                _logger.LogInformation(LogEvents.DataMigration, "Migrating Chart #{Id} {Title} {Level} Lv.{Difficulty}", index, song.Title, level, Math.Floor(difficulty));
+
+                _logger.LogInformation(LogEvents.DataMigration, "Migrating Chart #{Id} {Title} {Level} Lv.{Difficulty}",
+                    index, song.Title, level, Math.Floor(difficulty));
 
                 var chartFile = reader.GetString("chart");
                 (string, string, ChartFormat, int)? chartInfo = null;
@@ -785,7 +785,9 @@ public partial class DataMigrationService : IHostedService
             while (await reader.ReadAsync(cancellationToken))
             {
                 index = reader.GetInt32("id");
-                if (!await reader.IsDBNullAsync("deletion", cancellationToken)) continue;
+                if (!await reader.IsDBNullAsync("deletion", cancellationToken) ||
+                    !_commentDictionary.ContainsKey(reader.GetInt32("comment_id")))
+                    continue;
 
                 _logger.LogInformation(LogEvents.DataMigration, "Migrating Reply #{Id}", index);
 
@@ -1077,7 +1079,7 @@ public partial class DataMigrationService : IHostedService
 
                 var filePath = Path.Combine(_mediaPath, reader.GetString("chartupload"));
                 var chartSubmissionInfo = await _chartService.Upload(title, filePath);
-                
+
                 var authorName = string.Join("",
                     SplitAuthorName(reader.GetString("charter"))
                         .Select(s =>
