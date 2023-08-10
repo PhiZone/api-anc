@@ -9,49 +9,50 @@ using PhiZoneApi.Enums;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 using PhiZoneApi.Utils;
+
 // ReSharper disable StringLiteralTypo
 
 namespace PhiZoneApi.Services;
 
 public partial class DataMigrationService : IHostedService
 {
-    private readonly IServiceProvider _serviceProvider;
-    private ILogger<DataMigrationService> _logger = null!;
-    private UserManager<User> _userManager = null!;
-    private IFileStorageService _fileStorageService = null!;
-    private ISongService _songService = null!;
-    private IChartService _chartService = null!;
-    private ITemplateService _templateService = null!;
-    private IRecordService _recordService = null!;
-    private IVoteService _voteService = null!;
-    private ILikeService _likeService = null!;
-    private IConfiguration _configuration = null!;
-    private IRegionRepository _regionRepository = null!;
-    private IUserRelationRepository _userRelationRepository = null!;
-    private IChapterRepository _chapterRepository = null!;
-    private ISongRepository _songRepository = null!;
-    private IChartRepository _chartRepository = null!;
-    private ISongSubmissionRepository _songSubmissionRepository = null!;
-    private IChartSubmissionRepository _chartSubmissionRepository = null!;
-    private IAdmissionRepository _admissionRepository = null!;
-    private IAuthorshipRepository _authorshipRepository = null!;
-    private ICollaborationRepository _collaborationRepository = null!;
-    private IRecordRepository _recordRepository = null!;
-    private IPlayConfigurationRepository _configurationRepository = null!;
-    private ICommentRepository _commentRepository = null!;
-    private IReplyRepository _replyRepository = null!;
-    private IVoteRepository _voteRepository = null!;
-    private IVolunteerVoteRepository _volunteerVoteRepository = null!;
-    private readonly Dictionary<int, int> _userDictionary = new();
-    private readonly Dictionary<int, Guid> _chapterDictionary = new();
-    private readonly Dictionary<int, Guid> _songDictionary = new();
-    private readonly Dictionary<int, Guid> _chartDictionary = new();
-    private readonly Dictionary<int, Guid> _songSubmissionDictionary = new();
-    private readonly Dictionary<int, Guid> _chartSubmissionDictionary = new();
     private readonly Dictionary<int, Guid> _applicationDictionary = new();
+    private readonly Dictionary<int, Guid> _chapterDictionary = new();
+    private readonly Dictionary<int, Guid> _chartDictionary = new();
+    private readonly Dictionary<int, Guid> _chartSubmissionDictionary = new();
     private readonly Dictionary<int, Guid> _commentDictionary = new();
     private readonly Dictionary<int, Guid> _replyDictionary = new();
+    private readonly IServiceProvider _serviceProvider;
+    private readonly Dictionary<int, Guid> _songDictionary = new();
+    private readonly Dictionary<int, Guid> _songSubmissionDictionary = new();
+    private readonly Dictionary<int, int> _userDictionary = new();
+    private IAdmissionRepository _admissionRepository = null!;
+    private IAuthorshipRepository _authorshipRepository = null!;
+    private IChapterRepository _chapterRepository = null!;
+    private IChartRepository _chartRepository = null!;
+    private IChartService _chartService = null!;
+    private IChartSubmissionRepository _chartSubmissionRepository = null!;
+    private ICollaborationRepository _collaborationRepository = null!;
+    private ICommentRepository _commentRepository = null!;
+    private IConfiguration _configuration = null!;
+    private IPlayConfigurationRepository _configurationRepository = null!;
+    private IFileStorageService _fileStorageService = null!;
+    private ILikeService _likeService = null!;
+    private ILogger<DataMigrationService> _logger = null!;
     private string _mediaPath = null!;
+    private IRecordRepository _recordRepository = null!;
+    private IRecordService _recordService = null!;
+    private IRegionRepository _regionRepository = null!;
+    private IReplyRepository _replyRepository = null!;
+    private ISongRepository _songRepository = null!;
+    private ISongService _songService = null!;
+    private ISongSubmissionRepository _songSubmissionRepository = null!;
+    private ITemplateService _templateService = null!;
+    private UserManager<User> _userManager = null!;
+    private IUserRelationRepository _userRelationRepository = null!;
+    private IVolunteerVoteRepository _volunteerVoteRepository = null!;
+    private IVoteRepository _voteRepository = null!;
+    private IVoteService _voteService = null!;
 
     public DataMigrationService(IServiceProvider serviceProvider)
     {
@@ -92,9 +93,7 @@ public partial class DataMigrationService : IHostedService
         _mediaPath = _configuration.GetSection("Migration")["MediaPath"]!;
 
         foreach (var child in _configuration.GetSection("Migration").GetSection("ApplicationDictionary").GetChildren())
-        {
             _applicationDictionary[int.Parse(child.Key)] = Guid.Parse(child.Value!);
-        }
 
         _logger.LogInformation(LogEvents.DataMigration, "Data migration started");
         try
@@ -135,7 +134,8 @@ public partial class DataMigrationService : IHostedService
         await MigrateCollaborations(mysqlConnection, cancellationToken);
     }
 
-    private async Task MigrateUsers(MySqlConnection mysqlConnection, CancellationToken cancellationToken, int startIndex = 0)
+    private async Task MigrateUsers(MySqlConnection mysqlConnection, CancellationToken cancellationToken,
+        int startIndex = 0)
     {
         var index = startIndex;
         try
@@ -161,12 +161,12 @@ public partial class DataMigrationService : IHostedService
                 avatarPath = avatarPath == "user/default.webp" ? null : Path.Combine(_mediaPath, avatarPath);
                 string? avatar = null;
                 if (avatarPath != null)
-                {
                     avatar = (await _fileStorageService.UploadImage<User>(userName,
                         await File.ReadAllBytesAsync(avatarPath, cancellationToken), (1, 1))).Item1;
-                }
 
-                var regionCode = await reader.IsDBNullAsync("region", cancellationToken: cancellationToken) ? null : reader.GetString("region");
+                var regionCode = await reader.IsDBNullAsync("region", cancellationToken)
+                    ? null
+                    : reader.GetString("region");
                 var regionId = regionCode == null ? 47 : (await _regionRepository.GetRegionAsync(regionCode)).Id;
 
                 user = new User
@@ -234,7 +234,8 @@ public partial class DataMigrationService : IHostedService
         }
     }
 
-    private async Task MigrateUserRelations(MySqlConnection mysqlConnection, CancellationToken cancellationToken, int startIndex = 0)
+    private async Task MigrateUserRelations(MySqlConnection mysqlConnection, CancellationToken cancellationToken,
+        int startIndex = 0)
     {
         var index = startIndex;
         try
@@ -250,10 +251,7 @@ public partial class DataMigrationService : IHostedService
                 index = reader.GetInt32("id");
                 var followeeId = _userDictionary[reader.GetInt32("followee_id")];
                 var followerId = _userDictionary[reader.GetInt32("follower_id")];
-                if (await _userRelationRepository.RelationExistsAsync(followerId, followeeId))
-                {
-                    continue;
-                }
+                if (await _userRelationRepository.RelationExistsAsync(followerId, followeeId)) continue;
                 _logger.LogInformation(LogEvents.DataMigration, "Migrating User Relation #{Id}", index);
 
                 var userRelation = new UserRelation
@@ -280,7 +278,8 @@ public partial class DataMigrationService : IHostedService
         }
     }
 
-    private async Task MigrateChapters(MySqlConnection mysqlConnection, CancellationToken cancellationToken, int startIndex = 0)
+    private async Task MigrateChapters(MySqlConnection mysqlConnection, CancellationToken cancellationToken,
+        int startIndex = 0)
     {
         var index = startIndex;
         try
@@ -294,8 +293,13 @@ public partial class DataMigrationService : IHostedService
             {
                 index = reader.GetInt32("id");
                 var title = reader.GetString("title");
+                var subtitle = reader.GetString("subtitle");
+                if (await _chapterRepository.CountChaptersAsync(predicate: e =>
+                        e.Title == title && e.Subtitle == subtitle) > 0)
+                    continue;
 
-                _logger.LogInformation(LogEvents.DataMigration, "Migrating Chapter #{Id} {Title}", index, title);
+                _logger.LogInformation(LogEvents.DataMigration, "Migrating Chapter #{Id} {Title} - {Subtitle}", index,
+                    title, subtitle);
                 var illustrationPath = Path.Combine(_mediaPath, reader.GetString("illustration"));
                 var illustration =
                     (await _fileStorageService.UploadImage<Chapter>(title,
@@ -305,7 +309,7 @@ public partial class DataMigrationService : IHostedService
                 var chapter = new Chapter
                 {
                     Title = title,
-                    Subtitle = reader.GetString("subtitle"),
+                    Subtitle = subtitle,
                     Illustration = illustration,
                     Illustrator = reader.GetString("illustrator"),
                     Description = await reader.GetStr("description"),
@@ -335,7 +339,8 @@ public partial class DataMigrationService : IHostedService
         }
     }
 
-    private async Task MigrateSongs(MySqlConnection mysqlConnection, CancellationToken cancellationToken, int startIndex = 0)
+    private async Task MigrateSongs(MySqlConnection mysqlConnection, CancellationToken cancellationToken,
+        int startIndex = 0)
     {
         var index = startIndex;
         try
@@ -349,16 +354,22 @@ public partial class DataMigrationService : IHostedService
             {
                 index = reader.GetInt32("id");
                 var title = reader.GetString("name");
+                var edition = reader.GetString("edition");
+                var authorName = reader.GetString("composer");
+                if (await _songRepository.CountSongsAsync(predicate: e =>
+                        e.Title == title && e.Edition == edition && e.AuthorName == authorName) > 0)
+                    continue;
 
                 _logger.LogInformation(LogEvents.DataMigration, "Migrating Song #{Id} {Title}", index, title);
                 var filePath = Path.Combine(_mediaPath, reader.GetString("song"));
-                var fileInfo = await _songService.UploadAsync(title, await File.ReadAllBytesAsync(filePath, cancellationToken));
+                var fileInfo =
+                    await _songService.UploadAsync(title, await File.ReadAllBytesAsync(filePath, cancellationToken));
                 var illustrationPath = Path.Combine(_mediaPath, reader.GetString("illustration"));
                 var illustration =
-                    (await _fileStorageService.UploadImage<User>(title, await File.ReadAllBytesAsync(illustrationPath, cancellationToken),
+                    (await _fileStorageService.UploadImage<User>(title,
+                        await File.ReadAllBytesAsync(illustrationPath, cancellationToken),
                         (16, 9))).Item1;
                 var date = reader.GetDateTimeOffset("time");
-                var edition = reader.GetString("edition");
                 var bpm = NonDigitRegex()
                     .Split(reader.GetString("bpm"))
                     .Where(s => !s.IsNullOrEmpty())
@@ -378,7 +389,7 @@ public partial class DataMigrationService : IHostedService
                         edition.ToUpper().Contains("SELF") || edition.ToUpper().Contains("EDITED")
                             ? null
                             : edition,
-                    AuthorName = reader.GetString("composer"),
+                    AuthorName = authorName,
                     File = fileInfo!.Value.Item1,
                     FileChecksum = fileInfo.Value.Item2,
                     Illustration = illustration,
@@ -428,7 +439,8 @@ public partial class DataMigrationService : IHostedService
         }
     }
 
-    private async Task MigrateSongAdmissions(MySqlConnection mysqlConnection, CancellationToken cancellationToken, int startIndex = 0)
+    private async Task MigrateSongAdmissions(MySqlConnection mysqlConnection, CancellationToken cancellationToken,
+        int startIndex = 0)
     {
         var index = startIndex;
         try
@@ -453,7 +465,7 @@ public partial class DataMigrationService : IHostedService
                     Status = RequestStatus.Approved,
                     RequesterId = (await _songRepository.GetSongAsync(songId)).OwnerId,
                     RequesteeId = (await _chapterRepository.GetChapterAsync(chapterId)).OwnerId,
-                    DateCreated = DateTimeOffset.UtcNow,
+                    DateCreated = DateTimeOffset.UtcNow
                 };
                 await _admissionRepository.CreateAdmissionAsync(admission);
             }
@@ -472,7 +484,8 @@ public partial class DataMigrationService : IHostedService
         }
     }
 
-    private async Task MigrateCharts(MySqlConnection mysqlConnection, CancellationToken cancellationToken, int startIndex = 0)
+    private async Task MigrateCharts(MySqlConnection mysqlConnection, CancellationToken cancellationToken,
+        int startIndex = 0)
     {
         var index = startIndex;
         try
@@ -543,7 +556,8 @@ public partial class DataMigrationService : IHostedService
         }
     }
 
-    private async Task MigratePlayConfigurations(MySqlConnection mysqlConnection, CancellationToken cancellationToken, int startIndex = 0)
+    private async Task MigratePlayConfigurations(MySqlConnection mysqlConnection, CancellationToken cancellationToken,
+        int startIndex = 0)
     {
         var index = startIndex;
         try
@@ -594,7 +608,8 @@ public partial class DataMigrationService : IHostedService
         }
     }
 
-    private async Task MigrateRecords(MySqlConnection mysqlConnection, CancellationToken cancellationToken, int startIndex = 0)
+    private async Task MigrateRecords(MySqlConnection mysqlConnection, CancellationToken cancellationToken,
+        int startIndex = 0)
     {
         var index = startIndex;
         try
@@ -662,7 +677,8 @@ public partial class DataMigrationService : IHostedService
         }
     }
 
-    private async Task MigrateComments(MySqlConnection mysqlConnection, CancellationToken cancellationToken, int startIndex = 0)
+    private async Task MigrateComments(MySqlConnection mysqlConnection, CancellationToken cancellationToken,
+        int startIndex = 0)
     {
         var index = startIndex;
         try
@@ -691,17 +707,11 @@ public partial class DataMigrationService : IHostedService
                     else
                     {
                         id = await reader.GetInt("chart_id");
-                        if (id != null)
-                        {
-                            resourceId = _chartDictionary[id.Value];
-                        }
+                        if (id != null) resourceId = _chartDictionary[id.Value];
                     }
                 }
 
-                if (resourceId == null || !await reader.IsDBNullAsync("deletion", cancellationToken: cancellationToken))
-                {
-                    continue;
-                }
+                if (resourceId == null || !await reader.IsDBNullAsync("deletion", cancellationToken)) continue;
 
                 _logger.LogInformation(LogEvents.DataMigration, "Migrating Comment #{Id}", index);
 
@@ -732,7 +742,8 @@ public partial class DataMigrationService : IHostedService
         }
     }
 
-    private async Task MigrateReplies(MySqlConnection mysqlConnection, CancellationToken cancellationToken, int startIndex = 0)
+    private async Task MigrateReplies(MySqlConnection mysqlConnection, CancellationToken cancellationToken,
+        int startIndex = 0)
     {
         var index = startIndex;
         try
@@ -745,10 +756,7 @@ public partial class DataMigrationService : IHostedService
             while (await reader.ReadAsync(cancellationToken))
             {
                 index = reader.GetInt32("id");
-                if (!await reader.IsDBNullAsync("deletion", cancellationToken: cancellationToken))
-                {
-                    continue;
-                }
+                if (!await reader.IsDBNullAsync("deletion", cancellationToken)) continue;
 
                 _logger.LogInformation(LogEvents.DataMigration, "Migrating Reply #{Id}", index);
 
@@ -779,7 +787,8 @@ public partial class DataMigrationService : IHostedService
         }
     }
 
-    private async Task MigrateVotes(MySqlConnection mysqlConnection, CancellationToken cancellationToken, int startIndex = 0)
+    private async Task MigrateVotes(MySqlConnection mysqlConnection, CancellationToken cancellationToken,
+        int startIndex = 0)
     {
         var index = startIndex;
         try
@@ -841,7 +850,8 @@ public partial class DataMigrationService : IHostedService
         }
     }
 
-    private async Task MigrateLikes(MySqlConnection mysqlConnection, CancellationToken cancellationToken, int startIndex = 0)
+    private async Task MigrateLikes(MySqlConnection mysqlConnection, CancellationToken cancellationToken,
+        int startIndex = 0)
     {
         var index = startIndex;
         try
@@ -915,7 +925,8 @@ public partial class DataMigrationService : IHostedService
         }
     }
 
-    private async Task MigrateSongSubmissions(MySqlConnection mysqlConnection, CancellationToken cancellationToken, int startIndex = 0)
+    private async Task MigrateSongSubmissions(MySqlConnection mysqlConnection, CancellationToken cancellationToken,
+        int startIndex = 0)
     {
         var index = startIndex;
         try
@@ -934,10 +945,12 @@ public partial class DataMigrationService : IHostedService
                 _logger.LogInformation(LogEvents.DataMigration, "Migrating Song Submission #{Id} {Title}", index,
                     title);
                 var filePath = Path.Combine(_mediaPath, reader.GetString("song"));
-                var fileInfo = await _songService.UploadAsync(title, await File.ReadAllBytesAsync(filePath, cancellationToken));
+                var fileInfo =
+                    await _songService.UploadAsync(title, await File.ReadAllBytesAsync(filePath, cancellationToken));
                 var illustrationPath = Path.Combine(_mediaPath, reader.GetString("illustration"));
                 var illustration =
-                    (await _fileStorageService.UploadImage<User>(title, await File.ReadAllBytesAsync(illustrationPath, cancellationToken),
+                    (await _fileStorageService.UploadImage<User>(title,
+                        await File.ReadAllBytesAsync(illustrationPath, cancellationToken),
                         (16, 9))).Item1;
                 var date = reader.GetDateTimeOffset("time");
                 var edition = reader.GetString("edition");
@@ -979,11 +992,11 @@ public partial class DataMigrationService : IHostedService
                     OwnerId = _userDictionary[reader.GetInt32("uploader_id")],
                     Status = (RequestStatus)reader.GetInt32("status"),
                     RepresentationId =
-                        await reader.IsDBNullAsync("representation_id", cancellationToken: cancellationToken)
+                        await reader.IsDBNullAsync("representation_id", cancellationToken)
                             ? null
                             : _songDictionary[reader.GetInt32("representation_id")],
                     ReviewerId =
-                        await reader.IsDBNullAsync("uploader_id", cancellationToken: cancellationToken)
+                        await reader.IsDBNullAsync("uploader_id", cancellationToken)
                             ? null
                             : _userDictionary[reader.GetInt32("uploader_id")],
                     Message = await reader.GetStr("message"),
@@ -1009,7 +1022,8 @@ public partial class DataMigrationService : IHostedService
         }
     }
 
-    private async Task MigrateChartSubmissions(MySqlConnection mysqlConnection, CancellationToken cancellationToken, int startIndex = 0)
+    private async Task MigrateChartSubmissions(MySqlConnection mysqlConnection, CancellationToken cancellationToken,
+        int startIndex = 0)
     {
         var index = startIndex;
         try
@@ -1023,10 +1037,10 @@ public partial class DataMigrationService : IHostedService
             while (await reader.ReadAsync(cancellationToken))
             {
                 index = reader.GetInt32("id");
-                var song = await reader.IsDBNullAsync("song_id", cancellationToken: cancellationToken)
+                var song = await reader.IsDBNullAsync("song_id", cancellationToken)
                     ? null
                     : await _songRepository.GetSongAsync(_songDictionary[reader.GetInt32("song_id")]);
-                var songSubmission = await reader.IsDBNullAsync("song_upload_id", cancellationToken: cancellationToken)
+                var songSubmission = await reader.IsDBNullAsync("song_upload_id", cancellationToken)
                     ? null
                     : await _songSubmissionRepository.GetSongSubmissionAsync(
                         _songSubmissionDictionary[reader.GetInt32("song_upload_id")]);
@@ -1047,7 +1061,7 @@ public partial class DataMigrationService : IHostedService
                                 : s)
                         .ToArray());
                 var date = reader.GetDateTimeOffset("time");
-                Guid? representationId = await reader.IsDBNullAsync("representation_id", cancellationToken: cancellationToken)
+                Guid? representationId = await reader.IsDBNullAsync("representation_id", cancellationToken)
                     ? null
                     : _chartDictionary[reader.GetInt32("representation_id")];
 
@@ -1096,7 +1110,8 @@ public partial class DataMigrationService : IHostedService
         }
     }
 
-    private async Task MigrateVolunteerVotes(MySqlConnection mysqlConnection, CancellationToken cancellationToken, int startIndex = 0)
+    private async Task MigrateVolunteerVotes(MySqlConnection mysqlConnection, CancellationToken cancellationToken,
+        int startIndex = 0)
     {
         var index = startIndex;
         try
@@ -1137,7 +1152,8 @@ public partial class DataMigrationService : IHostedService
         }
     }
 
-    private async Task MigrateCollaborations(MySqlConnection mysqlConnection, CancellationToken cancellationToken, int startIndex = 0)
+    private async Task MigrateCollaborations(MySqlConnection mysqlConnection, CancellationToken cancellationToken,
+        int startIndex = 0)
     {
         var index = startIndex;
         try

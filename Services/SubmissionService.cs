@@ -6,18 +6,19 @@ namespace PhiZoneApi.Services;
 
 public class SubmissionService : ISubmissionService
 {
+    private readonly IAuthorshipRepository _authorshipRepository;
     private readonly IChartRepository _chartRepository;
     private readonly IChartService _chartService;
     private readonly IChartSubmissionRepository _chartSubmissionRepository;
+    private readonly ICollaborationRepository _collaborationRepository;
     private readonly INotificationService _notificationService;
     private readonly IResourceService _resourceService;
     private readonly ISongRepository _songRepository;
-    private readonly IAuthorshipRepository _authorshipRepository;
-    private readonly ICollaborationRepository _collaborationRepository;
 
     public SubmissionService(ISongRepository songRepository, INotificationService notificationService,
         IResourceService resourceService, IChartRepository chartRepository,
-        IChartSubmissionRepository chartSubmissionRepository, IChartService chartService, ICollaborationRepository collaborationRepository, IAuthorshipRepository authorshipRepository)
+        IChartSubmissionRepository chartSubmissionRepository, IChartService chartService,
+        ICollaborationRepository collaborationRepository, IAuthorshipRepository authorshipRepository)
     {
         _songRepository = songRepository;
         _notificationService = notificationService;
@@ -117,10 +118,12 @@ public class SubmissionService : ISubmissionService
             if (await _authorshipRepository.AuthorshipExistsAsync(song.Id, collaboration.InviteeId)) continue;
             var authorship = new Authorship
             {
-                ResourceId = song.Id, AuthorId = collaboration.InviteeId, Position = collaboration.Position, DateCreated = DateTimeOffset.UtcNow
+                ResourceId = song.Id, AuthorId = collaboration.InviteeId, Position = collaboration.Position,
+                DateCreated = DateTimeOffset.UtcNow
             };
             await _authorshipRepository.CreateAuthorshipAsync(authorship);
         }
+
         return song;
     }
 
@@ -218,7 +221,8 @@ public class SubmissionService : ISubmissionService
             if (await _authorshipRepository.AuthorshipExistsAsync(chart.Id, collaboration.InviteeId)) continue;
             var authorship = new Authorship
             {
-                ResourceId = chart.Id, AuthorId = collaboration.InviteeId, Position = collaboration.Position, DateCreated = DateTimeOffset.UtcNow
+                ResourceId = chart.Id, AuthorId = collaboration.InviteeId, Position = collaboration.Position,
+                DateCreated = DateTimeOffset.UtcNow
             };
             await _authorshipRepository.CreateAuthorshipAsync(authorship);
         }

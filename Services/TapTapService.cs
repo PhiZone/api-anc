@@ -1,5 +1,4 @@
-﻿using System.Net.Http.Headers;
-using System.Security.Cryptography;
+﻿using System.Security.Cryptography;
 using System.Text;
 using Microsoft.Extensions.Options;
 using PhiZoneApi.Configurations;
@@ -46,7 +45,8 @@ public class TapTapService : ITapTapService
         {
             Method = HttpMethod.Get, RequestUri = new Uri($"{_tapTapSettings.Value.TapApiUrl}{path}")
         };
-        request.Headers.TryAddWithoutValidation("Authorization", $"MAC id=\"{dto.AccessToken}\",ts=\"{timestamp}\",nonce=\"{nonce}\",mac=\"{hmac}\"");
+        request.Headers.TryAddWithoutValidation("Authorization",
+            $"MAC id=\"{dto.AccessToken}\",ts=\"{timestamp}\",nonce=\"{nonce}\",mac=\"{hmac}\"");
         return await _client.SendAsync(request);
     }
 }

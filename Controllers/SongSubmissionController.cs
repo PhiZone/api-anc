@@ -343,7 +343,8 @@ public class SongSubmissionController : Controller
         songSubmission.AuthorName = dto.AuthorName;
         songSubmission.Illustrator = dto.Illustrator;
         songSubmission.Description = dto.Description;
-        songSubmission.Accessibility = songSubmission.OriginalityProof != null ? dto.Accessibility : Accessibility.AllowAny;
+        songSubmission.Accessibility =
+            songSubmission.OriginalityProof != null ? dto.Accessibility : Accessibility.AllowAny;
         songSubmission.Lyrics = dto.Lyrics;
         songSubmission.Bpm = dto.Bpm;
         songSubmission.MinBpm = dto.MinBpm;

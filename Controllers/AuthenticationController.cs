@@ -159,7 +159,7 @@ public class AuthenticationController : Controller
                                 "The password is incorrect."
                         }!), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
                 }
-                
+
                 user.PasswordHash = _userManager.PasswordHasher.HashPassword(user, request.Password!);
             }
 

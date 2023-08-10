@@ -27,18 +27,18 @@ namespace PhiZoneApi.Controllers;
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
 public class CollaborationController : Controller
 {
+    private readonly IAuthorshipRepository _authorshipRepository;
+    private readonly IChartRepository _chartRepository;
+    private readonly IChartSubmissionRepository _chartSubmissionRepository;
     private readonly ICollaborationRepository _collaborationRepository;
     private readonly IOptions<DataSettings> _dataSettings;
     private readonly IFilterService _filterService;
     private readonly IMapper _mapper;
     private readonly INotificationService _notificationService;
     private readonly IResourceService _resourceService;
-    private readonly ITemplateService _templateService;
     private readonly ISongRepository _songRepository;
-    private readonly IChartRepository _chartRepository;
     private readonly ISongSubmissionRepository _songSubmissionRepository;
-    private readonly IChartSubmissionRepository _chartSubmissionRepository;
-    private readonly IAuthorshipRepository _authorshipRepository;
+    private readonly ITemplateService _templateService;
     private readonly UserManager<User> _userManager;
 
     public CollaborationController(ICollaborationRepository collaborationRepository, UserManager<User> userManager,
@@ -264,17 +264,13 @@ public class CollaborationController : Controller
             {
                 submission = await _songSubmissionRepository.GetSongSubmissionAsync(collaboration.SubmissionId);
                 if (submission is { Status: RequestStatus.Approved, RepresentationId: not null })
-                {
                     resource = await _songRepository.GetSongAsync(submission.RepresentationId.Value);
-                }
             }
             else
             {
                 submission = await _chartSubmissionRepository.GetChartSubmissionAsync(collaboration.SubmissionId);
                 if (submission is { Status: RequestStatus.Approved, RepresentationId: not null })
-                {
                     resource = await _chartRepository.GetChartAsync(submission.RepresentationId.Value);
-                }
             }
 
             if (resource != null)

@@ -34,7 +34,8 @@ public class LikeService : ILikeService
     public async Task<bool> CreateLikeAsync(Chapter chapter, int userId, DateTimeOffset? dateCreated = null)
     {
         if (await _likeRepository.LikeExistsAsync(chapter.Id, userId)) return false;
-        var like = new Like { ResourceId = chapter.Id, OwnerId = userId, DateCreated = dateCreated ?? DateTimeOffset.UtcNow };
+        var like = new Like
+            { ResourceId = chapter.Id, OwnerId = userId, DateCreated = dateCreated ?? DateTimeOffset.UtcNow };
         var result = await _likeRepository.CreateLikeAsync(like);
         chapter.LikeCount = await _likeRepository.CountLikesAsync(e => e.ResourceId == chapter.Id);
         return result && await _chapterRepository.UpdateChapterAsync(chapter);
@@ -43,7 +44,8 @@ public class LikeService : ILikeService
     public async Task<bool> CreateLikeAsync(Song song, int userId, DateTimeOffset? dateCreated = null)
     {
         if (await _likeRepository.LikeExistsAsync(song.Id, userId)) return false;
-        var like = new Like { ResourceId = song.Id, OwnerId = userId, DateCreated = dateCreated ?? DateTimeOffset.UtcNow };
+        var like = new Like
+            { ResourceId = song.Id, OwnerId = userId, DateCreated = dateCreated ?? DateTimeOffset.UtcNow };
         var result = await _likeRepository.CreateLikeAsync(like);
         song.LikeCount = await _likeRepository.CountLikesAsync(e => e.ResourceId == song.Id);
         return result && await _songRepository.UpdateSongAsync(song);
@@ -52,7 +54,8 @@ public class LikeService : ILikeService
     public async Task<bool> CreateLikeAsync(Chart chart, int userId, DateTimeOffset? dateCreated = null)
     {
         if (await _likeRepository.LikeExistsAsync(chart.Id, userId)) return false;
-        var like = new Like { ResourceId = chart.Id, OwnerId = userId, DateCreated = dateCreated ?? DateTimeOffset.UtcNow };
+        var like = new Like
+            { ResourceId = chart.Id, OwnerId = userId, DateCreated = dateCreated ?? DateTimeOffset.UtcNow };
         var result = await _likeRepository.CreateLikeAsync(like);
         chart.LikeCount = await _likeRepository.CountLikesAsync(e => e.ResourceId == chart.Id);
         return result && await _chartRepository.UpdateChartAsync(chart);
@@ -61,7 +64,8 @@ public class LikeService : ILikeService
     public async Task<bool> CreateLikeAsync(Record record, int userId, DateTimeOffset? dateCreated = null)
     {
         if (await _likeRepository.LikeExistsAsync(record.Id, userId)) return false;
-        var like = new Like { ResourceId = record.Id, OwnerId = userId, DateCreated = dateCreated ?? DateTimeOffset.UtcNow };
+        var like = new Like
+            { ResourceId = record.Id, OwnerId = userId, DateCreated = dateCreated ?? DateTimeOffset.UtcNow };
         var result = await _likeRepository.CreateLikeAsync(like);
         record.LikeCount = await _likeRepository.CountLikesAsync(e => e.ResourceId == record.Id);
         return result && await _recordRepository.UpdateRecordAsync(record);
@@ -70,7 +74,8 @@ public class LikeService : ILikeService
     public async Task<bool> CreateLikeAsync(Comment comment, int userId, DateTimeOffset? dateCreated = null)
     {
         if (await _likeRepository.LikeExistsAsync(comment.Id, userId)) return false;
-        var like = new Like { ResourceId = comment.Id, OwnerId = userId, DateCreated = dateCreated ?? DateTimeOffset.UtcNow };
+        var like = new Like
+            { ResourceId = comment.Id, OwnerId = userId, DateCreated = dateCreated ?? DateTimeOffset.UtcNow };
         var result = await _likeRepository.CreateLikeAsync(like);
         comment.LikeCount = await _likeRepository.CountLikesAsync(e => e.ResourceId == comment.Id);
         return result && await _commentRepository.UpdateCommentAsync(comment);
@@ -79,7 +84,8 @@ public class LikeService : ILikeService
     public async Task<bool> CreateLikeAsync(Reply reply, int userId, DateTimeOffset? dateCreated = null)
     {
         if (await _likeRepository.LikeExistsAsync(reply.Id, userId)) return false;
-        var like = new Like { ResourceId = reply.Id, OwnerId = userId, DateCreated = dateCreated ?? DateTimeOffset.UtcNow };
+        var like = new Like
+            { ResourceId = reply.Id, OwnerId = userId, DateCreated = dateCreated ?? DateTimeOffset.UtcNow };
         var result = await _likeRepository.CreateLikeAsync(like);
         reply.LikeCount = await _likeRepository.CountLikesAsync(e => e.ResourceId == reply.Id);
         return result && await _replyRepository.UpdateReplyAsync(reply);

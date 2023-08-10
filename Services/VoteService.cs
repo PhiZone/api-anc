@@ -74,16 +74,6 @@ public class VoteService : IVoteService
         return result && await UpdateChartAsync(chart);
     }
 
-    private double GetMultiplier(User user)
-    {
-        return _multiplierList[GetUserLevel(user)];
-    }
-
-    private int GetUserLevel(User user)
-    {
-        return _experienceList.FindLastIndex(exp => exp <= user.Experience);
-    }
-
     public async Task<bool> UpdateChartAsync(Chart chart)
     {
         var amount = await _voteRepository.CountVotesAsync(vote => vote.ChartId == chart.Id);
@@ -99,6 +89,16 @@ public class VoteService : IVoteService
         chart.RatingOnConcord = GetRating(votes.Sum(vote => vote.Concord * vote.Multiplier), amount, r);
         chart.RatingOnImpression = GetRating(votes.Sum(vote => vote.Impression * vote.Multiplier), amount, r);
         return await _chartRepository.UpdateChartAsync(chart);
+    }
+
+    private double GetMultiplier(User user)
+    {
+        return _multiplierList[GetUserLevel(user)];
+    }
+
+    private int GetUserLevel(User user)
+    {
+        return _experienceList.FindLastIndex(exp => exp <= user.Experience);
     }
 
     private static double GetRating(double sum, int amount, double reliability, double defaultValue = 2.5)
