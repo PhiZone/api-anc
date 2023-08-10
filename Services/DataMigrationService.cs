@@ -1174,7 +1174,10 @@ public partial class DataMigrationService : IHostedService
             while (await reader.ReadAsync(cancellationToken))
             {
                 index = reader.GetInt32("id");
-
+                if (!_chartSubmissionDictionary.ContainsKey(reader.GetInt32("chart_id")))
+                {
+                    continue;
+                }
                 _logger.LogInformation(LogEvents.DataMigration, "Migrating Volunteer Vote #{Id}", index);
 
                 var volunteerVote = new VolunteerVote
@@ -1216,6 +1219,10 @@ public partial class DataMigrationService : IHostedService
             while (await reader.ReadAsync(cancellationToken))
             {
                 index = reader.GetInt32("id");
+                if (!_chartSubmissionDictionary.ContainsKey(reader.GetInt32("chart_id")))
+                {
+                    continue;
+                }
                 var chartSubmission =
                     await _chartSubmissionRepository.GetChartSubmissionAsync(
                         _chartSubmissionDictionary[reader.GetInt32("chart_id")]);
