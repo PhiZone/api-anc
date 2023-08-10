@@ -328,9 +328,8 @@ public partial class ChartService : IChartService
 
             return dto;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _logger.LogError(LogEvents.RpeJsonFailure, ex, "Failed to parse RPE JSON");
             return null;
         }
     }
@@ -489,7 +488,7 @@ public partial class ChartService : IChartService
         }
         catch (Exception ex)
         {
-            _logger.LogError(LogEvents.PecFailure, ex, "Failed to parse PEC");
+            _logger.LogError(LogEvents.ChartFailure, ex, "Failed to parse chart");
             return null;
         }
     }

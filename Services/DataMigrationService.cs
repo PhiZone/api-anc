@@ -513,7 +513,22 @@ public partial class DataMigrationService : IHostedService
             {
                 index = reader.GetInt32("id");
                 var song = await _songRepository.GetSongAsync(_songDictionary[reader.GetInt32("song_id")]);
-                _logger.LogInformation(LogEvents.DataMigration, "Migrating Chart #{Id} {Title}", index, song.Title);
+                var levelType = (ChartLevel)reader.GetInt32("level_type");
+                var level = reader.GetString("level");
+                var difficulty = reader.GetDouble("difficulty");
+                if (await _chartRepository.CountChartsAsync(predicate: e =>
+                        e.SongId == song.Id && e.LevelType == levelType && e.Level == level &&
+                        e.OwnerId == _userDictionary[reader.GetInt32("owner_id")]) > 0)
+                {
+                    _chartDictionary.Add(index,
+                        (await _chartRepository.GetChartsAsync("DateCreated", false, 0, -1, null,
+                            e =>
+                                e.SongId == song.Id && e.LevelType == levelType && e.Level == level &&
+                                e.OwnerId == _userDictionary[reader.GetInt32("owner_id")])).FirstOrDefault()!.Id);
+                    continue;
+                }
+                
+                _logger.LogInformation(LogEvents.DataMigration, "Migrating Chart #{Id} {Title} {Level} Lv.{Difficulty}", index, song.Title, level, Math.Floor(difficulty));
 
                 var chartFile = reader.GetString("chart");
                 (string, string, ChartFormat, int)? chartInfo = null;
@@ -534,9 +549,9 @@ public partial class DataMigrationService : IHostedService
 
                 var chart = new Chart
                 {
-                    LevelType = (ChartLevel)reader.GetInt32("level_type"),
-                    Level = reader.GetString("level"),
-                    Difficulty = reader.GetDouble("difficulty"),
+                    LevelType = levelType,
+                    Level = level,
+                    Difficulty = difficulty,
                     AuthorName = authorName,
                     File = chartInfo?.Item1,
                     FileChecksum = chartInfo?.Item2 ?? string.Empty,
@@ -546,7 +561,7 @@ public partial class DataMigrationService : IHostedService
                     IsRanked = reader.GetBoolean("ranked"),
                     IsHidden = reader.GetBoolean("hidden"),
                     IsLocked = false,
-                    SongId = _songDictionary[reader.GetInt32("song_id")],
+                    SongId = song.Id,
                     OwnerId = _userDictionary[reader.GetInt32("owner_id")],
                     DateCreated = date,
                     DateUpdated = date,
