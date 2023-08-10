@@ -1212,7 +1212,7 @@ public partial class DataMigrationService : IHostedService
         try
         {
             _logger.LogInformation(LogEvents.DataMigration, "Migrating collaborations...");
-            await using var mysqlCommand = new MySqlCommand($"SELECT * FROM phizone_volunteervote WHERE id > {index}",
+            await using var mysqlCommand = new MySqlCommand($"SELECT * FROM phizone_collaboration WHERE id > {index}",
                 mysqlConnection);
             await using var reader = await mysqlCommand.ExecuteReaderAsync(cancellationToken);
 
