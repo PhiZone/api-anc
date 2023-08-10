@@ -38,8 +38,8 @@ public class AuthenticationController : Controller
     private readonly IUserRepository _userRepository;
 
     public AuthenticationController(UserManager<User> userManager, IConnectionMultiplexer redis,
-        IMailService mailService, IResourceService resourceService,
-        ITapTapService tapTapService, IUserRepository userRepository, IDtoMapper dtoMapper)
+        IMailService mailService, IResourceService resourceService, ITapTapService tapTapService,
+        IUserRepository userRepository, IDtoMapper dtoMapper)
     {
         _userManager = userManager;
         _mailService = mailService;
@@ -95,18 +95,16 @@ public class AuthenticationController : Controller
         {
             var response = await _tapTapService.Login(new TapTapRequestDto
             {
-                MacKey = dto.username!,
-                AccessToken = dto.password!
+                MacKey = dto.username!, AccessToken = dto.password!
             });
 
             if (!response.IsSuccessStatusCode)
-                return Forbid(
-                    new AuthenticationProperties(new Dictionary<string, string>
-                    {
-                        [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidRequest,
-                        [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
-                            "Unable to log into TapTap with provided credentials."
-                    }!));
+                return Forbid(new AuthenticationProperties(new Dictionary<string, string>
+                {
+                    [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidRequest,
+                    [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
+                        "Unable to log into TapTap with provided credentials."
+                }!));
 
             var responseDto =
                 JsonConvert.DeserializeObject<TapTapDelivererDto>(await response.Content.ReadAsStringAsync())!;
@@ -143,24 +141,38 @@ public class AuthenticationController : Controller
             var actionResult = await CheckUserLockoutState(user);
             if (actionResult != null) return actionResult;
 
-            if (!await _userManager.CheckPasswordAsync(user, request.Password!))
+            var isPasswordCorrect = true;
+            try
             {
-                // to be removed
+                if (!await _userManager.CheckPasswordAsync(user, request.Password!))
+                {
+                    isPasswordCorrect = false;
+                }
+            }
+            catch (FormatException)
+            {
                 if (!ObsoletePasswordUtil.Check(request.Password!, user.PasswordHash!))
                 {
-                    user.AccessFailedCount++;
-                    await _userManager.UpdateAsync(user);
-
-                    return Forbid(
-                        new AuthenticationProperties(new Dictionary<string, string>
-                        {
-                            [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidGrant,
-                            [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
-                                "The password is incorrect."
-                        }!), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+                    isPasswordCorrect = false;
                 }
+                else
+                {
+                    user.PasswordHash = _userManager.PasswordHasher.HashPassword(user, request.Password!);
+                }
+            }
 
-                user.PasswordHash = _userManager.PasswordHasher.HashPassword(user, request.Password!);
+            if (!isPasswordCorrect)
+            {
+                user.AccessFailedCount++;
+                await _userManager.UpdateAsync(user);
+
+                return Forbid(
+                    new AuthenticationProperties(new Dictionary<string, string>
+                    {
+                        [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidGrant,
+                        [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
+                            "The password is incorrect."
+                    }!), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
             }
 
             var identity = new ClaimsIdentity(TokenValidationParameters.DefaultAuthenticationType, Claims.Name,

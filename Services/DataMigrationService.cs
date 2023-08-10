@@ -195,6 +195,8 @@ public partial class DataMigrationService : IHostedService
                     DateLastModifiedUserName = await reader.GetTime("username_last_modified")
                 };
                 await _userManager.CreateAsync(user);
+
+                user.EmailConfirmed = true;
                 user.LockoutEnabled = false;
                 await _userManager.UpdateAsync(user);
                 _userDictionary.Add(index, user.Id);
@@ -242,8 +244,7 @@ public partial class DataMigrationService : IHostedService
         {
             _logger.LogInformation(LogEvents.DataMigration, "Migrating user relations...");
             await using var mysqlCommand =
-                new MySqlCommand($"SELECT * FROM phizone_relation WHERE id > {index}",
-                    mysqlConnection);
+                new MySqlCommand($"SELECT * FROM phizone_relation WHERE id > {index}", mysqlConnection);
             await using var reader = await mysqlCommand.ExecuteReaderAsync(cancellationToken);
 
             while (await reader.ReadAsync(cancellationToken))
@@ -301,9 +302,8 @@ public partial class DataMigrationService : IHostedService
                 _logger.LogInformation(LogEvents.DataMigration, "Migrating Chapter #{Id} {Title} - {Subtitle}", index,
                     title, subtitle);
                 var illustrationPath = Path.Combine(_mediaPath, reader.GetString("illustration"));
-                var illustration =
-                    (await _fileStorageService.UploadImage<Chapter>(title,
-                        await File.ReadAllBytesAsync(illustrationPath, cancellationToken), (16, 9))).Item1;
+                var illustration = (await _fileStorageService.UploadImage<Chapter>(title,
+                    await File.ReadAllBytesAsync(illustrationPath, cancellationToken), (16, 9))).Item1;
                 var date = reader.GetDateTimeOffset("time");
 
                 var chapter = new Chapter
@@ -365,10 +365,8 @@ public partial class DataMigrationService : IHostedService
                 var fileInfo =
                     await _songService.UploadAsync(title, await File.ReadAllBytesAsync(filePath, cancellationToken));
                 var illustrationPath = Path.Combine(_mediaPath, reader.GetString("illustration"));
-                var illustration =
-                    (await _fileStorageService.UploadImage<User>(title,
-                        await File.ReadAllBytesAsync(illustrationPath, cancellationToken),
-                        (16, 9))).Item1;
+                var illustration = (await _fileStorageService.UploadImage<User>(title,
+                    await File.ReadAllBytesAsync(illustrationPath, cancellationToken), (16, 9))).Item1;
                 var date = reader.GetDateTimeOffset("time");
                 var bpm = NonDigitRegex()
                     .Split(reader.GetString("bpm"))
@@ -948,10 +946,8 @@ public partial class DataMigrationService : IHostedService
                 var fileInfo =
                     await _songService.UploadAsync(title, await File.ReadAllBytesAsync(filePath, cancellationToken));
                 var illustrationPath = Path.Combine(_mediaPath, reader.GetString("illustration"));
-                var illustration =
-                    (await _fileStorageService.UploadImage<User>(title,
-                        await File.ReadAllBytesAsync(illustrationPath, cancellationToken),
-                        (16, 9))).Item1;
+                var illustration = (await _fileStorageService.UploadImage<User>(title,
+                    await File.ReadAllBytesAsync(illustrationPath, cancellationToken), (16, 9))).Item1;
                 var date = reader.GetDateTimeOffset("time");
                 var edition = reader.GetString("edition");
                 var bpm = NonDigitRegex()
