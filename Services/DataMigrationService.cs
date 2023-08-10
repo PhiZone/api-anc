@@ -115,7 +115,7 @@ public partial class DataMigrationService : IHostedService
     private async Task MigrateDataAsync(CancellationToken cancellationToken)
     {
         await using var mysqlConnection = new MySqlConnection(_configuration.GetConnectionString("MySQLConnection"));
-        await mysqlConnection.OpenAsync(cancellationToken);
+        if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
         await MigrateUsers(mysqlConnection, cancellationToken);
         await MigrateUserRelations(mysqlConnection, cancellationToken);
         await MigrateChapters(mysqlConnection, cancellationToken);
@@ -157,12 +157,12 @@ public partial class DataMigrationService : IHostedService
                 }
 
                 _logger.LogInformation(LogEvents.DataMigration, "Migrating User #{Id} {UserName}", index, userName);
-                var avatarPath = reader.GetString("avatar");
-                avatarPath = avatarPath == "user/default.webp" ? null : Path.Combine(_mediaPath, avatarPath);
+                // var avatarPath = reader.GetString("avatar");
+                // avatarPath = avatarPath == "user/default.webp" ? null : Path.Combine(_mediaPath, avatarPath);
                 string? avatar = null;
-                if (avatarPath != null)
-                    avatar = (await _fileStorageService.UploadImage<User>(userName,
-                        await File.ReadAllBytesAsync(avatarPath, cancellationToken), (1, 1))).Item1;
+                // if (avatarPath != null)
+                //     avatar = (await _fileStorageService.UploadImage<User>(userName,
+                //         await File.ReadAllBytesAsync(avatarPath, cancellationToken), (1, 1))).Item1;
 
                 var regionCode = await reader.IsDBNullAsync("region", cancellationToken)
                     ? null
@@ -199,6 +199,7 @@ public partial class DataMigrationService : IHostedService
                 user.EmailConfirmed = true;
                 user.LockoutEnabled = false;
                 await _userManager.UpdateAsync(user);
+                await _userManager.AddToRoleAsync(user, Roles.Member.Name);
                 _userDictionary.Add(index, user.Id);
 
                 var configuration = new PlayConfiguration
@@ -225,13 +226,13 @@ public partial class DataMigrationService : IHostedService
         catch (SocketException ex)
         {
             _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after User #{Index}", index);
-            await mysqlConnection.OpenAsync(cancellationToken);
+            if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateUsers(mysqlConnection, cancellationToken, index);
         }
         catch (IOException ex)
         {
             _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after User #{Index}", index);
-            await mysqlConnection.OpenAsync(cancellationToken);
+            if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateUsers(mysqlConnection, cancellationToken, index);
         }
     }
@@ -268,13 +269,13 @@ public partial class DataMigrationService : IHostedService
         catch (SocketException ex)
         {
             _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after User Relation #{Index}", index);
-            await mysqlConnection.OpenAsync(cancellationToken);
+            if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateUserRelations(mysqlConnection, cancellationToken, index);
         }
         catch (IOException ex)
         {
             _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after User Relation #{Index}", index);
-            await mysqlConnection.OpenAsync(cancellationToken);
+            if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateUserRelations(mysqlConnection, cancellationToken, index);
         }
     }
@@ -328,13 +329,13 @@ public partial class DataMigrationService : IHostedService
         catch (SocketException ex)
         {
             _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after Chapter #{Index}", index);
-            await mysqlConnection.OpenAsync(cancellationToken);
+            if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateChapters(mysqlConnection, cancellationToken, index);
         }
         catch (IOException ex)
         {
             _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after Chapter #{Index}", index);
-            await mysqlConnection.OpenAsync(cancellationToken);
+            if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateChapters(mysqlConnection, cancellationToken, index);
         }
     }
@@ -357,7 +358,7 @@ public partial class DataMigrationService : IHostedService
                 var edition = reader.GetString("edition");
                 var authorName = reader.GetString("composer");
                 if (await _songRepository.CountSongsAsync(predicate: e =>
-                        e.Title == title && e.Edition == edition && e.AuthorName == authorName) > 0)
+                        e.Title == title && e.AuthorName == authorName) > 0)
                     continue;
 
                 _logger.LogInformation(LogEvents.DataMigration, "Migrating Song #{Id} {Title}", index, title);
@@ -426,13 +427,13 @@ public partial class DataMigrationService : IHostedService
         catch (SocketException ex)
         {
             _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after Song #{Index}", index);
-            await mysqlConnection.OpenAsync(cancellationToken);
+            if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateSongs(mysqlConnection, cancellationToken, index);
         }
         catch (IOException ex)
         {
             _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after Song #{Index}", index);
-            await mysqlConnection.OpenAsync(cancellationToken);
+            if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateSongs(mysqlConnection, cancellationToken, index);
         }
     }
@@ -471,13 +472,13 @@ public partial class DataMigrationService : IHostedService
         catch (SocketException ex)
         {
             _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after Song Admission #{Index}", index);
-            await mysqlConnection.OpenAsync(cancellationToken);
+            if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateSongAdmissions(mysqlConnection, cancellationToken, index);
         }
         catch (IOException ex)
         {
             _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after Song Admission #{Index}", index);
-            await mysqlConnection.OpenAsync(cancellationToken);
+            if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateSongAdmissions(mysqlConnection, cancellationToken, index);
         }
     }
@@ -543,13 +544,13 @@ public partial class DataMigrationService : IHostedService
         catch (SocketException ex)
         {
             _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after Chart #{Index}", index);
-            await mysqlConnection.OpenAsync(cancellationToken);
+            if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateCharts(mysqlConnection, cancellationToken, index);
         }
         catch (IOException ex)
         {
             _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after Chart #{Index}", index);
-            await mysqlConnection.OpenAsync(cancellationToken);
+            if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateCharts(mysqlConnection, cancellationToken, index);
         }
     }
@@ -595,13 +596,13 @@ public partial class DataMigrationService : IHostedService
         catch (SocketException ex)
         {
             _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after Play Configuration #{Index}", index);
-            await mysqlConnection.OpenAsync(cancellationToken);
+            if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigratePlayConfigurations(mysqlConnection, cancellationToken, index);
         }
         catch (IOException ex)
         {
             _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after Play Configuration #{Index}", index);
-            await mysqlConnection.OpenAsync(cancellationToken);
+            if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigratePlayConfigurations(mysqlConnection, cancellationToken, index);
         }
     }
@@ -664,13 +665,13 @@ public partial class DataMigrationService : IHostedService
         catch (SocketException ex)
         {
             _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after Record #{Index}", index);
-            await mysqlConnection.OpenAsync(cancellationToken);
+            if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateRecords(mysqlConnection, cancellationToken, index);
         }
         catch (IOException ex)
         {
             _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after Record #{Index}", index);
-            await mysqlConnection.OpenAsync(cancellationToken);
+            if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateRecords(mysqlConnection, cancellationToken, index);
         }
     }
@@ -729,13 +730,13 @@ public partial class DataMigrationService : IHostedService
         catch (SocketException ex)
         {
             _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after Comment #{Index}", index);
-            await mysqlConnection.OpenAsync(cancellationToken);
+            if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateComments(mysqlConnection, cancellationToken, index);
         }
         catch (IOException ex)
         {
             _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after Comment #{Index}", index);
-            await mysqlConnection.OpenAsync(cancellationToken);
+            if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateComments(mysqlConnection, cancellationToken, index);
         }
     }
@@ -774,13 +775,13 @@ public partial class DataMigrationService : IHostedService
         catch (SocketException ex)
         {
             _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after Reply #{Index}", index);
-            await mysqlConnection.OpenAsync(cancellationToken);
+            if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateReplies(mysqlConnection, cancellationToken, index);
         }
         catch (IOException ex)
         {
             _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after Reply #{Index}", index);
-            await mysqlConnection.OpenAsync(cancellationToken);
+            if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateReplies(mysqlConnection, cancellationToken, index);
         }
     }
@@ -837,13 +838,13 @@ public partial class DataMigrationService : IHostedService
         catch (SocketException ex)
         {
             _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after Vote #{Index}", index);
-            await mysqlConnection.OpenAsync(cancellationToken);
+            if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateVotes(mysqlConnection, cancellationToken, index);
         }
         catch (IOException ex)
         {
             _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after Vote #{Index}", index);
-            await mysqlConnection.OpenAsync(cancellationToken);
+            if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateVotes(mysqlConnection, cancellationToken, index);
         }
     }
@@ -912,13 +913,13 @@ public partial class DataMigrationService : IHostedService
         catch (SocketException ex)
         {
             _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after Like #{Index}", index);
-            await mysqlConnection.OpenAsync(cancellationToken);
+            if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateLikes(mysqlConnection, cancellationToken, index);
         }
         catch (IOException ex)
         {
             _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after Like #{Index}", index);
-            await mysqlConnection.OpenAsync(cancellationToken);
+            if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateLikes(mysqlConnection, cancellationToken, index);
         }
     }
@@ -1007,13 +1008,13 @@ public partial class DataMigrationService : IHostedService
         catch (SocketException ex)
         {
             _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after SongSubmission #{Index}", index);
-            await mysqlConnection.OpenAsync(cancellationToken);
+            if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateSongSubmissions(mysqlConnection, cancellationToken, index);
         }
         catch (IOException ex)
         {
             _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after SongSubmission #{Index}", index);
-            await mysqlConnection.OpenAsync(cancellationToken);
+            if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateSongSubmissions(mysqlConnection, cancellationToken, index);
         }
     }
@@ -1095,13 +1096,13 @@ public partial class DataMigrationService : IHostedService
         catch (SocketException ex)
         {
             _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after Chart Submission #{Index}", index);
-            await mysqlConnection.OpenAsync(cancellationToken);
+            if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateChartSubmissions(mysqlConnection, cancellationToken, index);
         }
         catch (IOException ex)
         {
             _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after Chart Submission #{Index}", index);
-            await mysqlConnection.OpenAsync(cancellationToken);
+            if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateChartSubmissions(mysqlConnection, cancellationToken, index);
         }
     }
@@ -1137,13 +1138,13 @@ public partial class DataMigrationService : IHostedService
         catch (SocketException ex)
         {
             _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after Volunteer Vote #{Index}", index);
-            await mysqlConnection.OpenAsync(cancellationToken);
+            if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateVolunteerVotes(mysqlConnection, cancellationToken, index);
         }
         catch (IOException ex)
         {
             _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after Volunteer Vote #{Index}", index);
-            await mysqlConnection.OpenAsync(cancellationToken);
+            if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateVolunteerVotes(mysqlConnection, cancellationToken, index);
         }
     }
@@ -1191,13 +1192,13 @@ public partial class DataMigrationService : IHostedService
         catch (SocketException ex)
         {
             _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after Collaboration #{Index}", index);
-            await mysqlConnection.OpenAsync(cancellationToken);
+            if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateCollaborations(mysqlConnection, cancellationToken, index);
         }
         catch (IOException ex)
         {
             _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after Collaboration #{Index}", index);
-            await mysqlConnection.OpenAsync(cancellationToken);
+            if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateCollaborations(mysqlConnection, cancellationToken, index);
         }
     }
