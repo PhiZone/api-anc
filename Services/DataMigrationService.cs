@@ -977,13 +977,14 @@ public partial class DataMigrationService : IHostedService
             {
                 index = reader.GetInt32("id");
                 var title = reader.GetString("name");
-                
-                if (await _songSubmissionRepository.CountSongSubmissionsAsync(
-                        predicate: e => e.Title == title && e.AuthorName == reader.GetString("composer")) > 0)
+
+                if (await _songSubmissionRepository.CountSongSubmissionsAsync(predicate: e =>
+                        e.Title == title && e.AuthorName == reader.GetString("composer")) > 0)
                 {
                     _songSubmissionDictionary.Add(index,
                         (await _songSubmissionRepository.GetSongSubmissionsAsync("DateCreated", false, 0, -1, null,
-                            e => e.Title == title && e.AuthorName == reader.GetString("composer"))).FirstOrDefault()!.Id);
+                            e => e.Title == title && e.AuthorName == reader.GetString("composer"))).FirstOrDefault()!
+                        .Id);
                     continue;
                 }
 
@@ -1082,11 +1083,22 @@ public partial class DataMigrationService : IHostedService
                 index = reader.GetInt32("id");
                 var song = await reader.IsDBNullAsync("song_id", cancellationToken)
                     ? null
-                    : await _songRepository.GetSongAsync(_songDictionary[reader.GetInt32("song_id")]);
+                    :
+                    _songDictionary.TryGetValue(reader.GetInt32("song_id"), out var songId)
+                        ?
+                        await _songRepository.GetSongAsync(songId)
+                        : null;
                 var songSubmission = await reader.IsDBNullAsync("song_upload_id", cancellationToken)
                     ? null
-                    : await _songSubmissionRepository.GetSongSubmissionAsync(
-                        _songSubmissionDictionary[reader.GetInt32("song_upload_id")]);
+                    :
+                    _songSubmissionDictionary.TryGetValue(reader.GetInt32("song_upload_id"), out var songSubmissionId)
+                        ?
+                        await _songSubmissionRepository.GetSongSubmissionAsync(songSubmissionId)
+                        : null;
+                if (song == null && songSubmission == null)
+                {
+                    continue;
+                }
                 var title = song != null ? song.Title : songSubmission!.Title;
                 _logger.LogInformation(LogEvents.DataMigration, "Migrating Chart Submission #{Id} {Title}", index,
                     title);
