@@ -144,21 +144,14 @@ public class AuthenticationController : Controller
             var isPasswordCorrect = true;
             try
             {
-                if (!await _userManager.CheckPasswordAsync(user, request.Password!))
-                {
-                    isPasswordCorrect = false;
-                }
+                if (!await _userManager.CheckPasswordAsync(user, request.Password!)) isPasswordCorrect = false;
             }
             catch (FormatException)
             {
                 if (!ObsoletePasswordUtil.Check(request.Password!, user.PasswordHash!))
-                {
                     isPasswordCorrect = false;
-                }
                 else
-                {
                     user.PasswordHash = _userManager.PasswordHasher.HashPassword(user, request.Password!);
-                }
             }
 
             if (!isPasswordCorrect)

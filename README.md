@@ -23,11 +23,11 @@ Based on ASP.NET Core.
     - [ ] Two-factor Authentication
     - [ ] Phone Number Confirmation
 4. TapTap
-    - [ ] Login & Account Binding
+    - [x] Login & Account Binding
 
 ## Configuration
 
-File `appsettings.Development.json` is ignored by git using `.gitignore`. You should create it yourself.
+File `appsettings.Development.json` is ignored by Git using `.gitignore`. You should create it yourself.
 
 ```json
 {
@@ -59,11 +59,6 @@ File `appsettings.Development.json` is ignored by git using `.gitignore`. You sh
 }
 ```
 
-1. Database: Configure your own PostgreSQL server before filling in `DefaultConnection`.
-2. File Storage: We use the file storage service provided by TapTap, courtesy of Phigrim. Ask anyone who has access to
-   the service for credentials before filling in `TapTapSettings`.
-3. RabbitMQ: Setup your own RabbitMQ server before filling in `RabbitMQSettings`.
-
 ## Data Processing
 
 For details on processing an image in the File Storage,
@@ -81,13 +76,12 @@ the [Anti-Secession Law](https://mzzt.mca.gov.cn/article/zt_qmgjaqjyr/flfg/20220
 > obligation of all Chinese people, the Taiwan compatriots included.
 
 Regions are introduced to PhiZone for statistical purposes. To obey the law and fulfill the obligation, we've
-appended `Prov. China` to the name of Taiwan so as to emphasize that Taiwan is part of China. For translations in
-different languages, we demand that translators take notice of this suffix and have it translated as well. For the
-language `zh-TW`, however, we keep Taiwan its own name (`台灣`) and append `Mainland` to the name of China (`中國大陸`),
+appended `Prov. China` to the name of Taiwan so as to emphasize that Taiwan is part of China. In the language
+`zh-TW`, however, we keep Taiwan its own name (`台灣`) and append `Mainland` to the name of China (`中國大陸`),
 so as to avoid contradictions from users in Taiwan while still obeying the law.
 
-Flags are displayed normally except, in all languages, for Taiwan, which instead uses `TW` embedded in a badge as an
-icon in place of a flag.
+Flags are displayed normally except, in all languages, for Taiwan, which instead uses `TW` embedded in a badge
+as an icon in place of a flag.
 
 For your information, both Hong Kong and Macau are special administrative regions of China, thus having the
-suffix `SAR China` appended to their names. Translators should pay attention to it as well.
+suffix `SAR China` appended to their names.

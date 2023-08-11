@@ -9,7 +9,6 @@ namespace PhiZoneApi.Services;
 
 public class DtoMapper : IDtoMapper
 {
-    private readonly IAuthorshipRepository _authorshipRepository;
     private readonly IChapterRepository _chapterRepository;
     private readonly IChartRepository _chartRepository;
     private readonly ICommentRepository _commentRepository;
@@ -25,8 +24,7 @@ public class DtoMapper : IDtoMapper
     public DtoMapper(IUserRelationRepository userRelationRepository, IRegionRepository regionRepository,
         ILikeRepository likeRepository, UserManager<User> userManager, IMapper mapper,
         ICommentRepository commentRepository, IReplyRepository replyRepository, IRecordRepository recordRepository,
-        IChapterRepository chapterRepository, ISongRepository songRepository,
-        IAuthorshipRepository authorshipRepository, IChartRepository chartRepository)
+        IChapterRepository chapterRepository, ISongRepository songRepository, IChartRepository chartRepository)
     {
         _userRelationRepository = userRelationRepository;
         _regionRepository = regionRepository;
@@ -38,14 +36,13 @@ public class DtoMapper : IDtoMapper
         _recordRepository = recordRepository;
         _chapterRepository = chapterRepository;
         _songRepository = songRepository;
-        _authorshipRepository = authorshipRepository;
         _chartRepository = chartRepository;
     }
 
     public async Task<T> MapUserAsync<T>(User user, User? currentUser = null) where T : UserDto
     {
         var dto = _mapper.Map<T>(user);
-        dto.Roles = await _userManager.GetRolesAsync(user);
+        dto.Role = (await _userManager.GetRolesAsync(user)).First();
         dto.FollowerCount = await _userRelationRepository.CountFollowersAsync(user.Id);
         dto.FolloweeCount = await _userRelationRepository.CountFolloweesAsync(user.Id);
         if (user.RegionId != null) dto.Region = (await _regionRepository.GetRegionAsync((int)user.RegionId)).Code;

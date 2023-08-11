@@ -117,13 +117,13 @@ public partial class DataMigrationService : IHostedService
         await using var mysqlConnection = new MySqlConnection(_configuration.GetConnectionString("MySQLConnection"));
         if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
         await MigrateUsers(mysqlConnection, cancellationToken);
-        await MigrateUserRelations(mysqlConnection, cancellationToken);
+        // await MigrateUserRelations(mysqlConnection, cancellationToken);
         await MigrateChapters(mysqlConnection, cancellationToken);
         await MigrateSongs(mysqlConnection, cancellationToken);
         await MigrateSongAdmissions(mysqlConnection, cancellationToken);
         await MigrateCharts(mysqlConnection, cancellationToken);
-        await MigratePlayConfigurations(mysqlConnection, cancellationToken);
-        await MigrateRecords(mysqlConnection, cancellationToken);
+        // await MigratePlayConfigurations(mysqlConnection, cancellationToken);
+        await MigrateRecords(mysqlConnection, cancellationToken, 17117);
         await MigrateComments(mysqlConnection, cancellationToken);
         await MigrateReplies(mysqlConnection, cancellationToken);
         await MigrateVotes(mysqlConnection, cancellationToken);
@@ -465,10 +465,7 @@ public partial class DataMigrationService : IHostedService
                 index = reader.GetInt32("id");
                 var chapterId = _chapterDictionary[reader.GetInt32("chapter_id")];
                 var songId = _songDictionary[reader.GetInt32("song_id")];
-                if (await _admissionRepository.AdmissionExistsAsync(chapterId, songId))
-                {
-                    continue;
-                }
+                if (await _admissionRepository.AdmissionExistsAsync(chapterId, songId)) continue;
 
                 _logger.LogInformation(LogEvents.DataMigration, "Migrating Song Admission #{Id}", index);
 
@@ -1083,22 +1080,15 @@ public partial class DataMigrationService : IHostedService
                 index = reader.GetInt32("id");
                 var song = await reader.IsDBNullAsync("song_id", cancellationToken)
                     ? null
-                    :
-                    _songDictionary.TryGetValue(reader.GetInt32("song_id"), out var songId)
-                        ?
-                        await _songRepository.GetSongAsync(songId)
+                    : _songDictionary.TryGetValue(reader.GetInt32("song_id"), out var songId)
+                        ? await _songRepository.GetSongAsync(songId)
                         : null;
                 var songSubmission = await reader.IsDBNullAsync("song_upload_id", cancellationToken)
                     ? null
-                    :
-                    _songSubmissionDictionary.TryGetValue(reader.GetInt32("song_upload_id"), out var songSubmissionId)
-                        ?
-                        await _songSubmissionRepository.GetSongSubmissionAsync(songSubmissionId)
+                    : _songSubmissionDictionary.TryGetValue(reader.GetInt32("song_upload_id"), out var songSubmissionId)
+                        ? await _songSubmissionRepository.GetSongSubmissionAsync(songSubmissionId)
                         : null;
-                if (song == null && songSubmission == null)
-                {
-                    continue;
-                }
+                if (song == null && songSubmission == null) continue;
                 var title = song != null ? song.Title : songSubmission!.Title;
                 _logger.LogInformation(LogEvents.DataMigration, "Migrating Chart Submission #{Id} {Title}", index,
                     title);
@@ -1174,10 +1164,7 @@ public partial class DataMigrationService : IHostedService
             while (await reader.ReadAsync(cancellationToken))
             {
                 index = reader.GetInt32("id");
-                if (!_chartSubmissionDictionary.ContainsKey(reader.GetInt32("chart_id")))
-                {
-                    continue;
-                }
+                if (!_chartSubmissionDictionary.ContainsKey(reader.GetInt32("chart_id"))) continue;
                 _logger.LogInformation(LogEvents.DataMigration, "Migrating Volunteer Vote #{Id}", index);
 
                 var volunteerVote = new VolunteerVote
@@ -1219,10 +1206,7 @@ public partial class DataMigrationService : IHostedService
             while (await reader.ReadAsync(cancellationToken))
             {
                 index = reader.GetInt32("id");
-                if (!_chartSubmissionDictionary.ContainsKey(reader.GetInt32("chart_id")))
-                {
-                    continue;
-                }
+                if (!_chartSubmissionDictionary.ContainsKey(reader.GetInt32("chart_id"))) continue;
                 var chartSubmission =
                     await _chartSubmissionRepository.GetChartSubmissionAsync(
                         _chartSubmissionDictionary[reader.GetInt32("chart_id")]);

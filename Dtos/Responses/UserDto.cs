@@ -16,7 +16,7 @@ public class UserDto
 
     public string? Biography { get; set; }
 
-    public IList<string> Roles { get; set; } = null!;
+    public string Role { get; set; } = null!;
 
     public int Experience { get; set; }
 
