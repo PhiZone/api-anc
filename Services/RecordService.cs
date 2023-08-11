@@ -17,7 +17,7 @@ public class RecordService : IRecordService
         var totalCount = perfect + good + bad + miss;
         if (totalCount == 0) return 0;
 
-        return (int)Math.Round((double)(900000 * perfect + 58500 * good + 100000 * maxCombo) / totalCount, 0);
+        return (int)Math.Round((9e5 * perfect + 585e2 * good + 1e5 * maxCombo) / totalCount, 0);
     }
 
     public double CalculateAccuracy(int perfect, int good, int bad, int miss)
@@ -37,7 +37,7 @@ public class RecordService : IRecordService
         if (accuracy < 70) return 0;
 
         accuracy -= 55;
-        return accuracy * accuracy * difficulty / 2025 + 0.02 - stdDeviation / 2000;
+        return accuracy * accuracy * difficulty / 2025 + 2e-2 - stdDeviation / 2e3;
     }
 
     public double CalculateRksFactor(int perfectJudgment, int goodJudgment)
@@ -51,7 +51,7 @@ public class RecordService : IRecordService
                 return x * x / 7500 - 4 * x / 75 + 5;
             default:
                 x -= 100;
-                return -x * x * x / 4000000 + 1;
+                return -x * x * x / 4e6 + 1;
         }
     }
 
