@@ -1,4 +1,5 @@
-﻿using PhiZoneApi.Models;
+﻿using PhiZoneApi.Enums;
+using PhiZoneApi.Models;
 
 namespace PhiZoneApi.Dtos.Filters;
 
@@ -15,8 +16,10 @@ public class UserRelationFilterDto : FilterDto<UserRelation>
     public int? MaxFolloweeId { get; set; }
 
     public List<int>? RangeFolloweeId { get; set; }
+    
+    public List<UserRelationType>? RangeType { get; set; }
 
-    public DateTimeOffset? EarliestTime { get; set; }
+    public DateTimeOffset? EarliestDateCreated { get; set; }
 
-    public DateTimeOffset? LatestTime { get; set; }
+    public DateTimeOffset? LatestDateCreated { get; set; }
 }

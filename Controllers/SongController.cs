@@ -105,7 +105,7 @@ public class SongController : Controller
             Total = total,
             PerPage = dto.PerPage,
             HasPrevious = position > 0,
-            HasNext = position < total - total % dto.PerPage,
+            HasNext = dto.PerPage > 0 && position < total - total % dto.PerPage,
             Data = list
         });
     }
@@ -586,7 +586,7 @@ public class SongController : Controller
                                                     await _resourceService.HasPermission(currentUser,
                                                         Roles.Administrator));
         var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser,
-            e => hasPermission || e.Status == RequestStatus.Approved);
+            e => (hasPermission || (e.Status == RequestStatus.Approved && !e.Admittee.IsHidden)) && e.AdmitteeId == id);
 
         if ((currentUser == null || !await _resourceService.HasPermission(currentUser, Roles.Administrator)) &&
             song.IsHidden)
@@ -610,7 +610,7 @@ public class SongController : Controller
             Total = total,
             PerPage = dto.PerPage,
             HasPrevious = position > 0,
-            HasNext = position < total - total % dto.PerPage,
+            HasNext = dto.PerPage > 0 && position < total - total % dto.PerPage,
             Data = list
         });
     }
@@ -881,7 +881,7 @@ public class SongController : Controller
             Total = total,
             PerPage = dto.PerPage,
             HasPrevious = position > 0,
-            HasNext = position < total - total % dto.PerPage,
+            HasNext = dto.PerPage > 0 && position < total - total % dto.PerPage,
             Data = list
         });
     }
@@ -930,7 +930,7 @@ public class SongController : Controller
             Total = total,
             PerPage = dto.PerPage,
             HasPrevious = position > 0,
-            HasNext = position < total - total % dto.PerPage,
+            HasNext = dto.PerPage > 0 && position < total - total % dto.PerPage,
             Data = list
         });
     }
@@ -1072,7 +1072,7 @@ public class SongController : Controller
             Total = total,
             PerPage = dto.PerPage,
             HasPrevious = position > 0,
-            HasNext = position < total - total % dto.PerPage,
+            HasNext = dto.PerPage > 0 && position < total - total % dto.PerPage,
             Data = list
         });
     }

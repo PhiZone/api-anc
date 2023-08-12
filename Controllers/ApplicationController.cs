@@ -92,7 +92,7 @@ public class ApplicationController : Controller
             Total = total,
             PerPage = dto.PerPage,
             HasPrevious = position > 0,
-            HasNext = position < total - total % dto.PerPage,
+            HasNext = dto.PerPage > 0 && position < total - total % dto.PerPage,
             Data = list
         });
     }
@@ -373,7 +373,7 @@ public class ApplicationController : Controller
             Total = total,
             PerPage = dto.PerPage,
             HasPrevious = position > 0,
-            HasNext = position < total - total % dto.PerPage,
+            HasNext = dto.PerPage > 0 && position < total - total % dto.PerPage,
             Data = list
         });
     }
@@ -480,7 +480,7 @@ public class ApplicationController : Controller
             Total = total,
             PerPage = dto.PerPage,
             HasPrevious = position > 0,
-            HasNext = position < total - total % dto.PerPage,
+            HasNext = dto.PerPage > 0 && position < total - total % dto.PerPage,
             Data = list
         });
     }
