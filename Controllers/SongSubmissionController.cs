@@ -90,11 +90,7 @@ public class SongSubmissionController : Controller
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        dto.PerPage = dto.PerPage > 0
-            ? dto.PerPage <= _dataSettings.Value.PaginationMaxPerPage
-                ? dto.PerPage
-                : _dataSettings.Value.PaginationMaxPerPage
-            : _dataSettings.Value.PaginationPerPage;
+        dto.PerPage = dto.PerPage > 0 ? dto.PerPage : dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : -1;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser,
             submission => isVolunteer || submission.OwnerId == currentUser.Id);

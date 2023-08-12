@@ -68,11 +68,7 @@ public class CommentController : Controller
         [FromQuery] CommentFilterDto? filterDto = null)
     {
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        dto.PerPage = dto.PerPage > 0
-            ? dto.PerPage <= _dataSettings.Value.PaginationMaxPerPage
-                ? dto.PerPage
-                : _dataSettings.Value.PaginationMaxPerPage
-            : _dataSettings.Value.PaginationPerPage;
+        dto.PerPage = dto.PerPage > 0 ? dto.PerPage : dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : -1;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser);
         var comments = await _commentRepository.GetCommentsAsync(dto.Order, dto.Desc, position,
@@ -188,11 +184,7 @@ public class CommentController : Controller
         [FromQuery] ReplyFilterDto? filterDto = null)
     {
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        dto.PerPage = dto.PerPage > 0
-            ? dto.PerPage <= _dataSettings.Value.PaginationMaxPerPage
-                ? dto.PerPage
-                : _dataSettings.Value.PaginationMaxPerPage
-            : _dataSettings.Value.PaginationPerPage;
+        dto.PerPage = dto.PerPage > 0 ? dto.PerPage : dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : -1;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser);
         if (!await _commentRepository.CommentExistsAsync(id))
@@ -281,11 +273,7 @@ public class CommentController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetCommentLikes([FromRoute] Guid id, [FromQuery] ArrayWithTimeRequestDto dto)
     {
-        dto.PerPage = dto.PerPage > 0
-            ? dto.PerPage <= _dataSettings.Value.PaginationMaxPerPage
-                ? dto.PerPage
-                : _dataSettings.Value.PaginationMaxPerPage
-            : _dataSettings.Value.PaginationPerPage;
+        dto.PerPage = dto.PerPage > 0 ? dto.PerPage : dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : -1;
         var position = dto.PerPage * (dto.Page - 1);
         if (!await _commentRepository.CommentExistsAsync(id))
             return NotFound(new ResponseDto<object>

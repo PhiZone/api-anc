@@ -56,11 +56,7 @@ public class RegionController : Controller
         [FromQuery] RegionFilterDto? filterDto = null)
     {
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        dto.PerPage = dto.PerPage > 0
-            ? dto.PerPage <= _dataSettings.Value.PaginationMaxPerPage
-                ? dto.PerPage
-                : _dataSettings.Value.PaginationMaxPerPage
-            : _dataSettings.Value.PaginationPerPage;
+        dto.PerPage = dto.PerPage > 0 ? dto.PerPage : dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : -1;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser);
         var list = _mapper.Map<List<RegionDto>>(await _regionRepository.GetRegionsAsync(dto.Order, dto.Desc, position,
@@ -153,11 +149,7 @@ public class RegionController : Controller
         [FromQuery] UserFilterDto? filterDto = null)
     {
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        dto.PerPage = dto.PerPage > 0
-            ? dto.PerPage <= _dataSettings.Value.PaginationMaxPerPage
-                ? dto.PerPage
-                : _dataSettings.Value.PaginationMaxPerPage
-            : _dataSettings.Value.PaginationPerPage;
+        dto.PerPage = dto.PerPage > 0 ? dto.PerPage : dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : -1;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser);
         if (!await _regionRepository.RegionExistsAsync(code))
@@ -199,11 +191,7 @@ public class RegionController : Controller
         [FromQuery] UserFilterDto? filterDto = null)
     {
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        dto.PerPage = dto.PerPage > 0
-            ? dto.PerPage <= _dataSettings.Value.PaginationMaxPerPage
-                ? dto.PerPage
-                : _dataSettings.Value.PaginationMaxPerPage
-            : _dataSettings.Value.PaginationPerPage;
+        dto.PerPage = dto.PerPage > 0 ? dto.PerPage : dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : -1;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser);
         if (!await _regionRepository.RegionExistsAsync(id))

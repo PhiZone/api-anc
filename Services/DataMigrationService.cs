@@ -115,19 +115,19 @@ public partial class DataMigrationService : IHostedService
     private async Task MigrateDataAsync(CancellationToken cancellationToken)
     {
         await using var mysqlConnection = new MySqlConnection(_configuration.GetConnectionString("MySQLConnection"));
-        if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
+        await mysqlConnection.OpenAsync(cancellationToken);
         await MigrateUsers(mysqlConnection, cancellationToken);
-        // await MigrateUserRelations(mysqlConnection, cancellationToken);
+        await MigrateUserRelations(mysqlConnection, cancellationToken);
         await MigrateChapters(mysqlConnection, cancellationToken);
         await MigrateSongs(mysqlConnection, cancellationToken);
         await MigrateSongAdmissions(mysqlConnection, cancellationToken);
         await MigrateCharts(mysqlConnection, cancellationToken);
-        // await MigratePlayConfigurations(mysqlConnection, cancellationToken);
-        // await MigrateRecords(mysqlConnection, cancellationToken);
-        // await MigrateComments(mysqlConnection, cancellationToken);
-        // await MigrateReplies(mysqlConnection, cancellationToken);
-        // await MigrateVotes(mysqlConnection, cancellationToken);
-        // await MigrateLikes(mysqlConnection, cancellationToken);
+        await MigratePlayConfigurations(mysqlConnection, cancellationToken);
+        await MigrateRecords(mysqlConnection, cancellationToken);
+        await MigrateComments(mysqlConnection, cancellationToken);
+        await MigrateReplies(mysqlConnection, cancellationToken);
+        await MigrateVotes(mysqlConnection, cancellationToken);
+        await MigrateLikes(mysqlConnection, cancellationToken);
         await MigrateSongSubmissions(mysqlConnection, cancellationToken);
         await MigrateChartSubmissions(mysqlConnection, cancellationToken);
         await MigrateVolunteerVotes(mysqlConnection, cancellationToken);

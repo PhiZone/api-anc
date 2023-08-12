@@ -77,11 +77,7 @@ public class UserController : Controller
         [FromQuery] UserFilterDto? filterDto = null)
     {
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        dto.PerPage = dto.PerPage > 0
-            ? dto.PerPage <= _dataSettings.Value.PaginationMaxPerPage
-                ? dto.PerPage
-                : _dataSettings.Value.PaginationMaxPerPage
-            : _dataSettings.Value.PaginationPerPage;
+        dto.PerPage = dto.PerPage > 0 ? dto.PerPage : dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : -1;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser);
         var users = await _userRepository.GetUsersAsync(dto.Order, dto.Desc, position, dto.PerPage, dto.Search,
@@ -416,11 +412,7 @@ public class UserController : Controller
             });
 
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        dto.PerPage = dto.PerPage > 0
-            ? dto.PerPage <= _dataSettings.Value.PaginationMaxPerPage
-                ? dto.PerPage
-                : _dataSettings.Value.PaginationMaxPerPage
-            : _dataSettings.Value.PaginationPerPage;
+        dto.PerPage = dto.PerPage > 0 ? dto.PerPage : dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : -1;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser);
         var followers =
@@ -468,11 +460,7 @@ public class UserController : Controller
             });
 
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        dto.PerPage = dto.PerPage > 0
-            ? dto.PerPage <= _dataSettings.Value.PaginationMaxPerPage
-                ? dto.PerPage
-                : _dataSettings.Value.PaginationMaxPerPage
-            : _dataSettings.Value.PaginationPerPage;
+        dto.PerPage = dto.PerPage > 0 ? dto.PerPage : dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : -1;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser);
         var followees =

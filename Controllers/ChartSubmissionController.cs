@@ -101,11 +101,7 @@ public class ChartSubmissionController : Controller
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        dto.PerPage = dto.PerPage > 0
-            ? dto.PerPage <= _dataSettings.Value.PaginationMaxPerPage
-                ? dto.PerPage
-                : _dataSettings.Value.PaginationMaxPerPage
-            : _dataSettings.Value.PaginationPerPage;
+        dto.PerPage = dto.PerPage > 0 ? dto.PerPage : dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : -1;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser,
             submission => isVolunteer || submission.OwnerId == currentUser.Id);
@@ -689,11 +685,7 @@ public class ChartSubmissionController : Controller
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        dto.PerPage = dto.PerPage > 0
-            ? dto.PerPage <= _dataSettings.Value.PaginationMaxPerPage
-                ? dto.PerPage
-                : _dataSettings.Value.PaginationMaxPerPage
-            : _dataSettings.Value.PaginationPerPage;
+        dto.PerPage = dto.PerPage > 0 ? dto.PerPage : dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : -1;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser,
             e => e.ChartSubmissionId == id);
@@ -1146,11 +1138,7 @@ public class ChartSubmissionController : Controller
     public async Task<IActionResult> GetChartSubmissionVotes([FromRoute] Guid id,
         [FromQuery] ArrayWithTimeRequestDto dto)
     {
-        dto.PerPage = dto.PerPage > 0
-            ? dto.PerPage <= _dataSettings.Value.PaginationMaxPerPage
-                ? dto.PerPage
-                : _dataSettings.Value.PaginationMaxPerPage
-            : _dataSettings.Value.PaginationPerPage;
+        dto.PerPage = dto.PerPage > 0 ? dto.PerPage : dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : -1;
         var position = dto.PerPage * (dto.Page - 1);
 
         if (!await _chartSubmissionRepository.ChartSubmissionExistsAsync(id))
