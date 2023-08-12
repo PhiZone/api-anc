@@ -201,6 +201,70 @@ public class UserController : Controller
     }
 
     /// <summary>
+    ///     Creates a new user.
+    /// </summary>
+    /// <param name="dto">
+    ///     User Name, Email, Password, Language, Gender (optional), Biography (optional),
+    ///     Date of Birth (optional)
+    /// </param>
+    /// <returns>An empty body.</returns>
+    /// <response code="201">Returns an empty body. Sends a confirmation email to the user.</response>
+    /// <response code="400">
+    ///     When
+    ///     1. the input email address / user name has been occupied;
+    ///     2. one of the input fields has failed on data validation.
+    /// </response>
+    /// <response code="500">When a Redis / Mail Service error has occurred.</response>
+    [HttpPost("brief")]
+    [Consumes("application/json")]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> Register([FromBody] UserRegistrationBriefDto dto)
+    {
+        var user = await _userManager.FindByEmailAsync(dto.Email);
+        if (user != null)
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.EmailOccupied
+            });
+
+        user = await _userManager.FindByNameAsync(dto.UserName);
+        if (user != null)
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNameOccupied
+            });
+
+        user = new User
+        {
+            SecurityStamp = Guid.NewGuid().ToString(),
+            UserName = dto.UserName,
+            Email = dto.Email,
+            Language = dto.Language,
+            Gender = (int)dto.Gender,
+            Biography = dto.Biography,
+            RegionId = (await _regionRepository.GetRegionAsync(dto.RegionCode)).Id,
+            DateOfBirth =
+                dto.DateOfBirth != null
+                    ? new DateTimeOffset(dto.DateOfBirth.GetValueOrDefault().DateTime, TimeSpan.Zero)
+                    : null,
+            DateJoined = DateTimeOffset.UtcNow
+        };
+
+        user.PasswordHash = _userManager.PasswordHasher.HashPassword(user, dto.Password);
+
+        var errorCode =
+            await _mailService.PublishEmailAsync(user, EmailRequestMode.EmailConfirmation, SucceedingAction.Create);
+        if (!errorCode.Equals(string.Empty))
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = errorCode });
+
+        return StatusCode(StatusCodes.Status201Created);
+    }
+
+    /// <summary>
     ///     Updates a user.
     /// </summary>
     /// <param name="id">A user's ID.</param>

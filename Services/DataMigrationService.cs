@@ -656,7 +656,7 @@ public partial class DataMigrationService : IHostedService
                 var bad = reader.GetInt32("bad");
                 var miss = reader.GetInt32("miss");
                 var perfectJudgment = reader.GetInt32("perfect_judgment");
-                var goodJudgment = reader.GetInt32("perfect_judgment");
+                var goodJudgment = reader.GetInt32("good_judgment");
                 var score = _recordService.CalculateScore(perfect, goodEarly + goodLate, bad, miss, maxCombo);
                 var accuracy = _recordService.CalculateAccuracy(perfect, goodEarly + goodLate, bad, miss);
                 var rksFactor = _recordService.CalculateRksFactor(perfectJudgment, goodJudgment);
