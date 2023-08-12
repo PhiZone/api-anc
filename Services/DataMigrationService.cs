@@ -1101,7 +1101,7 @@ public partial class DataMigrationService : IHostedService
                         e.SongId == (song != null ? song.Id : null) &&
                         e.SongSubmissionId == (songSubmission != null ? songSubmission.Id : null) &&
                         e.LevelType == levelType && e.Level == level &&
-                        e.OwnerId == _userDictionary[reader.GetInt32("owner_id")]) > 0)
+                        e.OwnerId == _userDictionary[reader.GetInt32("uploader_id")]) > 0)
                 {
                     _chartSubmissionDictionary.Add(index,
                         (await _chartSubmissionRepository.GetChartSubmissionsAsync("DateCreated", false, 0, -1, null,
@@ -1109,7 +1109,7 @@ public partial class DataMigrationService : IHostedService
                                 e.SongId == (song != null ? song.Id : null) &&
                                 e.SongSubmissionId == (songSubmission != null ? songSubmission.Id : null) &&
                                 e.LevelType == levelType && e.Level == level &&
-                                e.OwnerId == _userDictionary[reader.GetInt32("owner_id")])).FirstOrDefault()!.Id);
+                                e.OwnerId == _userDictionary[reader.GetInt32("uploader_id")])).FirstOrDefault()!.Id);
                     continue;
                 }
 
