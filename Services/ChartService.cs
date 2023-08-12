@@ -97,9 +97,11 @@ public partial class ChartService : IChartService
         dto.BpmList.Sort();
         foreach (var line in dto.JudgeLineList)
         {
+            if (line == null) continue;
             if (line.EventLayers != null)
                 foreach (var layer in line.EventLayers)
                 {
+                    if (layer == null) continue;
                     layer.AlphaEvents?.Sort();
                     layer.MoveXEvents?.Sort();
                     layer.MoveYEvents?.Sort();
@@ -118,7 +120,7 @@ public partial class ChartService : IChartService
             }
 
             line.Notes?.Sort();
-            line.NumOfNotes = line.Notes?.Count(note => note.IsFake != 1) ?? 0;
+            line.NumOfNotes = line.Notes?.Count(note => note != null && note.IsFake != 1) ?? 0;
         }
 
         return dto;
@@ -209,8 +211,8 @@ public partial class ChartService : IChartService
 
         foreach (var line in dto.JudgeLineList)
         {
-            if (line.Notes == null) continue;
-            noteCount += line.Notes.Count(note => note.IsFake != 1);
+            if (line?.Notes == null) continue;
+            noteCount += line.Notes.Count(note => note != null && note.IsFake != 1);
         }
 
         return noteCount;
@@ -227,102 +229,149 @@ public partial class ChartService : IChartService
         {
             var dto = JsonConvert.DeserializeObject<RpeJsonDto>(input);
             if (dto == null) return null;
-
+            dto.BpmList = dto.BpmList.Where(e => e != null).ToList();
             foreach (var info in dto.BpmList)
-                if (info.StartTime[1] != 0 && info.StartTime[2] == 0)
+                if (info!.StartTime[1] != 0 && info.StartTime[2] == 0)
                     return null;
-
+            dto.JudgeLineGroup = dto.JudgeLineGroup.Where(e => e != null).ToList();
+            dto.JudgeLineList = dto.JudgeLineList.Where(e => e != null).ToList();
             foreach (var line in dto.JudgeLineList)
             {
-                if (line.Notes != null)
+                if (line!.Notes != null)
+                {
+                    line.Notes = line.Notes.Where(e => e != null).ToList();
                     foreach (var note in line.Notes)
                     {
-                        if (note.StartTime[1] != 0 && note.StartTime[2] == 0) return null;
+                        if (note!.StartTime[1] != 0 && note.StartTime[2] == 0) return null;
                         if (note.EndTime[1] != 0 && note.EndTime[2] == 0) return null;
                     }
+                }
+
+                if (line.AlphaControl != null) line.AlphaControl = line.AlphaControl.Where(e => e != null).ToList();
+                if (line.Notes != null) line.Notes = line.Notes.Where(e => e != null).ToList();
+                if (line.PosControl != null) line.PosControl = line.PosControl.Where(e => e != null).ToList();
+                if (line.SizeControl != null) line.SizeControl = line.SizeControl.Where(e => e != null).ToList();
+                if (line.SkewControl != null) line.SkewControl = line.SkewControl.Where(e => e != null).ToList();
+                if (line.YControl != null) line.YControl = line.YControl.Where(e => e != null).ToList();
 
                 if (line.EventLayers != null)
+                {
+                    line.EventLayers = line.EventLayers.Where(e => e != null).ToList();
                     foreach (var layer in line.EventLayers)
                     {
-                        if (layer.AlphaEvents != null)
+                        if (layer!.AlphaEvents != null)
+                        {
+                            layer.AlphaEvents = layer.AlphaEvents.Where(e => e != null).ToList();
                             foreach (var e in layer.AlphaEvents)
                             {
-                                if (e.StartTime[1] != 0 && e.StartTime[2] == 0) return null;
+                                if (e!.StartTime[1] != 0 && e.StartTime[2] == 0) return null;
                                 if (e.EndTime[1] != 0 && e.EndTime[2] == 0) return null;
                             }
+                        }
 
                         if (layer.MoveXEvents != null)
+                        {
+                            layer.MoveXEvents = layer.MoveXEvents.Where(e => e != null).ToList();
                             foreach (var e in layer.MoveXEvents)
                             {
-                                if (e.StartTime[1] != 0 && e.StartTime[2] == 0) return null;
+                                if (e!.StartTime[1] != 0 && e.StartTime[2] == 0) return null;
                                 if (e.EndTime[1] != 0 && e.EndTime[2] == 0) return null;
                             }
+                        }
 
                         if (layer.MoveYEvents != null)
+                        {
+                            layer.MoveYEvents = layer.MoveYEvents.Where(e => e != null).ToList();
                             foreach (var e in layer.MoveYEvents)
                             {
-                                if (e.StartTime[1] != 0 && e.StartTime[2] == 0) return null;
+                                if (e!.StartTime[1] != 0 && e.StartTime[2] == 0) return null;
                                 if (e.EndTime[1] != 0 && e.EndTime[2] == 0) return null;
                             }
+                        }
 
                         if (layer.RotateEvents != null)
+                        {
+                            layer.RotateEvents = layer.RotateEvents.Where(e => e != null).ToList();
                             foreach (var e in layer.RotateEvents)
                             {
-                                if (e.StartTime[1] != 0 && e.StartTime[2] == 0) return null;
+                                if (e!.StartTime[1] != 0 && e.StartTime[2] == 0) return null;
                                 if (e.EndTime[1] != 0 && e.EndTime[2] == 0) return null;
                             }
+                        }
 
                         if (layer.SpeedEvents != null)
+                        {
+                            layer.SpeedEvents = layer.SpeedEvents.Where(e => e != null).ToList();
                             foreach (var e in layer.SpeedEvents)
                             {
-                                if (e.StartTime[1] != 0 && e.StartTime[2] == 0) return null;
+                                if (e!.StartTime[1] != 0 && e.StartTime[2] == 0) return null;
                                 if (e.EndTime[1] != 0 && e.EndTime[2] == 0) return null;
                             }
+                        }
                     }
+                }
 
                 if (line.Extended != null)
                 {
                     if (line.Extended.ColorEvents != null)
+                    {
+                        line.Extended.ColorEvents = line.Extended.ColorEvents.Where(e => e != null).ToList();
                         foreach (var e in line.Extended.ColorEvents)
                         {
-                            if (e.StartTime[1] != 0 && e.StartTime[2] == 0) return null;
+                            if (e!.StartTime[1] != 0 && e.StartTime[2] == 0) return null;
                             if (e.EndTime[1] != 0 && e.EndTime[2] == 0) return null;
                         }
+                    }
 
                     if (line.Extended.InclineEvents != null)
+                    {
+                        line.Extended.InclineEvents = line.Extended.InclineEvents.Where(e => e != null).ToList();
                         foreach (var e in line.Extended.InclineEvents)
                         {
-                            if (e.StartTime[1] != 0 && e.StartTime[2] == 0) return null;
+                            if (e!.StartTime[1] != 0 && e.StartTime[2] == 0) return null;
                             if (e.EndTime[1] != 0 && e.EndTime[2] == 0) return null;
                         }
+                    }
 
                     if (line.Extended.PaintEvents != null)
+                    {
+                        line.Extended.PaintEvents = line.Extended.PaintEvents.Where(e => e != null).ToList();
                         foreach (var e in line.Extended.PaintEvents)
                         {
-                            if (e.StartTime[1] != 0 && e.StartTime[2] == 0) return null;
+                            if (e!.StartTime[1] != 0 && e.StartTime[2] == 0) return null;
                             if (e.EndTime[1] != 0 && e.EndTime[2] == 0) return null;
                         }
+                    }
 
                     if (line.Extended.ScaleXEvents != null)
+                    {
+                        line.Extended.ScaleXEvents = line.Extended.ScaleXEvents.Where(e => e != null).ToList();
                         foreach (var e in line.Extended.ScaleXEvents)
                         {
-                            if (e.StartTime[1] != 0 && e.StartTime[2] == 0) return null;
+                            if (e!.StartTime[1] != 0 && e.StartTime[2] == 0) return null;
                             if (e.EndTime[1] != 0 && e.EndTime[2] == 0) return null;
                         }
+                    }
 
                     if (line.Extended.ScaleYEvents != null)
+                    {
+                        line.Extended.ScaleYEvents = line.Extended.ScaleYEvents.Where(e => e != null).ToList();
                         foreach (var e in line.Extended.ScaleYEvents)
                         {
-                            if (e.StartTime[1] != 0 && e.StartTime[2] == 0) return null;
+                            if (e!.StartTime[1] != 0 && e.StartTime[2] == 0) return null;
                             if (e.EndTime[1] != 0 && e.EndTime[2] == 0) return null;
                         }
+                    }
 
                     if (line.Extended.TextEvents != null)
+                    {
+                        line.Extended.TextEvents = line.Extended.TextEvents.Where(e => e != null).ToList();
                         foreach (var e in line.Extended.TextEvents)
                         {
-                            if (e.StartTime[1] != 0 && e.StartTime[2] == 0) return null;
+                            if (e!.StartTime[1] != 0 && e.StartTime[2] == 0) return null;
                             if (e.EndTime[1] != 0 && e.EndTime[2] == 0) return null;
                         }
+                    }
                 }
             }
 

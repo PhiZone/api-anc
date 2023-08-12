@@ -23,7 +23,7 @@ using PhiZoneApi.Utils;
 
 namespace PhiZoneApi.Controllers;
 
-[Route("submissions/charts")]
+[Route("studio/charts")]
 [ApiVersion("2.0")]
 [ApiController]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]

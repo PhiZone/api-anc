@@ -3,6 +3,7 @@ using PhiZoneApi.Constants;
 using PhiZoneApi.Dtos.Responses;
 using PhiZoneApi.Enums;
 using PhiZoneApi.Interfaces;
+using StackExchange.Redis;
 
 namespace PhiZoneApi.Controllers;
 
@@ -19,10 +20,12 @@ public class RootController : Controller
     private readonly IReplyRepository _replyRepository;
     private readonly ISongRepository _songRepository;
     private readonly IUserRepository _userRepository;
+    private readonly IConnectionMultiplexer _redis;
 
     public RootController(IUserRepository userRepository, IChapterRepository chapterRepository,
         ISongRepository songRepository, IChartRepository chartRepository, ICommentRepository commentRepository,
-        ILikeRepository likeRepository, IRecordRepository recordRepository, IReplyRepository replyRepository)
+        ILikeRepository likeRepository, IRecordRepository recordRepository, IReplyRepository replyRepository,
+        IConnectionMultiplexer redis)
     {
         _userRepository = userRepository;
         _chapterRepository = chapterRepository;
@@ -32,6 +35,7 @@ public class RootController : Controller
         _likeRepository = likeRepository;
         _recordRepository = recordRepository;
         _replyRepository = replyRepository;
+        _redis = redis;
     }
 
     /// <summary>
@@ -59,6 +63,44 @@ public class RootController : Controller
                 CommentCount = await _commentRepository.CountCommentsAsync(),
                 ReplyCount = await _replyRepository.CountRepliesAsync()
             }
+        });
+    }
+
+    /// <summary>
+    ///     Retrieves headline.
+    /// </summary>
+    /// <returns>Headline.</returns>
+    /// <response code="200">Returns headline.</response>
+    [HttpGet("headline")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<HeadlineDto>))]
+    public async Task<IActionResult> GetHeadline()
+    {
+        var db = _redis.GetDatabase();
+        return Ok(new ResponseDto<HeadlineDto>
+        {
+            Status = ResponseStatus.Ok,
+            Code = ResponseCodes.Ok,
+            Data = new HeadlineDto { Headline = await db.StringGetAsync("HEADLINE") }
+        });
+    }
+
+    /// <summary>
+    ///     Retrieves studio's headline.
+    /// </summary>
+    /// <returns>Studio's Headline.</returns>
+    /// <response code="200">Returns studio's headline.</response>
+    [HttpGet("studio/headline")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<HeadlineDto>))]
+    public async Task<IActionResult> GetStudioHeadline()
+    {
+        var db = _redis.GetDatabase();
+        return Ok(new ResponseDto<HeadlineDto>
+        {
+            Status = ResponseStatus.Ok,
+            Code = ResponseCodes.Ok,
+            Data = new HeadlineDto { Headline = await db.StringGetAsync("STUDIO_HEADLINE") }
         });
     }
 }

@@ -11,4 +11,6 @@ public class UserDetailedDto : UserDto
     public bool PhoneNumberConfirmed { get; set; }
 
     public bool TwoFactorEnabled { get; set; }
+
+    public int Notifications { get; set; } = 0;
 }

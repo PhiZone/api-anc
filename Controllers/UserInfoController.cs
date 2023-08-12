@@ -12,6 +12,7 @@ using PhiZoneApi.Enums;
 using PhiZoneApi.Filters;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
+
 // ReSharper disable RouteTemplates.ActionRoutePrefixCanBeExtractedToControllerRoute
 
 namespace PhiZoneApi.Controllers;
@@ -26,15 +27,18 @@ public class UserInfoController : Controller
     private readonly IResourceService _resourceService;
     private readonly UserManager<User> _userManager;
     private readonly IUserRepository _userRepository;
+    private readonly INotificationRepository _notificationRepository;
     private readonly ITapTapService _tapTapService;
 
-    public UserInfoController(UserManager<User> userManager, IDtoMapper mapper, IResourceService resourceService, IUserRepository userRepository, ITapTapService tapTapService)
+    public UserInfoController(UserManager<User> userManager, IDtoMapper mapper, IResourceService resourceService,
+        IUserRepository userRepository, ITapTapService tapTapService, INotificationRepository notificationRepository)
     {
         _userManager = userManager;
         _mapper = mapper;
         _resourceService = resourceService;
         _userRepository = userRepository;
         _tapTapService = tapTapService;
+        _notificationRepository = notificationRepository;
     }
 
     /// <summary>
@@ -66,6 +70,9 @@ public class UserInfoController : Controller
                 });
 
         var dto = await _mapper.MapUserAsync<UserDetailedDto>(user);
+        dto.Notifications =
+            await _notificationRepository.CountNotificationsAsync(predicate: e =>
+                e.OwnerId == user.Id && e.DateRead == null);
         return Ok(new ResponseDto<UserDetailedDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
     }
 
@@ -156,8 +163,7 @@ public class UserInfoController : Controller
         if (currentUser.TapUnionId == null)
             return BadRequest(new ResponseDto<object>
             {
-                Status = ResponseStatus.ErrorBrief,
-                Code = ResponseCodes.AlreadyDone
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
             });
 
         currentUser.TapUnionId = null;

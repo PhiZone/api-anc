@@ -117,17 +117,17 @@ public partial class DataMigrationService : IHostedService
         await using var mysqlConnection = new MySqlConnection(_configuration.GetConnectionString("MySQLConnection"));
         if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
         await MigrateUsers(mysqlConnection, cancellationToken);
-        await MigrateUserRelations(mysqlConnection, cancellationToken);
+        // await MigrateUserRelations(mysqlConnection, cancellationToken);
         await MigrateChapters(mysqlConnection, cancellationToken);
         await MigrateSongs(mysqlConnection, cancellationToken);
         await MigrateSongAdmissions(mysqlConnection, cancellationToken);
         await MigrateCharts(mysqlConnection, cancellationToken);
-        await MigratePlayConfigurations(mysqlConnection, cancellationToken);
-        await MigrateRecords(mysqlConnection, cancellationToken);
-        await MigrateComments(mysqlConnection, cancellationToken);
-        await MigrateReplies(mysqlConnection, cancellationToken);
-        await MigrateVotes(mysqlConnection, cancellationToken);
-        await MigrateLikes(mysqlConnection, cancellationToken);
+        // await MigratePlayConfigurations(mysqlConnection, cancellationToken);
+        // await MigrateRecords(mysqlConnection, cancellationToken);
+        // await MigrateComments(mysqlConnection, cancellationToken);
+        // await MigrateReplies(mysqlConnection, cancellationToken);
+        // await MigrateVotes(mysqlConnection, cancellationToken);
+        // await MigrateLikes(mysqlConnection, cancellationToken);
         await MigrateSongSubmissions(mysqlConnection, cancellationToken);
         await MigrateChartSubmissions(mysqlConnection, cancellationToken);
         await MigrateVolunteerVotes(mysqlConnection, cancellationToken);
@@ -1080,15 +1080,39 @@ public partial class DataMigrationService : IHostedService
                 index = reader.GetInt32("id");
                 var song = await reader.IsDBNullAsync("song_id", cancellationToken)
                     ? null
-                    : _songDictionary.TryGetValue(reader.GetInt32("song_id"), out var songId)
-                        ? await _songRepository.GetSongAsync(songId)
+                    :
+                    _songDictionary.TryGetValue(reader.GetInt32("song_id"), out var songId)
+                        ?
+                        await _songRepository.GetSongAsync(songId)
                         : null;
                 var songSubmission = await reader.IsDBNullAsync("song_upload_id", cancellationToken)
                     ? null
-                    : _songSubmissionDictionary.TryGetValue(reader.GetInt32("song_upload_id"), out var songSubmissionId)
-                        ? await _songSubmissionRepository.GetSongSubmissionAsync(songSubmissionId)
+                    :
+                    _songSubmissionDictionary.TryGetValue(reader.GetInt32("song_upload_id"), out var songSubmissionId)
+                        ?
+                        await _songSubmissionRepository.GetSongSubmissionAsync(songSubmissionId)
                         : null;
                 if (song == null && songSubmission == null) continue;
+
+                var levelType = (ChartLevel)reader.GetInt32("level_type");
+                var level = reader.GetString("level");
+                var difficulty = reader.GetDouble("difficulty");
+                if (await _chartSubmissionRepository.CountChartSubmissionsAsync(predicate: e =>
+                        e.SongId == (song != null ? song.Id : null) &&
+                        e.SongSubmissionId == (songSubmission != null ? songSubmission.Id : null) &&
+                        e.LevelType == levelType && e.Level == level &&
+                        e.OwnerId == _userDictionary[reader.GetInt32("owner_id")]) > 0)
+                {
+                    _chartSubmissionDictionary.Add(index,
+                        (await _chartSubmissionRepository.GetChartSubmissionsAsync("DateCreated", false, 0, -1, null,
+                            e =>
+                                e.SongId == (song != null ? song.Id : null) &&
+                                e.SongSubmissionId == (songSubmission != null ? songSubmission.Id : null) &&
+                                e.LevelType == levelType && e.Level == level &&
+                                e.OwnerId == _userDictionary[reader.GetInt32("owner_id")])).FirstOrDefault()!.Id);
+                    continue;
+                }
+
                 var title = song != null ? song.Title : songSubmission!.Title;
                 _logger.LogInformation(LogEvents.DataMigration, "Migrating Chart Submission #{Id} {Title}", index,
                     title);
@@ -1110,9 +1134,9 @@ public partial class DataMigrationService : IHostedService
 
                 var chartSubmission = new ChartSubmission
                 {
-                    LevelType = (ChartLevel)reader.GetInt32("level_type"),
-                    Level = reader.GetString("level"),
-                    Difficulty = reader.GetDouble("difficulty"),
+                    LevelType = levelType,
+                    Level = level,
+                    Difficulty = difficulty,
                     AuthorName = authorName,
                     File = chartSubmissionInfo!.Value.Item1,
                     FileChecksum = chartSubmissionInfo.Value.Item2,

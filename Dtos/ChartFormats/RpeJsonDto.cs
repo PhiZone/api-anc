@@ -5,13 +5,13 @@ namespace PhiZoneApi.Dtos.ChartFormats;
 
 public class RpeJsonDto : ChartFormatDto
 {
-    [JsonProperty("BPMList")] public List<BpmInfo> BpmList { get; set; } = null!;
+    [JsonProperty("BPMList")] public List<BpmInfo?> BpmList { get; set; } = null!;
 
     [JsonProperty("META")] public Meta Meta { get; set; } = null!;
 
-    [JsonProperty("judgeLineGroup")] public List<string> JudgeLineGroup { get; set; } = null!;
+    [JsonProperty("judgeLineGroup")] public List<string?> JudgeLineGroup { get; set; } = null!;
 
-    [JsonProperty("judgeLineList")] public List<JudgeLine> JudgeLineList { get; set; } = null!;
+    [JsonProperty("judgeLineList")] public List<JudgeLine?> JudgeLineList { get; set; } = null!;
 }
 
 public class Meta
@@ -59,11 +59,11 @@ public class JudgeLine
 
     [JsonProperty("Texture")] public string Texture { get; set; } = null!;
 
-    [JsonProperty("alphaControl")] public List<AlphaControl>? AlphaControl { get; set; }
+    [JsonProperty("alphaControl")] public List<AlphaControl?>? AlphaControl { get; set; }
 
     [JsonProperty("bpmfactor")] public double BpmFactor { get; set; }
 
-    [JsonProperty("eventLayers")] public List<EventLayer>? EventLayers { get; set; }
+    [JsonProperty("eventLayers")] public List<EventLayer?>? EventLayers { get; set; }
 
     [JsonProperty("extended")] public ExtendedEventLayer? Extended { get; set; }
 
@@ -71,17 +71,17 @@ public class JudgeLine
 
     [JsonProperty("isCover")] public int IsCover { get; set; }
 
-    [JsonProperty("notes")] public List<Note>? Notes { get; set; }
+    [JsonProperty("notes")] public List<Note?>? Notes { get; set; }
 
     [JsonProperty("numOfNotes")] public int NumOfNotes { get; set; }
 
-    [JsonProperty("posControl")] public List<PosControl>? PosControl { get; set; }
+    [JsonProperty("posControl")] public List<PosControl?>? PosControl { get; set; }
 
-    [JsonProperty("sizeControl")] public List<SizeControl>? SizeControl { get; set; }
+    [JsonProperty("sizeControl")] public List<SizeControl?>? SizeControl { get; set; }
 
-    [JsonProperty("skewControl")] public List<SkewControl>? SkewControl { get; set; }
+    [JsonProperty("skewControl")] public List<SkewControl?>? SkewControl { get; set; }
 
-    [JsonProperty("yControl")] public List<YControl>? YControl { get; set; }
+    [JsonProperty("yControl")] public List<YControl?>? YControl { get; set; }
 
     [JsonProperty("zOrder")] public int ZOrder { get; set; }
 }
@@ -126,30 +126,30 @@ public class Note : IComparable<Note>
 
 public class EventLayer
 {
-    [JsonProperty("alphaEvents")] public List<AlphaEvent>? AlphaEvents { get; set; }
+    [JsonProperty("alphaEvents")] public List<AlphaEvent?>? AlphaEvents { get; set; }
 
-    [JsonProperty("moveXEvents")] public List<Event>? MoveXEvents { get; set; }
+    [JsonProperty("moveXEvents")] public List<Event?>? MoveXEvents { get; set; }
 
-    [JsonProperty("moveYEvents")] public List<Event>? MoveYEvents { get; set; }
+    [JsonProperty("moveYEvents")] public List<Event?>? MoveYEvents { get; set; }
 
-    [JsonProperty("rotateEvents")] public List<Event>? RotateEvents { get; set; }
+    [JsonProperty("rotateEvents")] public List<Event?>? RotateEvents { get; set; }
 
-    [JsonProperty("speedEvents")] public List<SpeedEvent>? SpeedEvents { get; set; }
+    [JsonProperty("speedEvents")] public List<SpeedEvent?>? SpeedEvents { get; set; }
 }
 
 public class ExtendedEventLayer
 {
-    [JsonProperty("colorEvents")] public List<ColorEvent>? ColorEvents { get; set; }
+    [JsonProperty("colorEvents")] public List<ColorEvent?>? ColorEvents { get; set; }
 
-    [JsonProperty("inclineEvents")] public List<Event>? InclineEvents { get; set; }
+    [JsonProperty("inclineEvents")] public List<Event?>? InclineEvents { get; set; }
 
-    [JsonProperty("paintEvents")] public List<Event>? PaintEvents { get; set; }
+    [JsonProperty("paintEvents")] public List<Event?>? PaintEvents { get; set; }
 
-    [JsonProperty("scaleXEvents")] public List<Event>? ScaleXEvents { get; set; }
+    [JsonProperty("scaleXEvents")] public List<Event?>? ScaleXEvents { get; set; }
 
-    [JsonProperty("scaleYEvents")] public List<Event>? ScaleYEvents { get; set; }
+    [JsonProperty("scaleYEvents")] public List<Event?>? ScaleYEvents { get; set; }
 
-    [JsonProperty("textEvents")] public List<TextEvent>? TextEvents { get; set; }
+    [JsonProperty("textEvents")] public List<TextEvent?>? TextEvents { get; set; }
 }
 
 public class AlphaEvent : Event
@@ -175,9 +175,9 @@ public class TextEvent : Event
 
 public class Event : IComparable<Event>
 {
-    [JsonProperty("bezier")] public int Bezier { get; set; }
+    [JsonProperty("bezier")] public int? Bezier { get; set; }
 
-    [JsonProperty("bezierPoints")] public List<double> BezierPoints { get; set; } = null!;
+    [JsonProperty("bezierPoints")] public List<double>? BezierPoints { get; set; }
 
     [JsonProperty("easingLeft")] public double EasingLeft { get; set; }
 

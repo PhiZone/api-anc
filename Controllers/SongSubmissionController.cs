@@ -23,7 +23,7 @@ using PhiZoneApi.Utils;
 
 namespace PhiZoneApi.Controllers;
 
-[Route("submissions/songs")]
+[Route("studio/songs")]
 [ApiVersion("2.0")]
 [ApiController]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
