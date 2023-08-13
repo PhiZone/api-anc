@@ -106,19 +106,26 @@ public class UserInfoController : Controller
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
-        var response = await _tapTapService.Login(dto);
+        var unionId = dto.UnionId;
+        if (unionId == null)
+        {
+            var response = await _tapTapService.Login(dto);
 
-        if (!response.IsSuccessStatusCode)
-            return BadRequest(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorWithData,
-                Code = ResponseCodes.RemoteFailure,
-                Data = JsonConvert.DeserializeObject(await response.Content.ReadAsStringAsync())
-            });
+            if (!response!.IsSuccessStatusCode)
+                return BadRequest(new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorWithData,
+                    Code = ResponseCodes.RemoteFailure,
+                    Data = JsonConvert.DeserializeObject(await response.Content.ReadAsStringAsync())
+                });
 
-        var responseDto =
-            JsonConvert.DeserializeObject<TapTapDelivererDto>(await response.Content.ReadAsStringAsync())!;
-        var targetUser = await _userRepository.GetUserByTapUnionId(responseDto.Data.Unionid);
+            var responseDto =
+                JsonConvert.DeserializeObject<TapTapDelivererDto>(await response.Content.ReadAsStringAsync())!;
+
+            unionId = responseDto.Data.Unionid;
+        }
+        
+        var targetUser = await _userRepository.GetUserByTapUnionId(unionId);
         if (targetUser != null)
             return BadRequest(new ResponseDto<object>
             {
@@ -126,7 +133,7 @@ public class UserInfoController : Controller
                 Code = targetUser.Id == currentUser.Id ? ResponseCodes.AlreadyDone : ResponseCodes.BindingOccupied
             });
 
-        currentUser.TapUnionId = responseDto.Data.Unionid;
+        currentUser.TapUnionId = unionId;
         await _userManager.UpdateAsync(currentUser);
         return NoContent();
     }
