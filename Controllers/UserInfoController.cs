@@ -24,11 +24,11 @@ namespace PhiZoneApi.Controllers;
 public class UserInfoController : Controller
 {
     private readonly IDtoMapper _mapper;
+    private readonly INotificationRepository _notificationRepository;
     private readonly IResourceService _resourceService;
+    private readonly ITapTapService _tapTapService;
     private readonly UserManager<User> _userManager;
     private readonly IUserRepository _userRepository;
-    private readonly INotificationRepository _notificationRepository;
-    private readonly ITapTapService _tapTapService;
 
     public UserInfoController(UserManager<User> userManager, IDtoMapper mapper, IResourceService resourceService,
         IUserRepository userRepository, ITapTapService tapTapService, INotificationRepository notificationRepository)
@@ -124,7 +124,7 @@ public class UserInfoController : Controller
 
             unionId = responseDto.Data.Unionid;
         }
-        
+
         var targetUser = await _userRepository.GetUserByTapUnionId(unionId);
         if (targetUser != null)
             return BadRequest(new ResponseDto<object>

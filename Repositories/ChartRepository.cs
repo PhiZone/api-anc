@@ -75,6 +75,12 @@ public class ChartRepository : IChartRepository
         return await SaveAsync();
     }
 
+    public async Task<bool> UpdateChartsAsync(IEnumerable<Chart> charts)
+    {
+        _context.Charts.UpdateRange(charts);
+        return await SaveAsync();
+    }
+
     public async Task<bool> RemoveChartAsync(Guid id)
     {
         _context.Charts.Remove((await _context.Charts.FirstOrDefaultAsync(chart => chart.Id == id))!);

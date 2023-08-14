@@ -20,10 +20,7 @@ public class TapTapService : ITapTapService
 
     public async Task<HttpResponseMessage?> Login(TapTapRequestDto dto)
     {
-        if (dto.MacKey == null || dto.AccessToken == null)
-        {
-            return null;
-        }
+        if (dto.MacKey == null || dto.AccessToken == null) return null;
         var nonceBytes = new byte[16];
         using var generator = RandomNumberGenerator.Create();
         generator.GetBytes(nonceBytes);

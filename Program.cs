@@ -147,8 +147,13 @@ builder.Services.AddSingleton<IHostedService>(provider => new SongConverterServi
         .ServiceProvider.GetService<ISongSubmissionRepository>()!));
 builder.Services.AddHostedService<DatabaseSeeder>();
 
-if (args.Length >= 1 && string.Equals(args[0], "migrate", StringComparison.InvariantCultureIgnoreCase))
-    builder.Services.AddHostedService<DataMigrationService>();
+if (args.Length >= 1)
+{
+    if (string.Equals(args[0], "migrate", StringComparison.InvariantCultureIgnoreCase))
+        builder.Services.AddHostedService<DataMigrationService>();
+    if (string.Equals(args[0], "chartMigrate", StringComparison.InvariantCultureIgnoreCase))
+        builder.Services.AddHostedService<ChartMigrationService>();
+}
 
 builder.Services.Configure<ApiBehaviorOptions>(options => { options.SuppressModelStateInvalidFilter = true; });
 builder.Services.Configure<DataSettings>(builder.Configuration.GetSection("DataSettings"));

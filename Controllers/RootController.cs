@@ -17,10 +17,10 @@ public class RootController : Controller
     private readonly ICommentRepository _commentRepository;
     private readonly ILikeRepository _likeRepository;
     private readonly IRecordRepository _recordRepository;
+    private readonly IConnectionMultiplexer _redis;
     private readonly IReplyRepository _replyRepository;
     private readonly ISongRepository _songRepository;
     private readonly IUserRepository _userRepository;
-    private readonly IConnectionMultiplexer _redis;
 
     public RootController(IUserRepository userRepository, IChapterRepository chapterRepository,
         ISongRepository songRepository, IChartRepository chartRepository, ICommentRepository commentRepository,

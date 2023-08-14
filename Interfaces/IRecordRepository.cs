@@ -16,6 +16,8 @@ public interface IRecordRepository
 
     Task<bool> UpdateRecordAsync(Record record);
 
+    Task<bool> UpdateRecordsAsync(IEnumerable<Record> records);
+
     Task<bool> RemoveRecordAsync(Guid id);
 
     Task<bool> SaveAsync();

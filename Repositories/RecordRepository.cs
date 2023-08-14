@@ -47,6 +47,12 @@ public class RecordRepository : IRecordRepository
         return await SaveAsync();
     }
 
+    public async Task<bool> UpdateRecordsAsync(IEnumerable<Record> records)
+    {
+        _context.Records.UpdateRange(records);
+        return await SaveAsync();
+    }
+
     public async Task<bool> RemoveRecordAsync(Guid id)
     {
         _context.Records.Remove((await _context.Records.FirstOrDefaultAsync(record => record.Id == id))!);

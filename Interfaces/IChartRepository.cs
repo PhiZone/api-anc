@@ -21,6 +21,8 @@ public interface IChartRepository
 
     Task<bool> UpdateChartAsync(Chart chart);
 
+    Task<bool> UpdateChartsAsync(IEnumerable<Chart> charts);
+
     Task<bool> RemoveChartAsync(Guid id);
 
     Task<bool> SaveAsync();

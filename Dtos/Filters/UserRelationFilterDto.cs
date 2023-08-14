@@ -16,7 +16,7 @@ public class UserRelationFilterDto : FilterDto<UserRelation>
     public int? MaxFolloweeId { get; set; }
 
     public List<int>? RangeFolloweeId { get; set; }
-    
+
     public List<UserRelationType>? RangeType { get; set; }
 
     public DateTimeOffset? EarliestDateCreated { get; set; }

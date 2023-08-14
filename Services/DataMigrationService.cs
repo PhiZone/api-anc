@@ -68,7 +68,6 @@ public partial class DataMigrationService : IHostedService
         _fileStorageService = scope.ServiceProvider.GetRequiredService<IFileStorageService>();
         _songService = scope.ServiceProvider.GetRequiredService<ISongService>();
         _chartService = scope.ServiceProvider.GetRequiredService<IChartService>();
-        scope.ServiceProvider.GetRequiredService<IResourceService>();
         _templateService = scope.ServiceProvider.GetRequiredService<ITemplateService>();
         _recordService = scope.ServiceProvider.GetRequiredService<IRecordService>();
         _voteService = scope.ServiceProvider.GetRequiredService<IVoteService>();
@@ -1080,17 +1079,13 @@ public partial class DataMigrationService : IHostedService
                 index = reader.GetInt32("id");
                 var song = await reader.IsDBNullAsync("song_id", cancellationToken)
                     ? null
-                    :
-                    _songDictionary.TryGetValue(reader.GetInt32("song_id"), out var songId)
-                        ?
-                        await _songRepository.GetSongAsync(songId)
+                    : _songDictionary.TryGetValue(reader.GetInt32("song_id"), out var songId)
+                        ? await _songRepository.GetSongAsync(songId)
                         : null;
                 var songSubmission = await reader.IsDBNullAsync("song_upload_id", cancellationToken)
                     ? null
-                    :
-                    _songSubmissionDictionary.TryGetValue(reader.GetInt32("song_upload_id"), out var songSubmissionId)
-                        ?
-                        await _songSubmissionRepository.GetSongSubmissionAsync(songSubmissionId)
+                    : _songSubmissionDictionary.TryGetValue(reader.GetInt32("song_upload_id"), out var songSubmissionId)
+                        ? await _songSubmissionRepository.GetSongSubmissionAsync(songSubmissionId)
                         : null;
                 if (song == null && songSubmission == null) continue;
 
