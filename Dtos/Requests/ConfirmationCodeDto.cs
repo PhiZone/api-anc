@@ -3,7 +3,7 @@ using PhiZoneApi.Constants;
 
 namespace PhiZoneApi.Dtos.Requests;
 
-public class UserActivationDto
+public class ConfirmationCodeDto
 {
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     [MaxLength(6, ErrorMessage = ResponseCodes.ValueTooLong)]

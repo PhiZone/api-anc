@@ -98,6 +98,15 @@ public class AuthenticationController : Controller
                 MacKey = dto.username!, AccessToken = dto.password!
             });
 
+            if (response == null)
+            {
+                return BadRequest(new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief,
+                    Code = ResponseCodes.InvalidData
+                });
+            }
+
             if (!response.IsSuccessStatusCode)
                 return Forbid(new AuthenticationProperties(new Dictionary<string, string>
                 {
@@ -371,7 +380,7 @@ public class AuthenticationController : Controller
     [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> Activate([FromBody] UserActivationDto dto)
+    public async Task<IActionResult> Activate([FromBody] ConfirmationCodeDto dto)
     {
         var user = await RedeemCode(dto.Code, EmailRequestMode.EmailConfirmation);
         switch (user)
@@ -410,6 +419,15 @@ public class AuthenticationController : Controller
     {
         var response = await _tapTapService.Login(dto);
 
+        if (response == null)
+        {
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief,
+                Code = ResponseCodes.InvalidData
+            });
+        }
+
         if (!response.IsSuccessStatusCode)
             return BadRequest(new ResponseDto<object>
             {
@@ -435,6 +453,31 @@ public class AuthenticationController : Controller
                 User = user != null ? await _dtoMapper.MapUserAsync<UserDetailedDto>(user) : null
             }
         });
+    }
+
+    /// <summary>
+    ///     Revokes user's account.
+    /// </summary>
+    /// <param name="dto">Code from the confirmation email.</param>
+    /// <returns>An empty body.</returns>
+    /// <response code="204">Returns an empty body.</response>
+    /// <response code="400">When the input code is invalid.</response>
+    [HttpPost("revokeAccount")]
+    [Consumes("application/json")]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> RevokeAccount([FromBody] ConfirmationCodeDto dto)
+    {
+        var user = await RedeemCode(dto.Code, EmailRequestMode.AccountRevocation);
+        if (user == null)
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidCode
+            });
+
+        await _userManager.DeleteAsync(user);
+        return NoContent();
     }
 
     private async Task<User?> RedeemCode(string code, EmailRequestMode mode)

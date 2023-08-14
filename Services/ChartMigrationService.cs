@@ -7,7 +7,7 @@ public class ChartMigrationService : IHostedService
 {
     private readonly IServiceProvider _serviceProvider;
     private IChartRepository _chartRepository = null!;
-    private ILogger<DataMigrationService> _logger = null!;
+    private ILogger<ChartMigrationService> _logger = null!;
     private IRecordRepository _recordRepository = null!;
     private IRecordService _recordService = null!;
 
@@ -20,7 +20,7 @@ public class ChartMigrationService : IHostedService
     {
         await using var scope = _serviceProvider.CreateAsyncScope();
 
-        _logger = scope.ServiceProvider.GetRequiredService<ILogger<DataMigrationService>>();
+        _logger = scope.ServiceProvider.GetRequiredService<ILogger<ChartMigrationService>>();
         _chartRepository = scope.ServiceProvider.GetRequiredService<IChartRepository>();
         _recordRepository = scope.ServiceProvider.GetRequiredService<IRecordRepository>();
         _recordService = scope.ServiceProvider.GetRequiredService<IRecordService>();
