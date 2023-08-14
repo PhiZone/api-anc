@@ -11,4 +11,5 @@ public class LogEvents
     public const int RecordDebug = 3000;
 
     public const int DataMigration = 4000;
+    public const int ChartMigration = 4001;
 }

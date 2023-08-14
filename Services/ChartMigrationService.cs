@@ -25,15 +25,15 @@ public class ChartMigrationService : IHostedService
         _recordRepository = scope.ServiceProvider.GetRequiredService<IRecordRepository>();
         _recordService = scope.ServiceProvider.GetRequiredService<IRecordService>();
 
-        _logger.LogInformation(LogEvents.DataMigration, "Chart migration started");
+        _logger.LogInformation(LogEvents.ChartMigration, "Chart migration started");
         try
         {
             await MigrateChartAsync();
-            _logger.LogInformation(LogEvents.DataMigration, "Chart migration finished");
+            _logger.LogInformation(LogEvents.ChartMigration, "Chart migration finished");
         }
         catch (Exception ex)
         {
-            _logger.LogError(LogEvents.DataMigration, ex, "Chart migration failed");
+            _logger.LogError(LogEvents.ChartMigration, ex, "Chart migration failed");
         }
     }
 
@@ -47,7 +47,8 @@ public class ChartMigrationService : IHostedService
         var charts = await _chartRepository.GetChartsAsync("DateCreated", false, 0, -1);
         foreach (var chart in charts)
         {
-            var records = await _recordRepository.GetRecordsAsync("DateCreated", false, 0, -1);
+            _logger.LogInformation(LogEvents.ChartMigration, "Migrating chart #{Id}", chart.Id);
+            var records = await _recordRepository.GetRecordsAsync("DateCreated", false, 0, -1, e => e.ChartId == chart.Id);
             foreach (var record in records)
             {
                 var rksFactor = _recordService.CalculateRksFactor(record.PerfectJudgment, record.GoodJudgment);
