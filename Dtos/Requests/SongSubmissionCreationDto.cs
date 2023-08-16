@@ -64,6 +64,8 @@ public class SongSubmissionCreationDto
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     public int Offset { get; set; }
 
+    public IFormFile? License { get; set; }
+
     public IFormFile? OriginalityProof { get; set; }
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]

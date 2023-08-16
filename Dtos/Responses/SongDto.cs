@@ -38,6 +38,8 @@ public class SongDto
 
     public int Offset { get; set; }
 
+    public string? License { get; set; }
+
     public bool IsOriginal { get; set; }
 
     public TimeSpan Duration { get; set; }

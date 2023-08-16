@@ -209,6 +209,12 @@ public class SongSubmissionController : Controller
         }
 
         var illustrationUrl = (await _fileStorageService.UploadImage<Song>(dto.Title, dto.Illustration, (16, 9))).Item1;
+        string? license = null;
+        if (dto.License != null)
+        {
+            license = (await _fileStorageService.Upload<Song>(dto.Title, dto.License)).Item1;
+        }
+
         string? originalityProof = null;
         if (dto.OriginalityProof != null)
         {
@@ -238,6 +244,7 @@ public class SongSubmissionController : Controller
             MinBpm = dto.MinBpm,
             MaxBpm = dto.MaxBpm,
             Offset = dto.Offset,
+            License = license,
             OriginalityProof = originalityProof,
             Duration = songSubmissionInfo?.Item3,
             PreviewStart = dto.PreviewStart,
@@ -254,9 +261,7 @@ public class SongSubmissionController : Controller
 
         var authorship = new Authorship
         {
-            ResourceId = songSubmission.Id,
-            AuthorId = currentUser.Id,
-            DateCreated = DateTimeOffset.UtcNow
+            ResourceId = songSubmission.Id, AuthorId = currentUser.Id, DateCreated = DateTimeOffset.UtcNow
         };
 
         await _authorshipRepository.CreateAuthorshipAsync(authorship);
@@ -496,6 +501,112 @@ public class SongSubmissionController : Controller
     }
 
     /// <summary>
+    ///     Updates a song submission's license.
+    /// </summary>
+    /// <param name="id">A song submission's ID.</param>
+    /// <param name="dto">The new license.</param>
+    /// <returns>An empty body.</returns>
+    /// <response code="204">Returns an empty body.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
+    /// <response code="404">When the specified song submission is not found.</response>
+    /// <response code="500">When an internal server error has occurred.</response>
+    [HttpPatch("{id:guid}/license")]
+    [Consumes("multipart/form-data")]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> UpdateSongSubmissionLicense([FromRoute] Guid id, [FromForm] FileDto dto)
+    {
+        if (!await _songSubmissionRepository.SongSubmissionExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+
+        var songSubmission = await _songSubmissionRepository.GetSongSubmissionAsync(id);
+
+        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if ((songSubmission.OwnerId == currentUser.Id &&
+             !await _resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+            (songSubmission.OwnerId != currentUser.Id &&
+             !await _resourceService.HasPermission(currentUser, Roles.Moderator)))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+
+        if (dto.File != null)
+        {
+            songSubmission.License =
+                (await _fileStorageService.Upload<Song>(songSubmission.Title, dto.File)).Item1;
+            songSubmission.DateUpdated = DateTimeOffset.UtcNow;
+            songSubmission.Status = RequestStatus.Waiting;
+        }
+
+        if (!await _songSubmissionRepository.UpdateSongSubmissionAsync(songSubmission))
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+
+        return NoContent();
+    }
+
+    /// <summary>
+    ///     Removes a song submission's license.
+    /// </summary>
+    /// <param name="id">A song submission's ID.</param>
+    /// <returns>An empty body.</returns>
+    /// <response code="204">Returns an empty body.</response>
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
+    /// <response code="404">When the specified song submission is not found.</response>
+    /// <response code="500">When an internal server error has occurred.</response>
+    [HttpDelete("{id:guid}/license")]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> RemoveSongSubmissionLicense([FromRoute] Guid id)
+    {
+        if (!await _songSubmissionRepository.SongSubmissionExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+
+        var songSubmission = await _songSubmissionRepository.GetSongSubmissionAsync(id);
+
+        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if ((songSubmission.OwnerId == currentUser.Id &&
+             !await _resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+            (songSubmission.OwnerId != currentUser.Id &&
+             !await _resourceService.HasPermission(currentUser, Roles.Moderator)))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+
+        songSubmission.License = null;
+        songSubmission.DateUpdated = DateTimeOffset.UtcNow;
+        songSubmission.Status = RequestStatus.Waiting;
+
+        if (!await _songSubmissionRepository.UpdateSongSubmissionAsync(songSubmission))
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+
+        return NoContent();
+    }
+
+    /// <summary>
     ///     Updates a song submission's originality proof.
     /// </summary>
     /// <param name="id">A song submission's ID.</param>
@@ -558,7 +669,6 @@ public class SongSubmissionController : Controller
     /// <param name="id">A song submission's ID.</param>
     /// <returns>An empty body.</returns>
     /// <response code="204">Returns an empty body.</response>
-    /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="403">When the user does not have sufficient permission.</response>
     /// <response code="404">When the specified song submission is not found.</response>
@@ -566,7 +676,6 @@ public class SongSubmissionController : Controller
     [HttpDelete("{id:guid}/originalityProof")]
     [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
-    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
@@ -593,6 +702,8 @@ public class SongSubmissionController : Controller
                 });
 
         songSubmission.OriginalityProof = null;
+        songSubmission.DateUpdated = DateTimeOffset.UtcNow;
+        songSubmission.Status = RequestStatus.Waiting;
 
         if (!await _songSubmissionRepository.UpdateSongSubmissionAsync(songSubmission))
             return StatusCode(StatusCodes.Status500InternalServerError,
@@ -607,7 +718,6 @@ public class SongSubmissionController : Controller
     /// <param name="id">A song submission's ID.</param>
     /// <returns>An empty body.</returns>
     /// <response code="204">Returns an empty body.</response>
-    /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="403">When the user does not have sufficient permission.</response>
     /// <response code="404">When the specified song submission is not found.</response>
@@ -615,7 +725,6 @@ public class SongSubmissionController : Controller
     [HttpDelete("{id:guid}")]
     [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
-    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
@@ -707,7 +816,10 @@ public class SongSubmissionController : Controller
 
         var collaboration = new Collaboration
         {
-            SubmissionId = id, InviterId = currentUser.Id, InviteeId = dto.InviteeId, Position = dto.Position,
+            SubmissionId = id,
+            InviterId = currentUser.Id,
+            InviteeId = dto.InviteeId,
+            Position = dto.Position,
             DateCreated = DateTimeOffset.UtcNow
         };
 

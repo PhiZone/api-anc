@@ -205,6 +205,12 @@ public class SongController : Controller
         }
 
         var illustrationUrl = (await _fileStorageService.UploadImage<Song>(dto.Title, dto.Illustration, (16, 9))).Item1;
+        string? license = null;
+        if (dto.License != null)
+        {
+            license = (await _fileStorageService.Upload<Song>(dto.Title, dto.License)).Item1;
+        }
+
         var song = new Song
         {
             Title = dto.Title,
@@ -224,6 +230,7 @@ public class SongController : Controller
             MinBpm = dto.MinBpm,
             MaxBpm = dto.MaxBpm,
             Offset = dto.Offset,
+            License = license,
             IsOriginal = dto.IsOriginal,
             Duration = songInfo?.Item3,
             PreviewStart = dto.PreviewStart,
@@ -455,9 +462,10 @@ public class SongController : Controller
     }
 
     /// <summary>
-    ///     Removes a song.
+    ///     Updates a song's license.
     /// </summary>
     /// <param name="id">A song's ID.</param>
+    /// <param name="dto">The new license.</param>
     /// <returns>An empty body.</returns>
     /// <response code="204">Returns an empty body.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
@@ -465,10 +473,106 @@ public class SongController : Controller
     /// <response code="403">When the user does not have sufficient permission.</response>
     /// <response code="404">When the specified song is not found.</response>
     /// <response code="500">When an internal server error has occurred.</response>
-    [HttpDelete("{id:guid}")]
+    [HttpPatch("{id:guid}/license")]
+    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
+    [Consumes("multipart/form-data")]
     [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> UpdateSongLicense([FromRoute] Guid id, [FromForm] FileDto dto)
+    {
+        if (!await _songRepository.SongExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+
+        var song = await _songRepository.GetSongAsync(id);
+
+        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!await _resourceService.HasPermission(currentUser, Roles.Administrator))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+
+        if (dto.File != null)
+        {
+            song.License = (await _fileStorageService.Upload<Song>(song.Title, dto.File)).Item1;
+            song.DateUpdated = DateTimeOffset.UtcNow;
+        }
+
+        if (!await _songRepository.UpdateSongAsync(song))
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+
+        return NoContent();
+    }
+
+    /// <summary>
+    ///     Removes a song's license.
+    /// </summary>
+    /// <param name="id">A song's ID.</param>
+    /// <returns>An empty body.</returns>
+    /// <response code="204">Returns an empty body.</response>
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
+    /// <response code="404">When the specified song is not found.</response>
+    /// <response code="500">When an internal server error has occurred.</response>
+    [HttpDelete("{id:guid}/license")]
+    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> RemoveSongLicense([FromRoute] Guid id)
+    {
+        if (!await _songRepository.SongExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+
+        var song = await _songRepository.GetSongAsync(id);
+
+        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!await _resourceService.HasPermission(currentUser, Roles.Administrator))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+
+        song.License = null;
+        song.DateUpdated = DateTimeOffset.UtcNow;
+
+        if (!await _songRepository.UpdateSongAsync(song))
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+
+        return NoContent();
+    }
+
+    /// <summary>
+    ///     Removes a song.
+    /// </summary>
+    /// <param name="id">A song's ID.</param>
+    /// <returns>An empty body.</returns>
+    /// <response code="204">Returns an empty body.</response>
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
+    /// <response code="404">When the specified song is not found.</response>
+    /// <response code="500">When an internal server error has occurred.</response>
+    [HttpDelete("{id:guid}")]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
@@ -738,8 +842,7 @@ public class SongController : Controller
         if (chapter.OwnerId != currentUser.Id && chapter.Accessibility == Accessibility.RefuseAny)
             return BadRequest(new ResponseDto<object>
             {
-                Status = ResponseStatus.ErrorBrief,
-                Code = ResponseCodes.ParentIsPrivate
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentIsPrivate
             });
 
         var admission = new Admission
@@ -762,7 +865,9 @@ public class SongController : Controller
             await _notificationService.Notify(chapter.Owner, currentUser, NotificationType.Requests, "song-admission",
                 new Dictionary<string, string>
                 {
-                    { "User", _resourceService.GetRichText<User>(currentUser.Id.ToString(), currentUser.UserName!) },
+                    {
+                        "User", _resourceService.GetRichText<User>(currentUser.Id.ToString(), currentUser.UserName!)
+                    },
                     { "Song", _resourceService.GetRichText<Song>(song.Id.ToString(), song.GetDisplay()) },
                     { "Chapter", _resourceService.GetRichText<Chapter>(chapter.Id.ToString(), chapter.GetDisplay()) },
                     {

@@ -54,6 +54,7 @@ public class SubmissionService : ISubmissionService
                 MinBpm = songSubmission.MinBpm,
                 MaxBpm = songSubmission.MaxBpm,
                 Offset = songSubmission.Offset,
+                License = songSubmission.License,
                 IsOriginal = isOriginal,
                 Duration = songSubmission.Duration,
                 PreviewStart = songSubmission.PreviewStart,
@@ -91,6 +92,7 @@ public class SubmissionService : ISubmissionService
             song.MinBpm = songSubmission.MinBpm;
             song.MaxBpm = songSubmission.MaxBpm;
             song.Offset = songSubmission.Offset;
+            song.License = songSubmission.License;
             song.IsOriginal = isOriginal;
             song.Duration = songSubmission.Duration;
             song.PreviewStart = songSubmission.PreviewStart;
