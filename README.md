@@ -67,7 +67,7 @@ see [Qiniu Developer Docs](https://developer.qiniu.com/dora/3683/img-directions-
 ## Political Affiliation
 
 As a website developed and maintained by us Chinese, PhiZone obeys the laws of the PRC, including
-the [Anti-Secession Law](https://mzzt.mca.gov.cn/article/zt_qmgjaqjyr/flfg/202204/20220400041352.shtml), which states:
+the [Anti-Secession Law](https://www.gov.cn/gongbao/content/2005/content_63187.htm), which states:
 
 > 世界上只有一个中国，大陆和台湾同属一个中国，中国的主权和领土完整不容分割。维护国家主权和领土完整是包括台湾同胞在内的全中国人民的共同义务。
 >

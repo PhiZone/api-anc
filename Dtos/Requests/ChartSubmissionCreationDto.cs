@@ -1,12 +1,14 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using PhiZoneApi.Constants;
 using PhiZoneApi.Enums;
+using PhiZoneApi.Validators;
 
 namespace PhiZoneApi.Dtos.Requests;
 
 public class ChartSubmissionCreationDto
 {
     [MaxLength(100, ErrorMessage = ResponseCodes.ValueTooLong)]
+    [UserInputValidator(ErrorMessage = ResponseCodes.ContentProhibited)]
     public string? Title { get; set; }
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
@@ -15,6 +17,7 @@ public class ChartSubmissionCreationDto
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     [MaxLength(20, ErrorMessage = ResponseCodes.ValueTooLong)]
+    [UserInputValidator(ErrorMessage = ResponseCodes.ContentProhibited)]
     public string Level { get; set; } = null!;
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
@@ -24,14 +27,17 @@ public class ChartSubmissionCreationDto
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     [MaxLength(800, ErrorMessage = ResponseCodes.ValueTooLong)]
+    [UserInputValidator(ErrorMessage = ResponseCodes.ContentProhibited)]
     public string AuthorName { get; set; } = null!;
 
     public IFormFile? Illustration { get; set; }
 
     [MaxLength(200, ErrorMessage = ResponseCodes.ValueTooLong)]
+    [UserInputValidator(ErrorMessage = ResponseCodes.ContentProhibited)]
     public string? Illustrator { get; set; }
 
     [MaxLength(2000, ErrorMessage = ResponseCodes.ValueTooLong)]
+    [UserInputValidator(ErrorMessage = ResponseCodes.ContentProhibited)]
     public string? Description { get; set; }
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]

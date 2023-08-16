@@ -65,7 +65,8 @@ public class ReplyController : Controller
         [FromQuery] ReplyFilterDto? filterDto = null)
     {
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        dto.PerPage = dto.PerPage > 0 ? dto.PerPage : dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : -1;
+        dto.PerPage = dto.PerPage > 0 && dto.PerPage < _dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
+            dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : _dataSettings.Value.PaginationMaxPerPage;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser);
         var replies = await _replyRepository.GetRepliesAsync(dto.Order, dto.Desc, position,
@@ -179,7 +180,8 @@ public class ReplyController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetReplyLikes([FromRoute] Guid id, [FromQuery] ArrayWithTimeRequestDto dto)
     {
-        dto.PerPage = dto.PerPage > 0 ? dto.PerPage : dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : -1;
+        dto.PerPage = dto.PerPage > 0 && dto.PerPage < _dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
+            dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : _dataSettings.Value.PaginationMaxPerPage;
         var position = dto.PerPage * (dto.Page - 1);
         if (!await _replyRepository.ReplyExistsAsync(id))
             return NotFound(new ResponseDto<object>

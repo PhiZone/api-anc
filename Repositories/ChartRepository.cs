@@ -28,15 +28,15 @@ public class ChartRepository : IChartRepository
         if (search != null)
         {
             search = search.Trim().ToUpper();
-            result = result.Where(chart => chart.Song.Title.ToUpper().Contains(search) ||
+            result = result.Where(chart => chart.Song.Title.ToUpper().Like(search) ||
                                            (chart.Song.Edition != null &&
-                                            chart.Song.Edition.ToUpper().Contains(search)) ||
-                                           chart.Song.AuthorName.ToUpper().Contains(search) ||
+                                            chart.Song.Edition.ToUpper().Like(search)) ||
+                                           chart.Song.AuthorName.ToUpper().Like(search) ||
                                            (chart.Song.Description != null &&
-                                            chart.Song.Description.ToUpper().Contains(search)) ||
-                                           (chart.Title != null && chart.Title.ToUpper().Contains(search)) ||
-                                           chart.AuthorName.ToUpper().Contains(search) || (chart.Description != null &&
-                                               chart.Description.ToUpper().Contains(search)));
+                                            chart.Song.Description.ToUpper().Like(search)) ||
+                                           (chart.Title != null && chart.Title.ToUpper().Like(search)) ||
+                                           chart.AuthorName.ToUpper().Like(search) || (chart.Description != null &&
+                                               chart.Description.ToUpper().Like(search)));
         }
 
         result = result.Skip(position);
@@ -102,15 +102,15 @@ public class ChartRepository : IChartRepository
         if (search != null)
         {
             search = search.Trim().ToUpper();
-            result = result.Where(chart => chart.Song.Title.ToUpper().Contains(search) ||
+            result = result.Where(chart => chart.Song.Title.ToUpper().Like(search) ||
                                            (chart.Song.Edition != null &&
-                                            chart.Song.Edition.ToUpper().Contains(search)) ||
-                                           chart.Song.AuthorName.ToUpper().Contains(search) ||
+                                            chart.Song.Edition.ToUpper().Like(search)) ||
+                                           chart.Song.AuthorName.ToUpper().Like(search) ||
                                            (chart.Song.Description != null &&
-                                            chart.Song.Description.ToUpper().Contains(search)) ||
-                                           (chart.Title != null && chart.Title.ToUpper().Contains(search)) ||
-                                           chart.AuthorName.ToUpper().Contains(search) || (chart.Description != null &&
-                                               chart.Description.ToUpper().Contains(search)));
+                                            chart.Song.Description.ToUpper().Like(search)) ||
+                                           (chart.Title != null && chart.Title.ToUpper().Like(search)) ||
+                                           chart.AuthorName.ToUpper().Like(search) || (chart.Description != null &&
+                                               chart.Description.ToUpper().Like(search)));
         }
 
         return await result.CountAsync();

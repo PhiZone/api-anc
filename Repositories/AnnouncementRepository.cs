@@ -26,8 +26,8 @@ public class AnnouncementRepository : IAnnouncementRepository
         if (search != null)
         {
             search = search.Trim().ToUpper();
-            result = result.Where(announcement => announcement.Title.ToUpper().Contains(search) ||
-                                                  announcement.Content.ToUpper().Contains(search));
+            result = result.Where(announcement => announcement.Title.ToUpper().Like(search) ||
+                                                  announcement.Content.ToUpper().Like(search));
         }
 
         result = result.Skip(position);
@@ -78,8 +78,8 @@ public class AnnouncementRepository : IAnnouncementRepository
         if (search != null)
         {
             search = search.Trim().ToUpper();
-            result = result.Where(announcement => announcement.Title.ToUpper().Contains(search) ||
-                                                  announcement.Content.ToUpper().Contains(search));
+            result = result.Where(announcement => announcement.Title.ToUpper().Like(search) ||
+                                                  announcement.Content.ToUpper().Like(search));
         }
 
         return await result.CountAsync();

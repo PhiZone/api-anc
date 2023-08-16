@@ -10,7 +10,7 @@ public class ResponseDto<T>
 
     public string? Message { get; set; }
 
-    public object? Errors { get; set; }
+    public List<ModelErrorDto>? Errors { get; set; }
 
     public DateTimeOffset? DateAvailable { get; set; }
 

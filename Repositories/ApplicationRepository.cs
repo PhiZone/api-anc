@@ -26,10 +26,10 @@ public class ApplicationRepository : IApplicationRepository
         if (search != null)
         {
             search = search.Trim().ToUpper();
-            result = result.Where(application => application.Name.ToUpper().Contains(search) ||
-                                                 application.Homepage.ToUpper().Contains(search) ||
+            result = result.Where(application => application.Name.ToUpper().Like(search) ||
+                                                 application.Homepage.ToUpper().Like(search) ||
                                                  (application.Description != null &&
-                                                  application.Description.ToUpper().Contains(search)));
+                                                  application.Description.ToUpper().Like(search)));
         }
 
         result = result.Skip(position);
@@ -80,10 +80,10 @@ public class ApplicationRepository : IApplicationRepository
         if (search != null)
         {
             search = search.Trim().ToUpper();
-            result = result.Where(application => application.Name.ToUpper().Contains(search) ||
-                                                 application.Homepage.ToUpper().Contains(search) ||
+            result = result.Where(application => application.Name.ToUpper().Like(search) ||
+                                                 application.Homepage.ToUpper().Like(search) ||
                                                  (application.Description != null &&
-                                                  application.Description.ToUpper().Contains(search)));
+                                                  application.Description.ToUpper().Like(search)));
         }
 
         return await result.CountAsync();

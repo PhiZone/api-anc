@@ -40,20 +40,22 @@ public partial class ResourceService : IResourceService
 
     public async Task<bool> HasPermission(User user, Role targetRole)
     {
-        var roles = await _userManager.GetRolesAsync(user);
-        if (roles.Count < 1) return false;
-        var roleName = roles.First();
-        var currentRole = Roles.List.FirstOrDefault(role => role.Name == roleName);
+        var currentRole = await GetRole(user);
         return currentRole!.Priority >= targetRole.Priority;
     }
 
     public async Task<bool> HasPermission(User user, int priority)
     {
-        var roles = await _userManager.GetRolesAsync(user);
-        if (roles.Count < 1) return false;
-        var roleName = roles.First();
-        var currentRole = Roles.List.FirstOrDefault(role => role.Name == roleName);
+        var currentRole = await GetRole(user);
         return currentRole!.Priority >= priority;
+    }
+
+    public async Task<Role?> GetRole(User user)
+    {
+        var roles = await _userManager.GetRolesAsync(user);
+        if (roles.Count < 1) return null;
+        var roleName = roles.First();
+        return Roles.List.FirstOrDefault(role => role.Name == roleName);
     }
 
     [GeneratedRegex("\\[PZUser:[0-9]+:")]

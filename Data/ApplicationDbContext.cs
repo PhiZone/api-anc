@@ -35,6 +35,9 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, int>
     public DbSet<ChartAssetSubmission> ChartAssetSubmissions { get; set; } = null!;
     public DbSet<Collaboration> Collaborations { get; set; } = null!;
     public DbSet<Notification> Notifications { get; set; } = null!;
+    public DbSet<PetQuestion> PetQuestions { get; set; } = null!;
+    public DbSet<PetChoice> PetChoices { get; set; } = null!;
+    public DbSet<PetAnswer> PetAnswers { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

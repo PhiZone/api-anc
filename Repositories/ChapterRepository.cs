@@ -30,8 +30,8 @@ public class ChapterRepository : IChapterRepository
         {
             search = search.Trim().ToUpper();
             result = result.Where(chapter =>
-                chapter.Title.ToUpper().Contains(search) || chapter.Subtitle.ToUpper().Contains(search) ||
-                (chapter.Description != null && chapter.Description.ToUpper().Contains(search)));
+                chapter.Title.ToUpper().Like(search) || chapter.Subtitle.ToUpper().Like(search) ||
+                (chapter.Description != null && chapter.Description.ToUpper().Like(search)));
         }
 
         result = result.Skip(position);
@@ -55,7 +55,7 @@ public class ChapterRepository : IChapterRepository
         if (search != null)
         {
             search = search.Trim().ToUpper();
-            result = result.Where(admission => admission.Label != null && admission.Label.ToUpper().Contains(search));
+            result = result.Where(admission => admission.Label != null && admission.Label.ToUpper().Like(search));
         }
 
         result = result.Skip(position);
@@ -101,8 +101,8 @@ public class ChapterRepository : IChapterRepository
         {
             search = search.Trim().ToUpper();
             result = result.Where(chapter =>
-                chapter.Title.ToUpper().Contains(search) || chapter.Subtitle.ToUpper().Contains(search) ||
-                (chapter.Description != null && chapter.Description.ToUpper().Contains(search)));
+                chapter.Title.ToUpper().Like(search) || chapter.Subtitle.ToUpper().Like(search) ||
+                (chapter.Description != null && chapter.Description.ToUpper().Like(search)));
         }
 
         return await result.CountAsync();
@@ -119,7 +119,7 @@ public class ChapterRepository : IChapterRepository
         if (search != null)
         {
             search = search.Trim().ToUpper();
-            result = result.Where(admission => admission.Label != null && admission.Label.ToUpper().Contains(search));
+            result = result.Where(admission => admission.Label != null && admission.Label.ToUpper().Like(search));
         }
 
         return await result.CountAsync();

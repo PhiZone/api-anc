@@ -78,7 +78,8 @@ public class PlayerController : Controller
         if (filterDto != null && !await _resourceService.HasPermission(currentUser, Roles.Administrator))
             filterDto.RangeOwnerId = new List<int> { currentUser.Id };
 
-        dto.PerPage = dto.PerPage > 0 ? dto.PerPage : dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : -1;
+        dto.PerPage = dto.PerPage > 0 && dto.PerPage < _dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
+            dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : _dataSettings.Value.PaginationMaxPerPage;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser);
         var list = _mapper.Map<List<PlayConfigurationResponseDto>>(
