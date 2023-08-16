@@ -38,6 +38,8 @@ public class SongSubmissionDto
 
     public int Offset { get; set; }
 
+    public string? License { get; set; }
+
     public string? OriginalityProof { get; set; }
 
     public TimeSpan Duration { get; set; }

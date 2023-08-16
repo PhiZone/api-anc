@@ -70,6 +70,8 @@ public class SongCreationDto
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     public int Offset { get; set; }
 
+    public IFormFile? License { get; set; }
+
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     public bool IsOriginal { get; set; }
 
