@@ -9,6 +9,7 @@ public class SongCreationDto
 {
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     [MaxLength(100, ErrorMessage = ResponseCodes.ValueTooLong)]
+    [UserInputValidator(ErrorMessage = ResponseCodes.ContentProhibited)]
     public string Title { get; set; } = null!;
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
@@ -16,10 +17,12 @@ public class SongCreationDto
     public EditionType EditionType { get; set; }
 
     [MaxLength(100, ErrorMessage = ResponseCodes.ValueTooLong)]
+    [UserInputValidator(ErrorMessage = ResponseCodes.ContentProhibited)]
     public string? Edition { get; set; }
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     [MaxLength(800, ErrorMessage = ResponseCodes.ValueTooLong)]
+    [UserInputValidator(ErrorMessage = ResponseCodes.ContentProhibited)]
     public string AuthorName { get; set; } = null!;
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
@@ -30,9 +33,11 @@ public class SongCreationDto
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     [MaxLength(200, ErrorMessage = ResponseCodes.ValueTooLong)]
+    [UserInputValidator(ErrorMessage = ResponseCodes.ContentProhibited)]
     public string Illustrator { get; set; } = null!;
 
     [MaxLength(2000, ErrorMessage = ResponseCodes.ValueTooLong)]
+    [UserInputValidator(ErrorMessage = ResponseCodes.ContentProhibited)]
     public string? Description { get; set; }
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
@@ -47,6 +52,7 @@ public class SongCreationDto
 
     [LyricsValidator(ErrorMessage = ResponseCodes.UnsupportedLyricsFormat)]
     [MaxLength(20000, ErrorMessage = ResponseCodes.ValueTooLong)]
+    [UserInputValidator(ErrorMessage = ResponseCodes.ContentProhibited)]
     public string? Lyrics { get; set; }
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]

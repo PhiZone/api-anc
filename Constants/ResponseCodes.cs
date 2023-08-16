@@ -250,4 +250,9 @@ public static class ResponseCodes
     ///     The remote account has already been bound to another user.
     /// </summary>
     public const string BindingOccupied = "BindingOccupied";
+
+    /// <summary>
+    ///     There exists prohibited content in the user's input text.
+    /// </summary>
+    public const string ContentProhibited = "ContentProhibited";
 }

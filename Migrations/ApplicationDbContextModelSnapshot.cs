@@ -428,6 +428,115 @@ namespace PhiZoneApi.Migrations
                     b.ToTable("Collaborations");
                 });
 
+            modelBuilder.Entity("PhiZoneApi.Models.PetAnswer", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Answer1")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Answer2")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Answer3")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int?>("AssessorId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Chart")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("DateCreated")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset>("DateUpdated")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("ObjectiveScore")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("OwnerId")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("Question1")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("Question2")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("Question3")
+                        .HasColumnType("uuid");
+
+                    b.Property<int?>("SubjectiveScore")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("TotalScore")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AssessorId");
+
+                    b.HasIndex("OwnerId");
+
+                    b.ToTable("PetAnswers");
+                });
+
+            modelBuilder.Entity("PhiZoneApi.Models.PetChoice", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsCorrect")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("QuestionId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("QuestionId");
+
+                    b.ToTable("PetChoices");
+                });
+
+            modelBuilder.Entity("PhiZoneApi.Models.PetQuestion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Language")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Position")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("PetQuestions");
+                });
+
             modelBuilder.Entity("PhiZoneApi.Models.Region", b =>
                 {
                     b.Property<int>("Id")
@@ -1511,6 +1620,34 @@ namespace PhiZoneApi.Migrations
                     b.Navigation("Inviter");
 
                     b.Navigation("Submission");
+                });
+
+            modelBuilder.Entity("PhiZoneApi.Models.PetAnswer", b =>
+                {
+                    b.HasOne("PhiZoneApi.Models.User", "Assessor")
+                        .WithMany()
+                        .HasForeignKey("AssessorId");
+
+                    b.HasOne("PhiZoneApi.Models.User", "Owner")
+                        .WithMany()
+                        .HasForeignKey("OwnerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Assessor");
+
+                    b.Navigation("Owner");
+                });
+
+            modelBuilder.Entity("PhiZoneApi.Models.PetChoice", b =>
+                {
+                    b.HasOne("PhiZoneApi.Models.PetQuestion", "Question")
+                        .WithMany()
+                        .HasForeignKey("QuestionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Question");
                 });
 
             modelBuilder.Entity("PhiZoneApi.Models.Resource", b =>

@@ -116,6 +116,9 @@ builder.Services.AddScoped<ISongSubmissionRepository, SongSubmissionRepository>(
 builder.Services.AddScoped<IChartSubmissionRepository, ChartSubmissionRepository>();
 builder.Services.AddScoped<IChartAssetSubmissionRepository, ChartAssetSubmissionRepository>();
 builder.Services.AddScoped<ICollaborationRepository, CollaborationRepository>();
+builder.Services.AddScoped<IPetQuestionRepository, PetQuestionRepository>();
+builder.Services.AddScoped<IPetChoiceRepository, PetChoiceRepository>();
+builder.Services.AddScoped<IPetAnswerRepository, PetAnswerRepository>();
 builder.Services.AddScoped<IFilterService, FilterService>();
 builder.Services.AddScoped<ILikeService, LikeService>();
 builder.Services.AddScoped<IVoteService, VoteService>();

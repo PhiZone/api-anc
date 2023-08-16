@@ -82,9 +82,8 @@ public class AuthenticationController : Controller
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(OpenIddictTokenResponseDto))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(OpenIddictErrorDto))]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized, Type = typeof(OpenIddictErrorDto))]
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(OpenIddictErrorDto))]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(OpenIddictErrorDto))]
     // ReSharper disable once UnusedParameter.Global
     public async Task<IActionResult> Exchange([FromForm] OpenIddictTokenRequestDto dto,
         [FromQuery] LoginMode mode = LoginMode.Direct)
@@ -102,8 +101,7 @@ public class AuthenticationController : Controller
             {
                 return BadRequest(new ResponseDto<object>
                 {
-                    Status = ResponseStatus.ErrorBrief,
-                    Code = ResponseCodes.InvalidData
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidData
                 });
             }
 
@@ -118,7 +116,13 @@ public class AuthenticationController : Controller
             var responseDto =
                 JsonConvert.DeserializeObject<TapTapDelivererDto>(await response.Content.ReadAsStringAsync())!;
             var user = await _userRepository.GetUserByTapUnionId(responseDto.Data.Unionid);
-            if (user == null) return NotFound(null);
+            if (user == null)
+                return NotFound(new AuthenticationProperties(new Dictionary<string, string>
+                {
+                    [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidToken,
+                    [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
+                        "Unable to find a user with provided credentials."
+                }!));
 
             var actionResult = await CheckUserLockoutState(user);
             if (actionResult != null) return actionResult;
@@ -145,7 +149,13 @@ public class AuthenticationController : Controller
         if (request.IsPasswordGrantType())
         {
             var user = await _userManager.FindByEmailAsync(request.Username!);
-            if (user == null) return NotFound(null);
+            if (user == null)
+                return NotFound(new AuthenticationProperties(new Dictionary<string, string>
+                {
+                    [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidToken,
+                    [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
+                        "Unable to find a user with provided credentials."
+                }!));
 
             var actionResult = await CheckUserLockoutState(user);
             if (actionResult != null) return actionResult;
@@ -202,10 +212,13 @@ public class AuthenticationController : Controller
 
             var user = await _userManager.FindByIdAsync(result.Principal!.GetClaim(Claims.Subject)!);
             if (user == null)
-                return Unauthorized(new ResponseDto<object>
-                {
-                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.RefreshTokenOutdated
-                });
+                return Forbid(
+                    new AuthenticationProperties(new Dictionary<string, string>
+                    {
+                        [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.ExpiredToken,
+                        [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
+                            "The refresh token has expired."
+                    }!), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
 
             var actionResult = await CheckUserLockoutState(user);
             if (actionResult != null) return actionResult;
@@ -423,8 +436,7 @@ public class AuthenticationController : Controller
         {
             return BadRequest(new ResponseDto<object>
             {
-                Status = ResponseStatus.ErrorBrief,
-                Code = ResponseCodes.InvalidData
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidData
             });
         }
 

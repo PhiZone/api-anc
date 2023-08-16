@@ -70,7 +70,8 @@ public class AnnouncementController : Controller
         [FromQuery] AnnouncementFilterDto? filterDto = null)
     {
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        dto.PerPage = dto.PerPage > 0 ? dto.PerPage : dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : -1;
+        dto.PerPage = dto.PerPage > 0 && dto.PerPage < _dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
+            dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : _dataSettings.Value.PaginationMaxPerPage;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser);
         var announcements = await _announcementRepository.GetAnnouncementsAsync(dto.Order, dto.Desc, position,
@@ -116,7 +117,9 @@ public class AnnouncementController : Controller
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         if (!await _announcementRepository.AnnouncementExistsAsync(id))
             return NotFound(new ResponseDto<object>
-                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
         var announcement = await _announcementRepository.GetAnnouncementAsync(id);
         var dto = await _dtoMapper.MapAnnouncementAsync<AnnouncementDto>(announcement, currentUser);
 
@@ -145,11 +148,11 @@ public class AnnouncementController : Controller
     {
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if (!await _resourceService.HasPermission(currentUser, Roles.Administrator))
-            return StatusCode(StatusCodes.Status403Forbidden, new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief,
-                Code = ResponseCodes.InsufficientPermission
-            });
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
 
         var announcement = new Announcement
         {
@@ -201,11 +204,11 @@ public class AnnouncementController : Controller
 
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if (!await _resourceService.HasPermission(currentUser, Roles.Administrator))
-            return StatusCode(StatusCodes.Status403Forbidden, new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief,
-                Code = ResponseCodes.InsufficientPermission
-            });
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
 
         var dto = _mapper.Map<AnnouncementRequestDto>(announcement);
         patchDocument.ApplyTo(dto, ModelState);
@@ -288,11 +291,14 @@ public class AnnouncementController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetAnnouncementLikes([FromRoute] Guid id, [FromQuery] ArrayWithTimeRequestDto dto)
     {
-        dto.PerPage = dto.PerPage > 0 ? dto.PerPage : dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : -1;
+        dto.PerPage = dto.PerPage > 0 && dto.PerPage < _dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
+            dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : _dataSettings.Value.PaginationMaxPerPage;
         var position = dto.PerPage * (dto.Page - 1);
         if (!await _announcementRepository.AnnouncementExistsAsync(id))
             return NotFound(new ResponseDto<object>
-                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
         var likes = await _likeRepository.GetLikesAsync(dto.Order, dto.Desc, position, dto.PerPage,
             e => e.ResourceId == id);
         var list = _mapper.Map<List<LikeDto>>(likes);
@@ -331,7 +337,9 @@ public class AnnouncementController : Controller
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if (!await _announcementRepository.AnnouncementExistsAsync(id))
             return NotFound(new ResponseDto<object>
-                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
         var announcement = await _announcementRepository.GetAnnouncementAsync(id);
         if (!await _likeService.CreateLikeAsync(announcement, currentUser.Id))
             return BadRequest(new ResponseDto<object>
@@ -363,7 +371,9 @@ public class AnnouncementController : Controller
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if (!await _announcementRepository.AnnouncementExistsAsync(id))
             return NotFound(new ResponseDto<object>
-                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
         var announcement = await _announcementRepository.GetAnnouncementAsync(id);
         if (!await _likeService.RemoveLikeAsync(announcement, currentUser.Id))
             return BadRequest(new ResponseDto<object>
@@ -391,11 +401,14 @@ public class AnnouncementController : Controller
         [FromQuery] ArrayWithTimeRequestDto dto)
     {
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        dto.PerPage = dto.PerPage > 0 ? dto.PerPage : dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : -1;
+        dto.PerPage = dto.PerPage > 0 && dto.PerPage < _dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
+            dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : _dataSettings.Value.PaginationMaxPerPage;
         var position = dto.PerPage * (dto.Page - 1);
         if (!await _announcementRepository.AnnouncementExistsAsync(id))
             return NotFound(new ResponseDto<object>
-                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
         var comments = await _commentRepository.GetCommentsAsync(dto.Order, dto.Desc, position, dto.PerPage,
             e => e.ResourceId == id);
         var list = new List<CommentDto>();
@@ -446,7 +459,9 @@ public class AnnouncementController : Controller
                 });
         if (!await _announcementRepository.AnnouncementExistsAsync(id))
             return NotFound(new ResponseDto<object>
-                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
         var announcement = await _announcementRepository.GetAnnouncementAsync(id);
         var comment = new Comment
         {

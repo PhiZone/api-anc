@@ -30,19 +30,19 @@ public class ChartSubmissionRepository : IChartSubmissionRepository
             search = search.Trim().ToUpper();
             result = result.Where(chart =>
                 (chart.Song != null
-                    ? chart.Song.Title.ToUpper().Contains(search) ||
-                      (chart.Song.Edition != null && chart.Song.Edition.ToUpper().Contains(search)) ||
-                      chart.Song.AuthorName.ToUpper().Contains(search) ||
-                      (chart.Song.Description != null && chart.Song.Description.ToUpper().Contains(search))
-                    : chart.SongSubmission!.Title.ToUpper().Contains(search) ||
+                    ? chart.Song.Title.ToUpper().Like(search) ||
+                      (chart.Song.Edition != null && chart.Song.Edition.ToUpper().Like(search)) ||
+                      chart.Song.AuthorName.ToUpper().Like(search) ||
+                      (chart.Song.Description != null && chart.Song.Description.ToUpper().Like(search))
+                    : chart.SongSubmission!.Title.ToUpper().Like(search) ||
                       (chart.SongSubmission.Edition != null &&
-                       chart.SongSubmission.Edition.ToUpper().Contains(search)) ||
-                      chart.SongSubmission.AuthorName.ToUpper().Contains(search) ||
+                       chart.SongSubmission.Edition.ToUpper().Like(search)) ||
+                      chart.SongSubmission.AuthorName.ToUpper().Like(search) ||
                       (chart.SongSubmission.Description != null &&
-                       chart.SongSubmission.Description.ToUpper().Contains(search))) ||
-                (chart.Title != null && chart.Title.ToUpper().Contains(search)) ||
-                chart.AuthorName.ToUpper().Contains(search) || (chart.Description != null &&
-                                                                chart.Description.ToUpper().Contains(search)));
+                       chart.SongSubmission.Description.ToUpper().Like(search))) ||
+                (chart.Title != null && chart.Title.ToUpper().Like(search)) ||
+                chart.AuthorName.ToUpper().Like(search) || (chart.Description != null &&
+                                                                chart.Description.ToUpper().Like(search)));
         }
 
         result = result.Skip(position);
@@ -60,21 +60,21 @@ public class ChartSubmissionRepository : IChartSubmissionRepository
         {
             search = search.Trim().ToUpper();
             result = result.Where(chart => (chart.Song != null
-                                               ? chart.Song.Title.ToUpper().Contains(search) ||
+                                               ? chart.Song.Title.ToUpper().Like(search) ||
                                                  (chart.Song.Edition != null &&
-                                                  chart.Song.Edition.ToUpper().Contains(search)) ||
-                                                 chart.Song.AuthorName.ToUpper().Contains(search) ||
+                                                  chart.Song.Edition.ToUpper().Like(search)) ||
+                                                 chart.Song.AuthorName.ToUpper().Like(search) ||
                                                  (chart.Song.Description != null &&
-                                                  chart.Song.Description.ToUpper().Contains(search))
-                                               : chart.SongSubmission!.Title.ToUpper().Contains(search) ||
+                                                  chart.Song.Description.ToUpper().Like(search))
+                                               : chart.SongSubmission!.Title.ToUpper().Like(search) ||
                                                  (chart.SongSubmission.Edition != null &&
-                                                  chart.SongSubmission.Edition.ToUpper().Contains(search)) ||
-                                                 chart.SongSubmission.AuthorName.ToUpper().Contains(search) ||
+                                                  chart.SongSubmission.Edition.ToUpper().Like(search)) ||
+                                                 chart.SongSubmission.AuthorName.ToUpper().Like(search) ||
                                                  (chart.SongSubmission.Description != null &&
-                                                  chart.SongSubmission.Description.ToUpper().Contains(search))) ||
-                                           (chart.Title != null && chart.Title.ToUpper().Contains(search)) ||
-                                           chart.AuthorName.ToUpper().Contains(search) || (chart.Description != null &&
-                                               chart.Description.ToUpper().Contains(search)));
+                                                  chart.SongSubmission.Description.ToUpper().Like(search))) ||
+                                           (chart.Title != null && chart.Title.ToUpper().Like(search)) ||
+                                           chart.AuthorName.ToUpper().Like(search) || (chart.Description != null &&
+                                               chart.Description.ToUpper().Like(search)));
         }
 
         result = result.Skip(position);
@@ -127,21 +127,21 @@ public class ChartSubmissionRepository : IChartSubmissionRepository
         {
             search = search.Trim().ToUpper();
             result = result.Where(chart => (chart.Song != null
-                                               ? chart.Song.Title.ToUpper().Contains(search) ||
+                                               ? chart.Song.Title.ToUpper().Like(search) ||
                                                  (chart.Song.Edition != null &&
-                                                  chart.Song.Edition.ToUpper().Contains(search)) ||
-                                                 chart.Song.AuthorName.ToUpper().Contains(search) ||
+                                                  chart.Song.Edition.ToUpper().Like(search)) ||
+                                                 chart.Song.AuthorName.ToUpper().Like(search) ||
                                                  (chart.Song.Description != null &&
-                                                  chart.Song.Description.ToUpper().Contains(search))
-                                               : chart.SongSubmission!.Title.ToUpper().Contains(search) ||
+                                                  chart.Song.Description.ToUpper().Like(search))
+                                               : chart.SongSubmission!.Title.ToUpper().Like(search) ||
                                                  (chart.SongSubmission.Edition != null &&
-                                                  chart.SongSubmission.Edition.ToUpper().Contains(search)) ||
-                                                 chart.SongSubmission.AuthorName.ToUpper().Contains(search) ||
+                                                  chart.SongSubmission.Edition.ToUpper().Like(search)) ||
+                                                 chart.SongSubmission.AuthorName.ToUpper().Like(search) ||
                                                  (chart.SongSubmission.Description != null &&
-                                                  chart.SongSubmission.Description.ToUpper().Contains(search))) ||
-                                           (chart.Title != null && chart.Title.ToUpper().Contains(search)) ||
-                                           chart.AuthorName.ToUpper().Contains(search) || (chart.Description != null &&
-                                               chart.Description.ToUpper().Contains(search)));
+                                                  chart.SongSubmission.Description.ToUpper().Like(search))) ||
+                                           (chart.Title != null && chart.Title.ToUpper().Like(search)) ||
+                                           chart.AuthorName.ToUpper().Like(search) || (chart.Description != null &&
+                                               chart.Description.ToUpper().Like(search)));
         }
 
         return await result.CountAsync();
@@ -158,21 +158,21 @@ public class ChartSubmissionRepository : IChartSubmissionRepository
         {
             search = search.Trim().ToUpper();
             result = result.Where(chart => (chart.Song != null
-                                               ? chart.Song.Title.ToUpper().Contains(search) ||
+                                               ? chart.Song.Title.ToUpper().Like(search) ||
                                                  (chart.Song.Edition != null &&
-                                                  chart.Song.Edition.ToUpper().Contains(search)) ||
-                                                 chart.Song.AuthorName.ToUpper().Contains(search) ||
+                                                  chart.Song.Edition.ToUpper().Like(search)) ||
+                                                 chart.Song.AuthorName.ToUpper().Like(search) ||
                                                  (chart.Song.Description != null &&
-                                                  chart.Song.Description.ToUpper().Contains(search))
-                                               : chart.SongSubmission!.Title.ToUpper().Contains(search) ||
+                                                  chart.Song.Description.ToUpper().Like(search))
+                                               : chart.SongSubmission!.Title.ToUpper().Like(search) ||
                                                  (chart.SongSubmission.Edition != null &&
-                                                  chart.SongSubmission.Edition.ToUpper().Contains(search)) ||
-                                                 chart.SongSubmission.AuthorName.ToUpper().Contains(search) ||
+                                                  chart.SongSubmission.Edition.ToUpper().Like(search)) ||
+                                                 chart.SongSubmission.AuthorName.ToUpper().Like(search) ||
                                                  (chart.SongSubmission.Description != null &&
-                                                  chart.SongSubmission.Description.ToUpper().Contains(search))) ||
-                                           (chart.Title != null && chart.Title.ToUpper().Contains(search)) ||
-                                           chart.AuthorName.ToUpper().Contains(search) || (chart.Description != null &&
-                                               chart.Description.ToUpper().Contains(search)));
+                                                  chart.SongSubmission.Description.ToUpper().Like(search))) ||
+                                           (chart.Title != null && chart.Title.ToUpper().Like(search)) ||
+                                           chart.AuthorName.ToUpper().Like(search) || (chart.Description != null &&
+                                               chart.Description.ToUpper().Like(search)));
         }
 
         return await result.CountAsync();

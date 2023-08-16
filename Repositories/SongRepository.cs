@@ -28,10 +28,10 @@ public class SongRepository : ISongRepository
         if (search != null)
         {
             search = search.Trim().ToUpper();
-            result = result.Where(song => song.Title.ToUpper().Contains(search) ||
-                                          (song.Edition != null && song.Edition.ToUpper().Contains(search)) ||
-                                          song.AuthorName.ToUpper().Contains(search) || (song.Description != null &&
-                                              song.Description.ToUpper().Contains(search)));
+            result = result.Where(song => song.Title.ToUpper().Like(search) ||
+                                          (song.Edition != null && song.Edition.ToUpper().Like(search)) ||
+                                          song.AuthorName.ToUpper().Like(search) || (song.Description != null &&
+                                              song.Description.ToUpper().Like(search)));
         }
 
         result = result.Skip(position);
@@ -55,9 +55,9 @@ public class SongRepository : ISongRepository
         {
             search = search.Trim().ToUpper();
             result = result.Where(chart =>
-                (chart.Title != null && chart.Title.ToUpper().Contains(search)) ||
-                chart.AuthorName.ToUpper().Contains(search) ||
-                (chart.Description != null && chart.Description.ToUpper().Contains(search)));
+                (chart.Title != null && chart.Title.ToUpper().Like(search)) ||
+                chart.AuthorName.ToUpper().Like(search) ||
+                (chart.Description != null && chart.Description.ToUpper().Like(search)));
         }
 
         result = result.Skip(position);
@@ -102,10 +102,10 @@ public class SongRepository : ISongRepository
         if (search != null)
         {
             search = search.Trim().ToUpper();
-            result = result.Where(song => song.Title.ToUpper().Contains(search) ||
-                                          (song.Edition != null && song.Edition.ToUpper().Contains(search)) ||
-                                          song.AuthorName.ToUpper().Contains(search) || (song.Description != null &&
-                                              song.Description.ToUpper().Contains(search)));
+            result = result.Where(song => song.Title.ToUpper().Like(search) ||
+                                          (song.Edition != null && song.Edition.ToUpper().Like(search)) ||
+                                          song.AuthorName.ToUpper().Like(search) || (song.Description != null &&
+                                              song.Description.ToUpper().Like(search)));
         }
 
         return await result.CountAsync();
@@ -123,9 +123,9 @@ public class SongRepository : ISongRepository
         {
             search = search.Trim().ToUpper();
             result = result.Where(chart =>
-                (chart.Title != null && chart.Title.ToUpper().Contains(search)) ||
-                chart.AuthorName.ToUpper().Contains(search) ||
-                (chart.Description != null && chart.Description.ToUpper().Contains(search)));
+                (chart.Title != null && chart.Title.ToUpper().Like(search)) ||
+                chart.AuthorName.ToUpper().Like(search) ||
+                (chart.Description != null && chart.Description.ToUpper().Like(search)));
         }
 
         return await result.CountAsync();

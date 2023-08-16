@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using PhiZoneApi.Enums;
 
 namespace PhiZoneApi.Models;
 
@@ -6,7 +7,7 @@ public class User : IdentityUser<int>
 {
     public string? Avatar { get; set; }
 
-    public int Gender { get; set; }
+    public Gender Gender { get; set; }
 
     public string? Biography { get; set; }
 

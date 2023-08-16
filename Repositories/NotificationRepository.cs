@@ -27,7 +27,7 @@ public class NotificationRepository : INotificationRepository
         if (search != null)
         {
             search = search.Trim().ToUpper();
-            result = result.Where(notification => notification.Content.ToUpper().Contains(search));
+            result = result.Where(notification => notification.Content.ToUpper().Like(search));
         }
 
         result = result.Skip(position);
@@ -85,7 +85,7 @@ public class NotificationRepository : INotificationRepository
         if (search != null)
         {
             search = search.Trim().ToUpper();
-            result = result.Where(notification => notification.Content.ToUpper().Contains(search));
+            result = result.Where(notification => notification.Content.ToUpper().Like(search));
         }
 
         return await result.CountAsync();

@@ -8,6 +8,7 @@ public class ReplyCreationDto
 {
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     [MaxLength(2000, ErrorMessage = ResponseCodes.ValueTooLong)]
+    [UserInputValidator(ErrorMessage = ResponseCodes.ContentProhibited)]
     public string Content { get; set; } = null!;
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]

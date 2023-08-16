@@ -182,7 +182,7 @@ public partial class DataMigrationService : IHostedService
                         "zh-Hant" => "zh-TW",
                         _ => "zh-CN"
                     },
-                    Gender = reader.GetInt32("gender"),
+                    Gender = (Gender)reader.GetInt32("gender"),
                     Biography = await reader.GetStr("bio"),
                     Experience = reader.GetInt32("exp"),
                     Tag = await reader.GetStr("tag"),

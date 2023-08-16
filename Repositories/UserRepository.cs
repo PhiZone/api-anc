@@ -29,10 +29,10 @@ public class UserRepository : IUserRepository
         {
             search = search.Trim().ToUpper();
             result = result.Where(user =>
-                (user.NormalizedUserName != null && user.NormalizedUserName.Contains(search)) ||
-                (user.Tag != null && user.Tag.ToUpper().Contains(search)) ||
-                (user.Biography != null && user.Biography.ToUpper().Contains(search)) ||
-                user.Language.ToUpper().Contains(search));
+                (user.NormalizedUserName != null && user.NormalizedUserName.Like(search)) ||
+                (user.Tag != null && user.Tag.ToUpper().Like(search)) ||
+                (user.Biography != null && user.Biography.ToUpper().Like(search)) ||
+                user.Language.ToUpper().Like(search));
         }
 
         result = result.Skip(position);
@@ -54,10 +54,10 @@ public class UserRepository : IUserRepository
         {
             search = search.Trim().ToUpper();
             result = result.Where(user =>
-                (user.NormalizedUserName != null && user.NormalizedUserName.Contains(search)) ||
-                (user.Tag != null && user.Tag.ToUpper().Contains(search)) ||
-                (user.Biography != null && user.Biography.ToUpper().Contains(search)) ||
-                user.Language.ToUpper().Contains(search));
+                (user.NormalizedUserName != null && user.NormalizedUserName.Like(search)) ||
+                (user.Tag != null && user.Tag.ToUpper().Like(search)) ||
+                (user.Biography != null && user.Biography.ToUpper().Like(search)) ||
+                user.Language.ToUpper().Like(search));
         }
 
         return await result.CountAsync();

@@ -1,5 +1,6 @@
 ﻿using System.Linq.Expressions;
 using System.Reflection;
+using Microsoft.EntityFrameworkCore;
 
 namespace PhiZoneApi.Utils;
 
@@ -24,6 +25,11 @@ public static class LinqUtil
             var genericMethod = method!.MakeGenericMethod(typeof(T), propInfo.PropertyType);
             return (IQueryable<T>)genericMethod.Invoke(null, new object[] { query, expr })!;
         }
+    }
+
+    public static bool Like(this string property, string pattern)
+    {
+        return EF.Functions.Like(property, $"%{pattern}%");
     }
 
     private static PropertyInfo GetPropertyInfo(Type objType, string name)

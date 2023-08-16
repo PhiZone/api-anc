@@ -14,4 +14,6 @@ public interface IResourceService
     Task<bool> HasPermission(User user, Role targetRole);
 
     Task<bool> HasPermission(User user, int priority);
+
+    Task<Role?> GetRole(User user);
 }
