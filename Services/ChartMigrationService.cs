@@ -9,6 +9,7 @@ public class ChartMigrationService : IHostedService
     private IChartRepository _chartRepository = null!;
     private ILogger<ChartMigrationService> _logger = null!;
     private IRecordRepository _recordRepository = null!;
+    private IVoteService _voteService = null!;
     private IRecordService _recordService = null!;
 
     public ChartMigrationService(IServiceProvider serviceProvider)
@@ -59,8 +60,9 @@ public class ChartMigrationService : IHostedService
 
             await _recordRepository.UpdateRecordsAsync(records);
             chart.PlayCount = records.Count;
+            await _voteService.UpdateChartAsync(chart);
         }
 
-        await _chartRepository.UpdateChartsAsync(charts);
+        // await _chartRepository.UpdateChartsAsync(charts);
     }
 }

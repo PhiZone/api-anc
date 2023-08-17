@@ -76,10 +76,10 @@ public class VoteService : IVoteService
 
     public async Task<bool> UpdateChartAsync(Chart chart)
     {
-        var amount = await _voteRepository.CountVotesAsync(vote => vote.ChartId == chart.Id);
-        var r = GetReliability(amount);
-        var votes = await _voteRepository.GetVotesAsync("DateCreated", false, 0, amount,
+        var votes = await _voteRepository.GetVotesAsync("DateCreated", false, 0, -1,
             vote => vote.ChartId == chart.Id);
+        var amount = votes.Sum(vote => vote.Multiplier);
+        var r = GetReliability(amount);
         chart.Score = votes.Sum(vote => vote.Total * vote.Multiplier) / 6;
         chart.Rating = GetRating(chart.Score, amount, r);
         chart.RatingOnArrangement = GetRating(votes.Sum(vote => vote.Arrangement * vote.Multiplier), amount, r);
@@ -101,13 +101,13 @@ public class VoteService : IVoteService
         return _experienceList.FindLastIndex(exp => exp <= user.Experience);
     }
 
-    private static double GetRating(double sum, int amount, double reliability, double defaultValue = 2.5)
+    private static double GetRating(double sum, double amount, double reliability, double defaultValue = 2.5)
     {
         if (sum == 0 || amount == 0) return 0;
         return reliability * sum / amount + (1 - reliability) * defaultValue;
     }
 
-    private static double GetReliability(int amount)
+    private static double GetReliability(double amount)
     {
         return 1 - Math.Pow(1.3, -amount);
     }
