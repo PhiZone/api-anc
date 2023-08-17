@@ -391,7 +391,7 @@ public partial class DataMigrationService : IHostedService
                         edition.Contains("原版") || edition.ToUpper().Contains("ORIGINAL") ? EditionType.Original :
                         edition.Contains('剪') || edition.ToUpper().Contains("SELF") ||
                         edition.ToUpper().Contains("EDITED") ? EditionType.EditedByUploaderUnlicensed :
-                        EditionType.EditedByFirstParty,
+                        EditionType.EditedBySecondParty,
                     Edition =
                         edition.Contains("原版") || edition.ToUpper().Contains("ORIGINAL") || edition.Contains('剪') ||
                         edition.ToUpper().Contains("SELF") || edition.ToUpper().Contains("EDITED")
@@ -1007,7 +1007,7 @@ public partial class DataMigrationService : IHostedService
                         edition.Contains("原版") || edition.ToUpper().Contains("ORIGINAL") ? EditionType.Original :
                         edition.Contains('剪') || edition.ToUpper().Contains("SELF") ||
                         edition.ToUpper().Contains("EDITED") ? EditionType.EditedByUploaderUnlicensed :
-                        EditionType.EditedByFirstParty,
+                        EditionType.EditedBySecondParty,
                     Edition =
                         edition.Contains("原版") || edition.ToUpper().Contains("ORIGINAL") || edition.Contains('剪') ||
                         edition.ToUpper().Contains("SELF") || edition.ToUpper().Contains("EDITED")
