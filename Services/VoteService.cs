@@ -103,7 +103,7 @@ public class VoteService : IVoteService
 
     private static double GetRating(double sum, double amount, double reliability, double defaultValue = 2.5)
     {
-        if (sum == 0 || amount == 0) return 0;
+        if (sum == 0 || amount == 0) return defaultValue;
         return reliability * sum / amount + (1 - reliability) * defaultValue;
     }
 
