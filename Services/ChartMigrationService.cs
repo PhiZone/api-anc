@@ -49,7 +49,7 @@ public class ChartMigrationService : IHostedService
         var charts = await _chartRepository.GetChartsAsync("DateCreated", false, 0, -1);
         foreach (var chart in charts)
         {
-            _logger.LogInformation(LogEvents.ChartMigration, "Migrating chart #{Id}", chart.Id);
+            _logger.LogInformation(LogEvents.ChartMigration, "Migrating Chart #{Id}", chart.Id);
             var records = await _recordRepository.GetRecordsAsync("DateCreated", false, 0, -1, e => e.ChartId == chart.Id);
             foreach (var record in records)
             {
