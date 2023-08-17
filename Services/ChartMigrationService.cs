@@ -24,6 +24,7 @@ public class ChartMigrationService : IHostedService
         _logger = scope.ServiceProvider.GetRequiredService<ILogger<ChartMigrationService>>();
         _chartRepository = scope.ServiceProvider.GetRequiredService<IChartRepository>();
         _recordRepository = scope.ServiceProvider.GetRequiredService<IRecordRepository>();
+        _voteService = scope.ServiceProvider.GetRequiredService<IVoteService>();
         _recordService = scope.ServiceProvider.GetRequiredService<IRecordService>();
 
         _logger.LogInformation(LogEvents.ChartMigration, "Chart migration started");
