@@ -10,7 +10,7 @@ public class UserEmailRequestDto
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     [MaxLength(1000, ErrorMessage = ResponseCodes.ValueTooLong)]
     [UserInputValidator(ErrorMessage = ResponseCodes.ContentProhibited)]
-    public string Email { get; set; } = null!;
+    public string Email { get; set; } = string.Empty;
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     public EmailRequestMode Mode { get; set; }

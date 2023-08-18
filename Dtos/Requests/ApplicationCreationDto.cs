@@ -10,7 +10,7 @@ public class ApplicationCreationDto
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     [MaxLength(40, ErrorMessage = ResponseCodes.ValueTooLong)]
     [UserInputValidator(ErrorMessage = ResponseCodes.ContentProhibited)]
-    public string Name { get; set; } = null!;
+    public string Name { get; set; } = string.Empty;
 
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
@@ -20,7 +20,7 @@ public class ApplicationCreationDto
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     [MaxLength(200, ErrorMessage = ResponseCodes.ValueTooLong)]
     [UserInputValidator(ErrorMessage = ResponseCodes.ContentProhibited)]
-    public string Illustrator { get; set; } = null!;
+    public string Illustrator { get; set; } = string.Empty;
 
     [MaxLength(2000, ErrorMessage = ResponseCodes.ValueTooLong)]
     [UserInputValidator(ErrorMessage = ResponseCodes.ContentProhibited)]
@@ -30,7 +30,7 @@ public class ApplicationCreationDto
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     [MaxLength(2000, ErrorMessage = ResponseCodes.ValueTooLong)]
     [UserInputValidator(ErrorMessage = ResponseCodes.ContentProhibited)]
-    public string Homepage { get; set; } = null!;
+    public string Homepage { get; set; } = string.Empty;
 
     [MaxLength(2000, ErrorMessage = ResponseCodes.ValueTooLong)]
     [UserInputValidator(ErrorMessage = ResponseCodes.ContentProhibited)]
@@ -44,7 +44,7 @@ public class ApplicationCreationDto
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     [MaxLength(2000, ErrorMessage = ResponseCodes.ValueTooLong)]
     [UserInputValidator(ErrorMessage = ResponseCodes.ContentProhibited)]
-    public string Secret { get; set; } = null!;
+    public string Secret { get; set; } = string.Empty;
 
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]

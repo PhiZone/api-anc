@@ -13,5 +13,5 @@ public class VolunteerVoteRequestDto
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     [MaxLength(2000, ErrorMessage = ResponseCodes.ValueTooLong)]
     [UserInputValidator(ErrorMessage = ResponseCodes.ContentProhibited)]
-    public string Message { get; set; } = null!;
+    public string Message { get; set; } = string.Empty;
 }

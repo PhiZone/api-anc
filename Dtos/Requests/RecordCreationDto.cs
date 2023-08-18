@@ -31,9 +31,9 @@ public class RecordCreationDto
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     [MaxLength(100, ErrorMessage = ResponseCodes.ValueTooLong)]
-    public string Hmac { get; set; } = null!;
+    public string Hmac { get; set; } = string.Empty;
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     [MaxLength(100, ErrorMessage = ResponseCodes.ValueTooLong)]
-    public string Checksum { get; set; } = null!;
+    public string Checksum { get; set; } = string.Empty;
 }

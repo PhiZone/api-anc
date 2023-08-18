@@ -7,5 +7,5 @@ public class ConfirmationCodeDto
 {
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     [MaxLength(6, ErrorMessage = ResponseCodes.ValueTooLong)]
-    public string Code { get; set; } = null!;
+    public string Code { get; set; } = string.Empty;
 }
