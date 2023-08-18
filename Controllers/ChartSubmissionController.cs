@@ -287,7 +287,8 @@ public class ChartSubmissionController : Controller
             VolunteerStatus = RequestStatus.Waiting,
             AdmissionStatus =
                 song != null
-                    ? song.OwnerId == currentUser.Id || song.Accessibility == Accessibility.AllowAny
+                    ?
+                    song.OwnerId == currentUser.Id || song.Accessibility == Accessibility.AllowAny
                         ? RequestStatus.Approved
                         : RequestStatus.Waiting
                     : songSubmission!.OwnerId == currentUser.Id ||
@@ -465,9 +466,10 @@ public class ChartSubmissionController : Controller
         if (dto.File != null)
         {
             var chartSubmissionInfo = await _chartService.Upload(
-                chartSubmission.Title ?? (chartSubmission.Song != null
-                    ? chartSubmission.Song.Title
-                    : chartSubmission.SongSubmission!.Title), dto.File);
+                chartSubmission.Title ?? (chartSubmission.SongId != null
+                    ? (await _songRepository.GetSongAsync(chartSubmission.SongId.Value)).Title
+                    : (await _songSubmissionRepository.GetSongSubmissionAsync(chartSubmission.SongSubmissionId!.Value))
+                    .Title), dto.File);
             if (chartSubmissionInfo == null)
                 return BadRequest(new ResponseDto<object>
                 {
@@ -535,9 +537,10 @@ public class ChartSubmissionController : Controller
         if (dto.File != null)
         {
             chartSubmission.Illustration = (await _fileStorageService.UploadImage<Chart>(
-                chartSubmission.Title ?? (chartSubmission.Song != null
-                    ? chartSubmission.Song.Title
-                    : chartSubmission.SongSubmission!.Title), dto.File, (16, 9))).Item1;
+                chartSubmission.Title ?? (chartSubmission.SongId != null
+                    ? (await _songRepository.GetSongAsync(chartSubmission.SongId.Value)).Title
+                    : (await _songSubmissionRepository.GetSongSubmissionAsync(chartSubmission.SongSubmissionId!.Value))
+                    .Title), dto.File, (16, 9))).Item1;
             chartSubmission.Status = RequestStatus.Waiting;
             chartSubmission.VolunteerStatus = RequestStatus.Waiting;
             chartSubmission.DateUpdated = DateTimeOffset.UtcNow;
@@ -665,8 +668,7 @@ public class ChartSubmissionController : Controller
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetChartSubmissionAssets([FromRoute] Guid id,
-        [FromQuery] ArrayWithTimeRequestDto dto,
-        [FromQuery] ChartAssetSubmissionFilterDto? filterDto = null)
+        [FromQuery] ArrayWithTimeRequestDto dto, [FromQuery] ChartAssetSubmissionFilterDto? filterDto = null)
     {
         if (!await _chartSubmissionRepository.ChartSubmissionExistsAsync(id))
             return NotFound(new ResponseDto<object>
@@ -692,8 +694,7 @@ public class ChartSubmissionController : Controller
         var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser,
             e => e.ChartSubmissionId == id);
         var chartAssets = await _chartAssetSubmissionRepository.GetChartAssetSubmissionsAsync(dto.Order, dto.Desc,
-            position,
-            dto.PerPage, predicateExpr);
+            position, dto.PerPage, predicateExpr);
         var total = await _chartAssetSubmissionRepository.CountChartAssetSubmissionsAsync(predicateExpr);
         var list = chartAssets.Select(chartAsset => _mapper.Map<ChartAssetDto>(chartAsset)).ToList();
 
@@ -816,9 +817,10 @@ public class ChartSubmissionController : Controller
             Type = dto.Type,
             Name = dto.Name,
             File = (await _fileStorageService.Upload<ChartAsset>(
-                chartSubmission.Title ?? (chartSubmission.Song != null
-                    ? chartSubmission.Song.Title
-                    : chartSubmission.SongSubmission!.Title), dto.File)).Item1,
+                chartSubmission.Title ?? (chartSubmission.SongId != null
+                    ? (await _songRepository.GetSongAsync(chartSubmission.SongId.Value)).Title
+                    : (await _songSubmissionRepository.GetSongSubmissionAsync(chartSubmission.SongSubmissionId!
+                        .Value)).Title), dto.File)).Item1,
             OwnerId = currentUser.Id,
             DateCreated = DateTimeOffset.UtcNow,
             DateUpdated = DateTimeOffset.UtcNow
@@ -965,9 +967,10 @@ public class ChartSubmissionController : Controller
         if (dto.File != null)
         {
             chartAsset.File = (await _fileStorageService.Upload<ChartAsset>(
-                chartSubmission.Title ?? (chartSubmission.Song != null
-                    ? chartSubmission.Song.Title
-                    : chartSubmission.SongSubmission!.Title), dto.File)).Item1;
+                chartSubmission.Title ?? (chartSubmission.SongId != null
+                    ? (await _songRepository.GetSongAsync(chartSubmission.SongId.Value)).Title
+                    : (await _songSubmissionRepository.GetSongSubmissionAsync(chartSubmission.SongSubmissionId!.Value))
+                    .Title), dto.File)).Item1;
             chartAsset.DateUpdated = DateTimeOffset.UtcNow;
             chartSubmission.Status = RequestStatus.Waiting;
             chartSubmission.VolunteerStatus = RequestStatus.Waiting;
