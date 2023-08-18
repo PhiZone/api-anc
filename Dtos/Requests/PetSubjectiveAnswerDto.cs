@@ -8,17 +8,17 @@ public class PetSubjectiveAnswerDto
 {
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     [UserInputValidator(ErrorMessage = ResponseCodes.ContentProhibited)]
-    public string Answer1 { get; set; } = null!;
+    public string Answer1 { get; set; } = string.Empty;
     
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     [UserInputValidator(ErrorMessage = ResponseCodes.ContentProhibited)]
-    public string Answer2 { get; set; } = null!;
+    public string Answer2 { get; set; } = string.Empty;
     
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     [UserInputValidator(ErrorMessage = ResponseCodes.ContentProhibited)]
-    public string Answer3 { get; set; } = null!;
+    public string Answer3 { get; set; } = string.Empty;
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     [UserInputValidator(ErrorMessage = ResponseCodes.ContentProhibited)]
-    public string Chart { get; set; } = null!;
+    public string Chart { get; set; } = string.Empty;
 }

@@ -18,7 +18,7 @@ public class ChartSubmissionCreationDto
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     [MaxLength(20, ErrorMessage = ResponseCodes.ValueTooLong)]
     [UserInputValidator(ErrorMessage = ResponseCodes.ContentProhibited)]
-    public string Level { get; set; } = null!;
+    public string Level { get; set; } = string.Empty;
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     public double Difficulty { get; set; }
@@ -28,7 +28,7 @@ public class ChartSubmissionCreationDto
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     [MaxLength(800, ErrorMessage = ResponseCodes.ValueTooLong)]
     [UserInputValidator(ErrorMessage = ResponseCodes.ContentProhibited)]
-    public string AuthorName { get; set; } = null!;
+    public string AuthorName { get; set; } = string.Empty;
 
     public IFormFile? Illustration { get; set; }
 

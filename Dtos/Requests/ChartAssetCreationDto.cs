@@ -14,7 +14,7 @@ public class ChartAssetCreationDto
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     [MaxLength(1000, ErrorMessage = ResponseCodes.ValueTooLong)]
     [UserInputValidator(ErrorMessage = ResponseCodes.ContentProhibited)]
-    public string Name { get; set; } = null!;
+    public string Name { get; set; } = string.Empty;
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     public IFormFile File { get; set; } = null!;
