@@ -345,7 +345,9 @@ public class ChartController : Controller
 
         if (dto.File != null)
         {
-            var chartInfo = await _chartService.Upload(chart.Title ?? chart.Song.Title, dto.File);
+            var chartInfo =
+                await _chartService.Upload(chart.Title ?? (await _songRepository.GetSongAsync(chart.SongId)).Title,
+                    dto.File);
             if (chartInfo == null)
                 return BadRequest(new ResponseDto<object>
                 {
@@ -437,8 +439,7 @@ public class ChartController : Controller
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> UpdateChartIllustration([FromRoute] Guid id,
-        [FromForm] FileDto dto)
+    public async Task<IActionResult> UpdateChartIllustration([FromRoute] Guid id, [FromForm] FileDto dto)
     {
         if (!await _chartRepository.ChartExistsAsync(id))
             return NotFound(new ResponseDto<object>
@@ -459,8 +460,8 @@ public class ChartController : Controller
         if (dto.File != null)
         {
             chart.Illustration =
-                (await _fileStorageService.UploadImage<Chart>(chart.Title ?? chart.Song.Title, dto.File,
-                    (16, 9))).Item1;
+                (await _fileStorageService.UploadImage<Chart>(
+                    chart.Title ?? (await _songRepository.GetSongAsync(chart.SongId)).Title, dto.File, (16, 9))).Item1;
             chart.DateUpdated = DateTimeOffset.UtcNow;
         }
 
@@ -597,8 +598,7 @@ public class ChartController : Controller
         dto.PerPage = dto.PerPage > 0 && dto.PerPage < _dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
             dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : _dataSettings.Value.PaginationMaxPerPage;
         var position = dto.PerPage * (dto.Page - 1);
-        var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser,
-            e => e.ChartId == id);
+        var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser, e => e.ChartId == id);
         var chartAssets = await _chartAssetRepository.GetChartAssetsAsync(dto.Order, dto.Desc, position,
             dto.PerPage, predicateExpr);
         var total = await _chartAssetRepository.CountChartAssetsAsync(predicateExpr);
@@ -691,8 +691,7 @@ public class ChartController : Controller
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> CreateChartAsset([FromRoute] Guid id,
-        [FromForm] ChartAssetCreationDto dto)
+    public async Task<IActionResult> CreateChartAsset([FromRoute] Guid id, [FromForm] ChartAssetCreationDto dto)
     {
         if (!await _chartRepository.ChartExistsAsync(id))
             return NotFound(new ResponseDto<object>
@@ -716,7 +715,7 @@ public class ChartController : Controller
             Type = dto.Type,
             Name = dto.Name,
             File = (await _fileStorageService.Upload<ChartAsset>(
-                chart.Title ?? chart.Song.Title, dto.File)).Item1,
+                chart.Title ?? (await _songRepository.GetSongAsync(chart.SongId)).Title, dto.File)).Item1,
             OwnerId = currentUser.Id,
             DateCreated = DateTimeOffset.UtcNow,
             DateUpdated = DateTimeOffset.UtcNow
@@ -855,7 +854,7 @@ public class ChartController : Controller
         if (dto.File != null)
         {
             chartAsset.File = (await _fileStorageService.Upload<ChartAsset>(
-                chart.Title ?? chart.Song.Title, dto.File)).Item1;
+                chart.Title ?? (await _songRepository.GetSongAsync(chart.SongId)).Title, dto.File)).Item1;
             chartAsset.DateUpdated = DateTimeOffset.UtcNow;
             chart.DateUpdated = DateTimeOffset.UtcNow;
         }
@@ -981,7 +980,6 @@ public class ChartController : Controller
 
         return StatusCode(StatusCodes.Status201Created);
     }
-
 
     /// <summary>
     ///     Retrieves records from a specific chart.
