@@ -36,4 +36,6 @@ public interface IDtoMapper
     Task<T> MapApplicationAsync<T>(Application application, User? currentUser = null) where T : ApplicationDto;
 
     Task<T> MapAnnouncementAsync<T>(Announcement announcement, User? currentUser = null) where T : AnnouncementDto;
+
+    Task<T> MapNotificationAsync<T>(Notification notification, User? currentUser = null) where T : NotificationDto;
 }

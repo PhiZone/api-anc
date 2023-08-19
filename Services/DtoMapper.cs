@@ -210,4 +210,17 @@ public class DtoMapper : IDtoMapper
             : null;
         return dto;
     }
+
+    public async Task<T> MapNotificationAsync<T>(Notification notification, User? currentUser = null)
+        where T : NotificationDto
+    {
+        var dto = _mapper.Map<T>(notification);
+        if (notification.OperatorId != null)
+        {
+            dto.Operator =
+                await MapUserAsync<UserDto>(
+                    (await _userManager.FindByIdAsync(notification.OperatorId.Value.ToString()))!, currentUser);
+        }
+        return dto;
+    }
 }

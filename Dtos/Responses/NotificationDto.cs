@@ -11,7 +11,7 @@ public class NotificationDto
 
     public string Content { get; set; } = null!;
 
-    public User? Operator { get; set; }
+    public UserDto? Operator { get; set; }
 
     public int OwnerId { get; set; }
 
