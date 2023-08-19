@@ -19,8 +19,7 @@ public class SongSubmissionRepository : ISongSubmissionRepository
     }
 
     public async Task<ICollection<SongSubmission>> GetSongSubmissionsAsync(string order, bool desc, int position,
-        int take,
-        string? search = null, Expression<Func<SongSubmission, bool>>? predicate = null)
+        int take, string? search = null, Expression<Func<SongSubmission, bool>>? predicate = null)
     {
         var result = _context.SongSubmissions.OrderBy(order, desc);
 
@@ -28,11 +27,12 @@ public class SongSubmissionRepository : ISongSubmissionRepository
 
         if (search != null)
         {
-            search = search.Trim().ToUpper();
-            result = result.Where(song => song.Title.ToUpper().Like(search) ||
-                                          (song.Edition != null && song.Edition.ToUpper().Like(search)) ||
-                                          song.AuthorName.ToUpper().Like(search) || (song.Description != null &&
-                                              song.Description.ToUpper().Like(search)));
+            search = $"%{search.Trim().ToUpper()}%";
+            result = result.Where(song => EF.Functions.Like(song.Title.ToUpper(), search) ||
+                                          (song.Edition != null && EF.Functions.Like(song.Edition.ToUpper(), search)) ||
+                                          EF.Functions.Like(song.AuthorName.ToUpper(), search) ||
+                                          (song.Description != null &&
+                                           EF.Functions.Like(song.Description.ToUpper(), search)));
         }
 
         result = result.Skip(position);
@@ -40,8 +40,7 @@ public class SongSubmissionRepository : ISongSubmissionRepository
     }
 
     public async Task<ICollection<SongSubmission>> GetUserSongSubmissionsAsync(int userId, string order, bool desc,
-        int position, int take,
-        string? search = null, Expression<Func<SongSubmission, bool>>? predicate = null)
+        int position, int take, string? search = null, Expression<Func<SongSubmission, bool>>? predicate = null)
     {
         var result = _context.SongSubmissions.Where(song => song.OwnerId == userId).OrderBy(order, desc);
 
@@ -49,11 +48,12 @@ public class SongSubmissionRepository : ISongSubmissionRepository
 
         if (search != null)
         {
-            search = search.Trim().ToUpper();
-            result = result.Where(song => song.Title.ToUpper().Like(search) ||
-                                          (song.Edition != null && song.Edition.ToUpper().Like(search)) ||
-                                          song.AuthorName.ToUpper().Like(search) || (song.Description != null &&
-                                              song.Description.ToUpper().Like(search)));
+            search = $"%{search.Trim().ToUpper()}%";
+            result = result.Where(song => EF.Functions.Like(song.Title.ToUpper(), search) ||
+                                          (song.Edition != null && EF.Functions.Like(song.Edition.ToUpper(), search)) ||
+                                          EF.Functions.Like(song.AuthorName.ToUpper(), search) ||
+                                          (song.Description != null &&
+                                           EF.Functions.Like(song.Description.ToUpper(), search)));
         }
 
         result = result.Skip(position);
@@ -103,11 +103,12 @@ public class SongSubmissionRepository : ISongSubmissionRepository
 
         if (search != null)
         {
-            search = search.Trim().ToUpper();
-            result = result.Where(song => song.Title.ToUpper().Like(search) ||
-                                          (song.Edition != null && song.Edition.ToUpper().Like(search)) ||
-                                          song.AuthorName.ToUpper().Like(search) || (song.Description != null &&
-                                              song.Description.ToUpper().Like(search)));
+            search = $"%{search.Trim().ToUpper()}%";
+            result = result.Where(song => EF.Functions.Like(song.Title.ToUpper(), search) ||
+                                          (song.Edition != null && EF.Functions.Like(song.Edition.ToUpper(), search)) ||
+                                          EF.Functions.Like(song.AuthorName.ToUpper(), search) ||
+                                          (song.Description != null &&
+                                           EF.Functions.Like(song.Description.ToUpper(), search)));
         }
 
         return await result.CountAsync();
@@ -122,11 +123,12 @@ public class SongSubmissionRepository : ISongSubmissionRepository
 
         if (search != null)
         {
-            search = search.Trim().ToUpper();
-            result = result.Where(song => song.Title.ToUpper().Like(search) ||
-                                          (song.Edition != null && song.Edition.ToUpper().Like(search)) ||
-                                          song.AuthorName.ToUpper().Like(search) || (song.Description != null &&
-                                              song.Description.ToUpper().Like(search)));
+            search = $"%{search.Trim().ToUpper()}%";
+            result = result.Where(song => EF.Functions.Like(song.Title.ToUpper(), search) ||
+                                          (song.Edition != null && EF.Functions.Like(song.Edition.ToUpper(), search)) ||
+                                          EF.Functions.Like(song.AuthorName.ToUpper(), search) ||
+                                          (song.Description != null &&
+                                           EF.Functions.Like(song.Description.ToUpper(), search)));
         }
 
         return await result.CountAsync();

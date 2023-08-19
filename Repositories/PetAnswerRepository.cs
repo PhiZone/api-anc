@@ -25,10 +25,10 @@ public class PetAnswerRepository : IPetAnswerRepository
         if (predicate != null) result = result.Where(predicate);
         if (search != null)
         {
-            search = search.Trim().ToUpper();
+            search = $"%{search.Trim().ToUpper()}%";
             result = result.Where(petAnswer =>
-                petAnswer.Answer1.ToUpper().Like(search) || petAnswer.Answer2.ToUpper().Like(search) ||
-                petAnswer.Answer3.ToUpper().Like(search));
+                EF.Functions.Like(petAnswer.Answer1.ToUpper(), search) || EF.Functions.Like(petAnswer.Answer2.ToUpper(), search) ||
+            EF.Functions.Like(petAnswer.Answer3.ToUpper(), search));
         }
 
         result = result.Skip(position);
@@ -77,10 +77,10 @@ public class PetAnswerRepository : IPetAnswerRepository
         if (predicate != null) result = result.Where(predicate);
         if (search != null)
         {
-            search = search.Trim().ToUpper();
+            search = $"%{search.Trim().ToUpper()}%";
             result = result.Where(petAnswer =>
-                petAnswer.Answer1.ToUpper().Like(search) || petAnswer.Answer2.ToUpper().Like(search) ||
-                petAnswer.Answer3.ToUpper().Like(search));
+                EF.Functions.Like(petAnswer.Answer1.ToUpper(), search) || EF.Functions.Like(petAnswer.Answer2.ToUpper(), search) ||
+            EF.Functions.Like(petAnswer.Answer3.ToUpper(), search));
         }
 
         return await result.CountAsync();

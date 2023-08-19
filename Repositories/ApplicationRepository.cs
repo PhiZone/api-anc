@@ -25,11 +25,11 @@ public class ApplicationRepository : IApplicationRepository
         if (predicate != null) result = result.Where(predicate);
         if (search != null)
         {
-            search = search.Trim().ToUpper();
-            result = result.Where(application => application.Name.ToUpper().Like(search) ||
-                                                 application.Homepage.ToUpper().Like(search) ||
+            search = $"%{search.Trim().ToUpper()}%";
+            result = result.Where(application => EF.Functions.Like(application.Name.ToUpper(), search) ||
+                                                 EF.Functions.Like(application.Homepage.ToUpper(), search) ||
                                                  (application.Description != null &&
-                                                  application.Description.ToUpper().Like(search)));
+                                                  EF.Functions.Like(application.Description.ToUpper(), search)));
         }
 
         result = result.Skip(position);
@@ -79,11 +79,11 @@ public class ApplicationRepository : IApplicationRepository
         if (predicate != null) result = result.Where(predicate);
         if (search != null)
         {
-            search = search.Trim().ToUpper();
-            result = result.Where(application => application.Name.ToUpper().Like(search) ||
-                                                 application.Homepage.ToUpper().Like(search) ||
+            search = $"%{search.Trim().ToUpper()}%";
+            result = result.Where(application => EF.Functions.Like(application.Name.ToUpper(), search) ||
+                                                 EF.Functions.Like(application.Homepage.ToUpper(), search) ||
                                                  (application.Description != null &&
-                                                  application.Description.ToUpper().Like(search)));
+                                                  EF.Functions.Like(application.Description.ToUpper(), search)));
         }
 
         return await result.CountAsync();

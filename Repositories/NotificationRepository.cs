@@ -26,8 +26,8 @@ public class NotificationRepository : INotificationRepository
 
         if (search != null)
         {
-            search = search.Trim().ToUpper();
-            result = result.Where(notification => notification.Content.ToUpper().Like(search));
+            search = $"%{search.Trim().ToUpper()}%";
+            result = result.Where(notification => EF.Functions.Like(notification.Content.ToUpper(), search));
         }
 
         result = result.Skip(position);
@@ -84,8 +84,8 @@ public class NotificationRepository : INotificationRepository
 
         if (search != null)
         {
-            search = search.Trim().ToUpper();
-            result = result.Where(notification => notification.Content.ToUpper().Like(search));
+            search = $"%{search.Trim().ToUpper()}%";
+            result = result.Where(notification => EF.Functions.Like(notification.Content.ToUpper(), search));
         }
 
         return await result.CountAsync();

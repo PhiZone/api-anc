@@ -25,8 +25,8 @@ public class PetQuestionRepository : IPetQuestionRepository
         if (predicate != null) result = result.Where(predicate);
         if (search != null)
         {
-            search = search.Trim().ToUpper();
-            result = result.Where(petQuestion => petQuestion.Content.ToUpper().Like(search));
+            search = $"%{search.Trim().ToUpper()}%";
+            result = result.Where(petQuestion => EF.Functions.Like(petQuestion.Content.ToUpper(), search));
         }
 
         result = result.Skip(position);
@@ -84,8 +84,8 @@ public class PetQuestionRepository : IPetQuestionRepository
         if (predicate != null) result = result.Where(predicate);
         if (search != null)
         {
-            search = search.Trim().ToUpper();
-            result = result.Where(petQuestion => petQuestion.Content.ToUpper().Like(search));
+            search = $"%{search.Trim().ToUpper()}%";
+            result = result.Where(petQuestion => EF.Functions.Like(petQuestion.Content.ToUpper(), search));
         }
 
         return await result.CountAsync();

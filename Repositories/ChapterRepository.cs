@@ -28,10 +28,10 @@ public class ChapterRepository : IChapterRepository
 
         if (search != null)
         {
-            search = search.Trim().ToUpper();
+            search = $"%{search.Trim().ToUpper()}%";
             result = result.Where(chapter =>
-                chapter.Title.ToUpper().Like(search) || chapter.Subtitle.ToUpper().Like(search) ||
-                (chapter.Description != null && chapter.Description.ToUpper().Like(search)));
+                         EF.Functions.Like(chapter.Title.ToUpper(), search) || EF.Functions.Like(chapter.Subtitle.ToUpper(), search) ||
+                (chapter.Description != null && EF.Functions.Like(chapter.Description.ToUpper(), search)));
         }
 
         result = result.Skip(position);
@@ -54,8 +54,8 @@ public class ChapterRepository : IChapterRepository
 
         if (search != null)
         {
-            search = search.Trim().ToUpper();
-            result = result.Where(admission => admission.Label != null && admission.Label.ToUpper().Like(search));
+            search = $"%{search.Trim().ToUpper()}%";
+            result = result.Where(admission => admission.Label != null && EF.Functions.Like(admission.Label.ToUpper(), search));
         }
 
         result = result.Skip(position);
@@ -99,10 +99,10 @@ public class ChapterRepository : IChapterRepository
 
         if (search != null)
         {
-            search = search.Trim().ToUpper();
+            search = $"%{search.Trim().ToUpper()}%";
             result = result.Where(chapter =>
-                chapter.Title.ToUpper().Like(search) || chapter.Subtitle.ToUpper().Like(search) ||
-                (chapter.Description != null && chapter.Description.ToUpper().Like(search)));
+                         EF.Functions.Like(chapter.Title.ToUpper(), search) || EF.Functions.Like(chapter.Subtitle.ToUpper(), search) ||
+                (chapter.Description != null && EF.Functions.Like(chapter.Description.ToUpper(), search)));
         }
 
         return await result.CountAsync();
@@ -118,8 +118,8 @@ public class ChapterRepository : IChapterRepository
 
         if (search != null)
         {
-            search = search.Trim().ToUpper();
-            result = result.Where(admission => admission.Label != null && admission.Label.ToUpper().Like(search));
+            search = $"%{search.Trim().ToUpper()}%";
+            result = result.Where(admission => admission.Label != null && EF.Functions.Like(admission.Label.ToUpper(), search));
         }
 
         return await result.CountAsync();
