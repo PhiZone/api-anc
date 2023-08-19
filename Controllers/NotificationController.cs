@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -27,20 +26,20 @@ public class NotificationController : Controller
 {
     private readonly IOptions<DataSettings> _dataSettings;
     private readonly IFilterService _filterService;
-    private readonly IMapper _mapper;
+    private readonly IDtoMapper _dtoMapper;
     private readonly INotificationRepository _notificationRepository;
     private readonly IResourceService _resourceService;
     private readonly UserManager<User> _userManager;
 
     public NotificationController(IOptions<DataSettings> dataSettings, INotificationRepository notificationRepository,
-        UserManager<User> userManager, IResourceService resourceService, IFilterService filterService, IMapper mapper)
+        UserManager<User> userManager, IResourceService resourceService, IFilterService filterService, IDtoMapper dtoMapper)
     {
         _dataSettings = dataSettings;
         _notificationRepository = notificationRepository;
         _userManager = userManager;
         _resourceService = resourceService;
         _filterService = filterService;
-        _mapper = mapper;
+        _dtoMapper = dtoMapper;
     }
 
     /// <summary>
@@ -67,7 +66,11 @@ public class NotificationController : Controller
         var notifications = await _notificationRepository.GetNotificationsAsync(dto.Order, dto.Desc, position,
             dto.PerPage, dto.Search, predicateExpr);
         var total = await _notificationRepository.CountNotificationsAsync(dto.Search, predicateExpr);
-        var list = notifications.Select(notification => _mapper.Map<NotificationDto>(notification)).ToList();
+        var list = new List<NotificationDto>();
+        foreach (var notification in notifications)
+        {
+            list.Add(await _dtoMapper.MapNotificationAsync<NotificationDto>(notification, currentUser));
+        }
 
         if (notificationDto.MarkAsRead)
         {
@@ -128,7 +131,7 @@ public class NotificationController : Controller
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        var dto = _mapper.Map<NotificationDto>(notification);
+        var dto = await _dtoMapper.MapNotificationAsync<NotificationDto>(notification);
 
         if (notificationDto.MarkAsRead)
         {
