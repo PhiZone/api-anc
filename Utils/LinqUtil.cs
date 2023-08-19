@@ -27,11 +27,6 @@ public static class LinqUtil
         }
     }
 
-    public static bool Like(this string property, string pattern)
-    {
-        return EF.Functions.Like(property, $"%{pattern}%");
-    }
-
     private static PropertyInfo GetPropertyInfo(Type objType, string name)
     {
         var properties = objType.GetProperties();

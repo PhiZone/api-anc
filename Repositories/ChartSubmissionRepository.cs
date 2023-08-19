@@ -27,22 +27,23 @@ public class ChartSubmissionRepository : IChartSubmissionRepository
 
         if (search != null)
         {
-            search = search.Trim().ToUpper();
+            search = $"%{search.Trim().ToUpper()}%";
             result = result.Where(chart =>
                 (chart.Song != null
-                    ? chart.Song.Title.ToUpper().Like(search) ||
-                      (chart.Song.Edition != null && chart.Song.Edition.ToUpper().Like(search)) ||
-                      chart.Song.AuthorName.ToUpper().Like(search) ||
-                      (chart.Song.Description != null && chart.Song.Description.ToUpper().Like(search))
-                    : chart.SongSubmission!.Title.ToUpper().Like(search) ||
+                    ? EF.Functions.Like(chart.Song.Title.ToUpper(), search) ||
+                      (chart.Song.Edition != null && EF.Functions.Like(chart.Song.Edition.ToUpper(), search)) ||
+                      EF.Functions.Like(chart.Song.AuthorName.ToUpper(), search) ||
+                      (chart.Song.Description != null && EF.Functions.Like(chart.Song.Description.ToUpper(), search))
+                    : EF.Functions.Like(chart.SongSubmission!.Title.ToUpper(), search) ||
                       (chart.SongSubmission.Edition != null &&
-                       chart.SongSubmission.Edition.ToUpper().Like(search)) ||
-                      chart.SongSubmission.AuthorName.ToUpper().Like(search) ||
+                       EF.Functions.Like(chart.SongSubmission.Edition.ToUpper(), search)) ||
+                      EF.Functions.Like(chart.SongSubmission.AuthorName.ToUpper(), search) ||
                       (chart.SongSubmission.Description != null &&
-                       chart.SongSubmission.Description.ToUpper().Like(search))) ||
-                (chart.Title != null && chart.Title.ToUpper().Like(search)) ||
-                chart.AuthorName.ToUpper().Like(search) || (chart.Description != null &&
-                                                                chart.Description.ToUpper().Like(search)));
+                       EF.Functions.Like(chart.SongSubmission.Description.ToUpper(), search))) ||
+                (chart.Title != null && EF.Functions.Like(chart.Title.ToUpper(), search)) ||
+                EF.Functions.Like(chart.AuthorName.ToUpper(), search) || (chart.Description != null &&
+                                                                          EF.Functions.Like(chart.Description.ToUpper(),
+                                                                              search)));
         }
 
         result = result.Skip(position);
@@ -58,23 +59,23 @@ public class ChartSubmissionRepository : IChartSubmissionRepository
 
         if (search != null)
         {
-            search = search.Trim().ToUpper();
-            result = result.Where(chart => (chart.Song != null
-                                               ? chart.Song.Title.ToUpper().Like(search) ||
-                                                 (chart.Song.Edition != null &&
-                                                  chart.Song.Edition.ToUpper().Like(search)) ||
-                                                 chart.Song.AuthorName.ToUpper().Like(search) ||
-                                                 (chart.Song.Description != null &&
-                                                  chart.Song.Description.ToUpper().Like(search))
-                                               : chart.SongSubmission!.Title.ToUpper().Like(search) ||
-                                                 (chart.SongSubmission.Edition != null &&
-                                                  chart.SongSubmission.Edition.ToUpper().Like(search)) ||
-                                                 chart.SongSubmission.AuthorName.ToUpper().Like(search) ||
-                                                 (chart.SongSubmission.Description != null &&
-                                                  chart.SongSubmission.Description.ToUpper().Like(search))) ||
-                                           (chart.Title != null && chart.Title.ToUpper().Like(search)) ||
-                                           chart.AuthorName.ToUpper().Like(search) || (chart.Description != null &&
-                                               chart.Description.ToUpper().Like(search)));
+            search = $"%{search.Trim().ToUpper()}%";
+            result = result.Where(chart =>
+                (chart.Song != null
+                    ? EF.Functions.Like(chart.Song.Title.ToUpper(), search) ||
+                      (chart.Song.Edition != null && EF.Functions.Like(chart.Song.Edition.ToUpper(), search)) ||
+                      EF.Functions.Like(chart.Song.AuthorName.ToUpper(), search) ||
+                      (chart.Song.Description != null && EF.Functions.Like(chart.Song.Description.ToUpper(), search))
+                    : EF.Functions.Like(chart.SongSubmission!.Title.ToUpper(), search) ||
+                      (chart.SongSubmission.Edition != null &&
+                       EF.Functions.Like(chart.SongSubmission.Edition.ToUpper(), search)) ||
+                      EF.Functions.Like(chart.SongSubmission.AuthorName.ToUpper(), search) ||
+                      (chart.SongSubmission.Description != null &&
+                       EF.Functions.Like(chart.SongSubmission.Description.ToUpper(), search))) ||
+                (chart.Title != null && EF.Functions.Like(chart.Title.ToUpper(), search)) ||
+                EF.Functions.Like(chart.AuthorName.ToUpper(), search) || (chart.Description != null &&
+                                                                          EF.Functions.Like(chart.Description.ToUpper(),
+                                                                              search)));
         }
 
         result = result.Skip(position);
@@ -125,23 +126,23 @@ public class ChartSubmissionRepository : IChartSubmissionRepository
 
         if (search != null)
         {
-            search = search.Trim().ToUpper();
-            result = result.Where(chart => (chart.Song != null
-                                               ? chart.Song.Title.ToUpper().Like(search) ||
-                                                 (chart.Song.Edition != null &&
-                                                  chart.Song.Edition.ToUpper().Like(search)) ||
-                                                 chart.Song.AuthorName.ToUpper().Like(search) ||
-                                                 (chart.Song.Description != null &&
-                                                  chart.Song.Description.ToUpper().Like(search))
-                                               : chart.SongSubmission!.Title.ToUpper().Like(search) ||
-                                                 (chart.SongSubmission.Edition != null &&
-                                                  chart.SongSubmission.Edition.ToUpper().Like(search)) ||
-                                                 chart.SongSubmission.AuthorName.ToUpper().Like(search) ||
-                                                 (chart.SongSubmission.Description != null &&
-                                                  chart.SongSubmission.Description.ToUpper().Like(search))) ||
-                                           (chart.Title != null && chart.Title.ToUpper().Like(search)) ||
-                                           chart.AuthorName.ToUpper().Like(search) || (chart.Description != null &&
-                                               chart.Description.ToUpper().Like(search)));
+            search = $"%{search.Trim().ToUpper()}%";
+            result = result.Where(chart =>
+                (chart.Song != null
+                    ? EF.Functions.Like(chart.Song.Title.ToUpper(), search) ||
+                      (chart.Song.Edition != null && EF.Functions.Like(chart.Song.Edition.ToUpper(), search)) ||
+                      EF.Functions.Like(chart.Song.AuthorName.ToUpper(), search) ||
+                      (chart.Song.Description != null && EF.Functions.Like(chart.Song.Description.ToUpper(), search))
+                    : EF.Functions.Like(chart.SongSubmission!.Title.ToUpper(), search) ||
+                      (chart.SongSubmission.Edition != null &&
+                       EF.Functions.Like(chart.SongSubmission.Edition.ToUpper(), search)) ||
+                      EF.Functions.Like(chart.SongSubmission.AuthorName.ToUpper(), search) ||
+                      (chart.SongSubmission.Description != null &&
+                       EF.Functions.Like(chart.SongSubmission.Description.ToUpper(), search))) ||
+                (chart.Title != null && EF.Functions.Like(chart.Title.ToUpper(), search)) ||
+                EF.Functions.Like(chart.AuthorName.ToUpper(), search) || (chart.Description != null &&
+                                                                          EF.Functions.Like(chart.Description.ToUpper(),
+                                                                              search)));
         }
 
         return await result.CountAsync();
@@ -156,23 +157,23 @@ public class ChartSubmissionRepository : IChartSubmissionRepository
 
         if (search != null)
         {
-            search = search.Trim().ToUpper();
-            result = result.Where(chart => (chart.Song != null
-                                               ? chart.Song.Title.ToUpper().Like(search) ||
-                                                 (chart.Song.Edition != null &&
-                                                  chart.Song.Edition.ToUpper().Like(search)) ||
-                                                 chart.Song.AuthorName.ToUpper().Like(search) ||
-                                                 (chart.Song.Description != null &&
-                                                  chart.Song.Description.ToUpper().Like(search))
-                                               : chart.SongSubmission!.Title.ToUpper().Like(search) ||
-                                                 (chart.SongSubmission.Edition != null &&
-                                                  chart.SongSubmission.Edition.ToUpper().Like(search)) ||
-                                                 chart.SongSubmission.AuthorName.ToUpper().Like(search) ||
-                                                 (chart.SongSubmission.Description != null &&
-                                                  chart.SongSubmission.Description.ToUpper().Like(search))) ||
-                                           (chart.Title != null && chart.Title.ToUpper().Like(search)) ||
-                                           chart.AuthorName.ToUpper().Like(search) || (chart.Description != null &&
-                                               chart.Description.ToUpper().Like(search)));
+            search = $"%{search.Trim().ToUpper()}%";
+            result = result.Where(chart =>
+                (chart.Song != null
+                    ? EF.Functions.Like(chart.Song.Title.ToUpper(), search) ||
+                      (chart.Song.Edition != null && EF.Functions.Like(chart.Song.Edition.ToUpper(), search)) ||
+                      EF.Functions.Like(chart.Song.AuthorName.ToUpper(), search) ||
+                      (chart.Song.Description != null && EF.Functions.Like(chart.Song.Description.ToUpper(), search))
+                    : EF.Functions.Like(chart.SongSubmission!.Title.ToUpper(), search) ||
+                      (chart.SongSubmission.Edition != null &&
+                       EF.Functions.Like(chart.SongSubmission.Edition.ToUpper(), search)) ||
+                      EF.Functions.Like(chart.SongSubmission.AuthorName.ToUpper(), search) ||
+                      (chart.SongSubmission.Description != null &&
+                       EF.Functions.Like(chart.SongSubmission.Description.ToUpper(), search))) ||
+                (chart.Title != null && EF.Functions.Like(chart.Title.ToUpper(), search)) ||
+                EF.Functions.Like(chart.AuthorName.ToUpper(), search) || (chart.Description != null &&
+                                                                          EF.Functions.Like(chart.Description.ToUpper(),
+                                                                              search)));
         }
 
         return await result.CountAsync();

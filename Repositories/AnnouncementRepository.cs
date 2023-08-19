@@ -25,9 +25,9 @@ public class AnnouncementRepository : IAnnouncementRepository
         if (predicate != null) result = result.Where(predicate);
         if (search != null)
         {
-            search = search.Trim().ToUpper();
-            result = result.Where(announcement => announcement.Title.ToUpper().Like(search) ||
-                                                  announcement.Content.ToUpper().Like(search));
+            search = $"%{search.Trim().ToUpper()}%";
+            result = result.Where(announcement => EF.Functions.Like(announcement.Title.ToUpper(), search) ||
+                                                  EF.Functions.Like(announcement.Content.ToUpper(), search));
         }
 
         result = result.Skip(position);
@@ -77,9 +77,9 @@ public class AnnouncementRepository : IAnnouncementRepository
         if (predicate != null) result = result.Where(predicate);
         if (search != null)
         {
-            search = search.Trim().ToUpper();
-            result = result.Where(announcement => announcement.Title.ToUpper().Like(search) ||
-                                                  announcement.Content.ToUpper().Like(search));
+            search = $"%{search.Trim().ToUpper()}%";
+            result = result.Where(announcement => EF.Functions.Like(announcement.Title.ToUpper(), search) ||
+                                                  EF.Functions.Like(announcement.Content.ToUpper(), search));
         }
 
         return await result.CountAsync();

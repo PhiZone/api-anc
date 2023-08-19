@@ -27,11 +27,11 @@ public class SongRepository : ISongRepository
 
         if (search != null)
         {
-            search = search.Trim().ToUpper();
-            result = result.Where(song => song.Title.ToUpper().Like(search) ||
-                                          (song.Edition != null && song.Edition.ToUpper().Like(search)) ||
-                                          song.AuthorName.ToUpper().Like(search) || (song.Description != null &&
-                                              song.Description.ToUpper().Like(search)));
+            search = $"%{search.Trim().ToUpper()}%";
+            result = result.Where(song => EF.Functions.Like(song.Title.ToUpper(), search) ||
+                                          (song.Edition != null && EF.Functions.Like(song.Edition.ToUpper(), search)) ||
+                                          EF.Functions.Like(song.AuthorName.ToUpper(), search) || (song.Description != null &&
+                                              EF.Functions.Like(song.Description.ToUpper(), search)));
         }
 
         result = result.Skip(position);
@@ -53,11 +53,11 @@ public class SongRepository : ISongRepository
 
         if (search != null)
         {
-            search = search.Trim().ToUpper();
+            search = $"%{search.Trim().ToUpper()}%";
             result = result.Where(chart =>
-                (chart.Title != null && chart.Title.ToUpper().Like(search)) ||
-                chart.AuthorName.ToUpper().Like(search) ||
-                (chart.Description != null && chart.Description.ToUpper().Like(search)));
+                (chart.Title != null && EF.Functions.Like(chart.Title.ToUpper(), search)) ||
+                EF.Functions.Like(chart.AuthorName.ToUpper(), search) ||
+                (chart.Description != null && EF.Functions.Like(chart.Description.ToUpper(), search)));
         }
 
         result = result.Skip(position);
@@ -101,11 +101,11 @@ public class SongRepository : ISongRepository
 
         if (search != null)
         {
-            search = search.Trim().ToUpper();
-            result = result.Where(song => song.Title.ToUpper().Like(search) ||
-                                          (song.Edition != null && song.Edition.ToUpper().Like(search)) ||
-                                          song.AuthorName.ToUpper().Like(search) || (song.Description != null &&
-                                              song.Description.ToUpper().Like(search)));
+            search = $"%{search.Trim().ToUpper()}%";
+            result = result.Where(song => EF.Functions.Like(song.Title.ToUpper(), search) ||
+                                          (song.Edition != null && EF.Functions.Like(song.Edition.ToUpper(), search)) ||
+                                          EF.Functions.Like(song.AuthorName.ToUpper(), search) || (song.Description != null &&
+                                              EF.Functions.Like(song.Description.ToUpper(), search)));
         }
 
         return await result.CountAsync();
@@ -121,11 +121,11 @@ public class SongRepository : ISongRepository
 
         if (search != null)
         {
-            search = search.Trim().ToUpper();
+            search = $"%{search.Trim().ToUpper()}%";
             result = result.Where(chart =>
-                (chart.Title != null && chart.Title.ToUpper().Like(search)) ||
-                chart.AuthorName.ToUpper().Like(search) ||
-                (chart.Description != null && chart.Description.ToUpper().Like(search)));
+                (chart.Title != null && EF.Functions.Like(chart.Title.ToUpper(), search)) ||
+                EF.Functions.Like(chart.AuthorName.ToUpper(), search) ||
+                (chart.Description != null && EF.Functions.Like(chart.Description.ToUpper(), search)));
         }
 
         return await result.CountAsync();

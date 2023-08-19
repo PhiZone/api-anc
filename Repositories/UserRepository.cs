@@ -27,12 +27,12 @@ public class UserRepository : IUserRepository
 
         if (search != null)
         {
-            search = search.Trim().ToUpper();
+            search = $"%{search.Trim().ToUpper()}%";
             result = result.Where(user =>
-                (user.NormalizedUserName != null && user.NormalizedUserName.Like(search)) ||
-                (user.Tag != null && user.Tag.ToUpper().Like(search)) ||
-                (user.Biography != null && user.Biography.ToUpper().Like(search)) ||
-                user.Language.ToUpper().Like(search));
+                (user.NormalizedUserName != null && EF.Functions.Like(user.NormalizedUserName, search)) ||
+                (user.Tag != null && EF.Functions.Like(user.Tag.ToUpper(), search)) ||
+                (user.Biography != null && EF.Functions.Like(user.Biography.ToUpper(), search)) ||
+                EF.Functions.Like(user.Language.ToUpper(), search));
         }
 
         result = result.Skip(position);
@@ -52,12 +52,12 @@ public class UserRepository : IUserRepository
 
         if (search != null)
         {
-            search = search.Trim().ToUpper();
+            search = $"%{search.Trim().ToUpper()}%";
             result = result.Where(user =>
-                (user.NormalizedUserName != null && user.NormalizedUserName.Like(search)) ||
-                (user.Tag != null && user.Tag.ToUpper().Like(search)) ||
-                (user.Biography != null && user.Biography.ToUpper().Like(search)) ||
-                user.Language.ToUpper().Like(search));
+                (user.NormalizedUserName != null && EF.Functions.Like(user.NormalizedUserName, search)) ||
+                (user.Tag != null && EF.Functions.Like(user.Tag.ToUpper(), search)) ||
+                (user.Biography != null && EF.Functions.Like(user.Biography.ToUpper(), search)) ||
+                EF.Functions.Like(user.Language.ToUpper(), search));
         }
 
         return await result.CountAsync();
