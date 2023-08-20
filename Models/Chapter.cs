@@ -14,7 +14,7 @@ public class Chapter : PublicResource
 
     public IEnumerable<Admission> SongAdmittees { get; } = new List<Admission>();
 
-    public string GetDisplay()
+    public override string GetDisplay()
     {
         return $"{Title} - {Subtitle}";
     }

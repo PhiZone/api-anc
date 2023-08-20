@@ -49,4 +49,9 @@ public class Chart : PublicResource
     public Song Song { get; set; } = null!;
 
     public int PlayCount { get; set; }
+    
+    public override string GetDisplay()
+    {
+        return $"{(Title != null ? $"{Title} " : "")}[{Level} {Math.Floor(Difficulty)}]";
+    }
 }
