@@ -44,7 +44,7 @@ public class Song : PublicResource
 
     public IEnumerable<Admission> ChapterAdmitters { get; } = new List<Admission>();
 
-    public string GetDisplay()
+    public override string GetDisplay()
     {
         return Title;
     }

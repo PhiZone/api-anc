@@ -46,8 +46,16 @@ public class DtoMapper : IDtoMapper
         dto.FollowerCount = await _userRelationRepository.CountFollowersAsync(user.Id);
         dto.FolloweeCount = await _userRelationRepository.CountFolloweesAsync(user.Id);
         if (user.RegionId != null) dto.Region = (await _regionRepository.GetRegionAsync((int)user.RegionId)).Code;
+        // ReSharper disable once InvertIf
         if (currentUser != null && await _userRelationRepository.RelationExistsAsync(currentUser.Id, user.Id))
-            dto.DateFollowed = (await _userRelationRepository.GetRelationAsync(currentUser.Id, user.Id)).DateCreated;
+        {
+            var relation = await _userRelationRepository.GetRelationAsync(currentUser.Id, user.Id);
+            if (relation.Type != UserRelationType.Blacklisted)
+            {
+                dto.DateFollowed = relation.DateCreated;
+            }
+        }
+
         return dto;
     }
 
@@ -221,6 +229,7 @@ public class DtoMapper : IDtoMapper
                 await MapUserAsync<UserDto>(
                     (await _userManager.FindByIdAsync(notification.OperatorId.Value.ToString()))!, currentUser);
         }
+
         return dto;
     }
 }
