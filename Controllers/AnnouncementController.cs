@@ -37,12 +37,13 @@ public class AnnouncementController : Controller
     private readonly ILikeService _likeService;
     private readonly IMapper _mapper;
     private readonly IResourceService _resourceService;
+    private readonly INotificationService _notificationService;
     private readonly UserManager<User> _userManager;
 
     public AnnouncementController(IAnnouncementRepository announcementRepository, IOptions<DataSettings> dataSettings,
         IDtoMapper dtoMapper, IFilterService filterService, UserManager<User> userManager,
         ILikeRepository likeRepository, ILikeService likeService, IMapper mapper, ICommentRepository commentRepository,
-        IResourceService resourceService)
+        IResourceService resourceService, INotificationService notificationService)
     {
         _announcementRepository = announcementRepository;
         _dataSettings = dataSettings;
@@ -54,6 +55,7 @@ public class AnnouncementController : Controller
         _mapper = mapper;
         _commentRepository = commentRepository;
         _resourceService = resourceService;
+        _notificationService = notificationService;
     }
 
     /// <summary>
@@ -474,6 +476,8 @@ public class AnnouncementController : Controller
         if (!await _commentRepository.CreateCommentAsync(comment))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+
+        await _notificationService.NotifyComment(comment, announcement, announcement.GetDisplay());
 
         return StatusCode(StatusCodes.Status201Created);
     }

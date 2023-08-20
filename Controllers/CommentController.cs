@@ -35,12 +35,14 @@ public class CommentController : Controller
     private readonly IMapper _mapper;
     private readonly IReplyRepository _replyRepository;
     private readonly IResourceService _resourceService;
+    private readonly INotificationService _notificationService;
     private readonly UserManager<User> _userManager;
+    private readonly IUserService _userService;
 
     public CommentController(ICommentRepository commentRepository, IOptions<DataSettings> dataSettings,
         IDtoMapper dtoMapper, IFilterService filterService, UserManager<User> userManager,
         IReplyRepository replyRepository, ILikeRepository likeRepository, ILikeService likeService, IMapper mapper,
-        IResourceService resourceService)
+        IResourceService resourceService, INotificationService notificationService, IUserService userService)
     {
         _commentRepository = commentRepository;
         _dataSettings = dataSettings;
@@ -52,6 +54,8 @@ public class CommentController : Controller
         _likeService = likeService;
         _mapper = mapper;
         _resourceService = resourceService;
+        _notificationService = notificationService;
+        _userService = userService;
     }
 
     /// <summary>
@@ -114,7 +118,9 @@ public class CommentController : Controller
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         if (!await _commentRepository.CommentExistsAsync(id))
             return NotFound(new ResponseDto<object>
-                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
         var comment = await _commentRepository.GetCommentAsync(id);
         var dto = await _dtoMapper.MapCommentAsync<CommentDto>(comment, currentUser);
 
@@ -191,7 +197,9 @@ public class CommentController : Controller
         var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser);
         if (!await _commentRepository.CommentExistsAsync(id))
             return NotFound(new ResponseDto<object>
-                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
         var replies =
             await _commentRepository.GetCommentRepliesAsync(id, dto.Order, dto.Desc, position, dto.PerPage,
                 predicateExpr);
@@ -241,8 +249,18 @@ public class CommentController : Controller
                 });
         if (!await _commentRepository.CommentExistsAsync(id))
             return NotFound(new ResponseDto<object>
-                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
         var comment = await _commentRepository.GetCommentAsync(id);
+        if (await _userService.IsBlacklisted(comment.OwnerId, currentUser.Id))
+        {
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Blacklisted
+            });
+        }
+
         var reply = new Reply
         {
             CommentId = comment.Id,
@@ -255,6 +273,14 @@ public class CommentController : Controller
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
+            });
+
+        await _notificationService.Notify((await _userManager.FindByIdAsync(comment.OwnerId.ToString()))!, currentUser,
+            NotificationType.Replies, "new-reply",
+            new Dictionary<string, string>
+            {
+                { "User", _resourceService.GetRichText<User>(currentUser.Id.ToString(), currentUser.UserName!) },
+                { "Reply", _resourceService.GetRichText<Reply>(reply.Id.ToString(), reply.GetDisplay()) }
             });
 
         return StatusCode(StatusCodes.Status201Created);
@@ -280,7 +306,9 @@ public class CommentController : Controller
         var position = dto.PerPage * (dto.Page - 1);
         if (!await _commentRepository.CommentExistsAsync(id))
             return NotFound(new ResponseDto<object>
-                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
         var likes = await _likeRepository.GetLikesAsync(dto.Order, dto.Desc, position, dto.PerPage,
             e => e.ResourceId == id);
         var list = _mapper.Map<List<LikeDto>>(likes);
@@ -325,7 +353,9 @@ public class CommentController : Controller
                 });
         if (!await _commentRepository.CommentExistsAsync(id))
             return NotFound(new ResponseDto<object>
-                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
         var comment = await _commentRepository.GetCommentAsync(id);
         if (!await _likeService.CreateLikeAsync(comment, currentUser.Id))
             return BadRequest(new ResponseDto<object>
@@ -363,7 +393,9 @@ public class CommentController : Controller
                 });
         if (!await _commentRepository.CommentExistsAsync(id))
             return NotFound(new ResponseDto<object>
-                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
         var comment = await _commentRepository.GetCommentAsync(id);
         if (!await _likeService.RemoveLikeAsync(comment, currentUser.Id))
             return BadRequest(new ResponseDto<object>

@@ -42,4 +42,19 @@ public class UserService : IUserService
         };
         await playConfigurationRepository.CreatePlayConfigurationAsync(configuration);
     }
+
+    public async Task<bool> IsBlacklisted(int user1, int user2)
+    {
+        using var scope = _provider.CreateScope();
+        var userRelationRepository = scope.ServiceProvider.GetRequiredService<IUserRelationRepository>();
+        if (await userRelationRepository.RelationExistsAsync(user1, user2))
+        {
+            if ((await userRelationRepository.GetRelationAsync(user1, user2)).Type == UserRelationType.Blacklisted)
+            {
+                return true;
+            }
+        }
+        if (!await userRelationRepository.RelationExistsAsync(user2, user1)) return false;
+        return (await userRelationRepository.GetRelationAsync(user2, user1)).Type == UserRelationType.Blacklisted;
+    }
 }

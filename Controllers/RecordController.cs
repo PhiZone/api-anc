@@ -48,6 +48,7 @@ public class RecordController : Controller
     private readonly IRecordService _recordService;
     private readonly IConnectionMultiplexer _redis;
     private readonly IResourceService _resourceService;
+    private readonly INotificationService _notificationService;
     private readonly UserManager<User> _userManager;
 
     public RecordController(IRecordRepository recordRepository, IOptions<DataSettings> dataSettings,
@@ -55,7 +56,7 @@ public class RecordController : Controller
         IChartRepository chartRepository, ILikeRepository likeRepository,
         ILikeService likeService, ICommentRepository commentRepository, IConnectionMultiplexer redis,
         IApplicationRepository applicationRepository, IPlayConfigurationRepository playConfigurationRepository,
-        IRecordService recordService, IResourceService resourceService, ILogger<RecordController> logger)
+        IRecordService recordService, IResourceService resourceService, ILogger<RecordController> logger, INotificationService notificationService)
     {
         _recordRepository = recordRepository;
         _dataSettings = dataSettings;
@@ -73,6 +74,7 @@ public class RecordController : Controller
         _recordService = recordService;
         _resourceService = resourceService;
         _logger = logger;
+        _notificationService = notificationService;
     }
 
     /// <summary>
@@ -602,6 +604,8 @@ public class RecordController : Controller
         if (!await _commentRepository.CreateCommentAsync(comment))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+
+        await _notificationService.NotifyComment(comment, record, await _resourceService.GetDisplayName(record));
 
         return StatusCode(StatusCodes.Status201Created);
     }
