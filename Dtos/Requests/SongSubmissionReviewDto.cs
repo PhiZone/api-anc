@@ -14,6 +14,9 @@ public class SongSubmissionReviewDto
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     public bool IsOriginal { get; set; }
 
+    [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
+    public bool IsHidden { get; set; }
+
     [UserInputValidator(ErrorMessage = ResponseCodes.ContentProhibited)]
     public string? Message { get; set; }
 }

@@ -889,7 +889,7 @@ public class SongSubmissionController : Controller
         {
             case RequestStatus.Approved:
             {
-                var song = await _submissionService.ApproveSong(songSubmission, dto.IsOriginal);
+                var song = await _submissionService.ApproveSong(songSubmission, dto.IsOriginal, dto.IsHidden);
                 songSubmission.RepresentationId = song.Id;
                 break;
             }

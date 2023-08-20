@@ -35,7 +35,6 @@ public class RecordController : Controller
 {
     private readonly IApplicationRepository _applicationRepository;
     private readonly IChartRepository _chartRepository;
-    private readonly IChartService _chartService;
     private readonly ICommentRepository _commentRepository;
     private readonly IOptions<DataSettings> _dataSettings;
     private readonly IDtoMapper _dtoMapper;
@@ -53,7 +52,7 @@ public class RecordController : Controller
 
     public RecordController(IRecordRepository recordRepository, IOptions<DataSettings> dataSettings,
         UserManager<User> userManager, IFilterService filterService, IDtoMapper dtoMapper, IMapper mapper,
-        IChartRepository chartRepository, IChartService chartService, ILikeRepository likeRepository,
+        IChartRepository chartRepository, ILikeRepository likeRepository,
         ILikeService likeService, ICommentRepository commentRepository, IConnectionMultiplexer redis,
         IApplicationRepository applicationRepository, IPlayConfigurationRepository playConfigurationRepository,
         IRecordService recordService, IResourceService resourceService, ILogger<RecordController> logger)
@@ -74,7 +73,6 @@ public class RecordController : Controller
         _recordService = recordService;
         _resourceService = resourceService;
         _logger = logger;
-        _chartService = chartService;
     }
 
     /// <summary>
@@ -270,7 +268,7 @@ public class RecordController : Controller
                 record => record.ChartId == info.ChartId && record.OwnerId == player.Id)).FirstOrDefault()!.Accuracy;
 
         _logger.LogInformation(LogEvents.RecordInfo, "{User} - {Chart} {Score} {Accuracy} {Rks} {StdDeviation}ms",
-            player.UserName, await _chartService.GetDisplayName(chart), score, accuracy.ToString("P"),
+            player.UserName, await _resourceService.GetDisplayName(chart), score, accuracy.ToString("P"),
             rks.ToString("N3"), dto.StdDeviation.ToString("N3"));
 
         var record = new Record

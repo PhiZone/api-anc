@@ -15,15 +15,10 @@ public partial class ChartService : IChartService
 {
     private readonly IFileStorageService _fileStorageService;
     private readonly ILogger<ChartService> _logger;
-    private readonly ISongRepository _songRepository;
-    private readonly ISongSubmissionRepository _songSubmissionRepository;
 
-    public ChartService(IFileStorageService fileStorageService, ISongRepository songRepository,
-        ISongSubmissionRepository songSubmissionRepository, ILogger<ChartService> logger)
+    public ChartService(IFileStorageService fileStorageService, ILogger<ChartService> logger)
     {
         _fileStorageService = fileStorageService;
-        _songRepository = songRepository;
-        _songSubmissionRepository = songSubmissionRepository;
         _logger = logger;
     }
 
@@ -51,20 +46,6 @@ public partial class ChartService : IChartService
         var pec = ReadPec(content);
         if (pec != null) return new ValueTuple<ChartFormat, ChartFormatDto, int>(ChartFormat.Pec, pec, CountNotes(pec));
         return null;
-    }
-
-    public async Task<string> GetDisplayName(Chart chart)
-    {
-        var title = chart.Title ?? (await _songRepository.GetSongAsync(chart.SongId)).Title;
-        return $"{title} [{chart.Level} {Math.Floor(chart.Difficulty)}]";
-    }
-
-    public async Task<string> GetDisplayName(ChartSubmission chart)
-    {
-        var title = chart.Title ?? (chart.SongId != null
-            ? (await _songRepository.GetSongAsync(chart.SongId.Value)).Title
-            : (await _songSubmissionRepository.GetSongSubmissionAsync(chart.SongSubmissionId!.Value)).Title);
-        return $"{title} [{chart.Level} {Math.Floor(chart.Difficulty)}]";
     }
 
     private async Task<(string, string, ChartFormat, int)> Upload((ChartFormat, ChartFormatDto, int) validationResult,

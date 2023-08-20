@@ -3,7 +3,7 @@ using PhiZoneApi.Enums;
 
 namespace PhiZoneApi.Models;
 
-public class User : IdentityUser<int>
+public class User : IdentityUser<int>, IEquatable<User>
 {
     public string? Avatar { get; set; }
 
@@ -40,4 +40,11 @@ public class User : IdentityUser<int>
     public IEnumerable<User> Followees { get; } = new List<User>();
 
     public IEnumerable<UserRelation> FolloweeRelations { get; } = new List<UserRelation>();
+
+    public bool Equals(User? other)
+    {
+        if (ReferenceEquals(null, other)) return false;
+        if (ReferenceEquals(this, other)) return true;
+        return Id == other.Id;
+    }
 }

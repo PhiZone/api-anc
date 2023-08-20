@@ -9,6 +9,12 @@ public interface IResourceService
 
     string GetComplexRichText<T>(string id1, string id2, string display);
 
+    Task<string> GetDisplayName(Chart chart);
+
+    Task<string> GetDisplayName(ChartSubmission chart);
+
+    Task<string> GetDisplayName(Record record);
+
     List<int> GetAuthorIds(string name);
 
     Task<bool> HasPermission(User user, Role targetRole);
