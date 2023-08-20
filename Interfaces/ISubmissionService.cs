@@ -4,7 +4,7 @@ namespace PhiZoneApi.Interfaces;
 
 public interface ISubmissionService
 {
-    Task<Song> ApproveSong(SongSubmission songSubmission, bool isOriginal);
+    Task<Song> ApproveSong(SongSubmission songSubmission, bool isOriginal, bool isHidden);
 
     Task RejectSong(SongSubmission songSubmission);
 

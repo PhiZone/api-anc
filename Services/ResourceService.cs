@@ -10,10 +10,16 @@ namespace PhiZoneApi.Services;
 public partial class ResourceService : IResourceService
 {
     private readonly UserManager<User> _userManager;
+    private readonly ISongRepository _songRepository;
+    private readonly ISongSubmissionRepository _songSubmissionRepository;
+    private readonly IChartRepository _chartRepository;
 
-    public ResourceService(UserManager<User> userManager)
+    public ResourceService(UserManager<User> userManager, ISongRepository songRepository, ISongSubmissionRepository songSubmissionRepository, IChartRepository chartRepository)
     {
         _userManager = userManager;
+        _songRepository = songRepository;
+        _songSubmissionRepository = songSubmissionRepository;
+        _chartRepository = chartRepository;
     }
 
     public string GetRichText<T>(string id, string display)
@@ -24,6 +30,27 @@ public partial class ResourceService : IResourceService
     public string GetComplexRichText<T>(string id1, string id2, string display)
     {
         return $"[PZ{typeof(T).Name}:{id1}:{id2}:{display}:PZCRT]";
+    }
+
+    public async Task<string> GetDisplayName(Chart chart)
+    {
+        var title = chart.Title ?? (await _songRepository.GetSongAsync(chart.SongId)).Title;
+        return $"{title} [{chart.Level} {Math.Floor(chart.Difficulty)}]";
+    }
+
+    public async Task<string> GetDisplayName(ChartSubmission chart)
+    {
+        var title = chart.Title ?? (chart.SongId != null
+            ? (await _songRepository.GetSongAsync(chart.SongId.Value)).Title
+            : (await _songSubmissionRepository.GetSongSubmissionAsync(chart.SongSubmissionId!.Value)).Title);
+        return $"{title} [{chart.Level} {Math.Floor(chart.Difficulty)}]";
+    }
+
+    public async Task<string> GetDisplayName(Record record)
+    {
+        var chart = await _chartRepository.GetChartAsync(record.ChartId);
+        var title = chart.Title ?? (await _songRepository.GetSongAsync(chart.SongId)).Title;
+        return $"{title} [{chart.Level} {Math.Floor(chart.Difficulty)}] {record.Score} {record.Accuracy:P}";
     }
 
     public List<int> GetAuthorIds(string name)

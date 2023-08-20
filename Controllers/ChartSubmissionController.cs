@@ -326,7 +326,7 @@ public class ChartSubmissionController : Controller
                     {
                         "Chart",
                         _resourceService.GetRichText<ChartSubmission>(chartSubmission.Id.ToString(),
-                            await _chartService.GetDisplayName(chartSubmission))
+                            await _resourceService.GetDisplayName(chartSubmission))
                     },
                     { "Song", _resourceService.GetRichText<Song>(song.Id.ToString(), song.GetDisplay()) },
                     {
@@ -1116,7 +1116,7 @@ public class ChartSubmissionController : Controller
                 {
                     "Chart",
                     _resourceService.GetRichText<ChartSubmission>(chartSubmission.Id.ToString(),
-                        await _chartService.GetDisplayName(chartSubmission))
+                        await _resourceService.GetDisplayName(chartSubmission))
                 },
                 {
                     "Collaboration",
