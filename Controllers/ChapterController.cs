@@ -40,12 +40,13 @@ public class ChapterController : Controller
     private readonly ILikeService _likeService;
     private readonly IMapper _mapper;
     private readonly IResourceService _resourceService;
+    private readonly INotificationService _notificationService;
     private readonly UserManager<User> _userManager;
 
     public ChapterController(IChapterRepository chapterRepository, IOptions<DataSettings> dataSettings,
         UserManager<User> userManager, IFilterService filterService, IFileStorageService fileStorageService,
         IDtoMapper dtoMapper, IMapper mapper, ILikeRepository likeRepository, ILikeService likeService,
-        ICommentRepository commentRepository, IResourceService resourceService)
+        ICommentRepository commentRepository, IResourceService resourceService, INotificationService notificationService)
     {
         _chapterRepository = chapterRepository;
         _dataSettings = dataSettings;
@@ -57,6 +58,7 @@ public class ChapterController : Controller
         _likeService = likeService;
         _commentRepository = commentRepository;
         _resourceService = resourceService;
+        _notificationService = notificationService;
         _fileStorageService = fileStorageService;
     }
 
@@ -649,6 +651,8 @@ public class ChapterController : Controller
         if (!await _commentRepository.CreateCommentAsync(comment))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+
+        await _notificationService.NotifyComment(comment, chapter, chapter.GetDisplay());
 
         return StatusCode(StatusCodes.Status201Created);
     }

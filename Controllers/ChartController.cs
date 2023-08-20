@@ -43,6 +43,7 @@ public class ChartController : Controller
     private readonly ILikeService _likeService;
     private readonly IMapper _mapper;
     private readonly IResourceService _resourceService;
+    private readonly INotificationService _notificationService;
     private readonly ISongRepository _songRepository;
     private readonly UserManager<User> _userManager;
     private readonly IVoteRepository _voteRepository;
@@ -53,7 +54,7 @@ public class ChartController : Controller
         IDtoMapper dtoMapper, IMapper mapper, IChartService chartService, ISongRepository songRepository,
         ILikeRepository likeRepository, ILikeService likeService, ICommentRepository commentRepository,
         IVoteRepository voteRepository, IVoteService voteService, IAuthorshipRepository authorshipRepository,
-        IResourceService resourceService, IChartAssetRepository chartAssetRepository)
+        IResourceService resourceService, IChartAssetRepository chartAssetRepository, INotificationService notificationService)
     {
         _chartRepository = chartRepository;
         _dataSettings = dataSettings;
@@ -71,6 +72,7 @@ public class ChartController : Controller
         _authorshipRepository = authorshipRepository;
         _resourceService = resourceService;
         _chartAssetRepository = chartAssetRepository;
+        _notificationService = notificationService;
         _fileStorageService = fileStorageService;
     }
 
@@ -1303,6 +1305,8 @@ public class ChartController : Controller
         if (!await _commentRepository.CreateCommentAsync(comment))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+
+        await _notificationService.NotifyComment(comment, chart, await _resourceService.GetDisplayName(chart));
 
         return StatusCode(StatusCodes.Status201Created);
     }

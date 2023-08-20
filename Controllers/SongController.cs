@@ -1246,6 +1246,8 @@ public class SongController : Controller
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
+        await _notificationService.NotifyComment(comment, song, song.GetDisplay());
+
         return StatusCode(StatusCodes.Status201Created);
     }
 }

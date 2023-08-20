@@ -1,11 +1,8 @@
-﻿using AutoMapper;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
 using OpenIddict.Abstractions;
 using OpenIddict.Validation.AspNetCore;
-using PhiZoneApi.Configurations;
 using PhiZoneApi.Constants;
 using PhiZoneApi.Dtos.Responses;
 using PhiZoneApi.Enums;
@@ -27,9 +24,7 @@ public class AdmissionController : Controller
     private readonly IAdmissionRepository _admissionRepository;
     private readonly IChapterRepository _chapterRepository;
     private readonly IChartSubmissionRepository _chartSubmissionRepository;
-    private readonly IOptions<DataSettings> _dataSettings;
     private readonly IDtoMapper _dtoMapper;
-    private readonly IMapper _mapper;
     private readonly INotificationService _notificationService;
     private readonly IResourceService _resourceService;
     private readonly ISongRepository _songRepository;
@@ -37,17 +32,14 @@ public class AdmissionController : Controller
     private readonly ITemplateService _templateService;
     private readonly UserManager<User> _userManager;
 
-    public AdmissionController(IAdmissionRepository admissionRepository, UserManager<User> userManager, IMapper mapper,
-        IResourceService resourceService, IOptions<DataSettings> dataSettings, ITemplateService templateService,
-        INotificationService notificationService, IChapterRepository chapterRepository, ISongRepository songRepository,
-        IDtoMapper dtoMapper, IChartSubmissionRepository chartSubmissionRepository,
-        ISubmissionService submissionService)
+    public AdmissionController(IAdmissionRepository admissionRepository, UserManager<User> userManager,
+        IResourceService resourceService, ITemplateService templateService, INotificationService notificationService,
+        IChapterRepository chapterRepository, ISongRepository songRepository, IDtoMapper dtoMapper,
+        IChartSubmissionRepository chartSubmissionRepository, ISubmissionService submissionService)
     {
         _admissionRepository = admissionRepository;
         _userManager = userManager;
-        _mapper = mapper;
         _resourceService = resourceService;
-        _dataSettings = dataSettings;
         _templateService = templateService;
         _notificationService = notificationService;
         _chapterRepository = chapterRepository;

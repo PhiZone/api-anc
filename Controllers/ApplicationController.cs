@@ -40,12 +40,13 @@ public class ApplicationController : Controller
     private readonly ILikeService _likeService;
     private readonly IMapper _mapper;
     private readonly IResourceService _resourceService;
+    private readonly INotificationService _notificationService;
     private readonly UserManager<User> _userManager;
 
     public ApplicationController(IApplicationRepository applicationRepository, IOptions<DataSettings> dataSettings,
         UserManager<User> userManager, IFilterService filterService, IFileStorageService fileStorageService,
         IDtoMapper dtoMapper, IMapper mapper, ILikeRepository likeRepository, ILikeService likeService,
-        ICommentRepository commentRepository, IResourceService resourceService)
+        ICommentRepository commentRepository, IResourceService resourceService, INotificationService notificationService)
     {
         _applicationRepository = applicationRepository;
         _dataSettings = dataSettings;
@@ -57,6 +58,7 @@ public class ApplicationController : Controller
         _likeService = likeService;
         _commentRepository = commentRepository;
         _resourceService = resourceService;
+        _notificationService = notificationService;
         _fileStorageService = fileStorageService;
     }
 
@@ -533,6 +535,8 @@ public class ApplicationController : Controller
         if (!await _commentRepository.CreateCommentAsync(comment))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+
+        await _notificationService.NotifyComment(comment, application, application.GetDisplay());
 
         return StatusCode(StatusCodes.Status201Created);
     }

@@ -14,7 +14,8 @@ public partial class ResourceService : IResourceService
     private readonly ISongSubmissionRepository _songSubmissionRepository;
     private readonly IChartRepository _chartRepository;
 
-    public ResourceService(UserManager<User> userManager, ISongRepository songRepository, ISongSubmissionRepository songSubmissionRepository, IChartRepository chartRepository)
+    public ResourceService(UserManager<User> userManager, ISongRepository songRepository,
+        ISongSubmissionRepository songSubmissionRepository, IChartRepository chartRepository)
     {
         _userManager = userManager;
         _songRepository = songRepository;
