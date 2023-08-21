@@ -74,7 +74,7 @@ public class NotificationController : Controller
         if (notificationDto.MarkAsRead)
         {
             var now = DateTimeOffset.UtcNow;
-            foreach (var notification in notifications) notification.DateRead = now;
+            foreach (var notification in notifications.Where(e => e.DateRead == null)) notification.DateRead = now;
 
             await _notificationRepository.UpdateNotificationsAsync(notifications);
         }
