@@ -39,14 +39,15 @@ public class ApplicationController : Controller
     private readonly ILikeRepository _likeRepository;
     private readonly ILikeService _likeService;
     private readonly IMapper _mapper;
-    private readonly IResourceService _resourceService;
     private readonly INotificationService _notificationService;
+    private readonly IResourceService _resourceService;
     private readonly UserManager<User> _userManager;
 
     public ApplicationController(IApplicationRepository applicationRepository, IOptions<DataSettings> dataSettings,
         UserManager<User> userManager, IFilterService filterService, IFileStorageService fileStorageService,
         IDtoMapper dtoMapper, IMapper mapper, ILikeRepository likeRepository, ILikeService likeService,
-        ICommentRepository commentRepository, IResourceService resourceService, INotificationService notificationService)
+        ICommentRepository commentRepository, IResourceService resourceService,
+        INotificationService notificationService)
     {
         _applicationRepository = applicationRepository;
         _dataSettings = dataSettings;
@@ -524,10 +525,12 @@ public class ApplicationController : Controller
             return NotFound(new ResponseDto<object>
                 { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
         var application = await _applicationRepository.GetApplicationAsync(id);
+
+        var result = await _resourceService.ParseUserContent(dto.Content);
         var comment = new Comment
         {
             ResourceId = application.Id,
-            Content = dto.Content,
+            Content = result.Item1,
             Language = dto.Language,
             OwnerId = currentUser.Id,
             DateCreated = DateTimeOffset.UtcNow
@@ -536,7 +539,9 @@ public class ApplicationController : Controller
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
-        await _notificationService.NotifyComment(comment, application, application.GetDisplay());
+        await _notificationService.NotifyComment(comment, application, application.GetDisplay(), dto.Content);
+        await _notificationService.NotifyMentions(result.Item2, currentUser,
+            _resourceService.GetRichText<Comment>(comment.Id.ToString(), dto.Content));
 
         return StatusCode(StatusCodes.Status201Created);
     }

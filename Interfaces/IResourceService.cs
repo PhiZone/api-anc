@@ -5,7 +5,7 @@ namespace PhiZoneApi.Interfaces;
 
 public interface IResourceService
 {
-    string GetRichText<T>(string id, string display);
+    string GetRichText<T>(string id, string display, string? addition = null);
 
     string GetComplexRichText<T>(string id1, string id2, string display);
 
@@ -22,4 +22,6 @@ public interface IResourceService
     Task<bool> HasPermission(User user, int priority);
 
     Task<Role?> GetRole(User user);
+
+    Task<(string, List<User>)> ParseUserContent(string content);
 }

@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using PhiZoneApi.Models;
-using PhiZoneApi.Utils;
 
 namespace PhiZoneApi.Data;
 

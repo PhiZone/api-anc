@@ -61,7 +61,7 @@ public class RegionRepository : IRegionRepository
                 (user.NormalizedUserName != null && EF.Functions.Like(user.NormalizedUserName, search)) ||
                 (user.Tag != null && EF.Functions.Like(user.Tag.ToUpper(), search)) ||
                 (user.Biography != null && EF.Functions.Like(user.Biography.ToUpper(), search)) ||
-            EF.Functions.Like(user.Language.ToUpper(), search));
+                EF.Functions.Like(user.Language.ToUpper(), search));
         }
 
         result = result.Skip(position);
@@ -189,7 +189,7 @@ public class RegionRepository : IRegionRepository
                 (user.NormalizedUserName != null && EF.Functions.Like(user.NormalizedUserName, search)) ||
                 (user.Tag != null && EF.Functions.Like(user.Tag.ToUpper(), search)) ||
                 (user.Biography != null && EF.Functions.Like(user.Biography.ToUpper(), search)) ||
-                     EF.Functions.Like(user.Language.ToUpper(), search));
+                EF.Functions.Like(user.Language.ToUpper(), search));
         }
 
         return await result.CountAsync();

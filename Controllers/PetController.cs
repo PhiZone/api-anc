@@ -22,12 +22,12 @@ namespace PhiZoneApi.Controllers;
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
 public class PetController : Controller
 {
-    private readonly IPetQuestionRepository _petQuestionRepository;
     private readonly IPetAnswerRepository _petAnswerRepository;
+    private readonly IPetQuestionRepository _petQuestionRepository;
     private readonly IConnectionMultiplexer _redis;
-    private readonly UserManager<User> _userManager;
     private readonly IResourceService _resourceService;
     private readonly Dictionary<Role, int> _scores;
+    private readonly UserManager<User> _userManager;
 
     public PetController(IConnectionMultiplexer redis, IPetQuestionRepository petQuestionRepository,
         IPetAnswerRepository petAnswerRepository, UserManager<User> userManager, IResourceService resourceService,
@@ -64,31 +64,25 @@ public class PetController : Controller
     {
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if (!await _resourceService.HasPermission(currentUser, Roles.Member))
-        {
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        }
 
         if (await _resourceService.HasPermission(currentUser, Roles.Qualified))
-        {
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
             });
-        }
 
         var db = _redis.GetDatabase();
         var key = $"PET:0:{currentUser.Id}";
         if (await db.KeyExistsAsync(key))
-        {
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
             });
-        }
 
         var questions = new List<PetQuestionDto>();
         var deliverer = new PetDelivererDto();
@@ -96,10 +90,7 @@ public class PetController : Controller
         for (var i = 1; i <= 15; i++)
         {
             var question = await _petQuestionRepository.GetRandomPetQuestionAsync(i, currentUser.Language);
-            if (question == null)
-            {
-                continue;
-            }
+            if (question == null) continue;
 
             var choices = await _petQuestionRepository.GetQuestionChoicesAsync(question.Id);
 
@@ -145,41 +136,33 @@ public class PetController : Controller
     {
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if (!await _resourceService.HasPermission(currentUser, Roles.Member))
-        {
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        }
 
         if (await _resourceService.HasPermission(currentUser, Roles.Qualified))
-        {
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
             });
-        }
 
         if (dtos.Count != 15)
-        {
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorWithMessage,
                 Code = ResponseCodes.InvalidData,
                 Message = "Must submit exactly fifteen answers."
             });
-        }
 
         var db = _redis.GetDatabase();
         var key = $"PET:0:{currentUser.Id}";
         if (!await db.KeyExistsAsync(key))
-        {
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
             });
-        }
 
         var objectiveDeliverer = JsonConvert.DeserializeObject<PetDelivererDto>((await db.StringGetAsync(key))!)!;
         var subjectiveDeliverer = new PetDelivererDto();
@@ -191,18 +174,11 @@ public class PetController : Controller
             var choices = dtos[i].Choices;
             if (choices.Count == 0 || choices.Count > question.Choices!.Count ||
                 choices.Any(choice => !question.Choices[choice].IsCorrect))
-            {
                 continue;
-            }
 
             if (question.Type == PetQuestionType.Single)
-            {
                 score += 2;
-            }
-            else if (choices.Count == question.Choices.Count(choice => choice.IsCorrect))
-            {
-                score += 4;
-            }
+            else if (choices.Count == question.Choices.Count(choice => choice.IsCorrect)) score += 4;
         }
 
         subjectiveDeliverer.Score = score;
@@ -211,10 +187,7 @@ public class PetController : Controller
         for (var i = 16; i <= 18; i++)
         {
             var question = await _petQuestionRepository.GetRandomPetQuestionAsync(i, currentUser.Language);
-            if (question == null)
-            {
-                continue;
-            }
+            if (question == null) continue;
 
             subjectiveDeliverer.Questions.Add(new PetQuestionDeliverer { Id = question.Id, Type = question.Type });
             questions.Add(new PetQuestionDto
@@ -254,31 +227,25 @@ public class PetController : Controller
     {
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if (!await _resourceService.HasPermission(currentUser, Roles.Member))
-        {
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        }
 
         if (await _resourceService.HasPermission(currentUser, Roles.Qualified))
-        {
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
             });
-        }
 
         var db = _redis.GetDatabase();
         var key = $"PET:1:{currentUser.Id}";
         if (!await db.KeyExistsAsync(key))
-        {
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
             });
-        }
 
         var deliverer = JsonConvert.DeserializeObject<PetDelivererDto>((await db.StringGetAsync(key))!)!;
         await db.KeyDeleteAsync(key);

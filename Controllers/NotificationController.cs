@@ -25,14 +25,15 @@ namespace PhiZoneApi.Controllers;
 public class NotificationController : Controller
 {
     private readonly IOptions<DataSettings> _dataSettings;
-    private readonly IFilterService _filterService;
     private readonly IDtoMapper _dtoMapper;
+    private readonly IFilterService _filterService;
     private readonly INotificationRepository _notificationRepository;
     private readonly IResourceService _resourceService;
     private readonly UserManager<User> _userManager;
 
     public NotificationController(IOptions<DataSettings> dataSettings, INotificationRepository notificationRepository,
-        UserManager<User> userManager, IResourceService resourceService, IFilterService filterService, IDtoMapper dtoMapper)
+        UserManager<User> userManager, IResourceService resourceService, IFilterService filterService,
+        IDtoMapper dtoMapper)
     {
         _dataSettings = dataSettings;
         _notificationRepository = notificationRepository;
@@ -68,9 +69,7 @@ public class NotificationController : Controller
         var total = await _notificationRepository.CountNotificationsAsync(dto.Search, predicateExpr);
         var list = new List<NotificationDto>();
         foreach (var notification in notifications)
-        {
             list.Add(await _dtoMapper.MapNotificationAsync<NotificationDto>(notification, currentUser));
-        }
 
         if (notificationDto.MarkAsRead)
         {

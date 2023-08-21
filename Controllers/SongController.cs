@@ -152,6 +152,41 @@ public class SongController : Controller
     }
 
     /// <summary>
+    ///     Retrieves a random song.
+    /// </summary>
+    /// <returns>A random song.</returns>
+    /// <response code="200">Returns a random song.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    [HttpGet("random")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<SongDto>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> GetRandomSong([FromQuery] ArrayWithTimeRequestDto dto,
+        [FromQuery] SongFilterDto? filterDto = null)
+    {
+        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser, e => !e.IsHidden);
+        var song = await _songRepository.GetRandomSongAsync(dto.Search, predicateExpr);
+
+        if (song == null)
+        {
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+        }
+
+        var songDto = await _dtoMapper.MapSongAsync<SongDto>(song, currentUser);
+
+        return Ok(new ResponseDto<SongDto>
+        {
+            Status = ResponseStatus.Ok,
+            Code = ResponseCodes.Ok,
+            Data = songDto
+        });
+    }
+
+    /// <summary>
     ///     Creates a new song.
     /// </summary>
     /// <returns>An empty body.</returns>
@@ -206,10 +241,7 @@ public class SongController : Controller
 
         var illustrationUrl = (await _fileStorageService.UploadImage<Song>(dto.Title, dto.Illustration, (16, 9))).Item1;
         string? license = null;
-        if (dto.License != null)
-        {
-            license = (await _fileStorageService.Upload<Song>(dto.Title, dto.License)).Item1;
-        }
+        if (dto.License != null) license = (await _fileStorageService.Upload<Song>(dto.Title, dto.License)).Item1;
 
         var song = new Song
         {
@@ -1234,10 +1266,11 @@ public class SongController : Controller
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Locked
             });
 
+        var result = await _resourceService.ParseUserContent(dto.Content);
         var comment = new Comment
         {
             ResourceId = song.Id,
-            Content = dto.Content,
+            Content = result.Item1,
             Language = dto.Language,
             OwnerId = currentUser.Id,
             DateCreated = DateTimeOffset.UtcNow
@@ -1246,7 +1279,9 @@ public class SongController : Controller
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
-        await _notificationService.NotifyComment(comment, song, song.GetDisplay());
+        await _notificationService.NotifyComment(comment, song, song.GetDisplay(), dto.Content);
+        await _notificationService.NotifyMentions(result.Item2, currentUser,
+            _resourceService.GetRichText<Comment>(comment.Id.ToString(), dto.Content));
 
         return StatusCode(StatusCodes.Status201Created);
     }

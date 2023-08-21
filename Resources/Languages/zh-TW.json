@@ -90,12 +90,8 @@
       "Content": "點擊此處查看詳情。"
     },
     {
-      "Key": "comment-mention",
-      "Content": "{User} 在留言中提到了你：{Comment}"
-    },
-    {
-      "Key": "reply-mention",
-      "Content": "{User} 在回覆中提到了你：{Reply}"
+      "Key": "mention",
+      "Content": "{User} 提到了你：{Content}"
     },
     {
       "Key": "default",

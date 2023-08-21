@@ -90,12 +90,8 @@
       "Content": "Click here for more information."
     },
     {
-      "Key": "comment-mention",
-      "Content": "{User} has mentioned you in the comment: {Comment}"
-    },
-    {
-      "Key": "reply-mention",
-      "Content": "{User} has mentioned you in the reply: {Reply}"
+      "Key": "mention",
+      "Content": "{User} has mentioned you: {Content}"
     },
     {
       "Key": "default",

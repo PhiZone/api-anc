@@ -11,16 +11,17 @@ public class LikeService : ILikeService
     private readonly IChartRepository _chartRepository;
     private readonly ICommentRepository _commentRepository;
     private readonly ILikeRepository _likeRepository;
+    private readonly INotificationService _notificationService;
     private readonly IRecordRepository _recordRepository;
     private readonly IReplyRepository _replyRepository;
-    private readonly ISongRepository _songRepository;
     private readonly IResourceService _resourceService;
-    private readonly INotificationService _notificationService;
+    private readonly ISongRepository _songRepository;
 
     public LikeService(ILikeRepository likeRepository, IChapterRepository chapterRepository,
         ISongRepository songRepository, IChartRepository chartRepository, IRecordRepository recordRepository,
         ICommentRepository commentRepository, IReplyRepository replyRepository,
-        IApplicationRepository applicationRepository, IAnnouncementRepository announcementRepository, IResourceService resourceService, INotificationService notificationService)
+        IApplicationRepository applicationRepository, IAnnouncementRepository announcementRepository,
+        IResourceService resourceService, INotificationService notificationService)
     {
         _likeRepository = likeRepository;
         _chapterRepository = chapterRepository;

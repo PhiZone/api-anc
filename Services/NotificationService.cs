@@ -8,19 +8,18 @@ namespace PhiZoneApi.Services;
 public class NotificationService : INotificationService
 {
     private readonly INotificationRepository _notificationRepository;
+    private readonly IResourceService _resourceService;
     private readonly ITemplateService _templateService;
     private readonly UserManager<User> _userManager;
     private readonly IUserRelationRepository _userRelationRepository;
-    private readonly INotificationService _notificationService;
-    private readonly IResourceService _resourceService;
 
-    public NotificationService(INotificationRepository notificationRepository, ITemplateService templateService, UserManager<User> userManager, IUserRelationRepository userRelationRepository, INotificationService notificationService, IResourceService resourceService)
+    public NotificationService(INotificationRepository notificationRepository, ITemplateService templateService,
+        UserManager<User> userManager, IUserRelationRepository userRelationRepository, IResourceService resourceService)
     {
         _notificationRepository = notificationRepository;
         _templateService = templateService;
         _userManager = userManager;
         _userRelationRepository = userRelationRepository;
-        _notificationService = notificationService;
         _resourceService = resourceService;
     }
 
@@ -46,54 +45,51 @@ public class NotificationService : INotificationService
             e => e.FolloweeId == userId && e.Type == UserRelationType.Special);
         var receivers = new HashSet<User> { (await _userManager.FindByIdAsync(resource.OwnerId.ToString()))! };
         foreach (var relation in relations)
-        {
             receivers.Add((await _userManager.FindByIdAsync(relation.FollowerId.ToString()))!);
-        }
 
         foreach (var receiver in receivers)
-        {
-            await _notificationService.Notify(receiver, sender, NotificationType.Likes, "new-like", new Dictionary<string, string>
-            {
+            await Notify(receiver, sender, NotificationType.Likes, "new-like",
+                new Dictionary<string, string>
                 {
-                    "User",
-                    _resourceService.GetRichText<User>(userId.ToString(), sender.UserName!)
-                },
-                {
-                    "Resource",
-                    _resourceService.GetRichText<T>(resource.Id.ToString(), display)
-                },
-            });
-        }
+                    { "User", _resourceService.GetRichText<User>(userId.ToString(), sender.UserName!) },
+                    { "Resource", _resourceService.GetRichText<T>(resource.Id.ToString(), display) }
+                });
     }
 
-    public async Task NotifyComment<T>(Comment comment, T resource, string display) where T : LikeableResource
+    public async Task NotifyComment<T>(Comment comment, T resource, string display, string content)
+        where T : LikeableResource
     {
         var sender = (await _userManager.FindByIdAsync(comment.OwnerId.ToString()))!;
         var relations = await _userRelationRepository.GetRelationsAsync("DateCreated", false, 0, -1,
             e => e.FolloweeId == comment.OwnerId && e.Type == UserRelationType.Special);
         var receivers = new HashSet<User> { (await _userManager.FindByIdAsync(resource.OwnerId.ToString()))! };
         foreach (var relation in relations)
-        {
             receivers.Add((await _userManager.FindByIdAsync(relation.FollowerId.ToString()))!);
-        }
 
-        foreach (var receiver in receivers)
+        foreach (var receiver in receivers.Where(receiver => receiver.Id != resource.OwnerId))
         {
-            await _notificationService.Notify(receiver, sender, NotificationType.Replies, "new-comment", new Dictionary<string, string>
-            {
+            await Notify(receiver, sender, NotificationType.Replies, "new-comment",
+                new Dictionary<string, string>
                 {
-                    "User",
-                    _resourceService.GetRichText<User>(sender.Id.ToString(), sender.UserName!)
-                },
+                    { "User", _resourceService.GetRichText<User>(sender.Id.ToString(), sender.UserName!) },
+                    { "Resource", _resourceService.GetRichText<T>(resource.Id.ToString(), display) },
+                    { "Comment", _resourceService.GetRichText<Comment>(comment.Id.ToString(), content) }
+                });
+        }
+    }
+
+    public async Task NotifyMentions(List<User> users, User sender, string richText)
+    {
+        foreach (var user in users.Where(user => user.Id != sender.Id))
+        {
+            await Notify(user, sender, NotificationType.Mentions, "mention",
+                new Dictionary<string, string>
                 {
-                    "Resource",
-                    _resourceService.GetRichText<T>(resource.Id.ToString(), display)
-                },
-                {
-                    "Comment",
-                    _resourceService.GetRichText<Comment>(comment.Id.ToString(), comment.GetDisplay())
-                }
-            });
+                    {
+                        "User", _resourceService.GetRichText<User>(sender.Id.ToString(), sender.UserName!, "Mention")
+                    },
+                    { "Content", richText }
+                });
         }
     }
 }

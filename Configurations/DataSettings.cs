@@ -11,7 +11,7 @@ public class DataSettings
     ///     Determines the default number of entries presented in each page.
     /// </summary>
     public int PaginationPerPage { get; set; }
-    
+
     /// <summary>
     ///     Determines the maximum number of entries presented in each page.
     /// </summary>

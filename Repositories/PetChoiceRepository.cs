@@ -37,7 +37,7 @@ public class PetChoiceRepository : IPetChoiceRepository
     {
         return (await _context.PetChoices.FirstOrDefaultAsync(petChoice => petChoice.Id == id))!;
     }
-    
+
     public async Task<bool> PetChoiceExistsAsync(Guid id)
     {
         return await _context.PetChoices.AnyAsync(petChoice => petChoice.Id == id);

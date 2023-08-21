@@ -42,8 +42,9 @@ public class ChartController : Controller
     private readonly ILikeRepository _likeRepository;
     private readonly ILikeService _likeService;
     private readonly IMapper _mapper;
-    private readonly IResourceService _resourceService;
     private readonly INotificationService _notificationService;
+    private readonly IRecordRepository _recordRepository;
+    private readonly IResourceService _resourceService;
     private readonly ISongRepository _songRepository;
     private readonly UserManager<User> _userManager;
     private readonly IVoteRepository _voteRepository;
@@ -54,7 +55,8 @@ public class ChartController : Controller
         IDtoMapper dtoMapper, IMapper mapper, IChartService chartService, ISongRepository songRepository,
         ILikeRepository likeRepository, ILikeService likeService, ICommentRepository commentRepository,
         IVoteRepository voteRepository, IVoteService voteService, IAuthorshipRepository authorshipRepository,
-        IResourceService resourceService, IChartAssetRepository chartAssetRepository, INotificationService notificationService)
+        IResourceService resourceService, IChartAssetRepository chartAssetRepository,
+        INotificationService notificationService, IRecordRepository recordRepository)
     {
         _chartRepository = chartRepository;
         _dataSettings = dataSettings;
@@ -73,6 +75,7 @@ public class ChartController : Controller
         _resourceService = resourceService;
         _chartAssetRepository = chartAssetRepository;
         _notificationService = notificationService;
+        _recordRepository = recordRepository;
         _fileStorageService = fileStorageService;
     }
 
@@ -127,7 +130,7 @@ public class ChartController : Controller
     [HttpGet("{id:guid}")]
     [ServiceFilter(typeof(ETagFilter))]
     [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<ChartDto>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<ChartDetailedDto>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status304NotModified, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
@@ -148,9 +151,58 @@ public class ChartController : Controller
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        var dto = await _dtoMapper.MapChartAsync<ChartDto>(chart, currentUser);
+        var dto = await _dtoMapper.MapChartAsync<ChartDetailedDto>(chart, currentUser);
 
-        return Ok(new ResponseDto<ChartDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
+        // ReSharper disable once InvertIf
+        if (currentUser != null)
+        {
+            dto.PersonalBestScore = (await _recordRepository.GetRecordsAsync("Score", true, 0, 1,
+                r => r.OwnerId == currentUser.Id && r.ChartId == id)).FirstOrDefault()?.Score;
+            dto.PersonalBestAccuracy = (await _recordRepository.GetRecordsAsync("Accuracy", true, 0, 1,
+                r => r.OwnerId == currentUser.Id && r.ChartId == id)).FirstOrDefault()?.Accuracy;
+            dto.PersonalBestRks = (await _recordRepository.GetRecordsAsync("Rks", true, 0, 1,
+                r => r.OwnerId == currentUser.Id && r.ChartId == id)).FirstOrDefault()?.Rks;
+        }
+
+        return Ok(new ResponseDto<ChartDetailedDto>
+        {
+            Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto
+        });
+    }
+
+    /// <summary>
+    ///     Retrieves a random chart.
+    /// </summary>
+    /// <returns>A random chart.</returns>
+    /// <response code="200">Returns a random chart.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    [HttpGet("random")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<ChartDetailedDto>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> GetRandomChart([FromQuery] ArrayWithTimeRequestDto dto,
+        [FromQuery] ChartFilterDto? filterDto = null)
+    {
+        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser, e => !e.IsHidden);
+        var chart = await _chartRepository.GetRandomChartAsync(dto.Search, predicateExpr);
+
+        if (chart == null)
+        {
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+        }
+
+        var chartDto = await _dtoMapper.MapChartAsync<ChartDetailedDto>(chart, currentUser);
+
+        return Ok(new ResponseDto<ChartDetailedDto>
+        {
+            Status = ResponseStatus.Ok,
+            Code = ResponseCodes.Ok,
+            Data = chartDto
+        });
     }
 
     /// <summary>
@@ -1294,10 +1346,11 @@ public class ChartController : Controller
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Locked
             });
 
+        var result = await _resourceService.ParseUserContent(dto.Content);
         var comment = new Comment
         {
             ResourceId = chart.Id,
-            Content = dto.Content,
+            Content = result.Item1,
             Language = dto.Language,
             OwnerId = currentUser.Id,
             DateCreated = DateTimeOffset.UtcNow
@@ -1306,7 +1359,9 @@ public class ChartController : Controller
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
-        await _notificationService.NotifyComment(comment, chart, await _resourceService.GetDisplayName(chart));
+        await _notificationService.NotifyComment(comment, chart, await _resourceService.GetDisplayName(chart), dto.Content);
+        await _notificationService.NotifyMentions(result.Item2, currentUser,
+            _resourceService.GetRichText<Comment>(comment.Id.ToString(), dto.Content));
 
         return StatusCode(StatusCodes.Status201Created);
     }

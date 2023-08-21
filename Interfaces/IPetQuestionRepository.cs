@@ -23,6 +23,6 @@ public interface IPetQuestionRepository
     Task<bool> SaveAsync();
 
     Task<int> CountPetQuestionsAsync(string? search = null, Expression<Func<PetQuestion, bool>>? predicate = null);
-    
+
     Task<ICollection<PetChoice>> GetQuestionChoicesAsync(Guid questionId);
 }
