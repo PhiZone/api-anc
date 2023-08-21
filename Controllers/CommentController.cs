@@ -33,9 +33,9 @@ public class CommentController : Controller
     private readonly ILikeRepository _likeRepository;
     private readonly ILikeService _likeService;
     private readonly IMapper _mapper;
+    private readonly INotificationService _notificationService;
     private readonly IReplyRepository _replyRepository;
     private readonly IResourceService _resourceService;
-    private readonly INotificationService _notificationService;
     private readonly UserManager<User> _userManager;
     private readonly IUserService _userService;
 
@@ -254,17 +254,16 @@ public class CommentController : Controller
             });
         var comment = await _commentRepository.GetCommentAsync(id);
         if (await _userService.IsBlacklisted(comment.OwnerId, currentUser.Id))
-        {
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Blacklisted
             });
-        }
 
+        var result = await _resourceService.ParseUserContent(dto.Content);
         var reply = new Reply
         {
             CommentId = comment.Id,
-            Content = dto.Content,
+            Content = result.Item1,
             Language = dto.Language,
             OwnerId = currentUser.Id,
             DateCreated = DateTimeOffset.UtcNow
@@ -274,14 +273,18 @@ public class CommentController : Controller
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
             });
-
-        await _notificationService.Notify((await _userManager.FindByIdAsync(comment.OwnerId.ToString()))!, currentUser,
-            NotificationType.Replies, "new-reply",
-            new Dictionary<string, string>
-            {
-                { "User", _resourceService.GetRichText<User>(currentUser.Id.ToString(), currentUser.UserName!) },
-                { "Reply", _resourceService.GetRichText<Reply>(reply.Id.ToString(), reply.GetDisplay()) }
-            });
+        if (currentUser.Id != comment.OwnerId)
+        {
+            await _notificationService.Notify((await _userManager.FindByIdAsync(comment.OwnerId.ToString()))!, currentUser,
+                NotificationType.Replies, "new-reply",
+                new Dictionary<string, string>
+                {
+                    { "User", _resourceService.GetRichText<User>(currentUser.Id.ToString(), currentUser.UserName!) },
+                    { "Reply", _resourceService.GetRichText<Reply>(reply.Id.ToString(), reply.GetDisplay()) }
+                });   
+        }
+        await _notificationService.NotifyMentions(result.Item2, currentUser,
+            _resourceService.GetRichText<Reply>(reply.Id.ToString(), reply.GetDisplay()));
 
         return StatusCode(StatusCodes.Status201Created);
     }

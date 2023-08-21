@@ -27,8 +27,9 @@ public class PetAnswerRepository : IPetAnswerRepository
         {
             search = $"%{search.Trim().ToUpper()}%";
             result = result.Where(petAnswer =>
-                EF.Functions.Like(petAnswer.Answer1.ToUpper(), search) || EF.Functions.Like(petAnswer.Answer2.ToUpper(), search) ||
-            EF.Functions.Like(petAnswer.Answer3.ToUpper(), search));
+                EF.Functions.Like(petAnswer.Answer1.ToUpper(), search) ||
+                EF.Functions.Like(petAnswer.Answer2.ToUpper(), search) ||
+                EF.Functions.Like(petAnswer.Answer3.ToUpper(), search));
         }
 
         result = result.Skip(position);
@@ -79,8 +80,9 @@ public class PetAnswerRepository : IPetAnswerRepository
         {
             search = $"%{search.Trim().ToUpper()}%";
             result = result.Where(petAnswer =>
-                EF.Functions.Like(petAnswer.Answer1.ToUpper(), search) || EF.Functions.Like(petAnswer.Answer2.ToUpper(), search) ||
-            EF.Functions.Like(petAnswer.Answer3.ToUpper(), search));
+                EF.Functions.Like(petAnswer.Answer1.ToUpper(), search) ||
+                EF.Functions.Like(petAnswer.Answer2.ToUpper(), search) ||
+                EF.Functions.Like(petAnswer.Answer3.ToUpper(), search));
         }
 
         return await result.CountAsync();

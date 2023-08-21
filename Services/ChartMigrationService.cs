@@ -9,8 +9,8 @@ public class ChartMigrationService : IHostedService
     private IChartRepository _chartRepository = null!;
     private ILogger<ChartMigrationService> _logger = null!;
     private IRecordRepository _recordRepository = null!;
-    private IVoteService _voteService = null!;
     private IRecordService _recordService = null!;
+    private IVoteService _voteService = null!;
 
     public ChartMigrationService(IServiceProvider serviceProvider)
     {
@@ -50,7 +50,8 @@ public class ChartMigrationService : IHostedService
         foreach (var chart in charts)
         {
             _logger.LogInformation(LogEvents.ChartMigration, "Migrating Chart #{Id}", chart.Id);
-            var records = await _recordRepository.GetRecordsAsync("DateCreated", false, 0, -1, e => e.ChartId == chart.Id);
+            var records =
+                await _recordRepository.GetRecordsAsync("DateCreated", false, 0, -1, e => e.ChartId == chart.Id);
             foreach (var record in records)
             {
                 var rksFactor = _recordService.CalculateRksFactor(record.PerfectJudgment, record.GoodJudgment);

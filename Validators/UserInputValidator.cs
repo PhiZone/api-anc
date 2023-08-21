@@ -1,7 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
-using PhiZoneApi.Configurations;
 using PhiZoneApi.Dtos.Deliverers;
 
 namespace PhiZoneApi.Validators;

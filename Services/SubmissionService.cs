@@ -37,6 +37,17 @@ public class SubmissionService : ISubmissionService
     public async Task<Song> ApproveSong(SongSubmission songSubmission, bool isOriginal, bool isHidden)
     {
         Song song;
+        var owner = (await _userManager.FindByIdAsync(songSubmission.OwnerId.ToString()))!;
+        var description = songSubmission.Description;
+        List<User>? mentions = null;
+
+        if (description != null)
+        {
+            var result = await _resourceService.ParseUserContent(description);
+            description = result.Item1;
+            mentions = result.Item2;
+        }
+
         if (songSubmission.RepresentationId == null)
         {
             song = new Song
@@ -49,7 +60,7 @@ public class SubmissionService : ISubmissionService
                 AuthorName = songSubmission.AuthorName,
                 Illustration = songSubmission.Illustration,
                 Illustrator = songSubmission.Illustrator,
-                Description = songSubmission.Description,
+                Description = description,
                 Accessibility = songSubmission.Accessibility,
                 IsHidden = isHidden,
                 IsLocked = false,
@@ -69,22 +80,21 @@ public class SubmissionService : ISubmissionService
             };
             await _songRepository.CreateSongAsync(song);
 
-            var owner = (await _userManager.FindByIdAsync(songSubmission.OwnerId.ToString()))!;
-
             if (!isHidden)
-            {
                 foreach (var relation in await _userRelationRepository.GetRelationsAsync("DateCreated", false, 0, -1,
                              e => e.FolloweeId == songSubmission.OwnerId && e.Type != UserRelationType.Blacklisted))
-                {
-                    await _notificationService.Notify((await _userManager.FindByIdAsync(relation.FollowerId.ToString()))!,
-                        (await _userManager.FindByIdAsync(songSubmission.OwnerId.ToString()))!, NotificationType.Updates,
-                        "song-follower-update", new Dictionary<string, string>
+                    await _notificationService.Notify(
+                        (await _userManager.FindByIdAsync(relation.FollowerId.ToString()))!,
+                        (await _userManager.FindByIdAsync(songSubmission.OwnerId.ToString()))!,
+                        NotificationType.Updates, "song-follower-update",
+                        new Dictionary<string, string>
                         {
-                            {"User", _resourceService.GetRichText<User>(songSubmission.OwnerId.ToString(), owner.UserName!)},
-                            {"Song", _resourceService.GetRichText<Song>(song.Id.ToString(), song.GetDisplay())}
+                            {
+                                "User",
+                                _resourceService.GetRichText<User>(songSubmission.OwnerId.ToString(), owner.UserName!)
+                            },
+                            { "Song", _resourceService.GetRichText<Song>(song.Id.ToString(), song.GetDisplay()) }
                         });
-                }
-            }
 
             foreach (var chartSubmission in await _chartSubmissionRepository.GetChartSubmissionsAsync("DateCreated",
                          false, 0, -1, predicate: e => e.Status == RequestStatus.Approved))
@@ -102,7 +112,7 @@ public class SubmissionService : ISubmissionService
             song.AuthorName = songSubmission.AuthorName;
             song.Illustration = songSubmission.Illustration;
             song.Illustrator = songSubmission.Illustrator;
-            song.Description = songSubmission.Description;
+            song.Description = description;
             song.Accessibility = songSubmission.Accessibility;
             song.IsHidden = isHidden;
             song.Lyrics = songSubmission.Lyrics;
@@ -146,6 +156,10 @@ public class SubmissionService : ISubmissionService
             await _authorshipRepository.CreateAuthorshipAsync(authorship);
         }
 
+        if (description != null && mentions != null)
+            await _notificationService.NotifyMentions(mentions, owner,
+                _resourceService.GetRichText<Song>(song.Id.ToString(), songSubmission.Description!));
+
         return song;
     }
 
@@ -169,6 +183,17 @@ public class SubmissionService : ISubmissionService
         if (chartSubmission.SongId == null) return;
 
         Chart chart;
+        var owner = (await _userManager.FindByIdAsync(chartSubmission.OwnerId.ToString()))!;
+        var description = chartSubmission.Description;
+        List<User>? mentions = null;
+
+        if (description != null)
+        {
+            var result = await _resourceService.ParseUserContent(description);
+            description = result.Item1;
+            mentions = result.Item2;
+        }
+
         if (chartSubmission.RepresentationId == null)
         {
             chart = new Chart
@@ -198,20 +223,20 @@ public class SubmissionService : ISubmissionService
             chartSubmission.RepresentationId = chart.Id;
 
             if (!(await _songRepository.GetSongAsync(chartSubmission.SongId.Value)).IsHidden)
-            {
-                var owner = (await _userManager.FindByIdAsync(chartSubmission.OwnerId.ToString()))!;
                 foreach (var relation in await _userRelationRepository.GetRelationsAsync("DateCreated", false, 0, -1,
                              e => e.FolloweeId == chartSubmission.OwnerId && e.Type != UserRelationType.Blacklisted))
-                {
-                    await _notificationService.Notify((await _userManager.FindByIdAsync(relation.FollowerId.ToString()))!,
-                        (await _userManager.FindByIdAsync(chartSubmission.OwnerId.ToString()))!, NotificationType.Updates,
-                        "chart-follower-update", new Dictionary<string, string>
+                    await _notificationService.Notify(
+                        (await _userManager.FindByIdAsync(relation.FollowerId.ToString()))!,
+                        (await _userManager.FindByIdAsync(chartSubmission.OwnerId.ToString()))!,
+                        NotificationType.Updates, "chart-follower-update",
+                        new Dictionary<string, string>
                         {
-                            {"User", _resourceService.GetRichText<User>(chartSubmission.OwnerId.ToString(), owner.UserName!)},
-                            {"Chart", _resourceService.GetRichText<Chart>(chart.Id.ToString(), chart.GetDisplay())}
+                            {
+                                "User",
+                                _resourceService.GetRichText<User>(chartSubmission.OwnerId.ToString(), owner.UserName!)
+                            },
+                            { "Chart", _resourceService.GetRichText<Chart>(chart.Id.ToString(), chart.GetDisplay()) }
                         });
-                }
-            }
         }
         else
         {
@@ -266,6 +291,10 @@ public class SubmissionService : ISubmissionService
             };
             await _authorshipRepository.CreateAuthorshipAsync(authorship);
         }
+
+        if (description != null && mentions != null)
+            await _notificationService.NotifyMentions(mentions, owner,
+                _resourceService.GetRichText<Chart>(chart.Id.ToString(), chartSubmission.Description!));
     }
 
     public async Task RejectChart(ChartSubmission chartSubmission)

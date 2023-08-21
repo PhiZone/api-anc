@@ -10,5 +10,7 @@ public interface INotificationService
 
     Task NotifyLike<T>(T resource, int userId, string display) where T : LikeableResource;
 
-    Task NotifyComment<T>(Comment comment, T resource, string display) where T : LikeableResource;
+    Task NotifyComment<T>(Comment comment, T resource, string display, string content) where T : LikeableResource;
+
+    Task NotifyMentions(List<User> users, User sender, string richText);
 }

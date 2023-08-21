@@ -210,10 +210,7 @@ public class SongSubmissionController : Controller
 
         var illustrationUrl = (await _fileStorageService.UploadImage<Song>(dto.Title, dto.Illustration, (16, 9))).Item1;
         string? license = null;
-        if (dto.License != null)
-        {
-            license = (await _fileStorageService.Upload<Song>(dto.Title, dto.License)).Item1;
-        }
+        if (dto.License != null) license = (await _fileStorageService.Upload<Song>(dto.Title, dto.License)).Item1;
 
         string? originalityProof = null;
         if (dto.OriginalityProof != null)

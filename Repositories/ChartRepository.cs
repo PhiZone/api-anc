@@ -35,8 +35,9 @@ public class ChartRepository : IChartRepository
                                            (chart.Song.Description != null &&
                                             EF.Functions.Like(chart.Song.Description.ToUpper(), search)) ||
                                            (chart.Title != null && EF.Functions.Like(chart.Title.ToUpper(), search)) ||
-                                           EF.Functions.Like(chart.AuthorName.ToUpper(), search) || (chart.Description != null &&
-                                               EF.Functions.Like(chart.Description.ToUpper(), search)));
+                                           EF.Functions.Like(chart.AuthorName.ToUpper(), search) ||
+                                           (chart.Description != null &&
+                                            EF.Functions.Like(chart.Description.ToUpper(), search)));
         }
 
         result = result.Skip(position);
@@ -46,6 +47,30 @@ public class ChartRepository : IChartRepository
     public async Task<Chart> GetChartAsync(Guid id)
     {
         return (await _context.Charts.FirstOrDefaultAsync(chart => chart.Id == id))!;
+    }
+
+    public async Task<Chart?> GetRandomChartAsync(string? search = null, Expression<Func<Chart, bool>>? predicate = null)
+    {
+        var result = _context.Charts.OrderBy(chart => EF.Functions.Random()).AsQueryable();
+
+        if (predicate != null) result = result.Where(predicate);
+
+        if (search != null)
+        {
+            search = $"%{search.Trim().ToUpper()}%";
+            result = result.Where(chart => EF.Functions.Like(chart.Song.Title.ToUpper(), search) ||
+                                           (chart.Song.Edition != null &&
+                                            EF.Functions.Like(chart.Song.Edition.ToUpper(), search)) ||
+                                           EF.Functions.Like(chart.Song.AuthorName.ToUpper(), search) ||
+                                           (chart.Song.Description != null &&
+                                            EF.Functions.Like(chart.Song.Description.ToUpper(), search)) ||
+                                           (chart.Title != null && EF.Functions.Like(chart.Title.ToUpper(), search)) ||
+                                           EF.Functions.Like(chart.AuthorName.ToUpper(), search) ||
+                                           (chart.Description != null &&
+                                            EF.Functions.Like(chart.Description.ToUpper(), search)));
+        }
+        
+        return await result.FirstOrDefaultAsync();
     }
 
     public async Task<ICollection<Record>> GetChartRecordsAsync(Guid id, string order, bool desc, int position,
@@ -109,8 +134,9 @@ public class ChartRepository : IChartRepository
                                            (chart.Song.Description != null &&
                                             EF.Functions.Like(chart.Song.Description.ToUpper(), search)) ||
                                            (chart.Title != null && EF.Functions.Like(chart.Title.ToUpper(), search)) ||
-                                           EF.Functions.Like(chart.AuthorName.ToUpper(), search) || (chart.Description != null &&
-                                               EF.Functions.Like(chart.Description.ToUpper(), search)));
+                                           EF.Functions.Like(chart.AuthorName.ToUpper(), search) ||
+                                           (chart.Description != null &&
+                                            EF.Functions.Like(chart.Description.ToUpper(), search)));
         }
 
         return await result.CountAsync();

@@ -35,7 +35,7 @@ public class Record : LikeableResource
     public Guid ApplicationId { get; set; }
 
     public Application Application { get; set; } = null!;
-    
+
     public override string GetDisplay()
     {
         return $"{Score} {Accuracy:P}";

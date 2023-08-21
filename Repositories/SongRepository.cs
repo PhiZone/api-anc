@@ -30,8 +30,9 @@ public class SongRepository : ISongRepository
             search = $"%{search.Trim().ToUpper()}%";
             result = result.Where(song => EF.Functions.Like(song.Title.ToUpper(), search) ||
                                           (song.Edition != null && EF.Functions.Like(song.Edition.ToUpper(), search)) ||
-                                          EF.Functions.Like(song.AuthorName.ToUpper(), search) || (song.Description != null &&
-                                              EF.Functions.Like(song.Description.ToUpper(), search)));
+                                          EF.Functions.Like(song.AuthorName.ToUpper(), search) ||
+                                          (song.Description != null &&
+                                           EF.Functions.Like(song.Description.ToUpper(), search)));
         }
 
         result = result.Skip(position);
@@ -41,6 +42,25 @@ public class SongRepository : ISongRepository
     public async Task<Song> GetSongAsync(Guid id)
     {
         return (await _context.Songs.FirstOrDefaultAsync(song => song.Id == id))!;
+    }
+
+    public async Task<Song?> GetRandomSongAsync(string? search = null, Expression<Func<Song, bool>>? predicate = null)
+    {
+        var result = _context.Songs.OrderBy(song => EF.Functions.Random()).AsQueryable();
+
+        if (predicate != null) result = result.Where(predicate);
+
+        if (search != null)
+        {
+            search = $"%{search.Trim().ToUpper()}%";
+            result = result.Where(song => EF.Functions.Like(song.Title.ToUpper(), search) ||
+                                          (song.Edition != null && EF.Functions.Like(song.Edition.ToUpper(), search)) ||
+                                          EF.Functions.Like(song.AuthorName.ToUpper(), search) ||
+                                          (song.Description != null &&
+                                           EF.Functions.Like(song.Description.ToUpper(), search)));
+        }
+        
+        return await result.FirstOrDefaultAsync();
     }
 
     public async Task<ICollection<Chart>> GetSongChartsAsync(Guid id, string order, bool desc, int position, int take,
@@ -104,8 +124,9 @@ public class SongRepository : ISongRepository
             search = $"%{search.Trim().ToUpper()}%";
             result = result.Where(song => EF.Functions.Like(song.Title.ToUpper(), search) ||
                                           (song.Edition != null && EF.Functions.Like(song.Edition.ToUpper(), search)) ||
-                                          EF.Functions.Like(song.AuthorName.ToUpper(), search) || (song.Description != null &&
-                                              EF.Functions.Like(song.Description.ToUpper(), search)));
+                                          EF.Functions.Like(song.AuthorName.ToUpper(), search) ||
+                                          (song.Description != null &&
+                                           EF.Functions.Like(song.Description.ToUpper(), search)));
         }
 
         return await result.CountAsync();

@@ -12,6 +12,8 @@ public interface IChartRepository
 
     Task<Chart> GetChartAsync(Guid id);
 
+    Task<Chart?> GetRandomChartAsync(string? search = null, Expression<Func<Chart, bool>>? predicate = null);
+
     Task<ICollection<Record>> GetChartRecordsAsync(Guid id, string order, bool desc, int position, int take,
         Expression<Func<Record, bool>>? predicate = null);
 

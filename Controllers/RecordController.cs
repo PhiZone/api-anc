@@ -43,12 +43,12 @@ public class RecordController : Controller
     private readonly ILikeService _likeService;
     private readonly ILogger<RecordController> _logger;
     private readonly IMapper _mapper;
+    private readonly INotificationService _notificationService;
     private readonly IPlayConfigurationRepository _playConfigurationRepository;
     private readonly IRecordRepository _recordRepository;
     private readonly IRecordService _recordService;
     private readonly IConnectionMultiplexer _redis;
     private readonly IResourceService _resourceService;
-    private readonly INotificationService _notificationService;
     private readonly UserManager<User> _userManager;
 
     public RecordController(IRecordRepository recordRepository, IOptions<DataSettings> dataSettings,
@@ -56,7 +56,8 @@ public class RecordController : Controller
         IChartRepository chartRepository, ILikeRepository likeRepository,
         ILikeService likeService, ICommentRepository commentRepository, IConnectionMultiplexer redis,
         IApplicationRepository applicationRepository, IPlayConfigurationRepository playConfigurationRepository,
-        IRecordService recordService, IResourceService resourceService, ILogger<RecordController> logger, INotificationService notificationService)
+        IRecordService recordService, IResourceService resourceService, ILogger<RecordController> logger,
+        INotificationService notificationService)
     {
         _recordRepository = recordRepository;
         _dataSettings = dataSettings;
@@ -593,10 +594,12 @@ public class RecordController : Controller
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
         var record = await _recordRepository.GetRecordAsync(id);
+
+        var result = await _resourceService.ParseUserContent(dto.Content);
         var comment = new Comment
         {
             ResourceId = record.Id,
-            Content = dto.Content,
+            Content = result.Item1,
             Language = dto.Language,
             OwnerId = currentUser.Id,
             DateCreated = DateTimeOffset.UtcNow
@@ -605,7 +608,9 @@ public class RecordController : Controller
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
-        await _notificationService.NotifyComment(comment, record, await _resourceService.GetDisplayName(record));
+        await _notificationService.NotifyComment(comment, record, await _resourceService.GetDisplayName(record), dto.Content);
+        await _notificationService.NotifyMentions(result.Item2, currentUser,
+            _resourceService.GetRichText<Comment>(comment.Id.ToString(), dto.Content));
 
         return StatusCode(StatusCodes.Status201Created);
     }

@@ -21,7 +21,7 @@ public class Application : LikeableResource
     public string? Secret { get; set; }
 
     public DateTimeOffset DateUpdated { get; set; }
-    
+
     public override string GetDisplay()
     {
         return $"{Name}";

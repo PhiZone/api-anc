@@ -98,12 +98,10 @@ public class AuthenticationController : Controller
             });
 
             if (response == null)
-            {
                 return BadRequest(new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidData
                 });
-            }
 
             if (!response.IsSuccessStatusCode)
                 return Forbid(new AuthenticationProperties(new Dictionary<string, string>
@@ -433,12 +431,10 @@ public class AuthenticationController : Controller
         var response = await _tapTapService.Login(dto);
 
         if (response == null)
-        {
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidData
             });
-        }
 
         if (!response.IsSuccessStatusCode)
             return BadRequest(new ResponseDto<object>

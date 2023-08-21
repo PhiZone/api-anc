@@ -2,5 +2,7 @@
 
 public enum PetQuestionType
 {
-    Single, Multiple, Subjective
+    Single,
+    Multiple,
+    Subjective
 }

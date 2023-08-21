@@ -50,10 +50,7 @@ public class DtoMapper : IDtoMapper
         if (currentUser != null && await _userRelationRepository.RelationExistsAsync(currentUser.Id, user.Id))
         {
             var relation = await _userRelationRepository.GetRelationAsync(currentUser.Id, user.Id);
-            if (relation.Type != UserRelationType.Blacklisted)
-            {
-                dto.DateFollowed = relation.DateCreated;
-            }
+            if (relation.Type != UserRelationType.Blacklisted) dto.DateFollowed = relation.DateCreated;
         }
 
         return dto;
@@ -224,11 +221,9 @@ public class DtoMapper : IDtoMapper
     {
         var dto = _mapper.Map<T>(notification);
         if (notification.OperatorId != null)
-        {
             dto.Operator =
                 await MapUserAsync<UserDto>(
                     (await _userManager.FindByIdAsync(notification.OperatorId.Value.ToString()))!, currentUser);
-        }
 
         return dto;
     }

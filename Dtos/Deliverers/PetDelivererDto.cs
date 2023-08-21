@@ -12,7 +12,7 @@ public class PetDelivererDto
 public class PetQuestionDeliverer
 {
     public Guid Id { get; set; }
-    
+
     public PetQuestionType Type { get; set; }
 
     public List<PetChoiceDeliverer>? Choices { get; set; }
@@ -21,6 +21,6 @@ public class PetQuestionDeliverer
 public class PetChoiceDeliverer
 {
     public Guid Id { get; set; }
-    
+
     public bool IsCorrect { get; set; }
 }

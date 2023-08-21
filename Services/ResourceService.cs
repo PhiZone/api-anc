@@ -9,10 +9,10 @@ namespace PhiZoneApi.Services;
 
 public partial class ResourceService : IResourceService
 {
-    private readonly UserManager<User> _userManager;
+    private readonly IChartRepository _chartRepository;
     private readonly ISongRepository _songRepository;
     private readonly ISongSubmissionRepository _songSubmissionRepository;
-    private readonly IChartRepository _chartRepository;
+    private readonly UserManager<User> _userManager;
 
     public ResourceService(UserManager<User> userManager, ISongRepository songRepository,
         ISongSubmissionRepository songSubmissionRepository, IChartRepository chartRepository)
@@ -23,9 +23,9 @@ public partial class ResourceService : IResourceService
         _chartRepository = chartRepository;
     }
 
-    public string GetRichText<T>(string id, string display)
+    public string GetRichText<T>(string id, string display, string? addition = null)
     {
-        return $"[PZ{typeof(T).Name}:{id}:{display}:PZRT]";
+        return $"[PZ{typeof(T).Name}{addition}:{id}:{display}:PZRT]";
     }
 
     public string GetComplexRichText<T>(string id1, string id2, string display)
@@ -86,6 +86,25 @@ public partial class ResourceService : IResourceService
         return Roles.List.FirstOrDefault(role => role.Name == roleName);
     }
 
+    public async Task<(string, List<User>)> ParseUserContent(string content)
+    {
+        var matches = UserMentionRegex().Matches(content);
+        var result = content;
+        var users = new List<User>();
+        foreach (var userName in matches.Select(match => match.Groups[1].Value))
+        {
+            var user = await _userManager.FindByNameAsync(userName);
+            if (user == null) continue;
+            users.Add(user);
+            result = result.Replace($"@{userName}", GetRichText<User>(user.Id.ToString(), user.UserName!));
+        }
+
+        return (result, users);
+    }
+
     [GeneratedRegex("\\[PZUser:[0-9]+:")]
     private static partial Regex UserRegex();
+
+    [GeneratedRegex(@"@([A-Za-z0-9_\u4e00-\u9fff\u3041-\u309f\u30a0-\u30ff\uac00-\ud7a3]+)")]
+    private static partial Regex UserMentionRegex();
 }

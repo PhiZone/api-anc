@@ -30,7 +30,8 @@ public class ChapterRepository : IChapterRepository
         {
             search = $"%{search.Trim().ToUpper()}%";
             result = result.Where(chapter =>
-                         EF.Functions.Like(chapter.Title.ToUpper(), search) || EF.Functions.Like(chapter.Subtitle.ToUpper(), search) ||
+                EF.Functions.Like(chapter.Title.ToUpper(), search) ||
+                EF.Functions.Like(chapter.Subtitle.ToUpper(), search) ||
                 (chapter.Description != null && EF.Functions.Like(chapter.Description.ToUpper(), search)));
         }
 
@@ -55,7 +56,8 @@ public class ChapterRepository : IChapterRepository
         if (search != null)
         {
             search = $"%{search.Trim().ToUpper()}%";
-            result = result.Where(admission => admission.Label != null && EF.Functions.Like(admission.Label.ToUpper(), search));
+            result = result.Where(admission =>
+                admission.Label != null && EF.Functions.Like(admission.Label.ToUpper(), search));
         }
 
         result = result.Skip(position);
@@ -101,7 +103,8 @@ public class ChapterRepository : IChapterRepository
         {
             search = $"%{search.Trim().ToUpper()}%";
             result = result.Where(chapter =>
-                         EF.Functions.Like(chapter.Title.ToUpper(), search) || EF.Functions.Like(chapter.Subtitle.ToUpper(), search) ||
+                EF.Functions.Like(chapter.Title.ToUpper(), search) ||
+                EF.Functions.Like(chapter.Subtitle.ToUpper(), search) ||
                 (chapter.Description != null && EF.Functions.Like(chapter.Description.ToUpper(), search)));
         }
 
@@ -119,7 +122,8 @@ public class ChapterRepository : IChapterRepository
         if (search != null)
         {
             search = $"%{search.Trim().ToUpper()}%";
-            result = result.Where(admission => admission.Label != null && EF.Functions.Like(admission.Label.ToUpper(), search));
+            result = result.Where(admission =>
+                admission.Label != null && EF.Functions.Like(admission.Label.ToUpper(), search));
         }
 
         return await result.CountAsync();

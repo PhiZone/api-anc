@@ -287,8 +287,7 @@ public class ChartSubmissionController : Controller
             VolunteerStatus = RequestStatus.Waiting,
             AdmissionStatus =
                 song != null
-                    ?
-                    song.OwnerId == currentUser.Id || song.Accessibility == Accessibility.AllowAny
+                    ? song.OwnerId == currentUser.Id || song.Accessibility == Accessibility.AllowAny
                         ? RequestStatus.Approved
                         : RequestStatus.Waiting
                     : songSubmission!.OwnerId == currentUser.Id ||
