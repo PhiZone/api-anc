@@ -67,7 +67,7 @@ public class JudgeLine
 
     [JsonProperty("extended")] public ExtendedEventLayer? Extended { get; set; }
 
-    [JsonProperty("father")] public int Father { get; set; }
+    [JsonProperty("father")] public int? Father { get; set; } = -1;
 
     [JsonProperty("isCover")] public int IsCover { get; set; }
 
@@ -175,13 +175,13 @@ public class TextEvent : Event
 
 public class Event : IComparable<Event>
 {
-    [JsonProperty("bezier")] public int? Bezier { get; set; }
+    [JsonProperty("bezier")] public int Bezier { get; set; }
 
-    [JsonProperty("bezierPoints")] public List<double>? BezierPoints { get; set; }
+    [JsonProperty("bezierPoints")] public List<double> BezierPoints { get; set; } = new() { 0.0, 0.0, 0.0, 0.0 };
 
     [JsonProperty("easingLeft")] public double EasingLeft { get; set; }
 
-    [JsonProperty("easingRight")] public double EasingRight { get; set; }
+    [JsonProperty("easingRight")] public double EasingRight { get; set; } = 1.0;
 
     [JsonProperty("easingType")] public int EasingType { get; set; }
 
