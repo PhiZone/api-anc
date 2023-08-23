@@ -49,7 +49,8 @@ public class ChartRepository : IChartRepository
         return (await _context.Charts.FirstOrDefaultAsync(chart => chart.Id == id))!;
     }
 
-    public async Task<Chart?> GetRandomChartAsync(string? search = null, Expression<Func<Chart, bool>>? predicate = null)
+    public async Task<Chart?> GetRandomChartAsync(string? search = null,
+        Expression<Func<Chart, bool>>? predicate = null)
     {
         var result = _context.Charts.OrderBy(chart => EF.Functions.Random()).AsQueryable();
 
@@ -69,7 +70,7 @@ public class ChartRepository : IChartRepository
                                            (chart.Description != null &&
                                             EF.Functions.Like(chart.Description.ToUpper(), search)));
         }
-        
+
         return await result.FirstOrDefaultAsync();
     }
 
