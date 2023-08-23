@@ -69,7 +69,7 @@ public class JudgeLine
 
     [JsonProperty("father")] public int? Father { get; set; } = -1;
 
-    [JsonProperty("isCover")] public int IsCover { get; set; }
+    [JsonProperty("isCover")] public int? IsCover { get; set; } = 1;
 
     [JsonProperty("notes")] public List<Note?>? Notes { get; set; }
 
