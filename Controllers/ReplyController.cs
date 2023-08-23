@@ -83,7 +83,7 @@ public class ReplyController : Controller
             Total = total,
             PerPage = dto.PerPage,
             HasPrevious = position > 0,
-            HasNext = dto.PerPage > 0 && position < total - total % dto.PerPage,
+            HasNext = dto.PerPage > 0 && dto.PerPage * dto.Page < total,
             Data = list
         });
     }
@@ -198,7 +198,7 @@ public class ReplyController : Controller
             Total = total,
             PerPage = dto.PerPage,
             HasPrevious = position > 0,
-            HasNext = dto.PerPage > 0 && position < total - total % dto.PerPage,
+            HasNext = dto.PerPage > 0 && dto.PerPage * dto.Page < total,
             Data = list
         });
     }

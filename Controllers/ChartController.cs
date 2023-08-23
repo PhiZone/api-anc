@@ -111,7 +111,7 @@ public class ChartController : Controller
             Total = total,
             PerPage = dto.PerPage,
             HasPrevious = position > 0,
-            HasNext = dto.PerPage > 0 && position < total - total % dto.PerPage,
+            HasNext = dto.PerPage > 0 && dto.PerPage * dto.Page < total,
             Data = list
         });
     }
@@ -188,12 +188,10 @@ public class ChartController : Controller
         var chart = await _chartRepository.GetRandomChartAsync(dto.Search, predicateExpr);
 
         if (chart == null)
-        {
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        }
 
         var chartDto = await _dtoMapper.MapChartAsync<ChartDetailedDto>(chart, currentUser);
 
@@ -665,7 +663,7 @@ public class ChartController : Controller
             Total = total,
             PerPage = dto.PerPage,
             HasPrevious = position > 0,
-            HasNext = dto.PerPage > 0 && position < total - total % dto.PerPage,
+            HasNext = dto.PerPage > 0 && dto.PerPage * dto.Page < total,
             Data = list
         });
     }
@@ -1086,7 +1084,7 @@ public class ChartController : Controller
             Total = total,
             PerPage = dto.PerPage,
             HasPrevious = position > 0,
-            HasNext = dto.PerPage > 0 && position < total - total % dto.PerPage,
+            HasNext = dto.PerPage > 0 && dto.PerPage * dto.Page < total,
             Data = list
         });
     }
@@ -1136,7 +1134,7 @@ public class ChartController : Controller
             Total = total,
             PerPage = dto.PerPage,
             HasPrevious = position > 0,
-            HasNext = dto.PerPage > 0 && position < total - total % dto.PerPage,
+            HasNext = dto.PerPage > 0 && dto.PerPage * dto.Page < total,
             Data = list
         });
     }
@@ -1294,7 +1292,7 @@ public class ChartController : Controller
             Total = total,
             PerPage = dto.PerPage,
             HasPrevious = position > 0,
-            HasNext = dto.PerPage > 0 && position < total - total % dto.PerPage,
+            HasNext = dto.PerPage > 0 && dto.PerPage * dto.Page < total,
             Data = list
         });
     }
@@ -1359,7 +1357,8 @@ public class ChartController : Controller
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
-        await _notificationService.NotifyComment(comment, chart, await _resourceService.GetDisplayName(chart), dto.Content);
+        await _notificationService.NotifyComment(comment, chart, await _resourceService.GetDisplayName(chart),
+            dto.Content);
         await _notificationService.NotifyMentions(result.Item2, currentUser,
             _resourceService.GetRichText<Comment>(comment.Id.ToString(), dto.Content));
 
@@ -1417,7 +1416,7 @@ public class ChartController : Controller
             Total = total,
             PerPage = dto.PerPage,
             HasPrevious = position > 0,
-            HasNext = dto.PerPage > 0 && position < total - total % dto.PerPage,
+            HasNext = dto.PerPage > 0 && dto.PerPage * dto.Page < total,
             Data = list
         });
     }

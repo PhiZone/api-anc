@@ -59,7 +59,7 @@ public class SongRepository : ISongRepository
                                           (song.Description != null &&
                                            EF.Functions.Like(song.Description.ToUpper(), search)));
         }
-        
+
         return await result.FirstOrDefaultAsync();
     }
 

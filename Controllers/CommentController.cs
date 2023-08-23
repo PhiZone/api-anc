@@ -90,7 +90,7 @@ public class CommentController : Controller
             Total = total,
             PerPage = dto.PerPage,
             HasPrevious = position > 0,
-            HasNext = dto.PerPage > 0 && position < total - total % dto.PerPage,
+            HasNext = dto.PerPage > 0 && dto.PerPage * dto.Page < total,
             Data = list
         });
     }
@@ -215,7 +215,7 @@ public class CommentController : Controller
             Total = total,
             PerPage = dto.PerPage,
             HasPrevious = position > 0,
-            HasNext = dto.PerPage > 0 && position < total - total % dto.PerPage,
+            HasNext = dto.PerPage > 0 && dto.PerPage * dto.Page < total,
             Data = list
         });
     }
@@ -274,15 +274,14 @@ public class CommentController : Controller
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
             });
         if (currentUser.Id != comment.OwnerId)
-        {
-            await _notificationService.Notify((await _userManager.FindByIdAsync(comment.OwnerId.ToString()))!, currentUser,
+            await _notificationService.Notify((await _userManager.FindByIdAsync(comment.OwnerId.ToString()))!,
+                currentUser,
                 NotificationType.Replies, "new-reply",
                 new Dictionary<string, string>
                 {
                     { "User", _resourceService.GetRichText<User>(currentUser.Id.ToString(), currentUser.UserName!) },
                     { "Reply", _resourceService.GetRichText<Reply>(reply.Id.ToString(), reply.GetDisplay()) }
-                });   
-        }
+                });
         await _notificationService.NotifyMentions(result.Item2, currentUser,
             _resourceService.GetRichText<Reply>(reply.Id.ToString(), reply.GetDisplay()));
 
@@ -324,7 +323,7 @@ public class CommentController : Controller
             Total = total,
             PerPage = dto.PerPage,
             HasPrevious = position > 0,
-            HasNext = dto.PerPage > 0 && position < total - total % dto.PerPage,
+            HasNext = dto.PerPage > 0 && dto.PerPage * dto.Page < total,
             Data = list
         });
     }

@@ -110,7 +110,7 @@ public class RecordController : Controller
             Total = total,
             PerPage = dto.PerPage,
             HasPrevious = position > 0,
-            HasNext = dto.PerPage > 0 && position < total - total % dto.PerPage,
+            HasNext = dto.PerPage > 0 && dto.PerPage * dto.Page < total,
             Data = list
         });
     }
@@ -431,7 +431,7 @@ public class RecordController : Controller
             Total = total,
             PerPage = dto.PerPage,
             HasPrevious = position > 0,
-            HasNext = dto.PerPage > 0 && position < total - total % dto.PerPage,
+            HasNext = dto.PerPage > 0 && dto.PerPage * dto.Page < total,
             Data = list
         });
     }
@@ -554,7 +554,7 @@ public class RecordController : Controller
             Total = total,
             PerPage = dto.PerPage,
             HasPrevious = position > 0,
-            HasNext = dto.PerPage > 0 && position < total - total % dto.PerPage,
+            HasNext = dto.PerPage > 0 && dto.PerPage * dto.Page < total,
             Data = list
         });
     }
@@ -608,7 +608,8 @@ public class RecordController : Controller
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
-        await _notificationService.NotifyComment(comment, record, await _resourceService.GetDisplayName(record), dto.Content);
+        await _notificationService.NotifyComment(comment, record, await _resourceService.GetDisplayName(record),
+            dto.Content);
         await _notificationService.NotifyMentions(result.Item2, currentUser,
             _resourceService.GetRichText<Comment>(comment.Id.ToString(), dto.Content));
 

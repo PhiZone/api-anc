@@ -106,7 +106,7 @@ public class SongController : Controller
             Total = total,
             PerPage = dto.PerPage,
             HasPrevious = position > 0,
-            HasNext = dto.PerPage > 0 && position < total - total % dto.PerPage,
+            HasNext = dto.PerPage > 0 && dto.PerPage * dto.Page < total,
             Data = list
         });
     }
@@ -169,12 +169,10 @@ public class SongController : Controller
         var song = await _songRepository.GetRandomSongAsync(dto.Search, predicateExpr);
 
         if (song == null)
-        {
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        }
 
         var songDto = await _dtoMapper.MapSongAsync<SongDto>(song, currentUser);
 
@@ -748,7 +746,7 @@ public class SongController : Controller
             Total = total,
             PerPage = dto.PerPage,
             HasPrevious = position > 0,
-            HasNext = dto.PerPage > 0 && position < total - total % dto.PerPage,
+            HasNext = dto.PerPage > 0 && dto.PerPage * dto.Page < total,
             Data = list
         });
     }
@@ -1021,7 +1019,7 @@ public class SongController : Controller
             Total = total,
             PerPage = dto.PerPage,
             HasPrevious = position > 0,
-            HasNext = dto.PerPage > 0 && position < total - total % dto.PerPage,
+            HasNext = dto.PerPage > 0 && dto.PerPage * dto.Page < total,
             Data = list
         });
     }
@@ -1071,7 +1069,7 @@ public class SongController : Controller
             Total = total,
             PerPage = dto.PerPage,
             HasPrevious = position > 0,
-            HasNext = dto.PerPage > 0 && position < total - total % dto.PerPage,
+            HasNext = dto.PerPage > 0 && dto.PerPage * dto.Page < total,
             Data = list
         });
     }
@@ -1214,7 +1212,7 @@ public class SongController : Controller
             Total = total,
             PerPage = dto.PerPage,
             HasPrevious = position > 0,
-            HasNext = dto.PerPage > 0 && position < total - total % dto.PerPage,
+            HasNext = dto.PerPage > 0 && dto.PerPage * dto.Page < total,
             Data = list
         });
     }
