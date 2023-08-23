@@ -27,6 +27,8 @@ public interface IDtoMapper
 
     Task<T> MapChartAsync<T>(Chart chart, User? currentUser = null) where T : ChartDto;
 
+    Task<T> MapChartSubmissionAsync<T>(ChartSubmission chart, User? currentUser = null) where T : ChartSubmissionDto;
+
     Task<T> MapRecordAsync<T>(Record record, User? currentUser = null) where T : RecordDto;
 
     Task<T> MapCommentAsync<T>(Comment comment, User? currentUser = null) where T : CommentDto;

@@ -37,6 +37,7 @@ public class ChartSubmissionController : Controller
     private readonly IOptions<DataSettings> _dataSettings;
     private readonly IFileStorageService _fileStorageService;
     private readonly IFilterService _filterService;
+    private readonly IDtoMapper _dtoMapper;
     private readonly IMapper _mapper;
     private readonly INotificationService _notificationService;
     private readonly IResourceService _resourceService;
@@ -49,7 +50,7 @@ public class ChartSubmissionController : Controller
 
     public ChartSubmissionController(IChartSubmissionRepository chartSubmissionRepository,
         IOptions<DataSettings> dataSettings, UserManager<User> userManager, IFilterService filterService,
-        IFileStorageService fileStorageService, IMapper mapper, ISongRepository songRepository,
+        IFileStorageService fileStorageService, IDtoMapper dtoMapper, IMapper mapper, ISongRepository songRepository,
         IVolunteerVoteService volunteerVoteService, IResourceService resourceService,
         ISongSubmissionRepository songSubmissionRepository, IChartService chartService,
         IVolunteerVoteRepository volunteerVoteRepository, IAdmissionRepository admissionRepository,
@@ -61,6 +62,7 @@ public class ChartSubmissionController : Controller
         _dataSettings = dataSettings;
         _userManager = userManager;
         _filterService = filterService;
+        _dtoMapper = dtoMapper;
         _mapper = mapper;
         _songRepository = songRepository;
         _volunteerVoteService = volunteerVoteService;
@@ -109,8 +111,10 @@ public class ChartSubmissionController : Controller
         var chartSubmissions = await _chartSubmissionRepository.GetChartSubmissionsAsync(dto.Order, dto.Desc, position,
             dto.PerPage, dto.Search, predicateExpr);
         var total = await _chartSubmissionRepository.CountChartSubmissionsAsync(dto.Search, predicateExpr);
-        var list = chartSubmissions.Select(chartSubmission => _mapper.Map<ChartSubmissionDto>(chartSubmission))
-            .ToList();
+        var list = new List<ChartSubmissionDto>();
+
+        foreach (var chartSubmission in chartSubmissions)
+            list.Add(await _dtoMapper.MapChartSubmissionAsync<ChartSubmissionDto>(chartSubmission, currentUser));
 
         return Ok(new ResponseDto<IEnumerable<ChartSubmissionDto>>
         {
@@ -162,7 +166,7 @@ public class ChartSubmissionController : Controller
             });
         var chartSubmission = await _chartSubmissionRepository.GetChartSubmissionAsync(id);
 
-        var dto = _mapper.Map<ChartSubmissionDto>(chartSubmission);
+        var dto = await _dtoMapper.MapChartSubmissionAsync<ChartSubmissionDto>(chartSubmission);
 
         return Ok(new ResponseDto<ChartSubmissionDto>
         {
@@ -287,7 +291,8 @@ public class ChartSubmissionController : Controller
             VolunteerStatus = RequestStatus.Waiting,
             AdmissionStatus =
                 song != null
-                    ? song.OwnerId == currentUser.Id || song.Accessibility == Accessibility.AllowAny
+                    ?
+                    song.OwnerId == currentUser.Id || song.Accessibility == Accessibility.AllowAny
                         ? RequestStatus.Approved
                         : RequestStatus.Waiting
                     : songSubmission!.OwnerId == currentUser.Id ||

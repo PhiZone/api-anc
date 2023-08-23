@@ -20,11 +20,12 @@ public class DtoMapper : IDtoMapper
     private readonly ISongRepository _songRepository;
     private readonly UserManager<User> _userManager;
     private readonly IUserRelationRepository _userRelationRepository;
+    private readonly IVolunteerVoteRepository _volunteerVoteRepository;
 
     public DtoMapper(IUserRelationRepository userRelationRepository, IRegionRepository regionRepository,
         ILikeRepository likeRepository, UserManager<User> userManager, IMapper mapper,
         ICommentRepository commentRepository, IReplyRepository replyRepository, IRecordRepository recordRepository,
-        IChapterRepository chapterRepository, ISongRepository songRepository, IChartRepository chartRepository)
+        IChapterRepository chapterRepository, ISongRepository songRepository, IChartRepository chartRepository, IVolunteerVoteRepository volunteerVoteRepository)
     {
         _userRelationRepository = userRelationRepository;
         _regionRepository = regionRepository;
@@ -37,6 +38,7 @@ public class DtoMapper : IDtoMapper
         _chapterRepository = chapterRepository;
         _songRepository = songRepository;
         _chartRepository = chartRepository;
+        _volunteerVoteRepository = volunteerVoteRepository;
     }
 
     public async Task<T> MapUserAsync<T>(User user, User? currentUser = null) where T : UserDto
@@ -159,6 +161,15 @@ public class DtoMapper : IDtoMapper
         dto.CommentCount = await _commentRepository.CountCommentsAsync(comment => comment.ResourceId == chart.Id);
         dto.DateLiked = currentUser != null && await _likeRepository.LikeExistsAsync(chart.Id, currentUser.Id)
             ? (await _likeRepository.GetLikeAsync(chart.Id, currentUser.Id)).DateCreated
+            : null;
+        return dto;
+    }
+
+    public async Task<T> MapChartSubmissionAsync<T>(ChartSubmission chart, User? currentUser = null) where T : ChartSubmissionDto
+    {
+        var dto = _mapper.Map<T>(chart);
+        dto.DateVoted = currentUser != null && await _volunteerVoteRepository.VolunteerVoteExistsAsync(chart.Id, currentUser.Id)
+            ? (await _volunteerVoteRepository.GetVolunteerVoteAsync(chart.Id, currentUser.Id)).DateCreated
             : null;
         return dto;
     }
