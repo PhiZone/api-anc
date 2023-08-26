@@ -165,6 +165,7 @@ public class SubmissionService : ISubmissionService
 
     public async Task RejectSong(SongSubmission songSubmission)
     {
+        Console.WriteLine($"Sending notification: {songSubmission.Owner.UserName} {_resourceService.GetRichText<SongSubmission>(songSubmission.Id.ToString(), songSubmission.GetDisplay())} {songSubmission.Message}");
         await _notificationService.Notify(songSubmission.Owner, null, NotificationType.System,
             "song-submission-rejection",
             new Dictionary<string, string>

@@ -899,6 +899,7 @@ public class SongSubmissionController : Controller
                 });
             case RequestStatus.Rejected:
                 songSubmission.Status = RequestStatus.Rejected;
+                Console.WriteLine("Rejecting song...");
                 await _submissionService.RejectSong(songSubmission);
                 break;
             case RequestStatus.Waiting:
