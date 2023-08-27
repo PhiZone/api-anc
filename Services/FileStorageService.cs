@@ -61,13 +61,13 @@ public class FileStorageService : IFileStorageService
 
     private static string Romanize(string input)
     {
-        Console.WriteLine($"To process {input}");
-        var japanese = new Japanese.KanjiReadings();
-        input = japanese.ProcessWithKana(input);
-        Console.WriteLine($"Processed Japanese {input}");
+        Console.WriteLine($"Processing {input}");
         var chinese = new Chinese.HanyuPinyin();
         input = chinese.Process(input);
         Console.WriteLine($"Processed Chinese {input}");
+        var japanese = new Japanese.KanjiReadings();
+        input = japanese.ProcessWithKana(input);
+        Console.WriteLine($"Processed Japanese {input}");
         var korean = new Korean.RevisedRomanization();
         input = korean.Process(input);
         Console.WriteLine($"Processed Korean {input}");
