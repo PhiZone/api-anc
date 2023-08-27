@@ -26,7 +26,6 @@ public class NotificationService : INotificationService
     public async Task Notify(User receiver, User? sender, NotificationType type, string key,
         Dictionary<string, string> replacements)
     {
-        Console.WriteLine($"Constructing Notification {type} {key} {receiver.Language} {receiver.Id} {sender?.Id}");
         var notification = new Notification
         {
             Type = type,
