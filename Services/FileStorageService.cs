@@ -64,13 +64,10 @@ public class FileStorageService : IFileStorageService
     {
         var japanese = new KawazuConverter();
         input = await japanese.Convert(input, To.Romaji);
-        Console.WriteLine("The result is {0}", input);
         var korean = new Korean.RevisedRomanization();
         input = korean.Process(input);
-        Console.WriteLine("The result is {0}", input);
         var russian = new Russian.BgnPcgn();
         input = russian.Process(input);
-        Console.WriteLine("The result is {0}", input);
         return input;
     }
 }
