@@ -62,11 +62,12 @@ public class FileStorageService : IFileStorageService
     private static string Romanize(string input)
     {
         var japanese = new Japanese.KanjiReadings();
-        input = japanese.ProcessWithKana(input);
+        input = japanese.Process(input);
         var korean = new Korean.RevisedRomanization();
         input = korean.Process(input);
         var russian = new Russian.BgnPcgn();
         input = russian.Process(input);
+        Console.WriteLine("The result is {0}", input);
         return input;
     }
 }
