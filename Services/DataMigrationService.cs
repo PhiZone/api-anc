@@ -375,7 +375,7 @@ public partial class DataMigrationService : IHostedService
                 var fileInfo =
                     await _songService.UploadAsync(title, await File.ReadAllBytesAsync(filePath, cancellationToken));
                 var illustrationPath = Path.Combine(_mediaPath, reader.GetString("illustration"));
-                var illustration = (await _fileStorageService.UploadImage<User>(title,
+                var illustration = (await _fileStorageService.UploadImage<Song>(title,
                     await File.ReadAllBytesAsync(illustrationPath, cancellationToken), (16, 9))).Item1;
                 var date = reader.GetDateTimeOffset("time");
                 var bpm = NonDigitRegex()
@@ -990,7 +990,7 @@ public partial class DataMigrationService : IHostedService
                 var fileInfo =
                     await _songService.UploadAsync(title, await File.ReadAllBytesAsync(filePath, cancellationToken));
                 var illustrationPath = Path.Combine(_mediaPath, reader.GetString("illustration"));
-                var illustration = (await _fileStorageService.UploadImage<User>(title,
+                var illustration = (await _fileStorageService.UploadImage<Song>(title,
                     await File.ReadAllBytesAsync(illustrationPath, cancellationToken), (16, 9))).Item1;
                 var date = reader.GetDateTimeOffset("time");
                 var edition = reader.GetString("edition");

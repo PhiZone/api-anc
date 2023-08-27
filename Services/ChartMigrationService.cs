@@ -30,7 +30,7 @@ public class ChartMigrationService : IHostedService
         _logger.LogInformation(LogEvents.ChartMigration, "Chart migration started");
         try
         {
-            await MigrateChartAsync();
+            await MigrateChartsAsync();
             _logger.LogInformation(LogEvents.ChartMigration, "Chart migration finished");
         }
         catch (Exception ex)
@@ -44,7 +44,7 @@ public class ChartMigrationService : IHostedService
         return Task.CompletedTask;
     }
 
-    private async Task MigrateChartAsync()
+    private async Task MigrateChartsAsync()
     {
         var charts = await _chartRepository.GetChartsAsync("DateCreated", false, 0, -1);
         foreach (var chart in charts)
