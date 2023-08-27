@@ -5,6 +5,7 @@ using Microsoft.Extensions.Options;
 using PhiZoneApi.Configurations;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Utils;
+using Romanization;
 
 namespace PhiZoneApi.Services;
 
@@ -54,8 +55,25 @@ public class FileStorageService : IFileStorageService
     private static string NormalizeFileName(string input)
     {
         var chars = Path.GetInvalidFileNameChars().Concat(new[] { ' ' });
-
-        return HttpUtility.UrlEncode(chars.Aggregate(input,
+        return HttpUtility.UrlEncode(chars.Aggregate(Romanize(input),
             (current, invalidChar) => current.Replace(invalidChar.ToString(), string.Empty)));
+    }
+
+    private static string Romanize(string input)
+    {
+        Console.WriteLine($"To process {input}");
+        var japanese = new Japanese.KanjiReadings();
+        input = japanese.ProcessWithKana(input);
+        Console.WriteLine($"Processed Japanese {input}");
+        var chinese = new Chinese.HanyuPinyin();
+        input = chinese.Process(input);
+        Console.WriteLine($"Processed Chinese {input}");
+        var korean = new Korean.RevisedRomanization();
+        input = korean.Process(input);
+        Console.WriteLine($"Processed Korean {input}");
+        var russian = new Russian.BgnPcgn();
+        input = russian.Process(input);
+        Console.WriteLine($"Processed Russian {input}");
+        return input;
     }
 }
