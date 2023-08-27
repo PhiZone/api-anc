@@ -23,6 +23,8 @@ public interface ISongRepository
 
     Task<bool> UpdateSongAsync(Song song);
 
+    Task<bool> UpdateSongsAsync(IEnumerable<Song> songs);
+
     Task<bool> RemoveSongAsync(Guid id);
 
     Task<bool> SaveAsync();

@@ -101,6 +101,12 @@ public class SongRepository : ISongRepository
         return await SaveAsync();
     }
 
+    public async Task<bool> UpdateSongsAsync(IEnumerable<Song> songs)
+    {
+        _context.Songs.UpdateRange(songs);
+        return await SaveAsync();
+    }
+
     public async Task<bool> RemoveSongAsync(Guid id)
     {
         _context.Songs.Remove((await _context.Songs.FirstOrDefaultAsync(song => song.Id == id))!);

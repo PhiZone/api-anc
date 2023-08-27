@@ -156,6 +156,8 @@ if (args.Length >= 1)
         builder.Services.AddHostedService<DataMigrationService>();
     if (string.Equals(args[0], "chartMigrate", StringComparison.InvariantCultureIgnoreCase))
         builder.Services.AddHostedService<ChartMigrationService>();
+    if (string.Equals(args[0], "fileMigrate", StringComparison.InvariantCultureIgnoreCase))
+        builder.Services.AddHostedService<FileMigrationService>();
 }
 
 builder.Services.Configure<ApiBehaviorOptions>(options => { options.SuppressModelStateInvalidFilter = true; });
