@@ -50,14 +50,34 @@ public class FileMigrationService : IHostedService
     private async Task MigrateFilesAsync(CancellationToken cancellationToken)
     {
         var songs = await _songRepository.GetSongsAsync("DateCreated", false, 0, -1);
+        var i = 0;
         foreach (var song in songs)
         {
-            _logger.LogInformation(LogEvents.FileMigration, "Migrating files for Song #{Id}", song.Id);
+            _logger.LogInformation(LogEvents.FileMigration, "Migrating files for Song #{Id} {Current} / {Total}",
+                song.Id, ++i, songs.Count);
+
+            if (song.File != null)
+            {
+                (song.File, song.FileChecksum) = await MigrateFileAsync<Song>(song.File, song.Title, cancellationToken);
+            }
+
+            song.Illustration = (await MigrateFileAsync<Song>(song.Illustration, song.Title, cancellationToken)).Item1;
+            foreach (var submission in await _songSubmissionRepository.GetSongSubmissionsAsync("DateCreated", false, 0,
+                         -1, predicate: e => e.RepresentationId == song.Id))
+            {
+                submission.File = song.File;
+                submission.FileChecksum = song.FileChecksum;
+                submission.Illustration = song.Illustration;
+                await _songSubmissionRepository.UpdateSongSubmissionAsync(submission);
+            }
+
             var charts = await _songRepository.GetSongChartsAsync(song.Id, "DateCreated", false, 0, -1);
+            var j = 0;
             foreach (var chart in charts)
             {
+                _logger.LogInformation(LogEvents.FileMigration, "Migrating files for Chart #{Id} {Current} / {Total}",
+                    chart.Id, ++j, charts.Count);
                 if (chart.File == null) continue;
-                _logger.LogInformation(LogEvents.FileMigration, "Migrating files for Chart #{Id}", chart.Id);
                 (chart.File, chart.FileChecksum) =
                     await MigrateFileAsync<Chart>(chart.File, chart.Title ?? song.Title, cancellationToken);
                 foreach (var submission in await _chartSubmissionRepository.GetChartSubmissionsAsync("DateCreated",
@@ -70,17 +90,6 @@ public class FileMigrationService : IHostedService
             }
 
             await _chartRepository.UpdateChartsAsync(charts);
-            if (song.File == null) continue;
-            (song.File, song.FileChecksum) = await MigrateFileAsync<Song>(song.File, song.Title, cancellationToken);
-            song.Illustration = (await MigrateFileAsync<Song>(song.Illustration, song.Title, cancellationToken)).Item1;
-            foreach (var submission in await _songSubmissionRepository.GetSongSubmissionsAsync("DateCreated",
-                         false, 0, -1, predicate: e => e.RepresentationId == song.Id))
-            {
-                submission.File = song.File;
-                submission.FileChecksum = song.FileChecksum;
-                submission.Illustration = song.Illustration;
-                await _songSubmissionRepository.UpdateSongSubmissionAsync(submission);
-            }
         }
 
         await _songRepository.UpdateSongsAsync(songs);
@@ -90,6 +99,7 @@ public class FileMigrationService : IHostedService
         CancellationToken cancellationToken)
     {
         using var client = new HttpClient();
+        client.Timeout = TimeSpan.FromMinutes(20);
         var content = await client.GetByteArrayAsync(url, cancellationToken);
         return await _fileStorageService.Upload<T>(fileName, new MemoryStream(content), url.Split('.')[^1]);
     }
