@@ -13,10 +13,12 @@ public class FileMigrationService : IHostedService
     private ISongSubmissionRepository _songSubmissionRepository = null!;
     private IChartSubmissionRepository _chartSubmissionRepository = null!;
     private IFileStorageService _fileStorageService = null!;
+    private readonly int _position;
 
-    public FileMigrationService(IServiceProvider serviceProvider)
+    public FileMigrationService(IServiceProvider serviceProvider, int position = 0)
     {
         _serviceProvider = serviceProvider;
+        _position = position;
     }
 
     public async Task StartAsync(CancellationToken cancellationToken)
@@ -49,7 +51,7 @@ public class FileMigrationService : IHostedService
 
     private async Task MigrateFilesAsync(CancellationToken cancellationToken)
     {
-        var songs = await _songRepository.GetSongsAsync("DateCreated", false, 0, -1);
+        var songs = await _songRepository.GetSongsAsync("DateCreated", false, _position, -1);
         var i = 0;
         foreach (var song in songs)
         {
