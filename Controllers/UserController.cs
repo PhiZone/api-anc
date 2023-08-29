@@ -308,6 +308,7 @@ public class UserController : Controller
                 });
 
         var dto = _mapper.Map<UserUpdateDto>(user);
+        dto.RegionCode = (await _regionRepository.GetRegionAsync(user.RegionId)).Code;
         patchDocument.ApplyTo(dto, ModelState);
 
         if (!TryValidateModel(dto))

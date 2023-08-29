@@ -29,9 +29,9 @@ public class User : IdentityUser<int>, IEquatable<User>
 
     public DateTimeOffset? DateOfBirth { get; set; }
 
-    public int? RegionId { get; set; }
+    public int RegionId { get; set; }
 
-    public Region? Region { get; set; }
+    public Region Region { get; set; } = null!;
 
     public IEnumerable<User> Followers { get; } = new List<User>();
 
