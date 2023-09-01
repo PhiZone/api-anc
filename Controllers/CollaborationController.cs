@@ -76,6 +76,7 @@ public class CollaborationController : Controller
         [FromQuery] CollaborationFilterDto? filterDto = null)
     {
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        var isVolunteer = await _resourceService.HasPermission(currentUser, Roles.Volunteer);
         if (!await _resourceService.HasPermission(currentUser, Roles.Qualified))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
@@ -86,7 +87,7 @@ public class CollaborationController : Controller
             dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : _dataSettings.Value.PaginationMaxPerPage;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser,
-            collaboration => collaboration.InviteeId == currentUser.Id || collaboration.InviterId == currentUser.Id);
+            collaboration => isVolunteer || collaboration.InviteeId == currentUser.Id || collaboration.InviterId == currentUser.Id);
         var list = _mapper.Map<List<CollaborationDto>>(
             await _collaborationRepository.GetCollaborationsAsync(dto.Order, dto.Desc, position, dto.PerPage,
                 predicateExpr));
@@ -134,7 +135,7 @@ public class CollaborationController : Controller
         if (((collaboration.InviterId == currentUser.Id || collaboration.InviteeId == currentUser.Id) &&
              !await _resourceService.HasPermission(currentUser, Roles.Qualified)) ||
             (collaboration.InviterId != currentUser.Id && collaboration.InviteeId != currentUser.Id &&
-             !await _resourceService.HasPermission(currentUser, Roles.Administrator)))
+             !await _resourceService.HasPermission(currentUser, Roles.Volunteer)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
