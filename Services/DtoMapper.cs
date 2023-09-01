@@ -47,7 +47,7 @@ public class DtoMapper : IDtoMapper
         dto.Role = (await _userManager.GetRolesAsync(user)).First();
         dto.FollowerCount = await _userRelationRepository.CountFollowersAsync(user.Id);
         dto.FolloweeCount = await _userRelationRepository.CountFolloweesAsync(user.Id);
-        if (user.RegionId != null) dto.Region = (await _regionRepository.GetRegionAsync((int)user.RegionId)).Code;
+        dto.Region = (await _regionRepository.GetRegionAsync(user.RegionId)).Code;
         // ReSharper disable once InvertIf
         if (currentUser != null && await _userRelationRepository.RelationExistsAsync(currentUser.Id, user.Id))
         {
