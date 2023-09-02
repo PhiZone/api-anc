@@ -1162,7 +1162,7 @@ public class ChartSubmissionController : Controller
         if ((chartSubmission.OwnerId == currentUser.Id &&
              !await _resourceService.HasPermission(currentUser, Roles.Qualified)) ||
             (chartSubmission.OwnerId != currentUser.Id &&
-             !await _resourceService.HasPermission(currentUser, Roles.Moderator)))
+             !await _resourceService.HasPermission(currentUser, Roles.Volunteer)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -1214,7 +1214,7 @@ public class ChartSubmissionController : Controller
         if ((chartSubmission.OwnerId == currentUser.Id &&
              !await _resourceService.HasPermission(currentUser, Roles.Qualified)) ||
             (chartSubmission.OwnerId != currentUser.Id &&
-             !await _resourceService.HasPermission(currentUser, Roles.Moderator)))
+             !await _resourceService.HasPermission(currentUser, Roles.Volunteer)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -1255,9 +1255,10 @@ public class ChartSubmissionController : Controller
 
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         var chartSubmission = await _chartSubmissionRepository.GetChartSubmissionAsync(id);
-        if ((chartSubmission.OwnerId == currentUser.Id &&
-             !await _resourceService.HasPermission(currentUser, Roles.Qualified)) ||
-            (chartSubmission.OwnerId != currentUser.Id &&
+        var vote = await _volunteerVoteRepository.GetVolunteerVoteAsync(chartSubmission.Id, currentUser.Id);
+        if ((vote.OwnerId == currentUser.Id &&
+             !await _resourceService.HasPermission(currentUser, Roles.Volunteer)) ||
+            (vote.OwnerId != currentUser.Id &&
              !await _resourceService.HasPermission(currentUser, Roles.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>

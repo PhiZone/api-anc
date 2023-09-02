@@ -302,19 +302,21 @@ public class CollaborationController : Controller
         if (!await _collaborationRepository.UpdateCollaborationAsync(collaboration))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+        var inviter = (await _userManager.FindByIdAsync(collaboration.InviterId.ToString()))!;
+        var invitee = (await _userManager.FindByIdAsync(collaboration.InviteeId.ToString()))!;
 
-        await _notificationService.Notify(collaboration.Inviter, collaboration.Invitee, NotificationType.Requests, key,
+        await _notificationService.Notify(inviter, invitee, NotificationType.Requests, key,
             new Dictionary<string, string>
             {
                 {
                     "User",
-                    _resourceService.GetRichText<User>(collaboration.InviteeId.ToString(),
-                        collaboration.Invitee.UserName!)
+                    _resourceService.GetRichText<User>(invitee.Id.ToString(),
+                        invitee.UserName!)
                 },
                 {
                     "Collaboration",
                     _resourceService.GetRichText<Collaboration>(collaboration.Id.ToString(),
-                        _templateService.GetMessage("more-info", collaboration.Invitee.Language)!)
+                        _templateService.GetMessage("more-info", invitee.Language)!)
                 }
             });
 
