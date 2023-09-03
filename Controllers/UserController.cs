@@ -324,7 +324,7 @@ public class UserController : Controller
                 operation.path == "/userName" && operation.op is "add" or "replace") != null)
         {
             var otherUser = await _userManager.FindByNameAsync(dto.UserName);
-            if (otherUser != null)
+            if (otherUser != null && otherUser.Id != user.Id)
                 return BadRequest(new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNameOccupied
