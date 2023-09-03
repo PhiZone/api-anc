@@ -73,7 +73,7 @@ public class CollaborationController : Controller
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<CollaborationDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetCollaborations([FromQuery] ArrayRequestDto dto,
-        [FromQuery] CollaborationFilterDto? filterDto = null)
+        [FromQuery] CollaborationFilterDto? filterDto = null, [FromQuery] bool all = false)
     {
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         var isVolunteer = await _resourceService.HasPermission(currentUser, Roles.Volunteer);
@@ -87,7 +87,8 @@ public class CollaborationController : Controller
             dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : _dataSettings.Value.PaginationMaxPerPage;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser,
-            collaboration => isVolunteer || collaboration.InviteeId == currentUser.Id || collaboration.InviterId == currentUser.Id);
+            collaboration => (isVolunteer && all) || collaboration.InviteeId == currentUser.Id ||
+                             collaboration.InviterId == currentUser.Id);
         var list = _mapper.Map<List<CollaborationDto>>(
             await _collaborationRepository.GetCollaborationsAsync(dto.Order, dto.Desc, position, dto.PerPage,
                 predicateExpr));
@@ -308,11 +309,7 @@ public class CollaborationController : Controller
         await _notificationService.Notify(inviter, invitee, NotificationType.Requests, key,
             new Dictionary<string, string>
             {
-                {
-                    "User",
-                    _resourceService.GetRichText<User>(invitee.Id.ToString(),
-                        invitee.UserName!)
-                },
+                { "User", _resourceService.GetRichText<User>(invitee.Id.ToString(), invitee.UserName!) },
                 {
                     "Collaboration",
                     _resourceService.GetRichText<Collaboration>(collaboration.Id.ToString(),
