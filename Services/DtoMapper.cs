@@ -44,7 +44,7 @@ public class DtoMapper : IDtoMapper
     public async Task<T> MapUserAsync<T>(User user, User? currentUser = null) where T : UserDto
     {
         var dto = _mapper.Map<T>(user);
-        dto.Role = (await _userManager.GetRolesAsync(user)).First();
+        dto.Role = (await _userManager.GetRolesAsync(user)).FirstOrDefault() ?? "";
         dto.FollowerCount = await _userRelationRepository.CountFollowersAsync(user.Id);
         dto.FolloweeCount = await _userRelationRepository.CountFolloweesAsync(user.Id);
         dto.Region = (await _regionRepository.GetRegionAsync(user.RegionId)).Code;
