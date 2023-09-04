@@ -380,7 +380,7 @@ public class UserController : Controller
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> UpdateUserAvatar([FromRoute] int id, [FromForm] UserAvatarDto dto)
+    public async Task<IActionResult> UpdateUserAvatar([FromRoute] int id, [FromForm] FileDto dto)
     {
         var user = await _userManager.FindByIdAsync(id.ToString());
 
@@ -400,8 +400,8 @@ public class UserController : Controller
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        if (dto.Avatar != null)
-            user.Avatar = (await _fileStorageService.UploadImage<User>(user.UserName ?? "Avatar", dto.Avatar, (1, 1)))
+        if (dto.File != null)
+            user.Avatar = (await _fileStorageService.UploadImage<User>(user.UserName ?? "Avatar", dto.File, (1, 1)))
                 .Item1;
 
         await _userManager.UpdateAsync(user);
