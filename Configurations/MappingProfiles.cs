@@ -37,6 +37,8 @@ public class MappingProfiles : Profile
         CreateMap<VolunteerVote, VolunteerVoteDto>();
         CreateMap<SongSubmission, SongSubmissionDto>();
         CreateMap<ChartSubmission, ChartSubmissionDto>();
+        CreateMap<SongSubmission, SongSubmissionUpdateDto>();
+        CreateMap<ChartSubmission, ChartSubmissionUpdateDto>();
         CreateMap<Collaboration, CollaborationDto>();
         CreateMap<Collaboration, CollaborationUpdateDto>();
         CreateMap<Notification, NotificationDto>();
