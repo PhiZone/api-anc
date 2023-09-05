@@ -28,6 +28,8 @@ public class NotificationMarkerService : BackgroundService
                 !args.BasicProperties.Headers.TryGetValue("DateRead", out var dateReadObj))
                 return;
 
+            await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
+            
             var dateRead = DateTimeOffset.Parse(Encoding.UTF8.GetString((byte[])dateReadObj));
             var body = args.Body.ToArray();
             var message = Encoding.UTF8.GetString(body);
