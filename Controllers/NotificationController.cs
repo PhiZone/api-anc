@@ -76,7 +76,9 @@ public class NotificationController : Controller
             var now = DateTimeOffset.UtcNow;
             foreach (var notification in notifications.Where(e => e.DateRead == null)) notification.DateRead = now;
 
-            await _notificationRepository.UpdateNotificationsAsync(notifications);
+#pragma warning disable CS4014
+            _notificationRepository.UpdateNotificationsAsync(notifications);
+#pragma warning restore CS4014
         }
 
         return Ok(new ResponseDto<IEnumerable<NotificationDto>>
