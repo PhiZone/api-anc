@@ -63,7 +63,7 @@ public class NotificationController : Controller
             dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : _dataSettings.Value.PaginationMaxPerPage;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser,
-            e => e.OwnerId == currentUser.Id);
+            e => e.OwnerId == currentUser.Id && (notificationDto.GetRead ? e.DateRead != null : e.DateRead == null));
         var notifications = await _notificationRepository.GetNotificationsAsync(dto.Order, dto.Desc, position,
             dto.PerPage, dto.Search, predicateExpr);
         var total = await _notificationRepository.CountNotificationsAsync(dto.Search, predicateExpr);
@@ -71,7 +71,7 @@ public class NotificationController : Controller
         foreach (var notification in notifications)
             list.Add(await _dtoMapper.MapNotificationAsync<NotificationDto>(notification, currentUser));
 
-        if (notificationDto.MarkAsRead)
+        if (notificationDto is { MarkAsRead: true, GetRead: false })
         {
             var now = DateTimeOffset.UtcNow;
             foreach (var notification in notifications.Where(e => e.DateRead == null)) notification.DateRead = now;

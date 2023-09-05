@@ -35,9 +35,9 @@ public class ChartSubmissionController : Controller
     private readonly IChartSubmissionRepository _chartSubmissionRepository;
     private readonly ICollaborationRepository _collaborationRepository;
     private readonly IOptions<DataSettings> _dataSettings;
+    private readonly IDtoMapper _dtoMapper;
     private readonly IFileStorageService _fileStorageService;
     private readonly IFilterService _filterService;
-    private readonly IDtoMapper _dtoMapper;
     private readonly IMapper _mapper;
     private readonly INotificationService _notificationService;
     private readonly IResourceService _resourceService;
@@ -291,8 +291,7 @@ public class ChartSubmissionController : Controller
             VolunteerStatus = RequestStatus.Waiting,
             AdmissionStatus =
                 song != null
-                    ?
-                    song.OwnerId == currentUser.Id || song.Accessibility == Accessibility.AllowAny
+                    ? song.OwnerId == currentUser.Id || song.Accessibility == Accessibility.AllowAny
                         ? RequestStatus.Approved
                         : RequestStatus.Waiting
                     : songSubmission!.OwnerId == currentUser.Id ||

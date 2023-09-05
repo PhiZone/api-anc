@@ -235,7 +235,11 @@ public class SubmissionService : ISubmissionService
                                 "User",
                                 _resourceService.GetRichText<User>(chartSubmission.OwnerId.ToString(), owner.UserName!)
                             },
-                            { "Chart", _resourceService.GetRichText<Chart>(chart.Id.ToString(), await _resourceService.GetDisplayName(chart)) }
+                            {
+                                "Chart",
+                                _resourceService.GetRichText<Chart>(chart.Id.ToString(),
+                                    await _resourceService.GetDisplayName(chart))
+                            }
                         });
         }
         else

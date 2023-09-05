@@ -6,14 +6,14 @@ namespace PhiZoneApi.Services;
 
 public class FileMigrationService : IHostedService
 {
+    private readonly int _position;
     private readonly IServiceProvider _serviceProvider;
-    private ILogger<FileMigrationService> _logger = null!;
-    private ISongRepository _songRepository = null!;
     private IChartRepository _chartRepository = null!;
-    private ISongSubmissionRepository _songSubmissionRepository = null!;
     private IChartSubmissionRepository _chartSubmissionRepository = null!;
     private IFileStorageService _fileStorageService = null!;
-    private readonly int _position;
+    private ILogger<FileMigrationService> _logger = null!;
+    private ISongRepository _songRepository = null!;
+    private ISongSubmissionRepository _songSubmissionRepository = null!;
 
     public FileMigrationService(IServiceProvider serviceProvider, int position = 0)
     {
@@ -59,9 +59,7 @@ public class FileMigrationService : IHostedService
                 song.Id, ++i, songs.Count);
 
             if (song.File != null)
-            {
                 (song.File, song.FileChecksum) = await MigrateFileAsync<Song>(song.File, song.Title, cancellationToken);
-            }
 
             song.Illustration = (await MigrateFileAsync<Song>(song.Illustration, song.Title, cancellationToken)).Item1;
             foreach (var submission in await _songSubmissionRepository.GetSongSubmissionsAsync("DateCreated", false, 0,
