@@ -18,7 +18,7 @@ public class UserService : IUserService
 
     public async Task CreateUser(User user)
     {
-        using var scope = _provider.CreateScope();
+        await using var scope = _provider.CreateAsyncScope();
         var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
         var playConfigurationRepository = scope.ServiceProvider.GetRequiredService<IPlayConfigurationRepository>();
         await userManager.CreateAsync(user);
@@ -45,7 +45,7 @@ public class UserService : IUserService
 
     public async Task<bool> IsBlacklisted(int user1, int user2)
     {
-        using var scope = _provider.CreateScope();
+        await using var scope = _provider.CreateAsyncScope();
         var userRelationRepository = scope.ServiceProvider.GetRequiredService<IUserRelationRepository>();
         if (await userRelationRepository.RelationExistsAsync(user1, user2))
             if ((await userRelationRepository.GetRelationAsync(user1, user2)).Type == UserRelationType.Blacklisted)
