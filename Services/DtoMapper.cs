@@ -25,7 +25,8 @@ public class DtoMapper : IDtoMapper
     public DtoMapper(IUserRelationRepository userRelationRepository, IRegionRepository regionRepository,
         ILikeRepository likeRepository, UserManager<User> userManager, IMapper mapper,
         ICommentRepository commentRepository, IReplyRepository replyRepository, IRecordRepository recordRepository,
-        IChapterRepository chapterRepository, ISongRepository songRepository, IChartRepository chartRepository, IVolunteerVoteRepository volunteerVoteRepository)
+        IChapterRepository chapterRepository, ISongRepository songRepository, IChartRepository chartRepository,
+        IVolunteerVoteRepository volunteerVoteRepository)
     {
         _userRelationRepository = userRelationRepository;
         _regionRepository = regionRepository;
@@ -165,10 +166,12 @@ public class DtoMapper : IDtoMapper
         return dto;
     }
 
-    public async Task<T> MapChartSubmissionAsync<T>(ChartSubmission chart, User? currentUser = null) where T : ChartSubmissionDto
+    public async Task<T> MapChartSubmissionAsync<T>(ChartSubmission chart, User? currentUser = null)
+        where T : ChartSubmissionDto
     {
         var dto = _mapper.Map<T>(chart);
-        dto.DateVoted = currentUser != null && await _volunteerVoteRepository.VolunteerVoteExistsAsync(chart.Id, currentUser.Id)
+        dto.DateVoted = currentUser != null &&
+                        await _volunteerVoteRepository.VolunteerVoteExistsAsync(chart.Id, currentUser.Id)
             ? (await _volunteerVoteRepository.GetVolunteerVoteAsync(chart.Id, currentUser.Id)).DateCreated
             : null;
         return dto;

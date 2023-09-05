@@ -3,4 +3,6 @@
 public class NotificationRequestDto
 {
     public bool MarkAsRead { get; set; }
+
+    public bool GetRead { get; set; } = false;
 }
