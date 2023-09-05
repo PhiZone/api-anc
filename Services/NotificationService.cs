@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using System.Text;
+using Microsoft.AspNetCore.Identity;
+using Newtonsoft.Json;
 using PhiZoneApi.Enums;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
@@ -12,15 +14,18 @@ public class NotificationService : INotificationService
     private readonly ITemplateService _templateService;
     private readonly UserManager<User> _userManager;
     private readonly IUserRelationRepository _userRelationRepository;
+    private readonly IRabbitMqService _rabbitMqService;
 
     public NotificationService(INotificationRepository notificationRepository, ITemplateService templateService,
-        UserManager<User> userManager, IUserRelationRepository userRelationRepository, IResourceService resourceService)
+        UserManager<User> userManager, IUserRelationRepository userRelationRepository, IResourceService resourceService,
+        IRabbitMqService rabbitMqService)
     {
         _notificationRepository = notificationRepository;
         _templateService = templateService;
         _userManager = userManager;
         _userRelationRepository = userRelationRepository;
         _resourceService = resourceService;
+        _rabbitMqService = rabbitMqService;
     }
 
     public async Task Notify(User receiver, User? sender, NotificationType type, string key,
@@ -76,7 +81,7 @@ public class NotificationService : INotificationService
                 });
     }
 
-    public async Task NotifyMentions(List<User> users, User sender, string richText)
+    public async Task NotifyMentions(IEnumerable<User> users, User sender, string richText)
     {
         foreach (var user in users.Where(user => user.Id != sender.Id))
             await Notify(user, sender, NotificationType.Mentions, "mention",
@@ -87,5 +92,14 @@ public class NotificationService : INotificationService
                     },
                     { "Content", richText }
                 });
+    }
+
+    public void Publish(IEnumerable<Guid> notifications)
+    {
+        using var channel = _rabbitMqService.GetConnection().CreateModel();
+        var properties = channel.CreateBasicProperties();
+        properties.Headers = new Dictionary<string, object> { { "DateRead", DateTimeOffset.UtcNow } };
+        channel.BasicPublish("", "notification", false, properties,
+            Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(notifications)));
     }
 }

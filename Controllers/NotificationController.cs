@@ -28,12 +28,13 @@ public class NotificationController : Controller
     private readonly IDtoMapper _dtoMapper;
     private readonly IFilterService _filterService;
     private readonly INotificationRepository _notificationRepository;
+    private readonly INotificationService _notificationService;
     private readonly IResourceService _resourceService;
     private readonly UserManager<User> _userManager;
 
     public NotificationController(IOptions<DataSettings> dataSettings, INotificationRepository notificationRepository,
         UserManager<User> userManager, IResourceService resourceService, IFilterService filterService,
-        IDtoMapper dtoMapper)
+        IDtoMapper dtoMapper, INotificationService notificationService)
     {
         _dataSettings = dataSettings;
         _notificationRepository = notificationRepository;
@@ -41,6 +42,7 @@ public class NotificationController : Controller
         _resourceService = resourceService;
         _filterService = filterService;
         _dtoMapper = dtoMapper;
+        _notificationService = notificationService;
     }
 
     /// <summary>
@@ -73,12 +75,8 @@ public class NotificationController : Controller
 
         if (notificationDto is { MarkAsRead: true, GetRead: false })
         {
-            var now = DateTimeOffset.UtcNow;
-            foreach (var notification in notifications.Where(e => e.DateRead == null)) notification.DateRead = now;
-
-#pragma warning disable CS4014
-            _notificationRepository.UpdateNotificationsAsync(notifications);
-#pragma warning restore CS4014
+            var notificationIds = notifications.Select(e => e.Id);
+            _notificationService.Publish(notificationIds);
         }
 
         return Ok(new ResponseDto<IEnumerable<NotificationDto>>
