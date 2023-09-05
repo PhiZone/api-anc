@@ -9,11 +9,11 @@ namespace PhiZoneApi.Services;
 public class NotificationMarkerService : BackgroundService
 {
     private readonly IModel _channel;
-    private readonly INotificationRepository _notificationRepository;
+    private readonly IServiceProvider _serviceProvider;
 
-    public NotificationMarkerService(IRabbitMqService rabbitMqService, INotificationRepository notificationRepository)
+    public NotificationMarkerService(IServiceProvider serviceProvider, IRabbitMqService rabbitMqService)
     {
-        _notificationRepository = notificationRepository;
+        _serviceProvider = serviceProvider;
         _channel = rabbitMqService.GetConnection().CreateModel();
     }
 
@@ -33,7 +33,9 @@ public class NotificationMarkerService : BackgroundService
             var message = Encoding.UTF8.GetString(body);
             var notificationIds = JsonConvert.DeserializeObject<IEnumerable<Guid>>(message)!;
 
-            var notifications = await _notificationRepository.GetNotificationsAsync("DateCreated", false, 0, -1, null,
+            await using var scope = _serviceProvider.CreateAsyncScope();
+            var notificationRepository = scope.ServiceProvider.GetRequiredService<INotificationRepository>();
+            var notifications = await notificationRepository.GetNotificationsAsync("DateCreated", false, 0, -1, null,
                 e => notificationIds.Contains(e.Id));
 
             foreach (var notification in notifications)
@@ -41,7 +43,7 @@ public class NotificationMarkerService : BackgroundService
                 notification.DateRead = dateRead;
             }
 
-            await _notificationRepository.UpdateNotificationsAsync(notifications);
+            await notificationRepository.UpdateNotificationsAsync(notifications);
 
             _channel.BasicAck(args.DeliveryTag, false);
         };
