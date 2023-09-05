@@ -98,7 +98,7 @@ public class NotificationService : INotificationService
     {
         using var channel = _rabbitMqService.GetConnection().CreateModel();
         var properties = channel.CreateBasicProperties();
-        properties.Headers = new Dictionary<string, object> { { "DateRead", DateTimeOffset.UtcNow } };
+        properties.Headers = new Dictionary<string, object> { { "DateRead", DateTimeOffset.UtcNow.ToString() } };
         channel.BasicPublish("", "notification", false, properties,
             Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(notifications)));
     }
