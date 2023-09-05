@@ -148,6 +148,9 @@ builder.Services.AddSingleton<IHostedService>(provider => new SongConverterServi
     provider.GetService<IServiceScopeFactory>()!.CreateScope().ServiceProvider.GetService<ISongRepository>()!,
     provider.GetService<IServiceScopeFactory>()!.CreateScope()
         .ServiceProvider.GetService<ISongSubmissionRepository>()!));
+builder.Services.AddSingleton<IHostedService>(provider =>
+    new NotificationMarkerService(provider.GetService<IRabbitMqService>()!,
+        provider.GetService<INotificationRepository>()!));
 builder.Services.AddHostedService<DatabaseSeeder>();
 
 if (args.Length >= 1)
