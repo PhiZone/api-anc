@@ -270,7 +270,8 @@ public class RecordController : Controller
             highestAccuracy = (await _recordRepository.GetRecordsAsync("Accuracy", true, 0, 1,
                 record => record.ChartId == info.ChartId && record.OwnerId == player.Id)).FirstOrDefault()!.Accuracy;
 
-        _logger.LogInformation(LogEvents.RecordInfo, "{User} - {Chart} {Score} {Accuracy} {Rks} {StdDeviation}ms",
+        _logger.LogInformation(LogEvents.RecordInfo,
+            "New record: {User} - {Chart} {Score} {Accuracy} {Rks} {StdDeviation} ms",
             player.UserName, await _resourceService.GetDisplayName(chart), score, accuracy.ToString("P"),
             rks.ToString("N3"), dto.StdDeviation.ToString("N3"));
 

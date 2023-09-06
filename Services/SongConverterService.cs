@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using PhiZoneApi.Constants;
 using PhiZoneApi.Interfaces;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
@@ -8,16 +9,19 @@ namespace PhiZoneApi.Services;
 public class SongConverterService : BackgroundService
 {
     private readonly IModel _channel;
+    private readonly ILogger<SongConverterService> _logger;
     private readonly ISongRepository _songRepository;
     private readonly ISongService _songService;
     private readonly ISongSubmissionRepository _songSubmissionRepository;
 
     public SongConverterService(IRabbitMqService rabbitMqService, ISongService songService,
-        ISongRepository songRepository, ISongSubmissionRepository songSubmissionRepository)
+        ISongRepository songRepository, ISongSubmissionRepository songSubmissionRepository,
+        ILogger<SongConverterService> logger)
     {
         _songService = songService;
         _songRepository = songRepository;
         _songSubmissionRepository = songSubmissionRepository;
+        _logger = logger;
         _channel = rabbitMqService.GetConnection().CreateModel();
     }
 
@@ -70,6 +74,8 @@ public class SongConverterService : BackgroundService
                     if (song.PreviewStart > song.PreviewEnd) song.PreviewStart = TimeSpan.Zero;
 
                     await _songRepository.UpdateSongAsync(song);
+                    _logger.LogInformation(LogEvents.SongInfo, "Completed {Type} schedule: {Title}",
+                        isSubmission ? "song submission" : "song", song.Title);
                 }
             }
 

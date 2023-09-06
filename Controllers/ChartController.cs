@@ -41,6 +41,7 @@ public class ChartController : Controller
     private readonly IFilterService _filterService;
     private readonly ILikeRepository _likeRepository;
     private readonly ILikeService _likeService;
+    private readonly ILogger<ChartController> _logger;
     private readonly IMapper _mapper;
     private readonly INotificationService _notificationService;
     private readonly IRecordRepository _recordRepository;
@@ -56,7 +57,7 @@ public class ChartController : Controller
         ILikeRepository likeRepository, ILikeService likeService, ICommentRepository commentRepository,
         IVoteRepository voteRepository, IVoteService voteService, IAuthorshipRepository authorshipRepository,
         IResourceService resourceService, IChartAssetRepository chartAssetRepository,
-        INotificationService notificationService, IRecordRepository recordRepository)
+        INotificationService notificationService, IRecordRepository recordRepository, ILogger<ChartController> logger)
     {
         _chartRepository = chartRepository;
         _dataSettings = dataSettings;
@@ -76,6 +77,7 @@ public class ChartController : Controller
         _chartAssetRepository = chartAssetRepository;
         _notificationService = notificationService;
         _recordRepository = recordRepository;
+        _logger = logger;
         _fileStorageService = fileStorageService;
     }
 
@@ -157,11 +159,14 @@ public class ChartController : Controller
         if (currentUser != null)
         {
             dto.PersonalBestScore = (await _recordRepository.GetRecordsAsync("Score", true, 0, 1,
-                r => r.OwnerId == currentUser.Id && r.ChartId == id)).FirstOrDefault()?.Score;
+                    r => r.OwnerId == currentUser.Id && r.ChartId == id)).FirstOrDefault()
+                ?.Score;
             dto.PersonalBestAccuracy = (await _recordRepository.GetRecordsAsync("Accuracy", true, 0, 1,
-                r => r.OwnerId == currentUser.Id && r.ChartId == id)).FirstOrDefault()?.Accuracy;
+                    r => r.OwnerId == currentUser.Id && r.ChartId == id)).FirstOrDefault()
+                ?.Accuracy;
             dto.PersonalBestRks = (await _recordRepository.GetRecordsAsync("Rks", true, 0, 1,
-                r => r.OwnerId == currentUser.Id && r.ChartId == id)).FirstOrDefault()?.Rks;
+                    r => r.OwnerId == currentUser.Id && r.ChartId == id)).FirstOrDefault()
+                ?.Rks;
         }
 
         return Ok(new ResponseDto<ChartDetailedDto>
@@ -197,9 +202,7 @@ public class ChartController : Controller
 
         return Ok(new ResponseDto<ChartDetailedDto>
         {
-            Status = ResponseStatus.Ok,
-            Code = ResponseCodes.Ok,
-            Data = chartDto
+            Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = chartDto
         });
     }
 
@@ -278,6 +281,8 @@ public class ChartController : Controller
         if (!await _chartRepository.CreateChartAsync(chart))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+        _logger.LogInformation(LogEvents.ChartInfo, "New chart: {Title} [{Level} {Difficulty}]",
+            dto.Title ?? song.Title, dto.Level, dto.Difficulty.ToString("F0"));
 
         return StatusCode(StatusCodes.Status201Created);
     }

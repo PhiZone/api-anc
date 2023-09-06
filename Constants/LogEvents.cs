@@ -1,8 +1,11 @@
 ﻿namespace PhiZoneApi.Constants;
 
-public class LogEvents
+public static class LogEvents
 {
-    public const int RecordInfo = 1000;
+    public const int UserInfo = 1000;
+    public const int SongInfo = 1001;
+    public const int ChartInfo = 1002;
+    public const int RecordInfo = 1003;
 
     public const int AudioFailure = 2000;
     public const int MailFailure = 2001;

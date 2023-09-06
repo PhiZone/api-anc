@@ -132,22 +132,24 @@ builder.Services.AddScoped<IRecordService, RecordService>();
 builder.Services.AddScoped<ISubmissionService, SubmissionService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<ITapTapService, TapTapService>();
-builder.Services.AddSingleton<IMailService, MailService>();
-builder.Services.AddSingleton<IMultimediaService, MultimediaService>();
-builder.Services.AddSingleton<IFileStorageService, FileStorageService>();
-builder.Services.AddSingleton<ITemplateService, TemplateService>();
+builder.Services.AddScoped<IMailService, MailService>();
+builder.Services.AddScoped<IMultimediaService, MultimediaService>();
+builder.Services.AddScoped<IFileStorageService, FileStorageService>();
+builder.Services.AddScoped<ITemplateService, TemplateService>();
+builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddSingleton<IRabbitMqService, RabbitMqService>();
-builder.Services.AddSingleton<IUserService, UserService>();
 builder.Services.AddSingleton<IConnectionMultiplexer>(
     ConnectionMultiplexer.Connect(builder.Configuration.GetValue<string>("RedisConnection") ?? "localhost"));
-builder.Services.AddSingleton<IHostedService>(provider => new MailSenderService(provider.GetService<IMailService>()!,
-    provider.GetService<IRabbitMqService>()!, provider.GetService<IUserService>()!));
+builder.Services.AddSingleton<IHostedService>(provider => new MailSenderService(
+    provider.GetService<IServiceScopeFactory>()!.CreateScope().ServiceProvider.GetService<IMailService>()!,
+    provider.GetService<IRabbitMqService>()!,
+    provider.GetService<IServiceScopeFactory>()!.CreateScope().ServiceProvider.GetService<IUserService>()!));
 builder.Services.AddSingleton<IHostedService>(provider => new SongConverterService(
     provider.GetService<IRabbitMqService>()!,
     provider.GetService<IServiceScopeFactory>()!.CreateScope().ServiceProvider.GetService<ISongService>()!,
     provider.GetService<IServiceScopeFactory>()!.CreateScope().ServiceProvider.GetService<ISongRepository>()!,
-    provider.GetService<IServiceScopeFactory>()!.CreateScope()
-        .ServiceProvider.GetService<ISongSubmissionRepository>()!));
+    provider.GetService<IServiceScopeFactory>()!.CreateScope().ServiceProvider.GetService<ISongSubmissionRepository>()!,
+    provider.GetService<ILogger<SongConverterService>>()!));
 builder.Services.AddSingleton<IHostedService>(provider =>
     new NotificationMarkerService(provider.GetService<IServiceProvider>()!, provider.GetService<IRabbitMqService>()!));
 builder.Services.AddHostedService<DatabaseSeeder>();
