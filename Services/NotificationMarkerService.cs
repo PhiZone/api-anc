@@ -29,7 +29,7 @@ public class NotificationMarkerService : BackgroundService
                 return;
 
             await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
-            
+
             var dateRead = DateTimeOffset.Parse(Encoding.UTF8.GetString((byte[])dateReadObj));
             var body = args.Body.ToArray();
             var message = Encoding.UTF8.GetString(body);
@@ -40,10 +40,7 @@ public class NotificationMarkerService : BackgroundService
             var notifications = await notificationRepository.GetNotificationsAsync("DateCreated", false, 0, -1, null,
                 e => notificationIds.Contains(e.Id));
 
-            foreach (var notification in notifications)
-            {
-                notification.DateRead = dateRead;
-            }
+            foreach (var notification in notifications) notification.DateRead = dateRead;
 
             await notificationRepository.UpdateNotificationsAsync(notifications);
 

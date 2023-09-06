@@ -40,6 +40,7 @@ public class SongController : Controller
     private readonly IFilterService _filterService;
     private readonly ILikeRepository _likeRepository;
     private readonly ILikeService _likeService;
+    private readonly ILogger<SongController> _logger;
     private readonly IMapper _mapper;
     private readonly INotificationService _notificationService;
     private readonly IResourceService _resourceService;
@@ -53,7 +54,8 @@ public class SongController : Controller
         IDtoMapper dtoMapper, IMapper mapper, ISongService songService, ILikeRepository likeRepository,
         ILikeService likeService, ICommentRepository commentRepository, IChapterRepository chapterRepository,
         IAdmissionRepository admissionRepository, IAuthorshipRepository authorshipRepository,
-        IResourceService resourceService, INotificationService notificationService, ITemplateService templateService)
+        IResourceService resourceService, INotificationService notificationService, ITemplateService templateService,
+        ILogger<SongController> logger)
     {
         _songRepository = songRepository;
         _dataSettings = dataSettings;
@@ -71,6 +73,7 @@ public class SongController : Controller
         _resourceService = resourceService;
         _notificationService = notificationService;
         _templateService = templateService;
+        _logger = logger;
         _fileStorageService = fileStorageService;
     }
 
@@ -228,6 +231,7 @@ public class SongController : Controller
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidTimeRelation
                 });
+            _logger.LogInformation(LogEvents.SongInfo, "New song: {Title}", dto.Title);
         }
         else if (!(TimeSpan.Zero <= dto.PreviewStart && dto.PreviewStart <= dto.PreviewEnd))
         {
@@ -274,7 +278,12 @@ public class SongController : Controller
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
-        if (!wait) await _songService.PublishAsync(dto.File, song.Id);
+        // ReSharper disable once InvertIf
+        if (!wait)
+        {
+            await _songService.PublishAsync(dto.File, song.Id);
+            _logger.LogInformation(LogEvents.SongInfo, "Scheduled new song: {Title}", dto.Title);
+        }
 
         return StatusCode(StatusCodes.Status201Created);
     }

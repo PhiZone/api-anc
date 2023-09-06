@@ -38,6 +38,7 @@ public class ChartSubmissionController : Controller
     private readonly IDtoMapper _dtoMapper;
     private readonly IFileStorageService _fileStorageService;
     private readonly IFilterService _filterService;
+    private readonly ILogger<ChartSubmissionController> _logger;
     private readonly IMapper _mapper;
     private readonly INotificationService _notificationService;
     private readonly IResourceService _resourceService;
@@ -56,7 +57,7 @@ public class ChartSubmissionController : Controller
         IVolunteerVoteRepository volunteerVoteRepository, IAdmissionRepository admissionRepository,
         INotificationService notificationService, ITemplateService templateService,
         ICollaborationRepository collaborationRepository,
-        IChartAssetSubmissionRepository chartAssetSubmissionRepository)
+        IChartAssetSubmissionRepository chartAssetSubmissionRepository, ILogger<ChartSubmissionController> logger)
     {
         _chartSubmissionRepository = chartSubmissionRepository;
         _dataSettings = dataSettings;
@@ -75,6 +76,7 @@ public class ChartSubmissionController : Controller
         _templateService = templateService;
         _collaborationRepository = collaborationRepository;
         _chartAssetSubmissionRepository = chartAssetSubmissionRepository;
+        _logger = logger;
         _fileStorageService = fileStorageService;
     }
 
@@ -340,6 +342,9 @@ public class ChartSubmissionController : Controller
                     }
                 });
         }
+
+        _logger.LogInformation(LogEvents.ChartInfo, "New chart submission: {Title} [{Level} {Difficulty}]",
+            dto.Title ?? song?.Title ?? songSubmission!.Title, dto.Level, dto.Difficulty.ToString("F0"));
 
         return StatusCode(StatusCodes.Status201Created);
     }
@@ -1255,10 +1260,8 @@ public class ChartSubmissionController : Controller
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         var chartSubmission = await _chartSubmissionRepository.GetChartSubmissionAsync(id);
         var vote = await _volunteerVoteRepository.GetVolunteerVoteAsync(chartSubmission.Id, currentUser.Id);
-        if ((vote.OwnerId == currentUser.Id &&
-             !await _resourceService.HasPermission(currentUser, Roles.Volunteer)) ||
-            (vote.OwnerId != currentUser.Id &&
-             !await _resourceService.HasPermission(currentUser, Roles.Moderator)))
+        if ((vote.OwnerId == currentUser.Id && !await _resourceService.HasPermission(currentUser, Roles.Volunteer)) ||
+            (vote.OwnerId != currentUser.Id && !await _resourceService.HasPermission(currentUser, Roles.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {

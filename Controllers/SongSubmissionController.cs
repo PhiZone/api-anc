@@ -34,6 +34,7 @@ public class SongSubmissionController : Controller
     private readonly IOptions<DataSettings> _dataSettings;
     private readonly IFileStorageService _fileStorageService;
     private readonly IFilterService _filterService;
+    private readonly ILogger<SongSubmissionController> _logger;
     private readonly IMapper _mapper;
     private readonly INotificationService _notificationService;
     private readonly IResourceService _resourceService;
@@ -48,7 +49,8 @@ public class SongSubmissionController : Controller
         IFileStorageService fileStorageService, IMapper mapper, ISongService songService,
         IAuthorshipRepository authorshipRepository, ISubmissionService submissionService,
         IResourceService resourceService, ICollaborationRepository collaborationRepository,
-        INotificationService notificationService, ITemplateService templateService)
+        INotificationService notificationService, ITemplateService templateService,
+        ILogger<SongSubmissionController> logger)
     {
         _songSubmissionRepository = songSubmissionRepository;
         _dataSettings = dataSettings;
@@ -62,6 +64,7 @@ public class SongSubmissionController : Controller
         _collaborationRepository = collaborationRepository;
         _notificationService = notificationService;
         _templateService = templateService;
+        _logger = logger;
         _fileStorageService = fileStorageService;
     }
 
@@ -199,6 +202,7 @@ public class SongSubmissionController : Controller
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidTimeRelation
                 });
+            _logger.LogInformation(LogEvents.SongInfo, "New song submission: {Title}", dto.Title);
         }
         else if (!(TimeSpan.Zero <= dto.PreviewStart && dto.PreviewStart <= dto.PreviewEnd))
         {
@@ -263,7 +267,12 @@ public class SongSubmissionController : Controller
 
         await _authorshipRepository.CreateAuthorshipAsync(authorship);
 
-        if (!wait) await _songService.PublishAsync(dto.File, songSubmission.Id, true);
+        // ReSharper disable once InvertIf
+        if (!wait)
+        {
+            await _songService.PublishAsync(dto.File, songSubmission.Id, true);
+            _logger.LogInformation(LogEvents.SongInfo, "Scheduled new song submission: {Title}", dto.Title);
+        }
 
         return StatusCode(StatusCodes.Status201Created);
     }
@@ -541,8 +550,7 @@ public class SongSubmissionController : Controller
 
         if (dto.File != null)
         {
-            songSubmission.License =
-                (await _fileStorageService.Upload<Song>(songSubmission.Title, dto.File)).Item1;
+            songSubmission.License = (await _fileStorageService.Upload<Song>(songSubmission.Title, dto.File)).Item1;
             songSubmission.DateUpdated = DateTimeOffset.UtcNow;
             songSubmission.Status = RequestStatus.Waiting;
         }

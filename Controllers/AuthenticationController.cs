@@ -30,6 +30,7 @@ namespace PhiZoneApi.Controllers;
 public class AuthenticationController : Controller
 {
     private readonly IDtoMapper _dtoMapper;
+    private readonly ILogger<AuthenticationController> _logger;
     private readonly IMailService _mailService;
     private readonly IConnectionMultiplexer _redis;
     private readonly IResourceService _resourceService;
@@ -39,7 +40,7 @@ public class AuthenticationController : Controller
 
     public AuthenticationController(UserManager<User> userManager, IConnectionMultiplexer redis,
         IMailService mailService, IResourceService resourceService, ITapTapService tapTapService,
-        IUserRepository userRepository, IDtoMapper dtoMapper)
+        IUserRepository userRepository, IDtoMapper dtoMapper, ILogger<AuthenticationController> logger)
     {
         _userManager = userManager;
         _mailService = mailService;
@@ -47,6 +48,7 @@ public class AuthenticationController : Controller
         _tapTapService = tapTapService;
         _userRepository = userRepository;
         _dtoMapper = dtoMapper;
+        _logger = logger;
         _redis = redis;
     }
 
@@ -200,6 +202,8 @@ public class AuthenticationController : Controller
             user.DateLastLoggedIn = DateTimeOffset.UtcNow;
             user.AccessFailedCount = 0;
             await _userManager.UpdateAsync(user);
+
+            _logger.LogInformation(LogEvents.UserInfo, "New login: #{Id} {UserName}", user.Id, user.UserName);
 
             return SignIn(claimsPrincipal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
         }

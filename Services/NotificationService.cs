@@ -10,11 +10,11 @@ namespace PhiZoneApi.Services;
 public class NotificationService : INotificationService
 {
     private readonly INotificationRepository _notificationRepository;
+    private readonly IRabbitMqService _rabbitMqService;
     private readonly IResourceService _resourceService;
     private readonly ITemplateService _templateService;
     private readonly UserManager<User> _userManager;
     private readonly IUserRelationRepository _userRelationRepository;
-    private readonly IRabbitMqService _rabbitMqService;
 
     public NotificationService(INotificationRepository notificationRepository, ITemplateService templateService,
         UserManager<User> userManager, IUserRelationRepository userRelationRepository, IResourceService resourceService,
