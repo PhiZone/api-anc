@@ -57,6 +57,8 @@ public class ChartSubmissionFilterDto : FilterDto<ChartSubmission>
 
     public List<RequestStatus>? RangeAdmissionStatus { get; set; }
 
+    public List<Guid>? RangeRepresentationId { get; set; }
+
     public int? MinOwnerId { get; set; }
 
     public int? MaxOwnerId { get; set; }
