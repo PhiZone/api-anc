@@ -12,11 +12,11 @@ namespace PhiZoneApi.Services;
 
 public class FileStorageService : IFileStorageService
 {
-    private readonly IMultimediaService _multimediaService;
+    private readonly IServiceProvider _provider;
 
-    public FileStorageService(IOptions<TapTapSettings> options, IMultimediaService multimediaService)
+    public FileStorageService(IOptions<TapTapSettings> options, IServiceProvider provider)
     {
-        _multimediaService = multimediaService;
+        _provider = provider;
         LCApplication.Initialize(options.Value.ClientId, options.Value.ClientToken, options.Value.FileStorageUrl);
     }
 
@@ -34,13 +34,15 @@ public class FileStorageService : IFileStorageService
 
     public async Task<(string, string)> UploadImage<T>(string fileName, IFormFile formFile, (int, int) aspectRatio)
     {
-        var stream = _multimediaService.CropImage(formFile, aspectRatio);
+        var multimediaService = _provider.GetService<IMultimediaService>()!;
+        var stream = multimediaService.CropImage(formFile, aspectRatio);
         return await Upload<T>(fileName, stream, "webp");
     }
 
     public async Task<(string, string)> UploadImage<T>(string fileName, byte[] buffer, (int, int) aspectRatio)
     {
-        var stream = _multimediaService.CropImage(buffer, aspectRatio);
+        var multimediaService = _provider.GetService<IMultimediaService>()!;
+        var stream = multimediaService.CropImage(buffer, aspectRatio);
         return await Upload<T>(fileName, stream, "webp");
     }
 
