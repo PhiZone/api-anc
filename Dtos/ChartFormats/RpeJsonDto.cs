@@ -175,9 +175,9 @@ public class TextEvent : Event
 
 public class Event : IComparable<Event>
 {
-    [JsonProperty("bezier")] public int Bezier { get; set; }
+    [JsonProperty("bezier")] public int? Bezier { get; set; } = 0;
 
-    [JsonProperty("bezierPoints")] public List<double> BezierPoints { get; set; } = new() { 0.0, 0.0, 0.0, 0.0 };
+    [JsonProperty("bezierPoints")] public List<double>? BezierPoints { get; set; } = new() { 0.0, 0.0, 0.0, 0.0 };
 
     [JsonProperty("easingLeft")] public double EasingLeft { get; set; }
 
