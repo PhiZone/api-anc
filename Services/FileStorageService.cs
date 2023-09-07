@@ -1,5 +1,4 @@
 ﻿using System.Web;
-using Kawazu;
 using LeanCloud;
 using LeanCloud.Storage;
 using Microsoft.Extensions.Options;
@@ -26,7 +25,7 @@ public class FileStorageService : IFileStorageService
         await formFile.CopyToAsync(memoryStream);
         var extension = FileTypeResolver.GetFileExtension(FileTypeResolver.GetMimeType(formFile));
         var file = new LCFile(
-            $"{typeof(T).Name}_{await NormalizeFileName(fileName)}_{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}{extension}",
+            $"{typeof(T).Name}_{NormalizeFileName(fileName)}_{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}{extension}",
             memoryStream.ToArray());
         await file.Save();
         return (file.Url, (string)file.MetaData["_checksum"]);
@@ -49,23 +48,41 @@ public class FileStorageService : IFileStorageService
     public async Task<(string, string)> Upload<T>(string fileName, MemoryStream stream, string extension)
     {
         var file = new LCFile(
-            $"{typeof(T).Name}_{await NormalizeFileName(fileName)}_{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}.{extension}",
+            $"{typeof(T).Name}_{NormalizeFileName(fileName)}_{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}.{extension}",
             stream.ToArray());
         await file.Save();
         return (file.Url, (string)file.MetaData["_checksum"]);
     }
 
-    private static async Task<string> NormalizeFileName(string input)
+    private static string NormalizeFileName(string input)
     {
         var chars = Path.GetInvalidFileNameChars().Concat(new[] { ' ' });
-        return HttpUtility.UrlEncode(chars.Aggregate(await Romanize(input),
+        return HttpUtility.UrlEncode(chars.Aggregate(Romanize(input),
             (current, invalidChar) => current.Replace(invalidChar.ToString(), string.Empty)));
     }
 
-    private static async Task<string> Romanize(string input)
+    private static string Romanize(string input)
     {
-        var japanese = new KawazuConverter();
-        input = await japanese.Convert(input, To.Romaji);
+        var japanese = new Japanese.ModifiedHepburn();
+        input = japanese.Process(input);
+        var chinese = new Chinese.HanyuPinyin();
+        input = chinese.Process(input);
+        var dictionary = new Dictionary<List<char>, char>
+        {
+            {new List<char>{'ā', 'á', 'ǎ', 'à', 'ɑ'}, 'a'},
+            {new List<char>{'ê', 'ē', 'é', 'ě', 'è'}, 'e'},
+            {new List<char>{'ī', 'í', 'ǐ', 'ì'}, 'i'},
+            {new List<char>{'ō', 'ó', 'ǒ', 'ò'}, 'o'},
+            {new List<char>{'ū', 'ú', 'ǔ', 'ù', 'ǖ', 'ǘ', 'ǚ', 'ǜ', 'ü'}, 'u'},
+            {new List<char>{'ń', 'ň'}, 'n'}
+        };
+        foreach (var entry in dictionary)
+        {
+            foreach (var character in entry.Key.Where(character => input.Contains(character)))
+            {
+                input = input.Replace(character, entry.Value);
+            }
+        }
         var korean = new Korean.RevisedRomanization();
         input = korean.Process(input);
         var russian = new Russian.BgnPcgn();
