@@ -134,9 +134,9 @@ builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<ITapTapService, TapTapService>();
 builder.Services.AddScoped<IMailService, MailService>();
 builder.Services.AddScoped<IMultimediaService, MultimediaService>();
-builder.Services.AddScoped<IFileStorageService, FileStorageService>();
 builder.Services.AddScoped<ITemplateService, TemplateService>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddSingleton<IFileStorageService, FileStorageService>();
 builder.Services.AddSingleton<IRabbitMqService, RabbitMqService>();
 builder.Services.AddSingleton<IConnectionMultiplexer>(
     ConnectionMultiplexer.Connect(builder.Configuration.GetValue<string>("RedisConnection") ?? "localhost"));
