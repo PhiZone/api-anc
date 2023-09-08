@@ -310,10 +310,10 @@ public class SongSubmissionController : Controller
         var songSubmission = await _songSubmissionRepository.GetSongSubmissionAsync(id);
 
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        var isModerator = await _resourceService.HasPermission(currentUser, Roles.Moderator);
         if ((songSubmission.OwnerId == currentUser.Id &&
              !await _resourceService.HasPermission(currentUser, Roles.Qualified)) ||
-            (songSubmission.OwnerId != currentUser.Id && !isModerator))
+            (songSubmission.OwnerId != currentUser.Id &&
+             !await _resourceService.HasPermission(currentUser, Roles.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -339,7 +339,8 @@ public class SongSubmissionController : Controller
             });
 
         if (songSubmission.OriginalityProof != null)
-            if (!_resourceService.GetAuthorIds(dto.AuthorName).Contains(currentUser.Id) && !isModerator)
+            if (currentUser.Id == songSubmission.OwnerId &&
+                !_resourceService.GetAuthorIds(dto.AuthorName).Contains(currentUser.Id))
                 return BadRequest(new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidAuthorInfo

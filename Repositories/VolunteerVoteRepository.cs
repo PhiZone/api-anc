@@ -56,6 +56,12 @@ public class VolunteerVoteRepository : IVolunteerVoteRepository
         return await SaveAsync();
     }
 
+    public async Task<bool> UpdateVolunteerVoteAsync(VolunteerVote vote)
+    {
+        _context.VolunteerVotes.Update(vote);
+        return await SaveAsync();
+    }
+
     public async Task<bool> RemoveVolunteerVoteAsync(Guid id)
     {
         _context.VolunteerVotes.Remove((await _context.VolunteerVotes.FirstOrDefaultAsync(vote => vote.Id == id))!);

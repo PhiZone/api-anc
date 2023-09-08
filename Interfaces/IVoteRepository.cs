@@ -18,6 +18,8 @@ public interface IVoteRepository
 
     Task<bool> CreateVoteAsync(Vote vote);
 
+    Task<bool> UpdateVoteAsync(Vote vote);
+
     Task<bool> RemoveVoteAsync(Guid id);
 
     Task<bool> SaveAsync();

@@ -1435,6 +1435,7 @@ public class ChartController : Controller
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="404">When the specified chart is not found.</response>
+    /// <response code="500">When an internal server error has occurred.</response>
     [HttpPost("{id:guid}/votes")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Produces("application/json")]
@@ -1442,6 +1443,7 @@ public class ChartController : Controller
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> CreateVote([FromRoute] Guid id, [FromBody] VoteRequestDto dto)
     {
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
@@ -1470,10 +1472,8 @@ public class ChartController : Controller
             });
 
         if (!await _voteService.CreateVoteAsync(dto, chart, currentUser))
-            return BadRequest(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
-            });
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
         return StatusCode(StatusCodes.Status201Created);
     }

@@ -18,6 +18,8 @@ public interface IVolunteerVoteRepository
 
     Task<bool> CreateVolunteerVoteAsync(VolunteerVote vote);
 
+    Task<bool> UpdateVolunteerVoteAsync(VolunteerVote vote);
+
     Task<bool> RemoveVolunteerVoteAsync(Guid id);
 
     Task<bool> RemoveVolunteerVotesAsync(IEnumerable<VolunteerVote> votes);
