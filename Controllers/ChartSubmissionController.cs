@@ -383,10 +383,10 @@ public class ChartSubmissionController : Controller
         var chartSubmission = await _chartSubmissionRepository.GetChartSubmissionAsync(id);
 
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        var isModerator = await _resourceService.HasPermission(currentUser, Roles.Moderator);
         if ((chartSubmission.OwnerId == currentUser.Id &&
              !await _resourceService.HasPermission(currentUser, Roles.Qualified)) ||
-            (chartSubmission.OwnerId != currentUser.Id && !isModerator))
+            (chartSubmission.OwnerId != currentUser.Id &&
+             !await _resourceService.HasPermission(currentUser, Roles.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -404,7 +404,8 @@ public class ChartSubmissionController : Controller
                 Errors = ModelErrorTranslator.Translate(ModelState)
             });
 
-        if (!_resourceService.GetAuthorIds(dto.AuthorName).Contains(currentUser.Id) && !isModerator)
+        if (currentUser.Id == chartSubmission.OwnerId &&
+            !_resourceService.GetAuthorIds(dto.AuthorName).Contains(currentUser.Id))
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidAuthorInfo
@@ -1200,12 +1201,14 @@ public class ChartSubmissionController : Controller
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="404">When the specified chartSubmission is not found.</response>
+    /// <response code="500">When an internal server error has occurred.</response>
     [HttpPost("{id:guid}/votes")]
     [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> CreateVote([FromRoute] Guid id, [FromBody] VolunteerVoteRequestDto dto)
     {
         if (!await _chartSubmissionRepository.ChartSubmissionExistsAsync(id))
@@ -1227,10 +1230,8 @@ public class ChartSubmissionController : Controller
                 });
 
         if (!await _volunteerVoteService.CreateVolunteerVoteAsync(dto, chartSubmission, currentUser))
-            return BadRequest(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
-            });
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
         return StatusCode(StatusCodes.Status201Created);
     }

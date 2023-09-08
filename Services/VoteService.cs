@@ -47,22 +47,41 @@ public class VoteService : IVoteService
 
     public async Task<bool> CreateVoteAsync(VoteRequestDto dto, Chart chart, User user)
     {
-        if (await _voteRepository.VoteExistsAsync(chart.Id, user.Id)) return false;
-        var vote = new Vote
+        bool result;
+        if (await _voteRepository.VoteExistsAsync(chart.Id, user.Id))
         {
-            ChartId = chart.Id,
-            Arrangement = dto.Arrangement,
-            Feel = dto.Feel,
-            VisualEffects = dto.VisualEffects,
-            Creativity = dto.Creativity,
-            Concord = dto.Concord,
-            Impression = dto.Impression,
-            Total = dto.Arrangement + dto.Feel + dto.VisualEffects + dto.Creativity + dto.Concord + dto.Impression,
-            Multiplier = GetMultiplier(user),
-            OwnerId = user.Id,
-            DateCreated = DateTimeOffset.UtcNow
-        };
-        var result = await _voteRepository.CreateVoteAsync(vote);
+            var vote = await _voteRepository.GetVoteAsync(chart.Id, user.Id);
+            vote.Arrangement = dto.Arrangement;
+            vote.Feel = dto.Feel;
+            vote.VisualEffects = dto.VisualEffects;
+            vote.Creativity = dto.Creativity;
+            vote.Concord = dto.Concord;
+            vote.Impression = dto.Impression;
+            vote.Total = dto.Arrangement + dto.Feel + dto.VisualEffects + dto.Creativity + dto.Concord + dto.Impression;
+            vote.Multiplier = GetMultiplier(user);
+            vote.DateCreated = DateTimeOffset.UtcNow;
+            result = await _voteRepository.UpdateVoteAsync(vote);
+        }
+        else
+        {
+            var vote = new Vote
+            {
+                ChartId = chart.Id,
+                Arrangement = dto.Arrangement,
+                Feel = dto.Feel,
+                VisualEffects = dto.VisualEffects,
+                Creativity = dto.Creativity,
+                Concord = dto.Concord,
+                Impression = dto.Impression,
+                Total = dto.Arrangement + dto.Feel + dto.VisualEffects + dto.Creativity + dto.Concord +
+                        dto.Impression,
+                Multiplier = GetMultiplier(user),
+                OwnerId = user.Id,
+                DateCreated = DateTimeOffset.UtcNow
+            };
+            result = await _voteRepository.CreateVoteAsync(vote);
+        }
+
         return result && await UpdateChartAsync(chart);
     }
 
@@ -76,8 +95,7 @@ public class VoteService : IVoteService
 
     public async Task<bool> UpdateChartAsync(Chart chart)
     {
-        var votes = await _voteRepository.GetVotesAsync("DateCreated", false, 0, -1,
-            vote => vote.ChartId == chart.Id);
+        var votes = await _voteRepository.GetVotesAsync("DateCreated", false, 0, -1, vote => vote.ChartId == chart.Id);
         var amount = votes.Sum(vote => vote.Multiplier);
         var r = GetReliability(amount);
         chart.Score = votes.Sum(vote => vote.Total * vote.Multiplier) / 6;

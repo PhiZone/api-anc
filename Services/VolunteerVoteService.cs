@@ -11,13 +11,13 @@ public class VolunteerVoteService : IVolunteerVoteService
 {
     private readonly IChartSubmissionRepository _chartSubmissionRepository;
     private readonly ISubmissionService _submissionService;
-    private readonly IVolunteerVoteRepository _volunteerVolunteerVoteRepository;
+    private readonly IVolunteerVoteRepository _volunteerVoteRepository;
     private readonly Dictionary<int, (double, double)> _voteScoreDictionary;
 
-    public VolunteerVoteService(IVolunteerVoteRepository volunteerVolunteerVoteRepository,
+    public VolunteerVoteService(IVolunteerVoteRepository volunteerVoteRepository,
         IChartSubmissionRepository chartSubmissionRepository, ISubmissionService submissionService)
     {
-        _volunteerVolunteerVoteRepository = volunteerVolunteerVoteRepository;
+        _volunteerVoteRepository = volunteerVoteRepository;
         _chartSubmissionRepository = chartSubmissionRepository;
         _submissionService = submissionService;
         _voteScoreDictionary = new Dictionary<int, (double, double)>
@@ -33,31 +33,43 @@ public class VolunteerVoteService : IVolunteerVoteService
     public async Task<bool> CreateVolunteerVoteAsync(VolunteerVoteRequestDto dto, ChartSubmission chartSubmission,
         User user)
     {
-        if (await _volunteerVolunteerVoteRepository.VolunteerVoteExistsAsync(chartSubmission.Id, user.Id)) return false;
-        var volunteerVolunteerVote = new VolunteerVote
+        bool result;
+        if (await _volunteerVoteRepository.VolunteerVoteExistsAsync(chartSubmission.Id, user.Id))
         {
-            ChartId = chartSubmission.Id,
-            Score = dto.Score,
-            Message = dto.Message,
-            OwnerId = user.Id,
-            DateCreated = DateTimeOffset.UtcNow
-        };
-        var result = await _volunteerVolunteerVoteRepository.CreateVolunteerVoteAsync(volunteerVolunteerVote);
+            var volunteerVolunteerVote =
+                await _volunteerVoteRepository.GetVolunteerVoteAsync(chartSubmission.Id, user.Id);
+            volunteerVolunteerVote.Score = dto.Score;
+            volunteerVolunteerVote.Message = dto.Message;
+            volunteerVolunteerVote.DateCreated = DateTimeOffset.UtcNow;
+            result = await _volunteerVoteRepository.UpdateVolunteerVoteAsync(volunteerVolunteerVote);
+        }
+        else
+        {
+            var volunteerVolunteerVote = new VolunteerVote
+            {
+                ChartId = chartSubmission.Id,
+                Score = dto.Score,
+                Message = dto.Message,
+                OwnerId = user.Id,
+                DateCreated = DateTimeOffset.UtcNow
+            };
+            result = await _volunteerVoteRepository.CreateVolunteerVoteAsync(volunteerVolunteerVote);
+        }
+
         return result && await UpdateChartSubmissionAsync(chartSubmission);
     }
 
     public async Task<bool> RemoveVolunteerVoteAsync(ChartSubmission chartSubmission, int userId)
     {
-        if (!await _volunteerVolunteerVoteRepository.VolunteerVoteExistsAsync(chartSubmission.Id, userId)) return false;
-        var volunteerVolunteerVote =
-            await _volunteerVolunteerVoteRepository.GetVolunteerVoteAsync(chartSubmission.Id, userId);
-        var result = await _volunteerVolunteerVoteRepository.RemoveVolunteerVoteAsync(volunteerVolunteerVote.Id);
+        if (!await _volunteerVoteRepository.VolunteerVoteExistsAsync(chartSubmission.Id, userId)) return false;
+        var volunteerVolunteerVote = await _volunteerVoteRepository.GetVolunteerVoteAsync(chartSubmission.Id, userId);
+        var result = await _volunteerVoteRepository.RemoveVolunteerVoteAsync(volunteerVolunteerVote.Id);
         return result && await UpdateChartSubmissionAsync(chartSubmission);
     }
 
     private async Task<bool> UpdateChartSubmissionAsync(ChartSubmission chartSubmission)
     {
-        var votes = await _volunteerVolunteerVoteRepository.GetVolunteerVotesAsync("DateCreated", false, 0, -1,
+        var votes = await _volunteerVoteRepository.GetVolunteerVotesAsync("DateCreated", false, 0, -1,
             vote => vote.ChartId == chartSubmission.Id && vote.DateCreated > chartSubmission.DateUpdated);
         if (_voteScoreDictionary.TryGetValue(votes.Count, out var scoreRange))
         {
