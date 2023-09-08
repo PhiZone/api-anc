@@ -28,13 +28,12 @@ public class NotificationController : Controller
     private readonly IDtoMapper _dtoMapper;
     private readonly IFilterService _filterService;
     private readonly INotificationRepository _notificationRepository;
-    private readonly INotificationService _notificationService;
     private readonly IResourceService _resourceService;
     private readonly UserManager<User> _userManager;
 
     public NotificationController(IOptions<DataSettings> dataSettings, INotificationRepository notificationRepository,
         UserManager<User> userManager, IResourceService resourceService, IFilterService filterService,
-        IDtoMapper dtoMapper, INotificationService notificationService)
+        IDtoMapper dtoMapper)
     {
         _dataSettings = dataSettings;
         _notificationRepository = notificationRepository;
@@ -42,7 +41,6 @@ public class NotificationController : Controller
         _resourceService = resourceService;
         _filterService = filterService;
         _dtoMapper = dtoMapper;
-        _notificationService = notificationService;
     }
 
     /// <summary>
@@ -73,12 +71,6 @@ public class NotificationController : Controller
         foreach (var notification in notifications)
             list.Add(await _dtoMapper.MapNotificationAsync<NotificationDto>(notification, currentUser));
 
-        if (notificationDto is { MarkAsRead: true, GetRead: false })
-        {
-            var notificationIds = notifications.Select(e => e.Id);
-            _notificationService.Publish(notificationIds);
-        }
-
         return Ok(new ResponseDto<IEnumerable<NotificationDto>>
         {
             Status = ResponseStatus.Ok,
@@ -89,6 +81,36 @@ public class NotificationController : Controller
             HasNext = dto.PerPage > 0 && dto.PerPage * dto.Page < total,
             Data = list
         });
+    }
+
+    /// <summary>
+    ///     Marks notifications as read.
+    /// </summary>
+    /// <returns>An empty body.</returns>
+    /// <response code="200">Returns an empty body.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="401">When the user is not authorized.</response>
+    [HttpPost("read")]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    public async Task<IActionResult> ReadNotifications([FromQuery] ArrayWithTimeRequestDto dto,
+        [FromQuery] NotificationRequestDto notificationDto, [FromQuery] NotificationFilterDto? filterDto = null)
+    {
+        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        dto.PerPage = dto.PerPage > 0 && dto.PerPage < _dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
+            dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : _dataSettings.Value.PaginationMaxPerPage;
+        var position = dto.PerPage * (dto.Page - 1);
+        var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser,
+            e => e.OwnerId == currentUser.Id && (notificationDto.GetRead ? e.DateRead != null : e.DateRead == null));
+        var notifications = await _notificationRepository.GetNotificationsAsync(dto.Order, dto.Desc, position,
+            dto.PerPage, dto.Search, predicateExpr);
+
+        var now = DateTimeOffset.UtcNow;
+        foreach (var notification in notifications) notification.DateRead = now;
+
+        return NoContent();
     }
 
     /// <summary>
@@ -113,8 +135,7 @@ public class NotificationController : Controller
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetNotification([FromRoute] Guid id,
-        [FromQuery] NotificationRequestDto notificationDto)
+    public async Task<IActionResult> GetNotification([FromRoute] Guid id)
     {
         if (!await _notificationRepository.NotificationExistsAsync(id))
             return NotFound(new ResponseDto<object>
@@ -132,13 +153,48 @@ public class NotificationController : Controller
                 });
         var dto = await _dtoMapper.MapNotificationAsync<NotificationDto>(notification);
 
-        if (notificationDto.MarkAsRead)
-        {
-            notification.DateRead = DateTimeOffset.UtcNow;
-            await _notificationRepository.UpdateNotificationAsync(notification);
-        }
-
         return Ok(new ResponseDto<NotificationDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
+    }
+
+    /// <summary>
+    ///     Marks a specific notification as read.
+    /// </summary>
+    /// <param name="id">A notification's ID.</param>
+    /// <returns>An empty body.</returns>
+    /// <response code="204">Returns an empty body.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
+    /// <response code="404">When the specified notification is not found.</response>
+    [HttpPost("{id:guid}/read")]
+    [ServiceFilter(typeof(ETagFilter))]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> ReadNotification([FromRoute] Guid id)
+    {
+        if (!await _notificationRepository.NotificationExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+        var notification = await _notificationRepository.GetNotificationAsync(id);
+        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (notification.OwnerId != currentUser.Id &&
+            !await _resourceService.HasPermission(currentUser, Roles.Administrator))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+
+        notification.DateRead = DateTimeOffset.Now;
+        await _notificationRepository.UpdateNotificationAsync(notification);
+
+        return NoContent();
     }
 
     /// <summary>

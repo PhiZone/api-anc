@@ -13,6 +13,4 @@ public interface INotificationService
     Task NotifyComment<T>(Comment comment, T resource, string display, string content) where T : LikeableResource;
 
     Task NotifyMentions(IEnumerable<User> users, User sender, string richText);
-
-    void Publish(IEnumerable<Guid> notifications);
 }

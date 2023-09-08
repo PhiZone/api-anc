@@ -1,6 +1,4 @@
-﻿using System.Text;
-using Microsoft.AspNetCore.Identity;
-using Newtonsoft.Json;
+﻿using Microsoft.AspNetCore.Identity;
 using PhiZoneApi.Enums;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
@@ -10,22 +8,19 @@ namespace PhiZoneApi.Services;
 public class NotificationService : INotificationService
 {
     private readonly INotificationRepository _notificationRepository;
-    private readonly IRabbitMqService _rabbitMqService;
     private readonly IResourceService _resourceService;
     private readonly ITemplateService _templateService;
     private readonly UserManager<User> _userManager;
     private readonly IUserRelationRepository _userRelationRepository;
 
     public NotificationService(INotificationRepository notificationRepository, ITemplateService templateService,
-        UserManager<User> userManager, IUserRelationRepository userRelationRepository, IResourceService resourceService,
-        IRabbitMqService rabbitMqService)
+        UserManager<User> userManager, IUserRelationRepository userRelationRepository, IResourceService resourceService)
     {
         _notificationRepository = notificationRepository;
         _templateService = templateService;
         _userManager = userManager;
         _userRelationRepository = userRelationRepository;
         _resourceService = resourceService;
-        _rabbitMqService = rabbitMqService;
     }
 
     public async Task Notify(User receiver, User? sender, NotificationType type, string key,
@@ -92,14 +87,5 @@ public class NotificationService : INotificationService
                     },
                     { "Content", richText }
                 });
-    }
-
-    public void Publish(IEnumerable<Guid> notifications)
-    {
-        using var channel = _rabbitMqService.GetConnection().CreateModel();
-        var properties = channel.CreateBasicProperties();
-        properties.Headers = new Dictionary<string, object> { { "DateRead", DateTimeOffset.UtcNow.ToString() } };
-        channel.BasicPublish("", "notification", false, properties,
-            Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(notifications)));
     }
 }
