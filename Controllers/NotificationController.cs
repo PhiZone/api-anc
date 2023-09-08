@@ -87,7 +87,7 @@ public class NotificationController : Controller
     ///     Marks notifications as read.
     /// </summary>
     /// <returns>An empty body.</returns>
-    /// <response code="200">Returns an empty body.</response>
+    /// <response code="204">Returns an empty body.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
     [HttpPost("read")]
