@@ -293,7 +293,8 @@ public class ChartSubmissionController : Controller
             VolunteerStatus = RequestStatus.Waiting,
             AdmissionStatus =
                 song != null
-                    ? song.OwnerId == currentUser.Id || song.Accessibility == Accessibility.AllowAny
+                    ?
+                    song.OwnerId == currentUser.Id || song.Accessibility == Accessibility.AllowAny
                         ? RequestStatus.Approved
                         : RequestStatus.Waiting
                     : songSubmission!.OwnerId == currentUser.Id ||
@@ -382,10 +383,10 @@ public class ChartSubmissionController : Controller
         var chartSubmission = await _chartSubmissionRepository.GetChartSubmissionAsync(id);
 
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        var isModerator = await _resourceService.HasPermission(currentUser, Roles.Moderator);
         if ((chartSubmission.OwnerId == currentUser.Id &&
              !await _resourceService.HasPermission(currentUser, Roles.Qualified)) ||
-            (chartSubmission.OwnerId != currentUser.Id &&
-             !await _resourceService.HasPermission(currentUser, Roles.Moderator)))
+            (chartSubmission.OwnerId != currentUser.Id && !isModerator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -403,7 +404,7 @@ public class ChartSubmissionController : Controller
                 Errors = ModelErrorTranslator.Translate(ModelState)
             });
 
-        if (!_resourceService.GetAuthorIds(dto.AuthorName).Contains(currentUser.Id))
+        if (!_resourceService.GetAuthorIds(dto.AuthorName).Contains(currentUser.Id) && !isModerator)
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidAuthorInfo
