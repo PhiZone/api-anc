@@ -110,6 +110,8 @@ public class NotificationController : Controller
         var now = DateTimeOffset.UtcNow;
         foreach (var notification in notifications) notification.DateRead = now;
 
+        await _notificationRepository.UpdateNotificationsAsync(notifications);
+
         return NoContent();
     }
 
