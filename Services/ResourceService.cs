@@ -69,7 +69,7 @@ public partial class ResourceService : IResourceService
     public async Task<bool> HasPermission(User user, Role targetRole)
     {
         var currentRole = await GetRole(user);
-        return currentRole!.Priority >= targetRole.Priority;
+        return currentRole != null && currentRole.Priority >= targetRole.Priority;
     }
 
     public async Task<bool> HasPermission(User user, int priority)
