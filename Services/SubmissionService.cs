@@ -263,7 +263,6 @@ public class SubmissionService : ISubmissionService
             chart.NoteCount = chartSubmission.NoteCount;
             chart.SongId = chartSubmission.SongId.Value;
             chart.OwnerId = chartSubmission.OwnerId;
-            chart.DateCreated = DateTimeOffset.UtcNow;
             chart.DateUpdated = DateTimeOffset.UtcNow;
             await _chartRepository.UpdateChartAsync(chart);
         }
@@ -279,7 +278,6 @@ public class SubmissionService : ISubmissionService
                 }
             });
 
-        chartSubmission.DateUpdated = DateTimeOffset.UtcNow;
         await _chartSubmissionRepository.UpdateChartSubmissionAsync(chartSubmission);
 
         foreach (var collaboration in await _collaborationRepository.GetCollaborationsAsync("DateCreated", false, 0, -1,
