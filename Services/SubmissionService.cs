@@ -221,6 +221,7 @@ public class SubmissionService : ISubmissionService
             };
             await _chartRepository.CreateChartAsync(chart);
             chartSubmission.RepresentationId = chart.Id;
+            await _chartSubmissionRepository.UpdateChartSubmissionAsync(chartSubmission);
 
             if (!(await _songRepository.GetSongAsync(chartSubmission.SongId.Value)).IsHidden)
                 foreach (var relation in await _userRelationRepository.GetRelationsAsync("DateCreated", false, 0, -1,
@@ -277,8 +278,6 @@ public class SubmissionService : ISubmissionService
                         await _resourceService.GetDisplayName(chartSubmission))
                 }
             });
-
-        await _chartSubmissionRepository.UpdateChartSubmissionAsync(chartSubmission);
 
         foreach (var collaboration in await _collaborationRepository.GetCollaborationsAsync("DateCreated", false, 0, -1,
                      e => e.SubmissionId == chartSubmission.Id && e.Status == RequestStatus.Approved))
