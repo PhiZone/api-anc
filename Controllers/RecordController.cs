@@ -271,7 +271,7 @@ public class RecordController : Controller
                 record => record.ChartId == info.ChartId && record.OwnerId == player.Id)).FirstOrDefault()!.Accuracy;
 
         _logger.LogInformation(LogEvents.RecordInfo,
-            "New record: {User} - {Chart} {Score} {Accuracy} {Rks} {StdDeviation} ms",
+            "New record: {User} - {Chart} {Score} {Accuracy} {Rks} {StdDeviation}ms",
             player.UserName, await _resourceService.GetDisplayName(chart), score, accuracy.ToString("P"),
             rks.ToString("N3"), dto.StdDeviation.ToString("N3"));
 
