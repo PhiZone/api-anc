@@ -103,7 +103,7 @@ public class MultimediaService : IMultimediaService
         {
             FileName = ffmpegPath,
             Arguments = arguments,
-            RedirectStandardOutput = false,
+            RedirectStandardOutput = true,
             UseShellExecute = false,
             CreateNoWindow = true
         };

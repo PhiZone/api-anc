@@ -48,6 +48,7 @@ public class ChartSubmissionController : Controller
     private readonly UserManager<User> _userManager;
     private readonly IVolunteerVoteRepository _volunteerVoteRepository;
     private readonly IVolunteerVoteService _volunteerVoteService;
+    private readonly IFeishuService _feishuService;
 
     public ChartSubmissionController(IChartSubmissionRepository chartSubmissionRepository,
         IOptions<DataSettings> dataSettings, UserManager<User> userManager, IFilterService filterService,
@@ -57,7 +58,7 @@ public class ChartSubmissionController : Controller
         IVolunteerVoteRepository volunteerVoteRepository, IAdmissionRepository admissionRepository,
         INotificationService notificationService, ITemplateService templateService,
         ICollaborationRepository collaborationRepository,
-        IChartAssetSubmissionRepository chartAssetSubmissionRepository, ILogger<ChartSubmissionController> logger)
+        IChartAssetSubmissionRepository chartAssetSubmissionRepository, ILogger<ChartSubmissionController> logger, IFeishuService feishuService)
     {
         _chartSubmissionRepository = chartSubmissionRepository;
         _dataSettings = dataSettings;
@@ -77,6 +78,7 @@ public class ChartSubmissionController : Controller
         _collaborationRepository = collaborationRepository;
         _chartAssetSubmissionRepository = chartAssetSubmissionRepository;
         _logger = logger;
+        _feishuService = feishuService;
         _fileStorageService = fileStorageService;
     }
 
@@ -344,8 +346,9 @@ public class ChartSubmissionController : Controller
                 });
         }
 
+        await _feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
         _logger.LogInformation(LogEvents.ChartInfo, "New chart submission: {Title} [{Level} {Difficulty}]",
-            dto.Title ?? song?.Title ?? songSubmission!.Title, dto.Level, dto.Difficulty.ToString("F0"));
+            dto.Title ?? song?.Title ?? songSubmission!.Title, dto.Level, Math.Floor(dto.Difficulty));
 
         return StatusCode(StatusCodes.Status201Created);
     }
@@ -428,6 +431,7 @@ public class ChartSubmissionController : Controller
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
+        await _feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
         return NoContent();
     }
 
@@ -499,6 +503,7 @@ public class ChartSubmissionController : Controller
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
+        await _feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
         return NoContent();
     }
 
@@ -560,6 +565,7 @@ public class ChartSubmissionController : Controller
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
+        await _feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
         return NoContent();
     }
 
@@ -613,6 +619,7 @@ public class ChartSubmissionController : Controller
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
+        await _feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
         return NoContent();
     }
 
@@ -919,6 +926,7 @@ public class ChartSubmissionController : Controller
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
+        await _feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
         return NoContent();
     }
 
@@ -992,6 +1000,7 @@ public class ChartSubmissionController : Controller
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
+        await _feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
         return NoContent();
     }
 
@@ -1052,6 +1061,7 @@ public class ChartSubmissionController : Controller
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
+        await _feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
         return NoContent();
     }
 

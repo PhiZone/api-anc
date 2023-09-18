@@ -1,0 +1,176 @@
+using System.Globalization;
+using System.Text;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
+using PhiZoneApi.Configurations;
+using PhiZoneApi.Constants;
+using PhiZoneApi.Dtos.Deliverers;
+using PhiZoneApi.Dtos.Requests;
+using PhiZoneApi.Interfaces;
+using PhiZoneApi.Models;
+
+namespace PhiZoneApi.Services;
+
+public class FeishuService : IFeishuService
+{
+    private readonly IOptions<FeishuSettings> _feishuSettings;
+    private readonly IConfiguration _config;
+    private readonly IServiceProvider _provider;
+    private readonly HttpClient _client;
+    private readonly ILogger<FeishuService> _logger;
+    private string? _token;
+    private DateTimeOffset _lastTokenUpdate;
+
+    public FeishuService(IOptions<FeishuSettings> feishuSettings, IConfiguration config, IServiceProvider provider,
+        ILogger<FeishuService> logger)
+    {
+        _feishuSettings = feishuSettings;
+        _config = config;
+        _provider = provider;
+        _logger = logger;
+        _client = new HttpClient { BaseAddress = new Uri(feishuSettings.Value.ApiUrl) };
+        Task.Run(UpdateToken);
+    }
+
+    private async Task UpdateToken()
+    {
+        var now = DateTimeOffset.UtcNow;
+        if (now - _lastTokenUpdate <= TimeSpan.FromMinutes(90))
+        {
+            return;
+        }
+
+        var request = new HttpRequestMessage
+        {
+            Method = HttpMethod.Post,
+            RequestUri = new Uri($"{_feishuSettings.Value.ApiUrl}/open-apis/auth/v3/tenant_access_token/internal"),
+            // Headers = { { "Content-Type", "application/json; charset=utf-8" } },
+            Content = new StringContent(
+                JsonConvert.SerializeObject(new FeishuTokenDto
+                {
+                    AppId = _feishuSettings.Value.AppId, AppSecret = _feishuSettings.Value.AppSecret
+                }), Encoding.UTF8, "application/json")
+        };
+        var response = await _client.SendAsync(request);
+        if (!response.IsSuccessStatusCode)
+        {
+            _logger.LogError(LogEvents.FeishuFailure, "An error occurred whilst updating tenant token:\n{Error}",
+                await response.Content.ReadAsStringAsync());
+        }
+
+        var data = JsonConvert.DeserializeObject<FeishuTokenDelivererDto>(await response.Content.ReadAsStringAsync())!;
+        _token = data.TenantAccessToken;
+        _lastTokenUpdate = now;
+    }
+
+    public async Task Notify(SongSubmission submission, params int[] chats)
+    {
+        await UpdateToken();
+        await using var scope = _provider.CreateAsyncScope();
+        var userManager = scope.ServiceProvider.GetService<UserManager<User>>()!;
+        var variables = new Dictionary<string, string>
+        {
+            { "song", submission.Title },
+            { "uploader", (await userManager.FindByIdAsync(submission.OwnerId.ToString()))!.UserName! },
+            { "originality", submission.OriginalityProof != null ? "\u2705" : "\u274c" },
+            { "composer", submission.AuthorName },
+            { "illustrator", submission.Illustrator },
+            {
+                "bpm",
+                Math.Abs(submission.MinBpm - submission.MaxBpm) < 1e-5
+                    ? submission.Bpm.ToString(CultureInfo.InvariantCulture)
+                    : $"{submission.Bpm} ({submission.MinBpm} ~ {submission.MaxBpm})"
+            },
+            { "duration", submission.Duration!.Value.ToString("g") },
+            { "submission_info", $"{_config["WebsiteURL"]}/studio/song-submissions/{submission.Id}" }
+        };
+        var content =
+            $"{{\"type\":\"template\",\"data\":{{\"template_id\":\"{_feishuSettings.Value.Cards[FeishuResources.SongCard]}\",\"template_variable\":{JsonConvert.SerializeObject(variables)}}}}}";
+        foreach (var chat in chats)
+        {
+            var request = new HttpRequestMessage
+            {
+                Method = HttpMethod.Post,
+                RequestUri = new Uri($"{_feishuSettings.Value.ApiUrl}/open-apis/im/v1/messages?receive_id_type=chat_id"),
+                Headers = { { "Authorization", $"Bearer {_token}" } },
+                Content = new StringContent(
+                    JsonConvert.SerializeObject(new FeishuMessageDto
+                    {
+                        ReceiveId = _feishuSettings.Value.Chats[chat],
+                        MessageType = "interactive",
+                        Content = content
+                    }), Encoding.UTF8, "application/json")
+            };
+            var response = await _client.SendAsync(request);
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogError(LogEvents.FeishuFailure, "An error occurred whilst announcing song update:\n{Error}",
+                    await response.Content.ReadAsStringAsync());
+            }
+        }
+    }
+
+    public async Task Notify(ChartSubmission submission, params int[] chats)
+    {
+        await UpdateToken();
+        await using var scope = _provider.CreateAsyncScope();
+        var userManager = scope.ServiceProvider.GetService<UserManager<User>>()!;
+        var songRepository = scope.ServiceProvider.GetService<ISongRepository>()!;
+        var songSubmissionRepository = scope.ServiceProvider.GetService<ISongSubmissionRepository>()!;
+        string title;
+        if (submission.SongId != null)
+        {
+            var song = await songRepository.GetSongAsync(submission.SongId.Value);
+            title = song.Title;
+        }
+        else
+        {
+            var song = await songSubmissionRepository.GetSongSubmissionAsync(submission.SongSubmissionId!.Value);
+            title = song.Title;
+        }
+
+        var variables = new Dictionary<string, string>
+        {
+            { "chart", $"{title} [{submission.Level} {Math.Floor(submission.Difficulty)}]" },
+            { "uploader", (await userManager.FindByIdAsync(submission.OwnerId.ToString()))!.UserName! },
+            { "is_ranked", submission.IsRanked ? "\u2705" : "\u274c" },
+            { "level", $"[{submission.LevelType.ToString()}] {submission.Level}" },
+            { "difficulty", submission.Difficulty.ToString(CultureInfo.InvariantCulture) },
+            { "format", submission.Format.ToString() },
+            { "note_count", submission.NoteCount.ToString() },
+            { "submission_info", $"{_config["WebsiteURL"]}/studio/chart-submissions/{submission.Id}" }
+        };
+        var content =
+            $"{{\"type\":\"template\",\"data\":{{\"template_id\":\"{_feishuSettings.Value.Cards[FeishuResources.ChartCard]}\",\"template_variable\":{JsonConvert.SerializeObject(variables)}}}}}";
+        foreach (var chat in chats)
+        {
+            var request = new HttpRequestMessage
+            {
+                Method = HttpMethod.Post,
+                RequestUri = new Uri($"{_feishuSettings.Value.ApiUrl}/open-apis/im/v1/messages?receive_id_type=chat_id"),
+                Headers = { { "Authorization", $"Bearer {_token}" } },
+                Content = new StringContent(JsonConvert.SerializeObject(new FeishuMessageDto
+                {
+                    ReceiveId = _feishuSettings.Value.Chats[chat],
+                    MessageType = "interactive",
+                    // Content = "{\"text\":\"Ciallo～(∠・ω< )⌒★! 我是 Phizo，一个正在学习中的 bot 哒！\"}"
+                    Content = content
+                }), Encoding.UTF8, "application/json")
+            };
+            _logger.LogInformation(JsonConvert.SerializeObject(new FeishuMessageDto
+            {
+                ReceiveId = _feishuSettings.Value.Chats[chat],
+                MessageType = "interactive",
+                // Content = "{\"text\":\"Ciallo～(∠・ω< )⌒★! 我是 Phizo，一个正在学习中的 bot 哒！\"}"
+                Content = content
+            }));
+            var response = await _client.SendAsync(request);
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogError(LogEvents.FeishuFailure, "An error occurred whilst announcing chart update:\n{Error}",
+                    await response.Content.ReadAsStringAsync());
+            }
+        }
+    }
+}

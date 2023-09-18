@@ -13,14 +13,16 @@ public class SongConverterService : BackgroundService
     private readonly ISongRepository _songRepository;
     private readonly ISongService _songService;
     private readonly ISongSubmissionRepository _songSubmissionRepository;
+    private readonly IFeishuService _feishuService;
 
     public SongConverterService(IRabbitMqService rabbitMqService, ISongService songService,
         ISongRepository songRepository, ISongSubmissionRepository songSubmissionRepository,
-        ILogger<SongConverterService> logger)
+        IFeishuService feishuService, ILogger<SongConverterService> logger)
     {
         _songService = songService;
         _songRepository = songRepository;
         _songSubmissionRepository = songSubmissionRepository;
+        _feishuService = feishuService;
         _logger = logger;
         _channel = rabbitMqService.GetConnection().CreateModel();
     }
@@ -52,10 +54,12 @@ public class SongConverterService : BackgroundService
                     song.DateUpdated = DateTimeOffset.UtcNow;
 
                     if (song.PreviewEnd > song.Duration) song.PreviewEnd = song.Duration.Value;
-
                     if (song.PreviewStart > song.PreviewEnd) song.PreviewStart = TimeSpan.Zero;
 
                     await _songSubmissionRepository.UpdateSongSubmissionAsync(song);
+                    await _feishuService.Notify(song, FeishuResources.ContentReviewalChat);
+                    _logger.LogInformation(LogEvents.SongInfo, "Completed song submission schedule: {Title}",
+                        song.Title);
                 }
             }
             else
@@ -70,12 +74,10 @@ public class SongConverterService : BackgroundService
                     song.DateUpdated = DateTimeOffset.UtcNow;
 
                     if (song.PreviewEnd > song.Duration) song.PreviewEnd = song.Duration.Value;
-
                     if (song.PreviewStart > song.PreviewEnd) song.PreviewStart = TimeSpan.Zero;
 
                     await _songRepository.UpdateSongAsync(song);
-                    _logger.LogInformation(LogEvents.SongInfo, "Completed {Type} schedule: {Title}",
-                        isSubmission ? "song submission" : "song", song.Title);
+                    _logger.LogInformation(LogEvents.SongInfo, "Completed song schedule: {Title}", song.Title);
                 }
             }
 
