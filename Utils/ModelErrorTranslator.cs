@@ -7,17 +7,12 @@ public static class ModelErrorTranslator
 {
     public static List<ModelErrorDto> Translate(ModelStateDictionary modelState)
     {
-        var list = new List<ModelErrorDto>();
-        foreach (var key in modelState.Keys)
-        {
-            var errors = modelState[key];
-            if (errors == null || errors.Errors.Count < 1) continue;
-
-            var errorList = errors.Errors.Select(error => error.ErrorMessage).ToList();
-
-            list.Add(new ModelErrorDto { Field = key, Errors = errorList });
-        }
-
-        return list;
+        return (from key in modelState.Keys
+            let entry = modelState[key]
+            where entry != null && entry.Errors.Count >= 1
+            select new ModelErrorDto
+            {
+                Field = key, Errors = entry.Errors.Select(error => error.ErrorMessage).ToList()
+            }).ToList();
     }
 }

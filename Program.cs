@@ -139,6 +139,7 @@ builder.Services.AddScoped<ITemplateService, TemplateService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddSingleton<IFileStorageService, FileStorageService>();
 builder.Services.AddSingleton<IRabbitMqService, RabbitMqService>();
+builder.Services.AddSingleton<IFeishuService, FeishuService>();
 builder.Services.AddSingleton<IConnectionMultiplexer>(
     ConnectionMultiplexer.Connect(builder.Configuration.GetValue<string>("RedisConnection") ?? "localhost"));
 builder.Services.AddSingleton<IHostedService>(provider => new MailSenderService(
@@ -150,6 +151,7 @@ builder.Services.AddSingleton<IHostedService>(provider => new SongConverterServi
     provider.GetService<IServiceScopeFactory>()!.CreateScope().ServiceProvider.GetService<ISongService>()!,
     provider.GetService<IServiceScopeFactory>()!.CreateScope().ServiceProvider.GetService<ISongRepository>()!,
     provider.GetService<IServiceScopeFactory>()!.CreateScope().ServiceProvider.GetService<ISongSubmissionRepository>()!,
+    provider.GetService<IFeishuService>()!,
     provider.GetService<ILogger<SongConverterService>>()!));
 builder.Services.AddHostedService<DatabaseSeeder>();
 
@@ -168,6 +170,7 @@ builder.Services.Configure<ApiBehaviorOptions>(options => { options.SuppressMode
 builder.Services.Configure<DataSettings>(builder.Configuration.GetSection("DataSettings"));
 builder.Services.Configure<MailSettings>(builder.Configuration.GetSection("MailSettings"));
 builder.Services.Configure<TapTapSettings>(builder.Configuration.GetSection("TapTapSettings"));
+builder.Services.Configure<FeishuSettings>(builder.Configuration.GetSection("FeishuSettings"));
 builder.Services.Configure<LanguageSettings>(builder.Configuration.GetSection("LanguageSettings"));
 builder.Services.Configure<RabbitMqSettings>(builder.Configuration.GetSection("RabbitMQSettings"));
 builder.Services.Configure<ForwardedHeadersOptions>(options =>

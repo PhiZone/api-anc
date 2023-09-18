@@ -17,7 +17,7 @@ public class RecordService : IRecordService
         var totalCount = perfect + good + bad + miss;
         if (totalCount == 0) return 0;
 
-        return (int)Math.Round((9e5 * perfect + 585e2 * good + 1e5 * maxCombo) / totalCount, 0);
+        return (int)Math.Round((9e5 * perfect + 585e3 * good + 1e5 * maxCombo) / totalCount, 0);
     }
 
     public double CalculateAccuracy(int perfect, int good, int bad, int miss)

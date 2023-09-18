@@ -42,6 +42,7 @@ public class SongSubmissionController : Controller
     private readonly ISongSubmissionRepository _songSubmissionRepository;
     private readonly ISubmissionService _submissionService;
     private readonly ITemplateService _templateService;
+    private readonly IFeishuService _feishuService;
     private readonly UserManager<User> _userManager;
 
     public SongSubmissionController(ISongSubmissionRepository songSubmissionRepository,
@@ -49,7 +50,7 @@ public class SongSubmissionController : Controller
         IFileStorageService fileStorageService, IMapper mapper, ISongService songService,
         IAuthorshipRepository authorshipRepository, ISubmissionService submissionService,
         IResourceService resourceService, ICollaborationRepository collaborationRepository,
-        INotificationService notificationService, ITemplateService templateService,
+        INotificationService notificationService, ITemplateService templateService, IFeishuService feishuService,
         ILogger<SongSubmissionController> logger)
     {
         _songSubmissionRepository = songSubmissionRepository;
@@ -65,6 +66,7 @@ public class SongSubmissionController : Controller
         _notificationService = notificationService;
         _templateService = templateService;
         _logger = logger;
+        _feishuService = feishuService;
         _fileStorageService = fileStorageService;
     }
 
@@ -267,11 +269,14 @@ public class SongSubmissionController : Controller
 
         await _authorshipRepository.CreateAuthorshipAsync(authorship);
 
-        // ReSharper disable once InvertIf
         if (!wait)
         {
             await _songService.PublishAsync(dto.File, songSubmission.Id, true);
             _logger.LogInformation(LogEvents.SongInfo, "Scheduled new song submission: {Title}", dto.Title);
+        }
+        else
+        {
+            await _feishuService.Notify(songSubmission, FeishuResources.ContentReviewalChat);
         }
 
         return StatusCode(StatusCodes.Status201Created);
@@ -368,6 +373,7 @@ public class SongSubmissionController : Controller
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
+        await _feishuService.Notify(songSubmission, FeishuResources.ContentReviewalChat);
         return NoContent();
     }
 
@@ -448,6 +454,7 @@ public class SongSubmissionController : Controller
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
+        await _feishuService.Notify(songSubmission, FeishuResources.ContentReviewalChat);
         return NoContent();
     }
 
@@ -504,6 +511,7 @@ public class SongSubmissionController : Controller
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
+        await _feishuService.Notify(songSubmission, FeishuResources.ContentReviewalChat);
         return NoContent();
     }
 
@@ -560,6 +568,7 @@ public class SongSubmissionController : Controller
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
+        await _feishuService.Notify(songSubmission, FeishuResources.ContentReviewalChat);
         return NoContent();
     }
 
@@ -609,6 +618,7 @@ public class SongSubmissionController : Controller
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
+        await _feishuService.Notify(songSubmission, FeishuResources.ContentReviewalChat);
         return NoContent();
     }
 
@@ -666,6 +676,7 @@ public class SongSubmissionController : Controller
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
+        await _feishuService.Notify(songSubmission, FeishuResources.ContentReviewalChat);
         return NoContent();
     }
 
@@ -715,6 +726,7 @@ public class SongSubmissionController : Controller
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
+        await _feishuService.Notify(songSubmission, FeishuResources.ContentReviewalChat);
         return NoContent();
     }
 

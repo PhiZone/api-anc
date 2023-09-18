@@ -33,14 +33,16 @@ public class FileStorageService : IFileStorageService
 
     public async Task<(string, string)> UploadImage<T>(string fileName, IFormFile formFile, (int, int) aspectRatio)
     {
-        var multimediaService = _provider.GetService<IMultimediaService>()!;
+        await using var scope = _provider.CreateAsyncScope();
+        var multimediaService = scope.ServiceProvider.GetService<IMultimediaService>()!;
         var stream = multimediaService.CropImage(formFile, aspectRatio);
         return await Upload<T>(fileName, stream, "webp");
     }
 
     public async Task<(string, string)> UploadImage<T>(string fileName, byte[] buffer, (int, int) aspectRatio)
     {
-        var multimediaService = _provider.GetService<IMultimediaService>()!;
+        await using var scope = _provider.CreateAsyncScope();
+        var multimediaService = scope.ServiceProvider.GetService<IMultimediaService>()!;
         var stream = multimediaService.CropImage(buffer, aspectRatio);
         return await Upload<T>(fileName, stream, "webp");
     }

@@ -282,7 +282,7 @@ public class ChartController : Controller
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
         _logger.LogInformation(LogEvents.ChartInfo, "New chart: {Title} [{Level} {Difficulty}]",
-            dto.Title ?? song.Title, dto.Level, dto.Difficulty.ToString("F0"));
+            dto.Title ?? song.Title, dto.Level, Math.Floor(dto.Difficulty));
 
         return StatusCode(StatusCodes.Status201Created);
     }
