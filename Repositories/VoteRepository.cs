@@ -18,7 +18,7 @@ public class VoteRepository : IVoteRepository
         _context = context;
     }
 
-    public async Task<ICollection<Vote>> GetVotesAsync(string order, bool desc, int position, int take,
+    public async Task<ICollection<Vote>> GetVotesAsync(List<string> order, List<bool> desc, int position, int take,
         Expression<Func<Vote, bool>>? predicate = null)
     {
         var result = _context.Votes.OrderBy(order, desc);

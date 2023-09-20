@@ -16,7 +16,7 @@ public class CollaborationRepository : ICollaborationRepository
         _context = context;
     }
 
-    public async Task<ICollection<Collaboration>> GetCollaborationsAsync(string order, bool desc, int position,
+    public async Task<ICollection<Collaboration>> GetCollaborationsAsync(List<string> order, List<bool> desc, int position,
         int take, Expression<Func<Collaboration, bool>>? predicate = null)
     {
         var result = _context.Collaborations.OrderBy(order, desc);

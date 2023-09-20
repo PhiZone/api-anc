@@ -5,7 +5,7 @@ namespace PhiZoneApi.Interfaces;
 
 public interface ICollaborationRepository
 {
-    Task<ICollection<Collaboration>> GetCollaborationsAsync(string order, bool desc, int position, int take,
+    Task<ICollection<Collaboration>> GetCollaborationsAsync(List<string> order, List<bool> desc, int position, int take,
         Expression<Func<Collaboration, bool>>? predicate = null);
 
     Task<Collaboration> GetCollaborationAsync(Guid id);

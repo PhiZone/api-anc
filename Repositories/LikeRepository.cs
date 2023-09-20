@@ -18,7 +18,7 @@ public class LikeRepository : ILikeRepository
         _context = context;
     }
 
-    public async Task<ICollection<Like>> GetLikesAsync(string order, bool desc, int position, int take,
+    public async Task<ICollection<Like>> GetLikesAsync(List<string> order, List<bool> desc, int position, int take,
         Expression<Func<Like, bool>>? predicate = null)
     {
         var result = _context.Likes.OrderBy(order, desc);

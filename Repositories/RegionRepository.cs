@@ -18,7 +18,7 @@ public class RegionRepository : IRegionRepository
         _context = context;
     }
 
-    public async Task<ICollection<Region>> GetRegionsAsync(string order, bool desc, int position, int take,
+    public async Task<ICollection<Region>> GetRegionsAsync(List<string> order, List<bool> desc, int position, int take,
         string? search = null, Expression<Func<Region, bool>>? predicate = null)
     {
         var result = _context.Regions.OrderBy(order, desc);
@@ -46,7 +46,7 @@ public class RegionRepository : IRegionRepository
         return (await _context.Regions.FirstOrDefaultAsync(region => string.Equals(region.Code, code.ToUpper())))!;
     }
 
-    public async Task<ICollection<User>> GetRegionUsersAsync(int id, string order, bool desc, int position,
+    public async Task<ICollection<User>> GetRegionUsersAsync(int id, List<string> order, List<bool> desc, int position,
         int take, string? search = null, Expression<Func<User, bool>>? predicate = null)
     {
         var region = (await _context.Regions.FirstOrDefaultAsync(region => region.Id == id))!;
@@ -68,7 +68,7 @@ public class RegionRepository : IRegionRepository
         return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
 
-    public async Task<ICollection<User>> GetRegionUsersAsync(string code, string order, bool desc, int position,
+    public async Task<ICollection<User>> GetRegionUsersAsync(string code, List<string> order, List<bool> desc, int position,
         int take, string? search = null, Expression<Func<User, bool>>? predicate = null)
     {
         var region = (await _context.Regions.FirstOrDefaultAsync(region =>

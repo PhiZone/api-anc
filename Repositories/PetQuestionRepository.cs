@@ -18,7 +18,7 @@ public class PetQuestionRepository : IPetQuestionRepository
         _context = context;
     }
 
-    public async Task<ICollection<PetQuestion>> GetPetQuestionsAsync(string order, bool desc, int position, int take,
+    public async Task<ICollection<PetQuestion>> GetPetQuestionsAsync(List<string> order, List<bool> desc, int position, int take,
         string? search = null, Expression<Func<PetQuestion, bool>>? predicate = null)
     {
         var result = _context.PetQuestions.OrderBy(order, desc);

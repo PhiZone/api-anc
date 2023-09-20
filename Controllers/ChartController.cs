@@ -91,7 +91,7 @@ public class ChartController : Controller
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<ChartDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetCharts([FromQuery] ArrayWithTimeRequestDto dto,
+    public async Task<IActionResult> GetCharts([FromQuery] ArrayRequestDto dto,
         [FromQuery] ChartFilterDto? filterDto = null)
     {
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
@@ -158,14 +158,17 @@ public class ChartController : Controller
         // ReSharper disable once InvertIf
         if (currentUser != null)
         {
-            dto.PersonalBestScore = (await _recordRepository.GetRecordsAsync("Score", true, 0, 1,
-                    r => r.OwnerId == currentUser.Id && r.ChartId == id)).FirstOrDefault()
+            dto.PersonalBestScore = (await _recordRepository.GetRecordsAsync(new List<string> { "Score" },
+                    new List<bool> { true }, 0, 1, r => r.OwnerId == currentUser.Id && r.ChartId == id))
+                .FirstOrDefault()
                 ?.Score;
-            dto.PersonalBestAccuracy = (await _recordRepository.GetRecordsAsync("Accuracy", true, 0, 1,
-                    r => r.OwnerId == currentUser.Id && r.ChartId == id)).FirstOrDefault()
+            dto.PersonalBestAccuracy = (await _recordRepository.GetRecordsAsync(new List<string> { "Accuracy" },
+                    new List<bool> { true }, 0, 1, r => r.OwnerId == currentUser.Id && r.ChartId == id))
+                .FirstOrDefault()
                 ?.Accuracy;
-            dto.PersonalBestRks = (await _recordRepository.GetRecordsAsync("Rks", true, 0, 1,
-                    r => r.OwnerId == currentUser.Id && r.ChartId == id)).FirstOrDefault()
+            dto.PersonalBestRks = (await _recordRepository.GetRecordsAsync(new List<string> { "Rks" },
+                    new List<bool> { true }, 0, 1, r => r.OwnerId == currentUser.Id && r.ChartId == id))
+                .FirstOrDefault()
                 ?.Rks;
         }
 
@@ -185,7 +188,7 @@ public class ChartController : Controller
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<ChartDetailedDto>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetRandomChart([FromQuery] ArrayWithTimeRequestDto dto,
+    public async Task<IActionResult> GetRandomChart([FromQuery] ArrayRequestDto dto,
         [FromQuery] ChartFilterDto? filterDto = null)
     {
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
@@ -635,7 +638,7 @@ public class ChartController : Controller
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetChartAssets([FromRoute] Guid id, [FromQuery] ArrayWithTimeRequestDto dto,
+    public async Task<IActionResult> GetChartAssets([FromRoute] Guid id, [FromQuery] ArrayRequestDto dto,
         [FromQuery] ChartAssetFilterDto? filterDto = null)
     {
         if (!await _chartRepository.ChartExistsAsync(id))
@@ -1051,7 +1054,7 @@ public class ChartController : Controller
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<RecordDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetChartRecords([FromRoute] Guid id, [FromQuery] ArrayWithTimeRequestDto dto,
+    public async Task<IActionResult> GetChartRecords([FromRoute] Guid id, [FromQuery] ArrayRequestDto dto,
         [FromQuery] RecordFilterDto? filterDto = null)
     {
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
@@ -1107,7 +1110,7 @@ public class ChartController : Controller
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<LikeDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetChartLikes([FromRoute] Guid id, [FromQuery] ArrayWithTimeRequestDto dto)
+    public async Task<IActionResult> GetChartLikes([FromRoute] Guid id, [FromQuery] ArrayRequestDto dto)
     {
         dto.PerPage = dto.PerPage > 0 && dto.PerPage < _dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
             dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : _dataSettings.Value.PaginationMaxPerPage;
@@ -1261,7 +1264,7 @@ public class ChartController : Controller
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<CommentDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetChartComments([FromRoute] Guid id, [FromQuery] ArrayWithTimeRequestDto dto)
+    public async Task<IActionResult> GetChartComments([FromRoute] Guid id, [FromQuery] ArrayRequestDto dto)
     {
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         dto.PerPage = dto.PerPage > 0 && dto.PerPage < _dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
@@ -1383,7 +1386,7 @@ public class ChartController : Controller
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<VoteDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetChartVotes([FromRoute] Guid id, [FromQuery] ArrayWithTimeRequestDto dto)
+    public async Task<IActionResult> GetChartVotes([FromRoute] Guid id, [FromQuery] ArrayRequestDto dto)
     {
         dto.PerPage = dto.PerPage > 0 && dto.PerPage < _dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
             dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : _dataSettings.Value.PaginationMaxPerPage;

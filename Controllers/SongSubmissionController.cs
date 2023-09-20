@@ -84,7 +84,7 @@ public class SongSubmissionController : Controller
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetSongSubmissions([FromQuery] ArrayWithTimeRequestDto dto,
+    public async Task<IActionResult> GetSongSubmissions([FromQuery] ArrayRequestDto dto,
         [FromQuery] SongSubmissionFilterDto? filterDto = null)
     {
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;

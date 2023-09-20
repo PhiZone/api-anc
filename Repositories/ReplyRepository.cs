@@ -16,7 +16,7 @@ public class ReplyRepository : IReplyRepository
         _context = context;
     }
 
-    public async Task<ICollection<Reply>> GetRepliesAsync(string order, bool desc, int position, int take,
+    public async Task<ICollection<Reply>> GetRepliesAsync(List<string> order, List<bool> desc, int position, int take,
         Expression<Func<Reply, bool>>? predicate = null)
     {
         var result = _context.Replies.OrderBy(order, desc);

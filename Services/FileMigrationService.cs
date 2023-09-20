@@ -51,7 +51,8 @@ public class FileMigrationService : IHostedService
 
     private async Task MigrateFilesAsync(CancellationToken cancellationToken)
     {
-        var songs = await _songRepository.GetSongsAsync("DateCreated", false, _position, -1);
+        var songs = await _songRepository.GetSongsAsync(new List<string> { "DateCreated" }, new List<bool> { false },
+            _position, -1);
         var i = 0;
         foreach (var song in songs)
         {
@@ -62,8 +63,9 @@ public class FileMigrationService : IHostedService
                 (song.File, song.FileChecksum) = await MigrateFileAsync<Song>(song.File, song.Title, cancellationToken);
 
             song.Illustration = (await MigrateFileAsync<Song>(song.Illustration, song.Title, cancellationToken)).Item1;
-            foreach (var submission in await _songSubmissionRepository.GetSongSubmissionsAsync("DateCreated", false, 0,
-                         -1, predicate: e => e.RepresentationId == song.Id))
+            foreach (var submission in await _songSubmissionRepository.GetSongSubmissionsAsync(
+                         new List<string> { "DateCreated" }, new List<bool> { false }, 0, -1,
+                         predicate: e => e.RepresentationId == song.Id))
             {
                 submission.File = song.File;
                 submission.FileChecksum = song.FileChecksum;
@@ -71,7 +73,8 @@ public class FileMigrationService : IHostedService
                 await _songSubmissionRepository.UpdateSongSubmissionAsync(submission);
             }
 
-            var charts = await _songRepository.GetSongChartsAsync(song.Id, "DateCreated", false, 0, -1);
+            var charts = await _songRepository.GetSongChartsAsync(song.Id, new List<string> { "DateCreated" },
+                new List<bool> { false }, 0, -1);
             var j = 0;
             foreach (var chart in charts)
             {
@@ -80,8 +83,9 @@ public class FileMigrationService : IHostedService
                 if (chart.File == null) continue;
                 (chart.File, chart.FileChecksum) =
                     await MigrateFileAsync<Chart>(chart.File, chart.Title ?? song.Title, cancellationToken);
-                foreach (var submission in await _chartSubmissionRepository.GetChartSubmissionsAsync("DateCreated",
-                             false, 0, -1, predicate: e => e.RepresentationId == chart.Id))
+                foreach (var submission in await _chartSubmissionRepository.GetChartSubmissionsAsync(
+                             new List<string> { "DateCreated" }, new List<bool> { false }, 0, -1,
+                             predicate: e => e.RepresentationId == chart.Id))
                 {
                     submission.File = chart.File;
                     submission.FileChecksum = chart.FileChecksum;

@@ -55,7 +55,7 @@ public class NotificationController : Controller
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<NotificationDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
-    public async Task<IActionResult> GetNotifications([FromQuery] ArrayWithTimeRequestDto dto,
+    public async Task<IActionResult> GetNotifications([FromQuery] ArrayRequestDto dto,
         [FromQuery] NotificationRequestDto notificationDto, [FromQuery] NotificationFilterDto? filterDto = null)
     {
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
@@ -95,7 +95,7 @@ public class NotificationController : Controller
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
-    public async Task<IActionResult> ReadNotifications([FromQuery] ArrayWithTimeRequestDto dto,
+    public async Task<IActionResult> ReadNotifications([FromQuery] ArrayRequestDto dto,
         [FromQuery] NotificationRequestDto notificationDto, [FromQuery] NotificationFilterDto? filterDto = null)
     {
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;

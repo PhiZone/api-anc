@@ -6,15 +6,14 @@ namespace PhiZoneApi.Dtos.Requests;
 public class ArrayRequestDto
 {
     /// <summary>
-    ///     The field by which the result is sorted. Defaults to <c>Id</c>.
+    ///     The field(s) by which the result is sorted.
     /// </summary>
-    [MaxLength(2000, ErrorMessage = ResponseCodes.ValueTooLong)]
-    public string Order { get; set; } = "Id";
+    public List<string> Order { get; set; } = new();
 
     /// <summary>
-    ///     Whether or not the result is sorted in descending order. Defaults to <c>false</c>.
+    ///     Whether or not the result is sorted in descending order on each field.
     /// </summary>
-    public bool Desc { get; set; } = false;
+    public List<bool> Desc { get; set; } = new();
 
     /// <summary>
     ///     The page number. Defaults to 1.

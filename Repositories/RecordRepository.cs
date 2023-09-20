@@ -16,7 +16,7 @@ public class RecordRepository : IRecordRepository
         _context = context;
     }
 
-    public async Task<ICollection<Record>> GetRecordsAsync(string order, bool desc, int position, int take,
+    public async Task<ICollection<Record>> GetRecordsAsync(List<string> order, List<bool> desc, int position, int take,
         Expression<Func<Record, bool>>? predicate = null)
     {
         var result = _context.Records.OrderBy(order, desc);

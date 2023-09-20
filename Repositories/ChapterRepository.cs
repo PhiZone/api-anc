@@ -19,7 +19,7 @@ public class ChapterRepository : IChapterRepository
         _context = context;
     }
 
-    public async Task<ICollection<Chapter>> GetChaptersAsync(string order, bool desc, int position, int take,
+    public async Task<ICollection<Chapter>> GetChaptersAsync(List<string> order, List<bool> desc, int position, int take,
         string? search = null, Expression<Func<Chapter, bool>>? predicate = null)
     {
         var result = _context.Chapters.OrderBy(order, desc);
@@ -44,7 +44,7 @@ public class ChapterRepository : IChapterRepository
         return (await _context.Chapters.FirstOrDefaultAsync(chapter => chapter.Id == id))!;
     }
 
-    public async Task<ICollection<Admission>> GetChapterSongsAsync(Guid id, string order, bool desc, int position,
+    public async Task<ICollection<Admission>> GetChapterSongsAsync(Guid id, List<string> order, List<bool> desc, int position,
         int take, string? search = null, Expression<Func<Admission, bool>>? predicate = null)
     {
         var result = _context.Admissions

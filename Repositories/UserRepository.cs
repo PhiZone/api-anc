@@ -18,7 +18,7 @@ public class UserRepository : IUserRepository
         _context = context;
     }
 
-    public async Task<ICollection<User>> GetUsersAsync(string order, bool desc, int position, int take,
+    public async Task<ICollection<User>> GetUsersAsync(List<string> order, List<bool> desc, int position, int take,
         string? search = null, Expression<Func<User, bool>>? predicate = null)
     {
         var result = _context.Users.OrderBy(order, desc);

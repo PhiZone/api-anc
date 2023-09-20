@@ -16,7 +16,7 @@ public class AuthorshipRepository : IAuthorshipRepository
         _context = context;
     }
 
-    public async Task<ICollection<Authorship>> GetResourcesAsync(int authorId, string order, bool desc, int position,
+    public async Task<ICollection<Authorship>> GetResourcesAsync(int authorId, List<string> order, List<bool> desc, int position,
         int take, Expression<Func<Authorship, bool>>? predicate = null)
     {
         var result = _context.Authorships.Where(authorship => authorship.AuthorId == authorId).OrderBy(order, desc);
@@ -25,7 +25,7 @@ public class AuthorshipRepository : IAuthorshipRepository
         return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
 
-    public async Task<ICollection<Authorship>> GetAuthorsAsync(Guid resourceId, string order, bool desc, int position,
+    public async Task<ICollection<Authorship>> GetAuthorsAsync(Guid resourceId, List<string> order, List<bool> desc, int position,
         int take, Expression<Func<Authorship, bool>>? predicate = null)
     {
         var result = _context.Authorships.Where(authorship => authorship.ResourceId == resourceId).OrderBy(order, desc);
@@ -34,7 +34,7 @@ public class AuthorshipRepository : IAuthorshipRepository
         return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
 
-    public async Task<ICollection<Authorship>> GetAuthorshipsAsync(string order, bool desc, int position, int take,
+    public async Task<ICollection<Authorship>> GetAuthorshipsAsync(List<string> order, List<bool> desc, int position, int take,
         Expression<Func<Authorship, bool>>? predicate = null)
     {
         var result = _context.Authorships.OrderBy(order, desc);

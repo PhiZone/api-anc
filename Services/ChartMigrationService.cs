@@ -46,12 +46,12 @@ public class ChartMigrationService : IHostedService
 
     private async Task MigrateChartsAsync()
     {
-        var charts = await _chartRepository.GetChartsAsync("DateCreated", false, 0, -1);
+        var charts = await _chartRepository.GetChartsAsync(new List<string> {"DateCreated"}, new List<bool> {false}, 0, -1);
         foreach (var chart in charts)
         {
             _logger.LogInformation(LogEvents.ChartMigration, "Migrating Chart #{Id}", chart.Id);
             var records =
-                await _recordRepository.GetRecordsAsync("DateCreated", false, 0, -1, e => e.ChartId == chart.Id);
+                await _recordRepository.GetRecordsAsync(new List<string> {"DateCreated"}, new List<bool> {false}, 0, -1, e => e.ChartId == chart.Id);
             foreach (var record in records)
             {
                 var rksFactor = _recordService.CalculateRksFactor(record.PerfectJudgment, record.GoodJudgment);
