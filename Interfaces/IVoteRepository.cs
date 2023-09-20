@@ -5,7 +5,7 @@ namespace PhiZoneApi.Interfaces;
 
 public interface IVoteRepository
 {
-    Task<ICollection<Vote>> GetVotesAsync(string order, bool desc, int position, int take,
+    Task<ICollection<Vote>> GetVotesAsync(List<string> order, List<bool> desc, int position, int take,
         Expression<Func<Vote, bool>>? predicate = null);
 
     Task<Vote> GetVoteAsync(Guid id);

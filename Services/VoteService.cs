@@ -95,7 +95,7 @@ public class VoteService : IVoteService
 
     public async Task<bool> UpdateChartAsync(Chart chart)
     {
-        var votes = await _voteRepository.GetVotesAsync("DateCreated", false, 0, -1, vote => vote.ChartId == chart.Id);
+        var votes = await _voteRepository.GetVotesAsync(new List<string> {"DateCreated"}, new List<bool> {false}, 0, -1, vote => vote.ChartId == chart.Id);
         var amount = votes.Sum(vote => vote.Multiplier);
         var r = GetReliability(amount);
         chart.Score = votes.Sum(vote => vote.Total * vote.Multiplier) / 6;

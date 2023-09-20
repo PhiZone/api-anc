@@ -5,41 +5,44 @@ namespace PhiZoneApi.Utils;
 
 public static class LinqUtil
 {
-    public static IQueryable<T> OrderBy<T>(this IQueryable<T> query, string field, bool desc)
+    public static IQueryable<T> OrderBy<T>(this IQueryable<T> query, List<string> fields, List<bool> desc)
     {
-        if (string.IsNullOrWhiteSpace(field)) return query;
-        var propInfo = GetPropertyInfo(typeof(T), field);
-        var expr = GetOrderExpression(typeof(T), propInfo);
-        if (desc)
+        if (fields.Count == 0)
         {
-            var method = typeof(Queryable).GetMethods()
-                .FirstOrDefault(m => m.Name == "OrderByDescending" && m.GetParameters().Length == 2);
-            var genericMethod = method!.MakeGenericMethod(typeof(T), propInfo.PropertyType);
-            return (IQueryable<T>)genericMethod.Invoke(null, new object[] { query, expr })!;
+            fields = new List<string> { "DateCreated" };
         }
-        else
+
+        var sourceType = typeof(T);
+        var parameter = Expression.Parameter(sourceType, "x");
+        var orderedQuery = query;
+
+        for (var i = 0; i < fields.Count; i++)
         {
-            var method = typeof(Queryable).GetMethods()
-                .FirstOrDefault(m => m.Name == "OrderBy" && m.GetParameters().Length == 2);
-            var genericMethod = method!.MakeGenericMethod(typeof(T), propInfo.PropertyType);
-            return (IQueryable<T>)genericMethod.Invoke(null, new object[] { query, expr })!;
+            
+            var field = fields[i];
+            var isDescending = desc.Count > i && desc[i];
+
+            if (string.IsNullOrWhiteSpace(field)) continue;
+
+            var propInfo = GetPropertyInfo(sourceType, field);
+            var propertyExpr = Expression.Property(parameter, propInfo);
+            var lambdaExpr = Expression.Lambda(propertyExpr, parameter);
+
+            var orderByMethod = typeof(Queryable).GetMethods()
+                .FirstOrDefault(m =>
+                    m.Name == $"{(i == 0 ? "Order" : "Then")}{(isDescending ? "ByDescending" : "By")}" &&
+                    m.GetParameters().Length == 2)!.MakeGenericMethod(typeof(T), propInfo.PropertyType);
+
+            orderedQuery = (IQueryable<T>)orderByMethod.Invoke(null, new object[] { orderedQuery, lambdaExpr })!;
         }
+
+        return orderedQuery;
     }
 
     private static PropertyInfo GetPropertyInfo(Type objType, string name)
     {
         var properties = objType.GetProperties();
         var matchedProperty = properties.FirstOrDefault(p => p.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
-        if (matchedProperty == null) throw new ArgumentException("No such property");
-
-        return matchedProperty;
-    }
-
-    private static LambdaExpression GetOrderExpression(Type objType, MemberInfo pi)
-    {
-        var paramExpr = Expression.Parameter(objType);
-        var propAccess = Expression.PropertyOrField(paramExpr, pi.Name);
-        var expr = Expression.Lambda(propAccess, paramExpr);
-        return expr;
+        return matchedProperty != null ? matchedProperty : properties[0];
     }
 }

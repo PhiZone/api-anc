@@ -18,7 +18,7 @@ public class ApplicationRepository : IApplicationRepository
         _context = context;
     }
 
-    public async Task<ICollection<Application>> GetApplicationsAsync(string order, bool desc, int position, int take,
+    public async Task<ICollection<Application>> GetApplicationsAsync(List<string> order, List<bool> desc, int position, int take,
         string? search = null, Expression<Func<Application, bool>>? predicate = null)
     {
         var result = _context.Applications.OrderBy(order, desc);

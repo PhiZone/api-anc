@@ -68,7 +68,7 @@ public class AnnouncementController : Controller
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<AnnouncementDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetAnnouncements([FromQuery] ArrayWithTimeRequestDto dto,
+    public async Task<IActionResult> GetAnnouncements([FromQuery] ArrayRequestDto dto,
         [FromQuery] AnnouncementFilterDto? filterDto = null)
     {
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
@@ -291,7 +291,7 @@ public class AnnouncementController : Controller
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<LikeDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetAnnouncementLikes([FromRoute] Guid id, [FromQuery] ArrayWithTimeRequestDto dto)
+    public async Task<IActionResult> GetAnnouncementLikes([FromRoute] Guid id, [FromQuery] ArrayRequestDto dto)
     {
         dto.PerPage = dto.PerPage > 0 && dto.PerPage < _dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
             dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : _dataSettings.Value.PaginationMaxPerPage;
@@ -400,7 +400,7 @@ public class AnnouncementController : Controller
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetAnnouncementComments([FromRoute] Guid id,
-        [FromQuery] ArrayWithTimeRequestDto dto)
+        [FromQuery] ArrayRequestDto dto)
     {
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         dto.PerPage = dto.PerPage > 0 && dto.PerPage < _dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :

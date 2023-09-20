@@ -87,7 +87,7 @@ public class SongController : Controller
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<SongDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetSongs([FromQuery] ArrayWithTimeRequestDto dto,
+    public async Task<IActionResult> GetSongs([FromQuery] ArrayRequestDto dto,
         [FromQuery] SongFilterDto? filterDto = null)
     {
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
@@ -164,7 +164,7 @@ public class SongController : Controller
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<SongDto>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetRandomSong([FromQuery] ArrayWithTimeRequestDto dto,
+    public async Task<IActionResult> GetRandomSong([FromQuery] ArrayRequestDto dto,
         [FromQuery] SongFilterDto? filterDto = null)
     {
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
@@ -713,7 +713,7 @@ public class SongController : Controller
         Type = typeof(ResponseDto<IEnumerable<AdmissionDto<ChapterDto, SongDto>>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetSongAdmissions([FromRoute] Guid id, [FromQuery] ArrayWithTimeRequestDto dto,
+    public async Task<IActionResult> GetSongAdmissions([FromRoute] Guid id, [FromQuery] ArrayRequestDto dto,
         [FromQuery] AdmissionFilterDto? filterDto = null)
     {
         if (!await _songRepository.SongExistsAsync(id))
@@ -992,7 +992,7 @@ public class SongController : Controller
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<ChartDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetSongCharts([FromRoute] Guid id, [FromQuery] ArrayWithTimeRequestDto dto,
+    public async Task<IActionResult> GetSongCharts([FromRoute] Guid id, [FromQuery] ArrayRequestDto dto,
         [FromQuery] ChartFilterDto? filterDto = null)
     {
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
@@ -1046,7 +1046,7 @@ public class SongController : Controller
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<LikeDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetSongLikes([FromRoute] Guid id, [FromQuery] ArrayWithTimeRequestDto dto)
+    public async Task<IActionResult> GetSongLikes([FromRoute] Guid id, [FromQuery] ArrayRequestDto dto)
     {
         dto.PerPage = dto.PerPage > 0 && dto.PerPage < _dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
             dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : _dataSettings.Value.PaginationMaxPerPage;
@@ -1188,7 +1188,7 @@ public class SongController : Controller
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<CommentDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetSongComments([FromRoute] Guid id, [FromQuery] ArrayWithTimeRequestDto dto)
+    public async Task<IActionResult> GetSongComments([FromRoute] Guid id, [FromQuery] ArrayRequestDto dto)
     {
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         dto.PerPage = dto.PerPage > 0 && dto.PerPage < _dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :

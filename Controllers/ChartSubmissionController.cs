@@ -96,7 +96,7 @@ public class ChartSubmissionController : Controller
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetChartSubmissions([FromQuery] ArrayWithTimeRequestDto dto,
+    public async Task<IActionResult> GetChartSubmissions([FromQuery] ArrayRequestDto dto,
         [FromQuery] ChartSubmissionFilterDto? filterDto = null)
     {
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
@@ -685,7 +685,7 @@ public class ChartSubmissionController : Controller
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetChartSubmissionAssets([FromRoute] Guid id,
-        [FromQuery] ArrayWithTimeRequestDto dto, [FromQuery] ChartAssetSubmissionFilterDto? filterDto = null)
+        [FromQuery] ArrayRequestDto dto, [FromQuery] ChartAssetSubmissionFilterDto? filterDto = null)
     {
         if (!await _chartSubmissionRepository.ChartSubmissionExistsAsync(id))
             return NotFound(new ResponseDto<object>
@@ -1161,7 +1161,7 @@ public class ChartSubmissionController : Controller
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetChartSubmissionVotes([FromRoute] Guid id,
-        [FromQuery] ArrayWithTimeRequestDto dto)
+        [FromQuery] ArrayRequestDto dto)
     {
         dto.PerPage = dto.PerPage > 0 && dto.PerPage < _dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
             dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : _dataSettings.Value.PaginationMaxPerPage;

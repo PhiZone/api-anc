@@ -49,7 +49,7 @@ public class UserRelationController : Controller
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<UserRelationDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetUserRelations([FromQuery] ArrayWithTimeRequestDto dto,
+    public async Task<IActionResult> GetUserRelations([FromQuery] ArrayRequestDto dto,
         [FromQuery] UserRelationFilterDto? filterDto = null)
     {
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);

@@ -73,7 +73,7 @@ public class ChapterController : Controller
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<ChapterDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetChapters([FromQuery] ArrayWithTimeRequestDto dto,
+    public async Task<IActionResult> GetChapters([FromQuery] ArrayRequestDto dto,
         [FromQuery] ChapterFilterDto? filterDto = null)
     {
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
@@ -359,7 +359,7 @@ public class ChapterController : Controller
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<SongAdmitteeDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetChapterSongs([FromRoute] Guid id, [FromQuery] ArrayWithTimeRequestDto dto,
+    public async Task<IActionResult> GetChapterSongs([FromRoute] Guid id, [FromQuery] ArrayRequestDto dto,
         [FromQuery] AdmissionFilterDto? filterDto = null)
     {
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
@@ -414,7 +414,7 @@ public class ChapterController : Controller
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<LikeDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetChapterLikes([FromRoute] Guid id, [FromQuery] ArrayWithTimeRequestDto dto)
+    public async Task<IActionResult> GetChapterLikes([FromRoute] Guid id, [FromQuery] ArrayRequestDto dto)
     {
         dto.PerPage = dto.PerPage > 0 && dto.PerPage < _dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
             dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : _dataSettings.Value.PaginationMaxPerPage;
@@ -555,7 +555,7 @@ public class ChapterController : Controller
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<CommentDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetChapterComments([FromRoute] Guid id, [FromQuery] ArrayWithTimeRequestDto dto)
+    public async Task<IActionResult> GetChapterComments([FromRoute] Guid id, [FromQuery] ArrayRequestDto dto)
     {
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         dto.PerPage = dto.PerPage > 0 && dto.PerPage < _dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :

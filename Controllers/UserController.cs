@@ -466,7 +466,7 @@ public class UserController : Controller
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<UserDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetFollowers([FromRoute] int id, [FromQuery] ArrayWithTimeRequestDto dto,
+    public async Task<IActionResult> GetFollowers([FromRoute] int id, [FromQuery] ArrayRequestDto dto,
         [FromQuery] UserRelationFilterDto? filterDto = null)
     {
         var user = await _userManager.FindByIdAsync(id.ToString());
@@ -515,7 +515,7 @@ public class UserController : Controller
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<UserDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetFollowees([FromRoute] int id, [FromQuery] ArrayWithTimeRequestDto dto,
+    public async Task<IActionResult> GetFollowees([FromRoute] int id, [FromQuery] ArrayRequestDto dto,
         [FromQuery] UserRelationFilterDto? filterDto = null)
     {
         var user = await _userManager.FindByIdAsync(id.ToString());
@@ -687,7 +687,7 @@ public class UserController : Controller
     public async Task<IActionResult> GetBestRecords([FromRoute] int id)
     {
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        var phi1 = (await _recordRepository.GetRecordsAsync("Rks", true, 0, 1,
+        var phi1 = (await _recordRepository.GetRecordsAsync(new List<string> {"Rks"}, new List<bool> {true}, 0, 1,
             r => r.OwnerId == id && r.Score == 1000000 && r.Chart.IsRanked)).FirstOrDefault();
         var phi1Dto = phi1 != null ? await _dtoMapper.MapRecordAsync<RecordDto>(phi1) : null;
         var b19 = await _recordService.GetBest19(id);

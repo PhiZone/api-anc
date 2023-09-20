@@ -18,7 +18,7 @@ public class ChartRepository : IChartRepository
         _context = context;
     }
 
-    public async Task<ICollection<Chart>> GetChartsAsync(string order, bool desc, int position, int take,
+    public async Task<ICollection<Chart>> GetChartsAsync(List<string> order, List<bool> desc, int position, int take,
         string? search = null, Expression<Func<Chart, bool>>? predicate = null)
     {
         var result = _context.Charts.OrderBy(order, desc);
@@ -74,7 +74,7 @@ public class ChartRepository : IChartRepository
         return await result.FirstOrDefaultAsync();
     }
 
-    public async Task<ICollection<Record>> GetChartRecordsAsync(Guid id, string order, bool desc, int position,
+    public async Task<ICollection<Record>> GetChartRecordsAsync(Guid id, List<string> order, List<bool> desc, int position,
         int take, Expression<Func<Record, bool>>? predicate = null)
     {
         var chart = (await _context.Charts.FirstOrDefaultAsync(chart => chart.Id == id))!;

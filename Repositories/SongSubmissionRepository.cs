@@ -18,7 +18,7 @@ public class SongSubmissionRepository : ISongSubmissionRepository
         _context = context;
     }
 
-    public async Task<ICollection<SongSubmission>> GetSongSubmissionsAsync(string order, bool desc, int position,
+    public async Task<ICollection<SongSubmission>> GetSongSubmissionsAsync(List<string> order, List<bool> desc, int position,
         int take, string? search = null, Expression<Func<SongSubmission, bool>>? predicate = null)
     {
         var result = _context.SongSubmissions.OrderBy(order, desc);
@@ -39,7 +39,7 @@ public class SongSubmissionRepository : ISongSubmissionRepository
         return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
 
-    public async Task<ICollection<SongSubmission>> GetUserSongSubmissionsAsync(int userId, string order, bool desc,
+    public async Task<ICollection<SongSubmission>> GetUserSongSubmissionsAsync(int userId, List<string> order, List<bool> desc,
         int position, int take, string? search = null, Expression<Func<SongSubmission, bool>>? predicate = null)
     {
         var result = _context.SongSubmissions.Where(song => song.OwnerId == userId).OrderBy(order, desc);

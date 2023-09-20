@@ -5,13 +5,13 @@ namespace PhiZoneApi.Interfaces;
 
 public interface IUserRelationRepository
 {
-    Task<ICollection<UserRelation>> GetFollowersAsync(int userId, string order, bool desc, int position, int take,
+    Task<ICollection<UserRelation>> GetFollowersAsync(int userId, List<string> order, List<bool> desc, int position, int take,
         Expression<Func<UserRelation, bool>>? predicate = null);
 
-    Task<ICollection<UserRelation>> GetFolloweesAsync(int userId, string order, bool desc, int position, int take,
+    Task<ICollection<UserRelation>> GetFolloweesAsync(int userId, List<string> order, List<bool> desc, int position, int take,
         Expression<Func<UserRelation, bool>>? predicate = null);
 
-    Task<ICollection<UserRelation>> GetRelationsAsync(string order, bool desc, int position, int take,
+    Task<ICollection<UserRelation>> GetRelationsAsync(List<string> order, List<bool> desc, int position, int take,
         Expression<Func<UserRelation, bool>>? predicate = null);
 
     Task<UserRelation> GetRelationAsync(int followerId, int followeeId);

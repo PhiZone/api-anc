@@ -5,7 +5,7 @@ namespace PhiZoneApi.Interfaces;
 
 public interface IPetChoiceRepository
 {
-    Task<ICollection<PetChoice>> GetPetChoicesAsync(string order, bool desc, int position, int take,
+    Task<ICollection<PetChoice>> GetPetChoicesAsync(List<string> order, List<bool> desc, int position, int take,
         string? search = null, Expression<Func<PetChoice, bool>>? predicate = null);
 
     Task<PetChoice> GetPetChoiceAsync(Guid id);

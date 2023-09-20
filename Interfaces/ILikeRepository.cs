@@ -5,7 +5,7 @@ namespace PhiZoneApi.Interfaces;
 
 public interface ILikeRepository
 {
-    Task<ICollection<Like>> GetLikesAsync(string order, bool desc, int position, int take,
+    Task<ICollection<Like>> GetLikesAsync(List<string> order, List<bool> desc, int position, int take,
         Expression<Func<Like, bool>>? predicate = null);
 
     Task<Like> GetLikeAsync(Guid id);

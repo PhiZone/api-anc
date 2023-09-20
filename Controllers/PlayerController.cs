@@ -71,7 +71,7 @@ public class PlayerController : Controller
     [ProducesResponseType(StatusCodes.Status200OK,
         Type = typeof(ResponseDto<IEnumerable<PlayConfigurationResponseDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetPlayConfigurations([FromQuery] ArrayWithTimeRequestDto dto,
+    public async Task<IActionResult> GetPlayConfigurations([FromQuery] ArrayRequestDto dto,
         [FromQuery] PlayConfigurationFilterDto? filterDto = null)
     {
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;

@@ -61,7 +61,7 @@ public class ReplyController : Controller
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<ReplyDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetReplies([FromQuery] ArrayWithTimeRequestDto dto,
+    public async Task<IActionResult> GetReplies([FromQuery] ArrayRequestDto dto,
         [FromQuery] ReplyFilterDto? filterDto = null)
     {
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
@@ -178,7 +178,7 @@ public class ReplyController : Controller
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<LikeDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetReplyLikes([FromRoute] Guid id, [FromQuery] ArrayWithTimeRequestDto dto)
+    public async Task<IActionResult> GetReplyLikes([FromRoute] Guid id, [FromQuery] ArrayRequestDto dto)
     {
         dto.PerPage = dto.PerPage > 0 && dto.PerPage < _dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
             dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : _dataSettings.Value.PaginationMaxPerPage;

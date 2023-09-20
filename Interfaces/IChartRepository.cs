@@ -7,14 +7,14 @@ namespace PhiZoneApi.Interfaces;
 
 public interface IChartRepository
 {
-    Task<ICollection<Chart>> GetChartsAsync(string order, bool desc, int position, int take, string? search = null,
+    Task<ICollection<Chart>> GetChartsAsync(List<string> order, List<bool> desc, int position, int take, string? search = null,
         Expression<Func<Chart, bool>>? predicate = null);
 
     Task<Chart> GetChartAsync(Guid id);
 
     Task<Chart?> GetRandomChartAsync(string? search = null, Expression<Func<Chart, bool>>? predicate = null);
 
-    Task<ICollection<Record>> GetChartRecordsAsync(Guid id, string order, bool desc, int position, int take,
+    Task<ICollection<Record>> GetChartRecordsAsync(Guid id, List<string> order, List<bool> desc, int position, int take,
         Expression<Func<Record, bool>>? predicate = null);
 
     Task<bool> ChartExistsAsync(Guid id);
