@@ -5,12 +5,14 @@ namespace PhiZoneApi.Interfaces;
 
 public interface IChapterRepository
 {
-    Task<ICollection<Chapter>> GetChaptersAsync(List<string> order, List<bool> desc, int position, int take, string? search = null,
+    Task<ICollection<Chapter>> GetChaptersAsync(List<string> order, List<bool> desc, int position, int take,
+        string? search = null,
         Expression<Func<Chapter, bool>>? predicate = null);
 
     Task<Chapter> GetChapterAsync(Guid id);
 
-    Task<ICollection<Admission>> GetChapterSongsAsync(Guid id, List<string> order, List<bool> desc, int position, int take,
+    Task<ICollection<Admission>> GetChapterSongsAsync(Guid id, List<string> order, List<bool> desc, int position,
+        int take,
         string? search = null, Expression<Func<Admission, bool>>? predicate = null);
 
     Task<bool> ChapterExistsAsync(Guid id);

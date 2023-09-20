@@ -63,7 +63,8 @@ public class SongRepository : ISongRepository
         return await result.FirstOrDefaultAsync();
     }
 
-    public async Task<ICollection<Chart>> GetSongChartsAsync(Guid id, List<string> order, List<bool> desc, int position, int take,
+    public async Task<ICollection<Chart>> GetSongChartsAsync(Guid id, List<string> order, List<bool> desc, int position,
+        int take,
         string? search = null, Expression<Func<Chart, bool>>? predicate = null)
     {
         var song = (await _context.Songs.FirstOrDefaultAsync(song => song.Id == id))!;

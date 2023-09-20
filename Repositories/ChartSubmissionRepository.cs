@@ -18,7 +18,8 @@ public class ChartSubmissionRepository : IChartSubmissionRepository
         _context = context;
     }
 
-    public async Task<ICollection<ChartSubmission>> GetChartSubmissionsAsync(List<string> order, List<bool> desc, int position,
+    public async Task<ICollection<ChartSubmission>> GetChartSubmissionsAsync(List<string> order, List<bool> desc,
+        int position,
         int take, string? search = null, Expression<Func<ChartSubmission, bool>>? predicate = null)
     {
         var result = _context.ChartSubmissions.OrderBy(order, desc);
@@ -50,7 +51,8 @@ public class ChartSubmissionRepository : IChartSubmissionRepository
         return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
 
-    public async Task<ICollection<ChartSubmission>> GetUserChartSubmissionsAsync(int userId, List<string> order, List<bool> desc,
+    public async Task<ICollection<ChartSubmission>> GetUserChartSubmissionsAsync(int userId, List<string> order,
+        List<bool> desc,
         int position, int take, string? search = null, Expression<Func<ChartSubmission, bool>>? predicate = null)
     {
         var result = _context.ChartSubmissions.Where(chart => chart.OwnerId == userId).OrderBy(order, desc);

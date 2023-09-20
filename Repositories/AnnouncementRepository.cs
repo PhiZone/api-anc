@@ -18,7 +18,8 @@ public class AnnouncementRepository : IAnnouncementRepository
         _context = context;
     }
 
-    public async Task<ICollection<Announcement>> GetAnnouncementsAsync(List<string> order, List<bool> desc, int position, int take,
+    public async Task<ICollection<Announcement>> GetAnnouncementsAsync(List<string> order, List<bool> desc,
+        int position, int take,
         string? search = null, Expression<Func<Announcement, bool>>? predicate = null)
     {
         var result = _context.Announcements.OrderBy(order, desc);

@@ -267,7 +267,8 @@ public class RecordController : Controller
         var highestAccuracy = 0d;
         if (await _recordRepository.CountRecordsAsync(record =>
                 record.ChartId == info.ChartId && record.OwnerId == player.Id) > 0)
-            highestAccuracy = (await _recordRepository.GetRecordsAsync(new List<string> {"Accuracy"}, new List<bool> {true}, 0, 1,
+            highestAccuracy = (await _recordRepository.GetRecordsAsync(new List<string> { "Accuracy" },
+                new List<bool> { true }, 0, 1,
                 record => record.ChartId == info.ChartId && record.OwnerId == player.Id)).FirstOrDefault()!.Accuracy;
 
         _logger.LogInformation(LogEvents.RecordInfo,
@@ -321,7 +322,7 @@ public class RecordController : Controller
         }
 
         var phiRks =
-            (await _recordRepository.GetRecordsAsync(new List<string> {"Rks"}, new List<bool> {true}, 0, 1,
+            (await _recordRepository.GetRecordsAsync(new List<string> { "Rks" }, new List<bool> { true }, 0, 1,
                 r => r.OwnerId == player.Id && r.Score == 1000000 && r.Chart.IsRanked)).FirstOrDefault()
             ?.Rks ?? 0d;
         var best19Rks = (await _recordService.GetBest19(player.Id)).Sum(r => r.Rks);

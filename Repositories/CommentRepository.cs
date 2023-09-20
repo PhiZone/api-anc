@@ -16,7 +16,8 @@ public class CommentRepository : ICommentRepository
         _context = context;
     }
 
-    public async Task<ICollection<Comment>> GetCommentsAsync(List<string> order, List<bool> desc, int position, int take,
+    public async Task<ICollection<Comment>> GetCommentsAsync(List<string> order, List<bool> desc, int position,
+        int take,
         Expression<Func<Comment, bool>>? predicate = null)
     {
         var result = _context.Comments.OrderBy(order, desc);
@@ -30,7 +31,8 @@ public class CommentRepository : ICommentRepository
         return (await _context.Comments.FirstOrDefaultAsync(like => like.Id == id))!;
     }
 
-    public async Task<ICollection<Reply>> GetCommentRepliesAsync(Guid id, List<string> order, List<bool> desc, int position,
+    public async Task<ICollection<Reply>> GetCommentRepliesAsync(Guid id, List<string> order, List<bool> desc,
+        int position,
         int take, Expression<Func<Reply, bool>>? predicate = null)
     {
         var comment = (await _context.Comments.FirstOrDefaultAsync(comment => comment.Id == id))!;

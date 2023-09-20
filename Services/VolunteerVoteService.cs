@@ -69,7 +69,8 @@ public class VolunteerVoteService : IVolunteerVoteService
 
     private async Task<bool> UpdateChartSubmissionAsync(ChartSubmission chartSubmission)
     {
-        var votes = await _volunteerVoteRepository.GetVolunteerVotesAsync(new List<string> {"DateCreated"}, new List<bool> {false}, 0, -1,
+        var votes = await _volunteerVoteRepository.GetVolunteerVotesAsync(new List<string> { "DateCreated" },
+            new List<bool> { false }, 0, -1,
             vote => vote.ChartId == chartSubmission.Id && vote.DateCreated > chartSubmission.DateUpdated);
         if (_voteScoreDictionary.TryGetValue(votes.Count, out var scoreRange))
         {

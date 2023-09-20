@@ -16,7 +16,8 @@ public class ChartAssetSubmissionRepository : IChartAssetSubmissionRepository
         _context = context;
     }
 
-    public async Task<ICollection<ChartAssetSubmission>> GetChartAssetSubmissionsAsync(List<string> order, List<bool> desc,
+    public async Task<ICollection<ChartAssetSubmission>> GetChartAssetSubmissionsAsync(List<string> order,
+        List<bool> desc,
         int position, int take,
         Expression<Func<ChartAssetSubmission, bool>>? predicate = null)
     {

@@ -61,7 +61,8 @@ public class RecordService : IRecordService
         var charts = new List<Guid>();
         for (var position = 0; result.Count < 19; position += 30)
         {
-            var records = await _recordRepository.GetRecordsAsync(new List<string> {"Rks"}, new List<bool> {true}, position, 30,
+            var records = await _recordRepository.GetRecordsAsync(new List<string> { "Rks" }, new List<bool> { true },
+                position, 30,
                 record => record.OwnerId == userId && record.Chart.IsRanked);
             if (records.Count == 0) break;
             foreach (var record in records)

@@ -17,7 +17,8 @@ public class UserRelationRepository : IUserRelationRepository
         _context = context;
     }
 
-    public async Task<ICollection<UserRelation>> GetFollowersAsync(int userId, List<string> order, List<bool> desc, int position,
+    public async Task<ICollection<UserRelation>> GetFollowersAsync(int userId, List<string> order, List<bool> desc,
+        int position,
         int take, Expression<Func<UserRelation, bool>>? predicate = null)
     {
         var result = _context.UserRelations
@@ -28,7 +29,8 @@ public class UserRelationRepository : IUserRelationRepository
         return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
 
-    public async Task<ICollection<UserRelation>> GetFolloweesAsync(int userId, List<string> order, List<bool> desc, int position,
+    public async Task<ICollection<UserRelation>> GetFolloweesAsync(int userId, List<string> order, List<bool> desc,
+        int position,
         int take, Expression<Func<UserRelation, bool>>? predicate = null)
     {
         var result = _context.UserRelations
@@ -39,7 +41,8 @@ public class UserRelationRepository : IUserRelationRepository
         return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
 
-    public async Task<ICollection<UserRelation>> GetRelationsAsync(List<string> order, List<bool> desc, int position, int take,
+    public async Task<ICollection<UserRelation>> GetRelationsAsync(List<string> order, List<bool> desc, int position,
+        int take,
         Expression<Func<UserRelation, bool>>? predicate = null)
     {
         var result = _context.UserRelations.OrderBy(order, desc);

@@ -5,7 +5,8 @@ namespace PhiZoneApi.Interfaces;
 
 public interface IPlayConfigurationRepository
 {
-    Task<ICollection<PlayConfiguration>> GetPlayConfigurationsAsync(List<string> order, List<bool> desc, int position, int take,
+    Task<ICollection<PlayConfiguration>> GetPlayConfigurationsAsync(List<string> order, List<bool> desc, int position,
+        int take,
         string? search = null, Expression<Func<PlayConfiguration, bool>>? predicate = null);
 
     Task<PlayConfiguration> GetPlayConfigurationAsync(Guid id);

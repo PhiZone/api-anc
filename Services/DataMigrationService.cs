@@ -299,7 +299,8 @@ public partial class DataMigrationService : IHostedService
                         e.Title == title && e.Subtitle == subtitle) > 0)
                 {
                     _chapterDictionary.Add(index,
-                        (await _chapterRepository.GetChaptersAsync(new List<string> {"DateCreated"}, new List<bool> {false}, 0, -1, null,
+                        (await _chapterRepository.GetChaptersAsync(new List<string> { "DateCreated" },
+                            new List<bool> { false }, 0, -1, null,
                             e => e.Title == title && e.Subtitle == subtitle)).FirstOrDefault()!.Id);
                     continue;
                 }
@@ -365,7 +366,8 @@ public partial class DataMigrationService : IHostedService
                         predicate: e => e.Title == title && e.AuthorName == authorName) > 0)
                 {
                     _songDictionary.Add(index,
-                        (await _songRepository.GetSongsAsync(new List<string> {"DateCreated"}, new List<bool> {false}, 0, -1, null,
+                        (await _songRepository.GetSongsAsync(new List<string> { "DateCreated" },
+                            new List<bool> { false }, 0, -1, null,
                             e => e.Title == title && e.AuthorName == authorName)).FirstOrDefault()!.Id);
                     continue;
                 }
@@ -517,7 +519,8 @@ public partial class DataMigrationService : IHostedService
                         e.OwnerId == _userDictionary[reader.GetInt32("owner_id")]) > 0)
                 {
                     _chartDictionary.Add(index,
-                        (await _chartRepository.GetChartsAsync(new List<string> {"DateCreated"}, new List<bool> {false}, 0, -1, null,
+                        (await _chartRepository.GetChartsAsync(new List<string> { "DateCreated" },
+                            new List<bool> { false }, 0, -1, null,
                             e => e.SongId == song.Id && e.LevelType == levelType && e.Level == level &&
                                  e.OwnerId == _userDictionary[reader.GetInt32("owner_id")])).FirstOrDefault()!.Id);
                     continue;
@@ -978,7 +981,8 @@ public partial class DataMigrationService : IHostedService
                         e.Title == title && e.AuthorName == reader.GetString("composer")) > 0)
                 {
                     _songSubmissionDictionary.Add(index,
-                        (await _songSubmissionRepository.GetSongSubmissionsAsync(new List<string> {"DateCreated"}, new List<bool> {false}, 0, -1, null,
+                        (await _songSubmissionRepository.GetSongSubmissionsAsync(new List<string> { "DateCreated" },
+                            new List<bool> { false }, 0, -1, null,
                             e => e.Title == title && e.AuthorName == reader.GetString("composer"))).FirstOrDefault()!
                         .Id);
                     continue;
@@ -1099,7 +1103,8 @@ public partial class DataMigrationService : IHostedService
                         e.OwnerId == _userDictionary[reader.GetInt32("uploader_id")]) > 0)
                 {
                     _chartSubmissionDictionary.Add(index,
-                        (await _chartSubmissionRepository.GetChartSubmissionsAsync(new List<string> {"DateCreated"}, new List<bool> {false}, 0, -1, null,
+                        (await _chartSubmissionRepository.GetChartSubmissionsAsync(new List<string> { "DateCreated" },
+                            new List<bool> { false }, 0, -1, null,
                             e =>
                                 e.SongId == (song != null ? song.Id : null) &&
                                 e.SongSubmissionId == (songSubmission != null ? songSubmission.Id : null) &&

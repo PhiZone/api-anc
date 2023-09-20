@@ -7,10 +7,7 @@ public static class LinqUtil
 {
     public static IQueryable<T> OrderBy<T>(this IQueryable<T> query, List<string> fields, List<bool> desc)
     {
-        if (fields.Count == 0)
-        {
-            fields = new List<string> { "DateCreated" };
-        }
+        if (fields.Count == 0) fields = new List<string> { "DateCreated" };
 
         var sourceType = typeof(T);
         var parameter = Expression.Parameter(sourceType, "x");
@@ -18,7 +15,6 @@ public static class LinqUtil
 
         for (var i = 0; i < fields.Count; i++)
         {
-            
             var field = fields[i];
             var isDescending = desc.Count > i && desc[i];
 

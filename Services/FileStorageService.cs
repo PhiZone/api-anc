@@ -71,20 +71,16 @@ public class FileStorageService : IFileStorageService
         input = chinese.Process(input);
         var dictionary = new Dictionary<List<char>, char>
         {
-            {new List<char>{'ā', 'á', 'ǎ', 'à', 'ɑ'}, 'a'},
-            {new List<char>{'ê', 'ē', 'é', 'ě', 'è'}, 'e'},
-            {new List<char>{'ī', 'í', 'ǐ', 'ì'}, 'i'},
-            {new List<char>{'ō', 'ó', 'ǒ', 'ò'}, 'o'},
-            {new List<char>{'ū', 'ú', 'ǔ', 'ù', 'ǖ', 'ǘ', 'ǚ', 'ǜ', 'ü'}, 'u'},
-            {new List<char>{'ń', 'ň'}, 'n'}
+            { new List<char> { 'ā', 'á', 'ǎ', 'à', 'ɑ' }, 'a' },
+            { new List<char> { 'ê', 'ē', 'é', 'ě', 'è' }, 'e' },
+            { new List<char> { 'ī', 'í', 'ǐ', 'ì' }, 'i' },
+            { new List<char> { 'ō', 'ó', 'ǒ', 'ò' }, 'o' },
+            { new List<char> { 'ū', 'ú', 'ǔ', 'ù', 'ǖ', 'ǘ', 'ǚ', 'ǜ', 'ü' }, 'u' },
+            { new List<char> { 'ń', 'ň' }, 'n' }
         };
         foreach (var entry in dictionary)
-        {
-            foreach (var character in entry.Key.Where(character => input.Contains(character)))
-            {
-                input = input.Replace(character, entry.Value);
-            }
-        }
+        foreach (var character in entry.Key.Where(character => input.Contains(character)))
+            input = input.Replace(character, entry.Value);
         var korean = new Korean.RevisedRomanization();
         input = korean.Process(input);
         var russian = new Russian.BgnPcgn();

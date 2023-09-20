@@ -32,6 +32,7 @@ public class SongSubmissionController : Controller
     private readonly IAuthorshipRepository _authorshipRepository;
     private readonly ICollaborationRepository _collaborationRepository;
     private readonly IOptions<DataSettings> _dataSettings;
+    private readonly IFeishuService _feishuService;
     private readonly IFileStorageService _fileStorageService;
     private readonly IFilterService _filterService;
     private readonly ILogger<SongSubmissionController> _logger;
@@ -42,7 +43,6 @@ public class SongSubmissionController : Controller
     private readonly ISongSubmissionRepository _songSubmissionRepository;
     private readonly ISubmissionService _submissionService;
     private readonly ITemplateService _templateService;
-    private readonly IFeishuService _feishuService;
     private readonly UserManager<User> _userManager;
 
     public SongSubmissionController(ISongSubmissionRepository songSubmissionRepository,

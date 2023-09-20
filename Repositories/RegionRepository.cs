@@ -68,7 +68,8 @@ public class RegionRepository : IRegionRepository
         return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
 
-    public async Task<ICollection<User>> GetRegionUsersAsync(string code, List<string> order, List<bool> desc, int position,
+    public async Task<ICollection<User>> GetRegionUsersAsync(string code, List<string> order, List<bool> desc,
+        int position,
         int take, string? search = null, Expression<Func<User, bool>>? predicate = null)
     {
         var region = (await _context.Regions.FirstOrDefaultAsync(region =>

@@ -687,7 +687,7 @@ public class UserController : Controller
     public async Task<IActionResult> GetBestRecords([FromRoute] int id)
     {
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        var phi1 = (await _recordRepository.GetRecordsAsync(new List<string> {"Rks"}, new List<bool> {true}, 0, 1,
+        var phi1 = (await _recordRepository.GetRecordsAsync(new List<string> { "Rks" }, new List<bool> { true }, 0, 1,
             r => r.OwnerId == id && r.Score == 1000000 && r.Chart.IsRanked)).FirstOrDefault();
         var phi1Dto = phi1 != null ? await _dtoMapper.MapRecordAsync<RecordDto>(phi1) : null;
         var b19 = await _recordService.GetBest19(id);

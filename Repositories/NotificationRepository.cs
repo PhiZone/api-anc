@@ -18,7 +18,8 @@ public class NotificationRepository : INotificationRepository
         _context = context;
     }
 
-    public async Task<ICollection<Notification>> GetNotificationsAsync(List<string> order, List<bool> desc, int position, int take,
+    public async Task<ICollection<Notification>> GetNotificationsAsync(List<string> order, List<bool> desc,
+        int position, int take,
         string? search = null, Expression<Func<Notification, bool>>? predicate = null)
     {
         var result = _context.Notifications.OrderBy(order, desc);
