@@ -5,7 +5,8 @@ namespace PhiZoneApi.Interfaces;
 
 public interface IChartAssetSubmissionRepository
 {
-    Task<ICollection<ChartAssetSubmission>> GetChartAssetSubmissionsAsync(List<string> order, List<bool> desc, int position,
+    Task<ICollection<ChartAssetSubmission>> GetChartAssetSubmissionsAsync(List<string> order, List<bool> desc,
+        int position,
         int take,
         Expression<Func<ChartAssetSubmission, bool>>? predicate = null);
 

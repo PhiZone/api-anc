@@ -36,6 +36,7 @@ public class ChartSubmissionController : Controller
     private readonly ICollaborationRepository _collaborationRepository;
     private readonly IOptions<DataSettings> _dataSettings;
     private readonly IDtoMapper _dtoMapper;
+    private readonly IFeishuService _feishuService;
     private readonly IFileStorageService _fileStorageService;
     private readonly IFilterService _filterService;
     private readonly ILogger<ChartSubmissionController> _logger;
@@ -48,7 +49,6 @@ public class ChartSubmissionController : Controller
     private readonly UserManager<User> _userManager;
     private readonly IVolunteerVoteRepository _volunteerVoteRepository;
     private readonly IVolunteerVoteService _volunteerVoteService;
-    private readonly IFeishuService _feishuService;
 
     public ChartSubmissionController(IChartSubmissionRepository chartSubmissionRepository,
         IOptions<DataSettings> dataSettings, UserManager<User> userManager, IFilterService filterService,
@@ -58,7 +58,8 @@ public class ChartSubmissionController : Controller
         IVolunteerVoteRepository volunteerVoteRepository, IAdmissionRepository admissionRepository,
         INotificationService notificationService, ITemplateService templateService,
         ICollaborationRepository collaborationRepository,
-        IChartAssetSubmissionRepository chartAssetSubmissionRepository, ILogger<ChartSubmissionController> logger, IFeishuService feishuService)
+        IChartAssetSubmissionRepository chartAssetSubmissionRepository, ILogger<ChartSubmissionController> logger,
+        IFeishuService feishuService)
     {
         _chartSubmissionRepository = chartSubmissionRepository;
         _dataSettings = dataSettings;
@@ -295,8 +296,7 @@ public class ChartSubmissionController : Controller
             VolunteerStatus = RequestStatus.Waiting,
             AdmissionStatus =
                 song != null
-                    ?
-                    song.OwnerId == currentUser.Id || song.Accessibility == Accessibility.AllowAny
+                    ? song.OwnerId == currentUser.Id || song.Accessibility == Accessibility.AllowAny
                         ? RequestStatus.Approved
                         : RequestStatus.Waiting
                     : songSubmission!.OwnerId == currentUser.Id ||

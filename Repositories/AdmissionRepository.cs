@@ -16,7 +16,8 @@ public class AdmissionRepository : IAdmissionRepository
         _context = context;
     }
 
-    public async Task<ICollection<Admission>> GetAdmittersAsync(Guid admitteeId, List<string> order, List<bool> desc, int position,
+    public async Task<ICollection<Admission>> GetAdmittersAsync(Guid admitteeId, List<string> order, List<bool> desc,
+        int position,
         int take, Expression<Func<Admission, bool>>? predicate = null)
     {
         var result = _context.Admissions.Where(admission => admission.AdmitteeId == admitteeId).OrderBy(order, desc);
@@ -25,7 +26,8 @@ public class AdmissionRepository : IAdmissionRepository
         return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
 
-    public async Task<ICollection<Admission>> GetAdmitteesAsync(Guid admitterId, List<string> order, List<bool> desc, int position,
+    public async Task<ICollection<Admission>> GetAdmitteesAsync(Guid admitterId, List<string> order, List<bool> desc,
+        int position,
         int take, Expression<Func<Admission, bool>>? predicate = null)
     {
         var result = _context.Admissions.Where(admission => admission.AdmitterId == admitterId).OrderBy(order, desc);
@@ -34,7 +36,8 @@ public class AdmissionRepository : IAdmissionRepository
         return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
 
-    public async Task<ICollection<Admission>> GetAdmissionsAsync(List<string> order, List<bool> desc, int position, int take,
+    public async Task<ICollection<Admission>> GetAdmissionsAsync(List<string> order, List<bool> desc, int position,
+        int take,
         Expression<Func<Admission, bool>>? predicate = null)
     {
         var result = _context.Admissions.OrderBy(order, desc);

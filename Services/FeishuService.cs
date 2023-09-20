@@ -14,13 +14,13 @@ namespace PhiZoneApi.Services;
 
 public class FeishuService : IFeishuService
 {
-    private readonly IOptions<FeishuSettings> _feishuSettings;
-    private readonly IConfiguration _config;
-    private readonly IServiceProvider _provider;
     private readonly HttpClient _client;
+    private readonly IConfiguration _config;
+    private readonly IOptions<FeishuSettings> _feishuSettings;
     private readonly ILogger<FeishuService> _logger;
-    private string? _token;
+    private readonly IServiceProvider _provider;
     private DateTimeOffset _lastTokenUpdate;
+    private string? _token;
 
     public FeishuService(IOptions<FeishuSettings> feishuSettings, IConfiguration config, IServiceProvider provider,
         ILogger<FeishuService> logger)
@@ -31,37 +31,6 @@ public class FeishuService : IFeishuService
         _logger = logger;
         _client = new HttpClient { BaseAddress = new Uri(feishuSettings.Value.ApiUrl) };
         Task.Run(UpdateToken);
-    }
-
-    private async Task UpdateToken()
-    {
-        var now = DateTimeOffset.UtcNow;
-        if (now - _lastTokenUpdate <= TimeSpan.FromMinutes(90))
-        {
-            return;
-        }
-
-        var request = new HttpRequestMessage
-        {
-            Method = HttpMethod.Post,
-            RequestUri = new Uri($"{_feishuSettings.Value.ApiUrl}/open-apis/auth/v3/tenant_access_token/internal"),
-            // Headers = { { "Content-Type", "application/json; charset=utf-8" } },
-            Content = new StringContent(
-                JsonConvert.SerializeObject(new FeishuTokenDto
-                {
-                    AppId = _feishuSettings.Value.AppId, AppSecret = _feishuSettings.Value.AppSecret
-                }), Encoding.UTF8, "application/json")
-        };
-        var response = await _client.SendAsync(request);
-        if (!response.IsSuccessStatusCode)
-        {
-            _logger.LogError(LogEvents.FeishuFailure, "An error occurred whilst updating tenant token:\n{Error}",
-                await response.Content.ReadAsStringAsync());
-        }
-
-        var data = JsonConvert.DeserializeObject<FeishuTokenDelivererDto>(await response.Content.ReadAsStringAsync())!;
-        _token = data.TenantAccessToken;
-        _lastTokenUpdate = now;
     }
 
     public async Task Notify(SongSubmission submission, params int[] chats)
@@ -92,7 +61,8 @@ public class FeishuService : IFeishuService
             var request = new HttpRequestMessage
             {
                 Method = HttpMethod.Post,
-                RequestUri = new Uri($"{_feishuSettings.Value.ApiUrl}/open-apis/im/v1/messages?receive_id_type=chat_id"),
+                RequestUri =
+                    new Uri($"{_feishuSettings.Value.ApiUrl}/open-apis/im/v1/messages?receive_id_type=chat_id"),
                 Headers = { { "Authorization", $"Bearer {_token}" } },
                 Content = new StringContent(
                     JsonConvert.SerializeObject(new FeishuMessageDto
@@ -104,10 +74,8 @@ public class FeishuService : IFeishuService
             };
             var response = await _client.SendAsync(request);
             if (!response.IsSuccessStatusCode)
-            {
                 _logger.LogError(LogEvents.FeishuFailure, "An error occurred whilst announcing song update:\n{Error}",
                     await response.Content.ReadAsStringAsync());
-            }
         }
     }
 
@@ -148,7 +116,8 @@ public class FeishuService : IFeishuService
             var request = new HttpRequestMessage
             {
                 Method = HttpMethod.Post,
-                RequestUri = new Uri($"{_feishuSettings.Value.ApiUrl}/open-apis/im/v1/messages?receive_id_type=chat_id"),
+                RequestUri =
+                    new Uri($"{_feishuSettings.Value.ApiUrl}/open-apis/im/v1/messages?receive_id_type=chat_id"),
                 Headers = { { "Authorization", $"Bearer {_token}" } },
                 Content = new StringContent(JsonConvert.SerializeObject(new FeishuMessageDto
                 {
@@ -167,10 +136,34 @@ public class FeishuService : IFeishuService
             }));
             var response = await _client.SendAsync(request);
             if (!response.IsSuccessStatusCode)
-            {
                 _logger.LogError(LogEvents.FeishuFailure, "An error occurred whilst announcing chart update:\n{Error}",
                     await response.Content.ReadAsStringAsync());
-            }
         }
+    }
+
+    private async Task UpdateToken()
+    {
+        var now = DateTimeOffset.UtcNow;
+        if (now - _lastTokenUpdate <= TimeSpan.FromMinutes(90)) return;
+
+        var request = new HttpRequestMessage
+        {
+            Method = HttpMethod.Post,
+            RequestUri = new Uri($"{_feishuSettings.Value.ApiUrl}/open-apis/auth/v3/tenant_access_token/internal"),
+            // Headers = { { "Content-Type", "application/json; charset=utf-8" } },
+            Content = new StringContent(
+                JsonConvert.SerializeObject(new FeishuTokenDto
+                {
+                    AppId = _feishuSettings.Value.AppId, AppSecret = _feishuSettings.Value.AppSecret
+                }), Encoding.UTF8, "application/json")
+        };
+        var response = await _client.SendAsync(request);
+        if (!response.IsSuccessStatusCode)
+            _logger.LogError(LogEvents.FeishuFailure, "An error occurred whilst updating tenant token:\n{Error}",
+                await response.Content.ReadAsStringAsync());
+
+        var data = JsonConvert.DeserializeObject<FeishuTokenDelivererDto>(await response.Content.ReadAsStringAsync())!;
+        _token = data.TenantAccessToken;
+        _lastTokenUpdate = now;
     }
 }

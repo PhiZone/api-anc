@@ -74,7 +74,8 @@ public class ChartRepository : IChartRepository
         return await result.FirstOrDefaultAsync();
     }
 
-    public async Task<ICollection<Record>> GetChartRecordsAsync(Guid id, List<string> order, List<bool> desc, int position,
+    public async Task<ICollection<Record>> GetChartRecordsAsync(Guid id, List<string> order, List<bool> desc,
+        int position,
         int take, Expression<Func<Record, bool>>? predicate = null)
     {
         var chart = (await _context.Charts.FirstOrDefaultAsync(chart => chart.Id == id))!;

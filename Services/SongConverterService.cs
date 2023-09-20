@@ -9,11 +9,11 @@ namespace PhiZoneApi.Services;
 public class SongConverterService : BackgroundService
 {
     private readonly IModel _channel;
+    private readonly IFeishuService _feishuService;
     private readonly ILogger<SongConverterService> _logger;
     private readonly ISongRepository _songRepository;
     private readonly ISongService _songService;
     private readonly ISongSubmissionRepository _songSubmissionRepository;
-    private readonly IFeishuService _feishuService;
 
     public SongConverterService(IRabbitMqService rabbitMqService, ISongService songService,
         ISongRepository songRepository, ISongSubmissionRepository songSubmissionRepository,

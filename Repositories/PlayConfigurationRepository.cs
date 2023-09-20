@@ -16,7 +16,8 @@ public class PlayConfigurationRepository : IPlayConfigurationRepository
         _context = context;
     }
 
-    public async Task<ICollection<PlayConfiguration>> GetPlayConfigurationsAsync(List<string> order, List<bool> desc, int position,
+    public async Task<ICollection<PlayConfiguration>> GetPlayConfigurationsAsync(List<string> order, List<bool> desc,
+        int position,
         int take,
         string? search = null, Expression<Func<PlayConfiguration, bool>>? predicate = null)
     {

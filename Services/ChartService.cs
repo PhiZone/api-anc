@@ -211,10 +211,7 @@ public partial class ChartService : IChartService
             var dto = JsonConvert.DeserializeObject<RpeJsonDto>(input);
             if (dto == null) return null;
             dto.BpmList = dto.BpmList.Where(e => e != null).ToList();
-            if (dto.BpmList.Any(info => info!.StartTime[1] != 0 && info.StartTime[2] == 0))
-            {
-                return null;
-            }
+            if (dto.BpmList.Any(info => info!.StartTime[1] != 0 && info.StartTime[2] == 0)) return null;
             dto.JudgeLineGroup = dto.JudgeLineGroup.Where(e => e != null).ToList();
             dto.JudgeLineList = dto.JudgeLineList.Where(e => e != null).ToList();
             foreach (var line in dto.JudgeLineList)
@@ -276,7 +273,7 @@ public partial class ChartService : IChartService
                                 if (e.Bezier == null || e.BezierPoints == null)
                                 {
                                     e.Bezier = 0;
-                                    e.BezierPoints = new() { 0.0, 0.0, 0.0, 0.0 };
+                                    e.BezierPoints = new List<double> { 0.0, 0.0, 0.0, 0.0 };
                                 }
                             }
                         }
@@ -291,7 +288,7 @@ public partial class ChartService : IChartService
                                 if (e.Bezier == null || e.BezierPoints == null)
                                 {
                                     e.Bezier = 0;
-                                    e.BezierPoints = new() { 0.0, 0.0, 0.0, 0.0 };
+                                    e.BezierPoints = new List<double> { 0.0, 0.0, 0.0, 0.0 };
                                 }
                             }
                         }
@@ -306,7 +303,7 @@ public partial class ChartService : IChartService
                                 if (e.Bezier == null || e.BezierPoints == null)
                                 {
                                     e.Bezier = 0;
-                                    e.BezierPoints = new() { 0.0, 0.0, 0.0, 0.0 };
+                                    e.BezierPoints = new List<double> { 0.0, 0.0, 0.0, 0.0 };
                                 }
                             }
                         }
@@ -321,7 +318,7 @@ public partial class ChartService : IChartService
                                 if (e.Bezier == null || e.BezierPoints == null)
                                 {
                                     e.Bezier = 0;
-                                    e.BezierPoints = new() { 0.0, 0.0, 0.0, 0.0 };
+                                    e.BezierPoints = new List<double> { 0.0, 0.0, 0.0, 0.0 };
                                 }
                             }
                         }
@@ -350,7 +347,7 @@ public partial class ChartService : IChartService
                             if (e.Bezier == null || e.BezierPoints == null)
                             {
                                 e.Bezier = 0;
-                                e.BezierPoints = new() { 0.0, 0.0, 0.0, 0.0 };
+                                e.BezierPoints = new List<double> { 0.0, 0.0, 0.0, 0.0 };
                             }
                         }
                     }
@@ -365,7 +362,7 @@ public partial class ChartService : IChartService
                             if (e.Bezier == null || e.BezierPoints == null)
                             {
                                 e.Bezier = 0;
-                                e.BezierPoints = new() { 0.0, 0.0, 0.0, 0.0 };
+                                e.BezierPoints = new List<double> { 0.0, 0.0, 0.0, 0.0 };
                             }
                         }
                     }
@@ -380,7 +377,7 @@ public partial class ChartService : IChartService
                             if (e.Bezier == null || e.BezierPoints == null)
                             {
                                 e.Bezier = 0;
-                                e.BezierPoints = new() { 0.0, 0.0, 0.0, 0.0 };
+                                e.BezierPoints = new List<double> { 0.0, 0.0, 0.0, 0.0 };
                             }
                         }
                     }
@@ -395,7 +392,7 @@ public partial class ChartService : IChartService
                             if (e.Bezier == null || e.BezierPoints == null)
                             {
                                 e.Bezier = 0;
-                                e.BezierPoints = new() { 0.0, 0.0, 0.0, 0.0 };
+                                e.BezierPoints = new List<double> { 0.0, 0.0, 0.0, 0.0 };
                             }
                         }
                     }
@@ -410,7 +407,7 @@ public partial class ChartService : IChartService
                             if (e.Bezier == null || e.BezierPoints == null)
                             {
                                 e.Bezier = 0;
-                                e.BezierPoints = new() { 0.0, 0.0, 0.0, 0.0 };
+                                e.BezierPoints = new List<double> { 0.0, 0.0, 0.0, 0.0 };
                             }
                         }
                     }
@@ -425,7 +422,7 @@ public partial class ChartService : IChartService
                             if (e.Bezier == null || e.BezierPoints == null)
                             {
                                 e.Bezier = 0;
-                                e.BezierPoints = new() { 0.0, 0.0, 0.0, 0.0 };
+                                e.BezierPoints = new List<double> { 0.0, 0.0, 0.0, 0.0 };
                             }
                         }
                     }

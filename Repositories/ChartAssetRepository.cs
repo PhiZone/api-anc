@@ -16,7 +16,8 @@ public class ChartAssetRepository : IChartAssetRepository
         _context = context;
     }
 
-    public async Task<ICollection<ChartAsset>> GetChartAssetsAsync(List<string> order, List<bool> desc, int position, int take,
+    public async Task<ICollection<ChartAsset>> GetChartAssetsAsync(List<string> order, List<bool> desc, int position,
+        int take,
         Expression<Func<ChartAsset, bool>>? predicate = null)
     {
         var result = _context.ChartAssets.OrderBy(order, desc);
