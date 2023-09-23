@@ -193,7 +193,7 @@ public class NotificationController : Controller
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
-        notification.DateRead = DateTimeOffset.Now;
+        notification.DateRead = DateTimeOffset.UtcNow;
         await _notificationRepository.UpdateNotificationAsync(notification);
 
         return NoContent();
