@@ -68,7 +68,7 @@ public class NotificationService : INotificationService
         foreach (var relation in relations)
             receivers.Add((await _userManager.FindByIdAsync(relation.FollowerId.ToString()))!);
 
-        foreach (var receiver in receivers.Where(receiver => receiver.Id != resource.OwnerId))
+        foreach (var receiver in receivers.Where(receiver => receiver.Id != comment.OwnerId))
             await Notify(receiver, sender, NotificationType.Replies, "new-comment",
                 new Dictionary<string, string>
                 {
@@ -85,7 +85,7 @@ public class NotificationService : INotificationService
                 new Dictionary<string, string>
                 {
                     {
-                        "User", _resourceService.GetRichText<User>(sender.Id.ToString(), sender.UserName!, "Mention")
+                        "User", _resourceService.GetRichText<User>(sender.Id.ToString(), sender.UserName!)
                     },
                     { "Content", richText }
                 });

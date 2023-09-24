@@ -665,7 +665,7 @@ public partial class DataMigrationService : IHostedService
                 var rks = _recordService.CalculateRks(perfect, goodEarly + goodLate, bad, miss, chart.Difficulty, 40) *
                           rksFactor;
                 _logger.LogInformation(LogEvents.DataMigration, "Migrating Record #{Id} {Score} {Accuracy}", index,
-                    score, accuracy.ToString("P"));
+                    score, accuracy.ToString("P2"));
                 var appId = await reader.GetInt("app_id") ?? 1;
 
                 var record = new Record
