@@ -38,6 +38,6 @@ public class Record : LikeableResource
 
     public override string GetDisplay()
     {
-        return $"{Score} {Accuracy:P}";
+        return $"{Score} {Accuracy:P2}";
     }
 }

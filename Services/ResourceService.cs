@@ -51,7 +51,7 @@ public partial class ResourceService : IResourceService
     {
         var chart = await _chartRepository.GetChartAsync(record.ChartId);
         var title = chart.Title ?? (await _songRepository.GetSongAsync(chart.SongId)).Title;
-        return $"{title} [{chart.Level} {Math.Floor(chart.Difficulty)}] {record.Score} {record.Accuracy:P}";
+        return $"{title} [{chart.Level} {Math.Floor(chart.Difficulty)}] {record.Score} {record.Accuracy:P2}";
     }
 
     public List<int> GetAuthorIds(string name)
@@ -96,7 +96,7 @@ public partial class ResourceService : IResourceService
             var user = await _userManager.FindByNameAsync(userName);
             if (user == null) continue;
             users.Add(user);
-            result = result.Replace($"@{userName}", GetRichText<User>(user.Id.ToString(), user.UserName!));
+            result = result.Replace($"@{userName}", GetRichText<User>(user.Id.ToString(), user.UserName!, "Mention"));
         }
 
         return (result, users);

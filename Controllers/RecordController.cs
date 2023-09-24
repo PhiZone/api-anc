@@ -94,6 +94,7 @@ public class RecordController : Controller
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         dto.PerPage = dto.PerPage > 0 && dto.PerPage < _dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
             dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : _dataSettings.Value.PaginationMaxPerPage;
+        dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser);
         var records = await _recordRepository.GetRecordsAsync(dto.Order, dto.Desc, position,
@@ -273,7 +274,7 @@ public class RecordController : Controller
 
         _logger.LogInformation(LogEvents.RecordInfo,
             "New record: {User} - {Chart} {Score} {Accuracy} {Rks} {StdDeviation}ms",
-            player.UserName, await _resourceService.GetDisplayName(chart), score, accuracy.ToString("P"),
+            player.UserName, await _resourceService.GetDisplayName(chart), score, accuracy.ToString("P2"),
             rks.ToString("N3"), dto.StdDeviation.ToString("N3"));
 
         var record = new Record
@@ -415,6 +416,7 @@ public class RecordController : Controller
     {
         dto.PerPage = dto.PerPage > 0 && dto.PerPage < _dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
             dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : _dataSettings.Value.PaginationMaxPerPage;
+        dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
         if (!await _recordRepository.RecordExistsAsync(id))
             return NotFound(new ResponseDto<object>
@@ -536,6 +538,7 @@ public class RecordController : Controller
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         dto.PerPage = dto.PerPage > 0 && dto.PerPage < _dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
             dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : _dataSettings.Value.PaginationMaxPerPage;
+        dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
         if (!await _recordRepository.RecordExistsAsync(id))
             return NotFound(new ResponseDto<object>

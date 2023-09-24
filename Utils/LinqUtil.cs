@@ -39,10 +39,7 @@ public static class LinqUtil
     {
         var properties = objType.GetProperties();
         var matchedProperty = properties.FirstOrDefault(p => p.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
-        if (matchedProperty == null)
-        {
-            matchedProperty = properties.FirstOrDefault(p => p.Name == "Id");
-        }
+        if (matchedProperty == null) matchedProperty = properties.FirstOrDefault(p => p.Name == "Id");
         return matchedProperty != null ? matchedProperty : properties[0];
     }
 }
