@@ -51,7 +51,7 @@ public class FeishuService : IFeishuService
                     ? submission.Bpm.ToString(CultureInfo.InvariantCulture)
                     : $"{submission.Bpm} ({submission.MinBpm} ~ {submission.MaxBpm})"
             },
-            { "duration", submission.Duration!.Value.ToString("g") },
+            { "duration", submission.Duration!.Value.ToString("F0") },
             { "submission_info", $"{_config["WebsiteURL"]}/studio/song-submissions/{submission.Id}" }
         };
         var content =
@@ -123,7 +123,6 @@ public class FeishuService : IFeishuService
                 {
                     ReceiveId = _feishuSettings.Value.Chats[chat],
                     MessageType = "interactive",
-                    // Content = "{\"text\":\"Ciallo～(∠・ω< )⌒★! 我是 Phizo，一个正在学习中的 bot 哒！\"}"
                     Content = content
                 }), Encoding.UTF8, "application/json")
             };
@@ -131,7 +130,6 @@ public class FeishuService : IFeishuService
             {
                 ReceiveId = _feishuSettings.Value.Chats[chat],
                 MessageType = "interactive",
-                // Content = "{\"text\":\"Ciallo～(∠・ω< )⌒★! 我是 Phizo，一个正在学习中的 bot 哒！\"}"
                 Content = content
             }));
             var response = await _client.SendAsync(request);
