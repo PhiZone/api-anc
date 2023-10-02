@@ -44,7 +44,7 @@
         <PackageReference Include="StackExchange.Redis" Version="2.6.122"/>
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0"/>
         <PackageReference Include="Swashbuckle.AspNetCore.Newtonsoft" Version="6.5.0"/>
-        <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.32.2"/>
+        <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="7.0.2"/>
     </ItemGroup>
 
     <ItemGroup>
