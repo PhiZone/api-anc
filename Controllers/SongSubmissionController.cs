@@ -455,7 +455,7 @@ public class SongSubmissionController : Controller
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
-        await _feishuService.Notify(songSubmission, FeishuResources.ContentReviewalChat);
+        if (wait) await _feishuService.Notify(songSubmission, FeishuResources.ContentReviewalChat);
         return NoContent();
     }
 
