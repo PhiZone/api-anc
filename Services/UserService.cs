@@ -7,23 +7,21 @@ namespace PhiZoneApi.Services;
 
 public class UserService : IUserService
 {
-    private readonly IPlayConfigurationRepository _playConfigurationRepository;
+    private readonly IServiceProvider _provider;
     private readonly ITemplateService _templateService;
-    private readonly UserManager<User> _userManager;
-    private readonly IUserRelationRepository _userRelationRepository;
 
-    public UserService(UserManager<User> userManager, ITemplateService templateService,
-        IPlayConfigurationRepository playConfigurationRepository, IUserRelationRepository userRelationRepository)
+    public UserService(IServiceProvider provider, ITemplateService templateService)
     {
-        _userManager = userManager;
         _templateService = templateService;
-        _playConfigurationRepository = playConfigurationRepository;
-        _userRelationRepository = userRelationRepository;
+        _provider = provider;
     }
 
     public async Task CreateUser(User user)
     {
-        await _userManager.CreateAsync(user);
+        await using var scope = _provider.CreateAsyncScope();
+        var userManager = scope.ServiceProvider.GetService<UserManager<User>>()!;
+        var playConfigurationRepository = scope.ServiceProvider.GetService<IPlayConfigurationRepository>()!;
+        await userManager.CreateAsync(user);
         var configuration = new PlayConfiguration
         {
             Name = _templateService.GetMessage("default", user.Language),
@@ -42,15 +40,17 @@ public class UserService : IUserService
             OwnerId = user.Id,
             DateCreated = DateTimeOffset.UtcNow
         };
-        await _playConfigurationRepository.CreatePlayConfigurationAsync(configuration);
+        await playConfigurationRepository.CreatePlayConfigurationAsync(configuration);
     }
 
     public async Task<bool> IsBlacklisted(int user1, int user2)
     {
-        if (await _userRelationRepository.RelationExistsAsync(user1, user2))
-            if ((await _userRelationRepository.GetRelationAsync(user1, user2)).Type == UserRelationType.Blacklisted)
+        await using var scope = _provider.CreateAsyncScope();
+        var userRelationRepository = scope.ServiceProvider.GetService<IUserRelationRepository>()!;
+        if (await userRelationRepository.RelationExistsAsync(user1, user2))
+            if ((await userRelationRepository.GetRelationAsync(user1, user2)).Type == UserRelationType.Blacklisted)
                 return true;
-        if (!await _userRelationRepository.RelationExistsAsync(user2, user1)) return false;
-        return (await _userRelationRepository.GetRelationAsync(user2, user1)).Type == UserRelationType.Blacklisted;
+        if (!await userRelationRepository.RelationExistsAsync(user2, user1)) return false;
+        return (await userRelationRepository.GetRelationAsync(user2, user1)).Type == UserRelationType.Blacklisted;
     }
 }
