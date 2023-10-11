@@ -78,11 +78,6 @@ public class PetController : Controller
 
         var db = _redis.GetDatabase();
         var key = $"PET:0:{currentUser.Id}";
-        if (await db.KeyExistsAsync(key))
-            return BadRequest(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
-            });
 
         var questions = new List<PetQuestionDto>();
         var deliverer = new PetDelivererDto();
