@@ -21,12 +21,13 @@ public class DtoMapper : IDtoMapper
     private readonly UserManager<User> _userManager;
     private readonly IUserRelationRepository _userRelationRepository;
     private readonly IVolunteerVoteRepository _volunteerVoteRepository;
+    private readonly IPetQuestionRepository _petQuestionRepository;
 
     public DtoMapper(IUserRelationRepository userRelationRepository, IRegionRepository regionRepository,
         ILikeRepository likeRepository, UserManager<User> userManager, IMapper mapper,
         ICommentRepository commentRepository, IReplyRepository replyRepository, IRecordRepository recordRepository,
         IChapterRepository chapterRepository, ISongRepository songRepository, IChartRepository chartRepository,
-        IVolunteerVoteRepository volunteerVoteRepository)
+        IVolunteerVoteRepository volunteerVoteRepository, IPetQuestionRepository petQuestionRepository)
     {
         _userRelationRepository = userRelationRepository;
         _regionRepository = regionRepository;
@@ -40,6 +41,7 @@ public class DtoMapper : IDtoMapper
         _songRepository = songRepository;
         _chartRepository = chartRepository;
         _volunteerVoteRepository = volunteerVoteRepository;
+        _petQuestionRepository = petQuestionRepository;
     }
 
     public async Task<T> MapUserAsync<T>(User user, User? currentUser = null) where T : UserDto
@@ -170,10 +172,10 @@ public class DtoMapper : IDtoMapper
         where T : ChartSubmissionDto
     {
         var dto = _mapper.Map<T>(chart);
-        dto.DateVoted = currentUser != null &&
-                        await _volunteerVoteRepository.VolunteerVoteExistsAsync(chart.Id, currentUser.Id)
-            ? (await _volunteerVoteRepository.GetVolunteerVoteAsync(chart.Id, currentUser.Id)).DateCreated
-            : null;
+        dto.DateVoted =
+            currentUser != null && await _volunteerVoteRepository.VolunteerVoteExistsAsync(chart.Id, currentUser.Id)
+                ? (await _volunteerVoteRepository.GetVolunteerVoteAsync(chart.Id, currentUser.Id)).DateCreated
+                : null;
         return dto;
     }
 
@@ -240,5 +242,25 @@ public class DtoMapper : IDtoMapper
                     (await _userManager.FindByIdAsync(notification.OperatorId.Value.ToString()))!, currentUser);
 
         return dto;
+    }
+
+    public async Task<T> MapPetAnswerAsync<T>(PetAnswer answer) where T : PetAnswerDto
+    {
+        var dto = _mapper.Map<T>(answer);
+        dto.Question1 = MapPetQuestion(await _petQuestionRepository.GetPetQuestionAsync(answer.Question1));
+        dto.Question2 = MapPetQuestion(await _petQuestionRepository.GetPetQuestionAsync(answer.Question2));
+        dto.Question3 = MapPetQuestion(await _petQuestionRepository.GetPetQuestionAsync(answer.Question3));
+        return dto;
+    }
+
+    private static PetQuestionDto MapPetQuestion(PetQuestion question)
+    {
+        return new PetQuestionDto
+        {
+            Position = question.Position,
+            Type = question.Type,
+            Content = question.Content,
+            Language = question.Language
+        };
     }
 }

@@ -40,4 +40,6 @@ public interface IDtoMapper
     Task<T> MapAnnouncementAsync<T>(Announcement announcement, User? currentUser = null) where T : AnnouncementDto;
 
     Task<T> MapNotificationAsync<T>(Notification notification, User? currentUser = null) where T : NotificationDto;
+
+    Task<T> MapPetAnswerAsync<T>(PetAnswer answer) where T : PetAnswerDto;
 }

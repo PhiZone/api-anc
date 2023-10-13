@@ -42,5 +42,9 @@ public class MappingProfiles : Profile
         CreateMap<Collaboration, CollaborationDto>();
         CreateMap<Collaboration, CollaborationUpdateDto>();
         CreateMap<Notification, NotificationDto>();
+        CreateMap<PetAnswer, PetAnswerDto>()
+            .ForMember(x => x.Question1, opt => opt.Ignore())
+            .ForMember(x => x.Question2, opt => opt.Ignore())
+            .ForMember(x => x.Question3, opt => opt.Ignore());
     }
 }
