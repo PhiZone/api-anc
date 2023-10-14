@@ -33,12 +33,14 @@ public class PetController : Controller
     private readonly IOptions<DataSettings> _dataSettings;
     private readonly IDtoMapper _dtoMapper;
     private readonly IFilterService _filterService;
+    private readonly INotificationService _notificationService;
     private readonly Dictionary<Role, int> _scores;
     private readonly UserManager<User> _userManager;
 
     public PetController(IConnectionMultiplexer redis, IPetQuestionRepository petQuestionRepository,
         IPetAnswerRepository petAnswerRepository, UserManager<User> userManager, IResourceService resourceService,
-        IConfiguration config, IOptions<DataSettings> dataSettings, IDtoMapper dtoMapper, IFilterService filterService)
+        IConfiguration config, IOptions<DataSettings> dataSettings, IDtoMapper dtoMapper, IFilterService filterService,
+        INotificationService notificationService)
     {
         _redis = redis;
         _petQuestionRepository = petQuestionRepository;
@@ -47,6 +49,7 @@ public class PetController : Controller
         _dataSettings = dataSettings;
         _dtoMapper = dtoMapper;
         _filterService = filterService;
+        _notificationService = notificationService;
         _petAnswerRepository = petAnswerRepository;
         _scores = new Dictionary<Role, int>
             {
@@ -80,7 +83,7 @@ public class PetController : Controller
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
-        if (await _resourceService.HasPermission(currentUser, Roles.Qualified))
+        if (await _resourceService.HasPermission(currentUser, Roles.Volunteer))
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
@@ -155,7 +158,7 @@ public class PetController : Controller
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
-        if (await _resourceService.HasPermission(currentUser, Roles.Qualified))
+        if (await _resourceService.HasPermission(currentUser, Roles.Volunteer))
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
@@ -247,7 +250,7 @@ public class PetController : Controller
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
-        if (await _resourceService.HasPermission(currentUser, Roles.Qualified))
+        if (await _resourceService.HasPermission(currentUser, Roles.Volunteer))
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
@@ -408,13 +411,21 @@ public class PetController : Controller
         var user = (await _userManager.FindByIdAsync(petAnswer.OwnerId.ToString()))!;
         var role = await _resourceService.GetRole(user);
 
-        var pair = _scores.FirstOrDefault(pair => petAnswer.TotalScore >= pair.Value);
-        if (role != null) await _userManager.RemoveFromRoleAsync(user, role.Name);
-        await _userManager.AddToRoleAsync(user, pair.Key.Name);
+        // ReSharper disable once ReplaceWithFirstOrDefault.1
+        KeyValuePair<Role, int>? pair = _scores.Any(e => petAnswer.TotalScore >= e.Value) ? _scores.First(e => petAnswer.TotalScore >= e.Value) : null;
+        if (pair != null)
+        {
+            if (role != null) await _userManager.RemoveFromRoleAsync(user, role.Name);
+            await _userManager.AddToRoleAsync(user, pair.Value.Key.Name);
+        }
 
         if (!await _petAnswerRepository.UpdatePetAnswerAsync(petAnswer))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+
+        await _notificationService.Notify(user, null, NotificationType.System,
+            pair == null ? "pet-failed" : pair.Value.Key == Roles.Volunteer ? "pet-volunteer" : "pet-qualified",
+            new Dictionary<string, string> { { "Score", petAnswer.TotalScore.ToString()! } });
 
         return NoContent();
     }

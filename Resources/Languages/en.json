@@ -86,6 +86,18 @@
       "Content": "{User} has declined your admission request. {Admission}"
     },
     {
+      "Key": "pet-volunteer",
+      "Content": "Congratulations! You have passed the Privilege Escalation Test with a score of {Score} and been granted the role of Volunteer!"
+    },
+    {
+      "Key": "pet-qualified",
+      "Content": "Congratulations! You have passed the Privilege Escalation Test with a score of {Score} and been granted the role of Qualified!"
+    },
+    {
+      "Key": "pet-failed",
+      "Content": "We're sorry, but you received {Score} on the Privilege Escalation Test and did not meet the minimum requirements."
+    },
+    {
       "Key": "more-info",
       "Content": "Click here for more information."
     },
