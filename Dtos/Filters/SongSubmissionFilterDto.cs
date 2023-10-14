@@ -33,7 +33,7 @@ public class SongSubmissionFilterDto : FilterDto<SongSubmission>
 
     public List<RequestStatus>? RangeStatus { get; set; }
 
-    public List<Guid>? RangeRepresentationId { get; set; }
+    public List<Guid>? /* supposed to be nullable */ RangeRepresentationId { get; set; }
 
     public string? ContainsLyrics { get; set; }
 
@@ -79,7 +79,7 @@ public class SongSubmissionFilterDto : FilterDto<SongSubmission>
 
     public int? MaxReviewerId { get; set; }
 
-    public List<int>? RangeReviewerId { get; set; }
+    public List<int>? /* supposed to be nullable */ RangeReviewerId { get; set; }
 
     public string? ContainsMessage { get; set; }
 

@@ -17,7 +17,7 @@ public class User : IdentityUser<int>, IEquatable<User>
 
     public double Rks { get; set; }
 
-    public required string Language { get; set; }
+    public string Language { get; set; } = null!;
 
     public DateTimeOffset? DateLastLoggedIn { get; set; }
 

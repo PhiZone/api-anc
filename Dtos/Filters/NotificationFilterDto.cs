@@ -17,7 +17,7 @@ public class NotificationFilterDto : FilterDto<Notification>
 
     public int? MaxOperatorId { get; set; }
 
-    public List<int>? RangeOperatorId { get; set; }
+    public List<int>? /* supposed to be nullable */ RangeOperatorId { get; set; }
 
     public int? MinOwnerId { get; set; }
 

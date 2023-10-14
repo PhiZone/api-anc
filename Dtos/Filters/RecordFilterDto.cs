@@ -86,7 +86,7 @@ public class RecordFilterDto : FilterDto<Record>
 
     public List<int>? RangeGoodJudgment { get; set; }
 
-    public List<Guid>? RangeApplicationId { get; set; }
+    public List<Guid>? /* supposed to be nullable */ RangeApplicationId { get; set; }
 
     public DateTimeOffset? EarliestDateCreated { get; set; }
 
