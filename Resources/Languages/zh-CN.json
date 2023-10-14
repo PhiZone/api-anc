@@ -86,6 +86,18 @@
       "Content": "{User} 拒绝了你的收录申请。{Admission}"
     },
     {
+      "Key": "pet-volunteer",
+      "Content": "恭喜！你以 {Score} 分的成绩通过了权限晋升测试，获得“志愿者”角色。"
+    },
+    {
+      "Key": "pet-qualified",
+      "Content": "恭喜！你以 {Score} 分的成绩通过了权限晋升测试，获得“认证用户”角色。"
+    },
+    {
+      "Key": "pet-failed",
+      "Content": "很抱歉，你在权限晋升测试中获得了 {Score} 分，未达到最低晋升要求。"
+    },
+    {
       "Key": "more-info",
       "Content": "点击此处查看详情。"
     },

@@ -86,6 +86,18 @@
       "Content": "{User} 拒絕了你的收錄申請。{Admission}"
     },
     {
+      "Key": "pet-volunteer",
+      "Content": "恭喜！你以 {Score} 分的成績通過了權限晉升測試，獲得“志工”角色。"
+    },
+    {
+      "Key": "pet-qualified",
+      "Content": "恭喜！你以 {Score} 分的成績通過了權限晉升測試，獲得“已認證使用者”角色。"
+    },
+    {
+      "Key": "pet-failed",
+      "Content": "很抱歉，你在權限晉升測試中獲得了 {Score} 分，未達到最低晉升要求。"
+    },
+    {
       "Key": "more-info",
       "Content": "點擊此處查看詳情。"
     },
