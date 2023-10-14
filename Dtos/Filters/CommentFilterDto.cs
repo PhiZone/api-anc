@@ -28,12 +28,6 @@ public class CommentFilterDto : FilterDto<Comment>
 
     public DateTimeOffset? LatestDateCreated { get; set; }
 
-    public int? MinReplyCount { get; set; }
-
-    public int? MaxReplyCount { get; set; }
-
-    public List<int>? RangeReplyCount { get; set; }
-
     public int? MinLikeCount { get; set; }
 
     public int? MaxLikeCount { get; set; }

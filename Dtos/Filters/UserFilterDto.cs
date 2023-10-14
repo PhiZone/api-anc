@@ -25,7 +25,7 @@ public class UserFilterDto : FilterDto<User>
 
     public string? EqualsTag { get; set; }
 
-    public List<string>? RangeTag { get; set; }
+    public List<string>? /* supposed to be nullable */ RangeTag { get; set; }
 
     public string? ContainsLanguage { get; set; }
 

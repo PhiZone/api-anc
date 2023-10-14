@@ -85,6 +85,14 @@ public class PetController : Controller
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
             });
+        if (await _petAnswerRepository.CountPetAnswersAsync(null,
+                answer => answer.OwnerId == currentUser.Id && answer.SubjectiveScore == null) > 0)
+        {
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
+            });
+        }
 
         var db = _redis.GetDatabase();
         var key = $"PET:0:{currentUser.Id}";
@@ -181,9 +189,10 @@ public class PetController : Controller
                 choices.Any(choice => !question.Choices[choice].IsCorrect))
                 continue;
 
-            if (question.Type == PetQuestionType.Single)
-                score += 2;
-            else if (choices.Count == question.Choices.Count(choice => choice.IsCorrect)) score += 4;
+            score += question.Type == PetQuestionType.Single ||
+                     choices.Count < question.Choices.Count(choice => choice.IsCorrect)
+                ? 2
+                : 4;
         }
 
         subjectiveDeliverer.Score = score;

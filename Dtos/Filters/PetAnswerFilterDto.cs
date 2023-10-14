@@ -9,23 +9,23 @@ public class PetAnswerFilterDto : FilterDto<PetAnswer>
     public List<Guid>? RangeQuestion1 { get; set; }
 
     public string? ContainsAnswer1 { get; set; }
-    
+
     public string? EqualsAnswer1 { get; set; }
 
     public List<Guid>? RangeQuestion2 { get; set; }
 
     public string? ContainsAnswer2 { get; set; }
-    
+
     public string? EqualsAnswer2 { get; set; }
 
     public List<Guid>? RangeQuestion3 { get; set; }
 
     public string? ContainsAnswer3 { get; set; }
-    
+
     public string? EqualsAnswer3 { get; set; }
 
     public string? ContainsChart { get; set; }
-    
+
     public string? EqualsChart { get; set; }
 
     public int? MinObjectiveScore { get; set; }
@@ -38,13 +38,13 @@ public class PetAnswerFilterDto : FilterDto<PetAnswer>
 
     public int? MaxSubjectiveScore { get; set; }
 
-    public List<int>? RangeSubjectiveScore { get; set; }
+    public List<int>? /* supposed to be nullable */ RangeSubjectiveScore { get; set; }
 
     public int? MinTotalScore { get; set; }
 
     public int? MaxTotalScore { get; set; }
 
-    public List<int>? RangeTotalScore { get; set; }
+    public List<int>? /* supposed to be nullable */ RangeTotalScore { get; set; }
 
     public int? MinOwnerId { get; set; }
 
@@ -56,7 +56,7 @@ public class PetAnswerFilterDto : FilterDto<PetAnswer>
 
     public int? MaxAssessorId { get; set; }
 
-    public List<int>? RangeAssessorId { get; set; }
+    public List<int>? /* supposed to be nullable */ RangeAssessorId { get; set; }
 
     public DateTimeOffset? EarliestDateCreated { get; set; }
 

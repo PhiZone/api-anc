@@ -25,7 +25,7 @@ public class CollaborationFilterDto : FilterDto<Collaboration>
 
     public string? EqualsPosition { get; set; }
 
-    public List<string>? RangePosition { get; set; }
+    public List<string>? /* supposed to be nullable */ RangePosition { get; set; }
 
     public List<RequestStatus>? RangeStatus { get; set; }
 

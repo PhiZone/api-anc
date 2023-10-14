@@ -47,9 +47,9 @@ public class ChartSubmissionFilterDto : FilterDto<ChartSubmission>
 
     public List<Accessibility>? RangeAccessibility { get; set; }
 
-    public List<Guid>? RangeSongId { get; set; }
+    public List<Guid>? /* supposed to be nullable */ RangeSongId { get; set; }
 
-    public List<Guid>? RangeSongSubmissionId { get; set; }
+    public List<Guid>? /* supposed to be nullable */ RangeSongSubmissionId { get; set; }
 
     public List<RequestStatus>? RangeStatus { get; set; }
 
@@ -57,7 +57,7 @@ public class ChartSubmissionFilterDto : FilterDto<ChartSubmission>
 
     public List<RequestStatus>? RangeAdmissionStatus { get; set; }
 
-    public List<Guid>? RangeRepresentationId { get; set; }
+    public List<Guid>? /* supposed to be nullable */ RangeRepresentationId { get; set; }
 
     public int? MinOwnerId { get; set; }
 
