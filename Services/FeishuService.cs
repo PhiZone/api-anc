@@ -126,12 +126,6 @@ public class FeishuService : IFeishuService
                     Content = content
                 }), Encoding.UTF8, "application/json")
             };
-            _logger.LogInformation(JsonConvert.SerializeObject(new FeishuMessageDto
-            {
-                ReceiveId = _feishuSettings.Value.Chats[chat],
-                MessageType = "interactive",
-                Content = content
-            }));
             var response = await _client.SendAsync(request);
             if (!response.IsSuccessStatusCode)
                 _logger.LogError(LogEvents.FeishuFailure, "An error occurred whilst announcing chart update:\n{Error}",
@@ -151,12 +145,12 @@ public class FeishuService : IFeishuService
         {
             { "answerer", (await userManager.FindByIdAsync(answer.OwnerId.ToString()))!.UserName! },
             { "objective_score", answer.ObjectiveScore.ToString() },
-            { "time", dateStarted.ToString("yyyy-MM-dd HH:mm") },
-            { "duration", duration.ToString("F0") },
+            { "time", dateStarted.ToString("yyyy-MM-dd HH:mm:ss") },
+            { "duration", duration.ToString() },
             { "answer_info", $"{_config["WebsiteURL"]}/pet/answers/{answer.Id}" }
         };
         var content =
-            $"{{\"type\":\"template\",\"data\":{{\"template_id\":\"{_feishuSettings.Value.Cards[FeishuResources.ChartCard]}\",\"template_variable\":{JsonConvert.SerializeObject(variables)}}}}}";
+            $"{{\"type\":\"template\",\"data\":{{\"template_id\":\"{_feishuSettings.Value.Cards[FeishuResources.PetAnswerCard]}\",\"template_variable\":{JsonConvert.SerializeObject(variables)}}}}}";
         foreach (var chat in chats)
         {
             var request = new HttpRequestMessage
@@ -172,12 +166,6 @@ public class FeishuService : IFeishuService
                     Content = content
                 }), Encoding.UTF8, "application/json")
             };
-            _logger.LogInformation(JsonConvert.SerializeObject(new FeishuMessageDto
-            {
-                ReceiveId = _feishuSettings.Value.Chats[chat],
-                MessageType = "interactive",
-                Content = content
-            }));
             var response = await _client.SendAsync(request);
             if (!response.IsSuccessStatusCode)
                 _logger.LogError(LogEvents.FeishuFailure, "An error occurred whilst announcing PET answer update:\n{Error}",
