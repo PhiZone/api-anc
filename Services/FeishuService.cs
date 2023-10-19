@@ -51,7 +51,7 @@ public class FeishuService : IFeishuService
                     ? submission.Bpm.ToString(CultureInfo.InvariantCulture)
                     : $"{submission.Bpm} ({submission.MinBpm} ~ {submission.MaxBpm})"
             },
-            { "duration", submission.Duration!.Value.ToString("F0") },
+            { "duration", submission.Duration!.Value.ToString(@"mm\:ss") },
             { "submission_info", $"{_config["WebsiteURL"]}/studio/song-submissions/{submission.Id}" }
         };
         var content =
@@ -145,8 +145,8 @@ public class FeishuService : IFeishuService
         {
             { "answerer", (await userManager.FindByIdAsync(answer.OwnerId.ToString()))!.UserName! },
             { "objective_score", answer.ObjectiveScore.ToString() },
-            { "time", dateStarted.ToString("yyyy-MM-dd HH:mm:ss") },
-            { "duration", duration.ToString() },
+            { "time", dateStarted.ToOffset(TimeSpan.FromHours(8)).ToString("yyyy-MM-dd HH:mm:ss") },
+            { "duration", duration.ToString(@"mm\:ss") },
             { "answer_info", $"{_config["WebsiteURL"]}/pet/answers/{answer.Id}" }
         };
         var content =
