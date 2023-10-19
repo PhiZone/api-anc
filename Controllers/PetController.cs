@@ -34,13 +34,14 @@ public class PetController : Controller
     private readonly IDtoMapper _dtoMapper;
     private readonly IFilterService _filterService;
     private readonly INotificationService _notificationService;
+    private readonly IFeishuService _feishuService;
     private readonly Dictionary<Role, int> _scores;
     private readonly UserManager<User> _userManager;
 
     public PetController(IConnectionMultiplexer redis, IPetQuestionRepository petQuestionRepository,
         IPetAnswerRepository petAnswerRepository, UserManager<User> userManager, IResourceService resourceService,
         IConfiguration config, IOptions<DataSettings> dataSettings, IDtoMapper dtoMapper, IFilterService filterService,
-        INotificationService notificationService)
+        INotificationService notificationService, IFeishuService feishuService)
     {
         _redis = redis;
         _petQuestionRepository = petQuestionRepository;
@@ -50,6 +51,7 @@ public class PetController : Controller
         _dtoMapper = dtoMapper;
         _filterService = filterService;
         _notificationService = notificationService;
+        _feishuService = feishuService;
         _petAnswerRepository = petAnswerRepository;
         _scores = new Dictionary<Role, int>
             {
@@ -126,6 +128,8 @@ public class PetController : Controller
                 Choices = choices.Select(e => e.Content).ToList()
             });
         }
+        
+        deliverer.DateStarted = DateTimeOffset.UtcNow;
 
         await db.StringSetAsync(key, JsonConvert.SerializeObject(deliverer), TimeSpan.FromHours(1));
         return Ok(new ResponseDto<IEnumerable<PetQuestionDto>>
@@ -198,7 +202,6 @@ public class PetController : Controller
                 : 4;
         }
 
-        subjectiveDeliverer.Score = score;
         var questions = new List<PetQuestionDto>();
 
         for (var i = 16; i <= 18; i++)
@@ -215,7 +218,10 @@ public class PetController : Controller
                 Language = question.Language
             });
         }
-
+        
+        subjectiveDeliverer.Score = score;
+        subjectiveDeliverer.DateStarted = objectiveDeliverer.DateStarted;
+        
         await db.StringSetAsync($"PET:1:{currentUser.Id}", JsonConvert.SerializeObject(subjectiveDeliverer),
             TimeSpan.FromHours(1));
         return Ok(new ResponseDto<IEnumerable<PetQuestionDto>>
@@ -284,6 +290,8 @@ public class PetController : Controller
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
+        await _feishuService.Notify(answer, deliverer.DateStarted, FeishuResources.QualificationReviewalChat);
+
         return StatusCode(StatusCodes.Status201Created);
     }
 
@@ -301,13 +309,13 @@ public class PetController : Controller
         [FromQuery] PetAnswerFilterDto? filterDto = null)
     {
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        var isVolunteer = await _resourceService.HasPermission(currentUser, Roles.Volunteer);
+        var isModerator = await _resourceService.HasPermission(currentUser, Roles.Moderator);
         dto.PerPage = dto.PerPage > 0 && dto.PerPage < _dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
             dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : _dataSettings.Value.PaginationMaxPerPage;
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser,
-            e => isVolunteer || e.OwnerId == currentUser.Id);
+            e => isModerator || e.OwnerId == currentUser.Id);
         var answers = await _petAnswerRepository.GetPetAnswersAsync(dto.Order, dto.Desc, position, dto.PerPage,
             dto.Search, predicateExpr);
         var total = await _petAnswerRepository.CountPetAnswersAsync(dto.Search, predicateExpr);
@@ -354,7 +362,7 @@ public class PetController : Controller
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
         var answer = await _petAnswerRepository.GetPetAnswerAsync(id);
-        if (answer.OwnerId != currentUser.Id && !await _resourceService.HasPermission(currentUser, Roles.Volunteer))
+        if (answer.OwnerId != currentUser.Id && !await _resourceService.HasPermission(currentUser, Roles.Moderator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {

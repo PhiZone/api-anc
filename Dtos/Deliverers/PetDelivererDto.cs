@@ -7,6 +7,8 @@ public class PetDelivererDto
     public List<PetQuestionDeliverer> Questions { get; set; } = new();
 
     public int Score { get; set; }
+    
+    public DateTimeOffset DateStarted { get; set; }
 }
 
 public class PetQuestionDeliverer

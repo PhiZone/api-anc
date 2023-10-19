@@ -161,7 +161,7 @@ public class CommentController : Controller
         var comment = await _commentRepository.GetCommentAsync(id);
         if ((currentUser.Id == comment.OwnerId && !await _resourceService.HasPermission(currentUser, Roles.Member)) ||
             (currentUser.Id != comment.OwnerId &&
-             !await _resourceService.HasPermission(currentUser, Roles.Administrator)))
+             !await _resourceService.HasPermission(currentUser, Roles.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {

@@ -27,7 +27,7 @@ Based on ASP.NET Core.
 
 ## Configuration
 
-File `appsettings.Development.json` is ignored by Git using `.gitignore`. You should create it yourself.
+The files `appsettings.Development.json` and `appsettings.Production.json` are ignored by Git using `.gitignore`. You should create them yourself.
 
 ```json
 {
@@ -55,6 +55,21 @@ File `appsettings.Development.json` is ignored by Git using `.gitignore`. You sh
     "UserName": "yourusername",
     "Password": "yourpassword"
    },
+   "FeishuSettings": {
+      "ApiUrl": "https://open.feishu.cn",
+      "AppId": "yourappid",
+      "AppSecret": "yourappsecret",
+      "Cards": [
+         "songcard",
+         "chartcard",
+         "petanswercard"
+      ],
+      "Chats": [
+         "contentreviewal",
+         "qualificationreviewal",
+         "recruitmentreviewal"
+      ]
+   },
   "RedisConnection": "localhost:6379,password:yourpassword"
 }
 ```
@@ -76,9 +91,7 @@ the [Anti-Secession Law](https://www.gov.cn/gongbao/content/2005/content_63187.h
 > obligation of all Chinese people, the Taiwan compatriots included.
 
 Regions are introduced to PhiZone for statistical purposes. To obey the law and fulfill the obligation, we've
-appended `Prov. China` to the name of Taiwan so as to emphasize that Taiwan is part of China. In the language
-`zh-TW`, however, we keep Taiwan its own name (`台灣`) and append `Mainland` to the name of China (`中國大陸`),
-so as to avoid contradictions from users in Taiwan while still obeying the law.
+appended `Prov. China` to the name of Taiwan so as to emphasize that Taiwan is part of China.
 
 Flags are displayed normally except, in all languages, for Taiwan, which instead uses `TW` embedded in a badge
 as an icon in place of a flag.
