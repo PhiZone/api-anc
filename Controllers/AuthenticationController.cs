@@ -157,7 +157,6 @@ public class AuthenticationController : Controller
                         "Unable to find a user with provided credentials."
                 }!));
             if (!await _resourceService.HasPermission(user, Roles.Member))
-            {
                 return Forbid(
                     new AuthenticationProperties(new Dictionary<string, string>
                     {
@@ -165,7 +164,6 @@ public class AuthenticationController : Controller
                         [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
                             "You do not have enough permission to perform the action."
                     }!), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
-            }
 
             var actionResult = await CheckUserLockoutState(user);
             if (actionResult != null) return actionResult;

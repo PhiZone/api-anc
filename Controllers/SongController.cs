@@ -143,13 +143,6 @@ public class SongController : Controller
             });
         var song = await _songRepository.GetSongAsync(id);
 
-        if ((currentUser == null || !await _resourceService.HasPermission(currentUser, Roles.Administrator)) &&
-            song.IsHidden)
-            return NotFound(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
-            });
-
         var dto = await _dtoMapper.MapSongAsync<SongDto>(song, currentUser);
 
         return Ok(new ResponseDto<SongDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
@@ -735,13 +728,6 @@ public class SongController : Controller
         var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser,
             e => (hasPermission || (e.Status == RequestStatus.Approved && !e.Admittee.IsHidden)) && e.AdmitteeId == id);
 
-        if ((currentUser == null || !await _resourceService.HasPermission(currentUser, Roles.Administrator)) &&
-            song.IsHidden)
-            return NotFound(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
-            });
-
         var admissions = await _admissionRepository.GetAdmissionsAsync(dto.Order, dto.Desc, position,
             dto.PerPage, predicateExpr);
         var total = await _admissionRepository.CountAdmissionsAsync(predicateExpr);
@@ -803,12 +789,6 @@ public class SongController : Controller
 
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         var song = await _songRepository.GetSongAsync(id);
-        if ((currentUser == null || !await _resourceService.HasPermission(currentUser, Roles.Administrator)) &&
-            song.IsHidden)
-            return NotFound(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
-            });
 
         var admission = await _admissionRepository.GetAdmissionAsync(chapterId, id);
         if (!(currentUser != null && (song.OwnerId == currentUser.Id ||
@@ -1009,14 +989,6 @@ public class SongController : Controller
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        var song = await _songRepository.GetSongAsync(id);
-        if ((currentUser == null || !await _resourceService.HasPermission(currentUser, Roles.Administrator)) &&
-            song.IsHidden)
-            return NotFound(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
-            });
-
         var charts = await _songRepository.GetSongChartsAsync(id, dto.Order, dto.Desc, position, dto.PerPage,
             dto.Search, predicateExpr);
         var list = new List<ChartDto>();
@@ -1064,10 +1036,10 @@ public class SongController : Controller
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         var song = await _songRepository.GetSongAsync(id);
         if ((currentUser == null || !await _resourceService.HasPermission(currentUser, Roles.Administrator)) &&
-            song.IsHidden)
-            return NotFound(new ResponseDto<object>
+            song.IsLocked)
+            return BadRequest(new ResponseDto<object>
             {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Locked
             });
 
         var likes = await _likeRepository.GetLikesAsync(dto.Order, dto.Desc, position, dto.PerPage,
@@ -1113,11 +1085,6 @@ public class SongController : Controller
             });
         var song = await _songRepository.GetSongAsync(id);
 
-        if (!await _resourceService.HasPermission(currentUser, Roles.Administrator) && song.IsHidden)
-            return NotFound(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
-            });
         if (song.IsLocked)
             return BadRequest(new ResponseDto<object>
             {
@@ -1159,11 +1126,6 @@ public class SongController : Controller
             });
         var song = await _songRepository.GetSongAsync(id);
 
-        if (!await _resourceService.HasPermission(currentUser, Roles.Administrator) && song.IsHidden)
-            return NotFound(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
-            });
         if (song.IsLocked)
             return BadRequest(new ResponseDto<object>
             {
@@ -1206,10 +1168,10 @@ public class SongController : Controller
             });
         var song = await _songRepository.GetSongAsync(id);
         if ((currentUser == null || !await _resourceService.HasPermission(currentUser, Roles.Administrator)) &&
-            song.IsHidden)
-            return NotFound(new ResponseDto<object>
+            song.IsLocked)
+            return BadRequest(new ResponseDto<object>
             {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Locked
             });
 
         var comments = await _commentRepository.GetCommentsAsync(dto.Order, dto.Desc, position, dto.PerPage,
@@ -1267,11 +1229,6 @@ public class SongController : Controller
             });
         var song = await _songRepository.GetSongAsync(id);
 
-        if (!await _resourceService.HasPermission(currentUser, Roles.Administrator) && song.IsHidden)
-            return NotFound(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
-            });
         if (song.IsLocked)
             return BadRequest(new ResponseDto<object>
             {

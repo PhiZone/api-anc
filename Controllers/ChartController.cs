@@ -147,13 +147,6 @@ public class ChartController : Controller
             });
         var chart = await _chartRepository.GetChartAsync(id);
 
-        if ((currentUser == null || !await _resourceService.HasPermission(currentUser, Roles.Administrator)) &&
-            chart.IsHidden)
-            return NotFound(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
-            });
-
         var dto = await _dtoMapper.MapChartAsync<ChartDetailedDto>(chart, currentUser);
 
         // ReSharper disable once InvertIf
@@ -648,14 +641,7 @@ public class ChartController : Controller
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
             });
 
-        var chart = await _chartRepository.GetChartAsync(id);
-
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (chart.IsHidden && !await _resourceService.HasPermission(currentUser, Roles.Administrator))
-            return NotFound(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
-            });
         dto.PerPage = dto.PerPage > 0 && dto.PerPage < _dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
             dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : _dataSettings.Value.PaginationMaxPerPage;
         dto.Page = dto.Page > 1 ? dto.Page : 1;
@@ -705,15 +691,6 @@ public class ChartController : Controller
     public async Task<IActionResult> GetChartAsset([FromRoute] Guid id, [FromRoute] Guid assetId)
     {
         if (!await _chartRepository.ChartExistsAsync(id))
-            return NotFound(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
-            });
-
-        var chart = await _chartRepository.GetChartAsync(id);
-
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (chart.IsHidden && !await _resourceService.HasPermission(currentUser, Roles.Administrator))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
@@ -1075,10 +1052,10 @@ public class ChartController : Controller
         var chart = await _chartRepository.GetChartAsync(id);
 
         if ((currentUser == null || !await _resourceService.HasPermission(currentUser, Roles.Administrator)) &&
-            chart.IsHidden)
-            return NotFound(new ResponseDto<object>
+            chart.IsLocked)
+            return BadRequest(new ResponseDto<object>
             {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Locked
             });
 
         var records =
@@ -1128,10 +1105,10 @@ public class ChartController : Controller
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         var chart = await _chartRepository.GetChartAsync(id);
         if ((currentUser == null || !await _resourceService.HasPermission(currentUser, Roles.Administrator)) &&
-            chart.IsHidden)
-            return NotFound(new ResponseDto<object>
+            chart.IsLocked)
+            return BadRequest(new ResponseDto<object>
             {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Locked
             });
 
         var likes = await _likeRepository.GetLikesAsync(dto.Order, dto.Desc, position, dto.PerPage,
@@ -1182,12 +1159,6 @@ public class ChartController : Controller
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
         var chart = await _chartRepository.GetChartAsync(id);
-
-        if (!await _resourceService.HasPermission(currentUser, Roles.Administrator) && chart.IsHidden)
-            return NotFound(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
-            });
         if (chart.IsLocked)
             return BadRequest(new ResponseDto<object>
             {
@@ -1234,12 +1205,6 @@ public class ChartController : Controller
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
         var chart = await _chartRepository.GetChartAsync(id);
-
-        if (!await _resourceService.HasPermission(currentUser, Roles.Administrator) && chart.IsHidden)
-            return NotFound(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
-            });
         if (chart.IsLocked)
             return BadRequest(new ResponseDto<object>
             {
@@ -1285,10 +1250,10 @@ public class ChartController : Controller
         var chart = await _chartRepository.GetChartAsync(id);
 
         if ((currentUser == null || !await _resourceService.HasPermission(currentUser, Roles.Administrator)) &&
-            chart.IsHidden)
-            return NotFound(new ResponseDto<object>
+            chart.IsLocked)
+            return BadRequest(new ResponseDto<object>
             {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Locked
             });
 
         var comments = await _commentRepository.GetCommentsAsync(dto.Order, dto.Desc, position, dto.PerPage,
@@ -1345,12 +1310,6 @@ public class ChartController : Controller
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
         var chart = await _chartRepository.GetChartAsync(id);
-
-        if (!await _resourceService.HasPermission(currentUser, Roles.Administrator) && chart.IsHidden)
-            return NotFound(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
-            });
         if (chart.IsLocked)
             return BadRequest(new ResponseDto<object>
             {
@@ -1407,12 +1366,7 @@ public class ChartController : Controller
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         var chart = await _chartRepository.GetChartAsync(id);
         if ((currentUser == null || !await _resourceService.HasPermission(currentUser, Roles.Administrator)) &&
-            chart.IsHidden)
-            return NotFound(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
-            });
-        if (chart.IsLocked)
+            chart.IsLocked)
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Locked
@@ -1468,12 +1422,6 @@ public class ChartController : Controller
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
         var chart = await _chartRepository.GetChartAsync(id);
-
-        if (!await _resourceService.HasPermission(currentUser, Roles.Administrator) && chart.IsHidden)
-            return NotFound(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
-            });
         if (chart.IsLocked)
             return BadRequest(new ResponseDto<object>
             {
@@ -1518,12 +1466,6 @@ public class ChartController : Controller
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
         var chart = await _chartRepository.GetChartAsync(id);
-
-        if (!await _resourceService.HasPermission(currentUser, Roles.Administrator) && chart.IsHidden)
-            return NotFound(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
-            });
         if (chart.IsLocked)
             return BadRequest(new ResponseDto<object>
             {

@@ -27,7 +27,8 @@ Based on ASP.NET Core.
 
 ## Configuration
 
-The files `appsettings.Development.json` and `appsettings.Production.json` are ignored by Git using `.gitignore`. You should create them yourself.
+The files `appsettings.Development.json` and `appsettings.Production.json` are ignored by Git using `.gitignore`. You
+should create them yourself.
 
 ```json
 {

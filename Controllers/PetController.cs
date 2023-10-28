@@ -26,15 +26,15 @@ namespace PhiZoneApi.Controllers;
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
 public class PetController : Controller
 {
+    private readonly IOptions<DataSettings> _dataSettings;
+    private readonly IDtoMapper _dtoMapper;
+    private readonly IFeishuService _feishuService;
+    private readonly IFilterService _filterService;
+    private readonly INotificationService _notificationService;
     private readonly IPetAnswerRepository _petAnswerRepository;
     private readonly IPetQuestionRepository _petQuestionRepository;
     private readonly IConnectionMultiplexer _redis;
     private readonly IResourceService _resourceService;
-    private readonly IOptions<DataSettings> _dataSettings;
-    private readonly IDtoMapper _dtoMapper;
-    private readonly IFilterService _filterService;
-    private readonly INotificationService _notificationService;
-    private readonly IFeishuService _feishuService;
     private readonly Dictionary<Role, int> _scores;
     private readonly UserManager<User> _userManager;
 
@@ -92,12 +92,10 @@ public class PetController : Controller
             });
         if (await _petAnswerRepository.CountPetAnswersAsync(null,
                 answer => answer.OwnerId == currentUser.Id && answer.SubjectiveScore == null) > 0)
-        {
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
             });
-        }
 
         var db = _redis.GetDatabase();
         var key = $"PET:0:{currentUser.Id}";
@@ -128,7 +126,7 @@ public class PetController : Controller
                 Choices = choices.Select(e => e.Content).ToList()
             });
         }
-        
+
         deliverer.DateStarted = DateTimeOffset.UtcNow;
 
         await db.StringSetAsync(key, JsonConvert.SerializeObject(deliverer), TimeSpan.FromHours(1));
@@ -218,10 +216,10 @@ public class PetController : Controller
                 Language = question.Language
             });
         }
-        
+
         subjectiveDeliverer.Score = score;
         subjectiveDeliverer.DateStarted = objectiveDeliverer.DateStarted;
-        
+
         await db.StringSetAsync($"PET:1:{currentUser.Id}", JsonConvert.SerializeObject(subjectiveDeliverer),
             TimeSpan.FromHours(1));
         return Ok(new ResponseDto<IEnumerable<PetQuestionDto>>
@@ -420,7 +418,9 @@ public class PetController : Controller
         var role = await _resourceService.GetRole(user);
 
         // ReSharper disable once ReplaceWithFirstOrDefault.1
-        KeyValuePair<Role, int>? pair = _scores.Any(e => petAnswer.TotalScore >= e.Value) ? _scores.First(e => petAnswer.TotalScore >= e.Value) : null;
+        KeyValuePair<Role, int>? pair = _scores.Any(e => petAnswer.TotalScore >= e.Value)
+            ? _scores.First(e => petAnswer.TotalScore >= e.Value)
+            : null;
         if (pair != null)
         {
             if (role != null) await _userManager.RemoveFromRoleAsync(user, role.Name);

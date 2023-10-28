@@ -90,12 +90,6 @@ public class AdmissionController : Controller
 
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         var song = await _songRepository.GetSongAsync(songId);
-        if ((currentUser == null || !await _resourceService.HasPermission(currentUser, Roles.Administrator)) &&
-            song.IsHidden)
-            return NotFound(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
-            });
 
         var admission = await _admissionRepository.GetAdmissionAsync(chapterId, songId);
         if (!(currentUser != null && (song.OwnerId == currentUser.Id ||

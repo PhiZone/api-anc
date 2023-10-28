@@ -168,7 +168,8 @@ public class FeishuService : IFeishuService
             };
             var response = await _client.SendAsync(request);
             if (!response.IsSuccessStatusCode)
-                _logger.LogError(LogEvents.FeishuFailure, "An error occurred whilst announcing PET answer update:\n{Error}",
+                _logger.LogError(LogEvents.FeishuFailure,
+                    "An error occurred whilst announcing PET answer update:\n{Error}",
                     await response.Content.ReadAsStringAsync());
         }
     }

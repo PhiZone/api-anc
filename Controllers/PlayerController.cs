@@ -356,12 +356,6 @@ public class PlayerController : Controller
         } while (await db.KeyExistsAsync($"PLAY:{token}"));
 
         var chart = await _chartRepository.GetChartAsync(chartId);
-
-        if (!await _resourceService.HasPermission(currentUser, Roles.Administrator) && chart.IsHidden)
-            return NotFound(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
-            });
         if (chart.IsLocked)
             return BadRequest(new ResponseDto<object>
             {

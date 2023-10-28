@@ -14,6 +14,7 @@ public class DtoMapper : IDtoMapper
     private readonly ICommentRepository _commentRepository;
     private readonly ILikeRepository _likeRepository;
     private readonly IMapper _mapper;
+    private readonly IPetQuestionRepository _petQuestionRepository;
     private readonly IRecordRepository _recordRepository;
     private readonly IRegionRepository _regionRepository;
     private readonly IReplyRepository _replyRepository;
@@ -21,7 +22,6 @@ public class DtoMapper : IDtoMapper
     private readonly UserManager<User> _userManager;
     private readonly IUserRelationRepository _userRelationRepository;
     private readonly IVolunteerVoteRepository _volunteerVoteRepository;
-    private readonly IPetQuestionRepository _petQuestionRepository;
 
     public DtoMapper(IUserRelationRepository userRelationRepository, IRegionRepository regionRepository,
         ILikeRepository likeRepository, UserManager<User> userManager, IMapper mapper,

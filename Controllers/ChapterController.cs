@@ -375,14 +375,6 @@ public class ChapterController : Controller
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        var chapter = await _chapterRepository.GetChapterAsync(id);
-        if ((currentUser == null || !await _resourceService.HasPermission(currentUser, Roles.Administrator)) &&
-            chapter.IsHidden)
-            return NotFound(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
-            });
-
         var admissions = await _chapterRepository.GetChapterSongsAsync(id, dto.Order, dto.Desc, position, dto.PerPage,
             dto.Search, predicateExpr);
         var list = new List<SongAdmitteeDto>();
@@ -431,11 +423,12 @@ public class ChapterController : Controller
 
         var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         var chapter = await _chapterRepository.GetChapterAsync(id);
+
         if ((currentUser == null || !await _resourceService.HasPermission(currentUser, Roles.Administrator)) &&
-            chapter.IsHidden)
-            return NotFound(new ResponseDto<object>
+            chapter.IsLocked)
+            return BadRequest(new ResponseDto<object>
             {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Locked
             });
 
         var likes = await _likeRepository.GetLikesAsync(dto.Order, dto.Desc, position, dto.PerPage,
@@ -481,11 +474,6 @@ public class ChapterController : Controller
             });
         var chapter = await _chapterRepository.GetChapterAsync(id);
 
-        if (!await _resourceService.HasPermission(currentUser, Roles.Administrator) && chapter.IsHidden)
-            return NotFound(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
-            });
         if (chapter.IsLocked)
             return BadRequest(new ResponseDto<object>
             {
@@ -525,11 +513,6 @@ public class ChapterController : Controller
             });
         var chapter = await _chapterRepository.GetChapterAsync(id);
 
-        if (!await _resourceService.HasPermission(currentUser, Roles.Administrator) && chapter.IsHidden)
-            return NotFound(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
-            });
         if (chapter.IsLocked)
             return BadRequest(new ResponseDto<object>
             {
@@ -572,11 +555,12 @@ public class ChapterController : Controller
             });
 
         var chapter = await _chapterRepository.GetChapterAsync(id);
+
         if ((currentUser == null || !await _resourceService.HasPermission(currentUser, Roles.Administrator)) &&
-            chapter.IsHidden)
-            return NotFound(new ResponseDto<object>
+            chapter.IsLocked)
+            return BadRequest(new ResponseDto<object>
             {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Locked
             });
 
         var comments = await _commentRepository.GetCommentsAsync(dto.Order, dto.Desc, position, dto.PerPage,
@@ -634,11 +618,6 @@ public class ChapterController : Controller
             });
         var chapter = await _chapterRepository.GetChapterAsync(id);
 
-        if (!await _resourceService.HasPermission(currentUser, Roles.Administrator) && chapter.IsHidden)
-            return NotFound(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
-            });
         if (chapter.IsLocked)
             return BadRequest(new ResponseDto<object>
             {
