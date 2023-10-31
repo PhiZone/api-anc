@@ -3,7 +3,7 @@
     {
       "Mode": 0,
       "Subject": "[PhiZone] Please confirm your email address",
-      "Body": "Dear {UserName},\n\nPlease enter {Code} into the input field on the confirmation page in order to confirm your email address. This code is valid in 5 minutes.\n\nIf you did not expect to receive this email, please ignore it.\n\nPhiZone"
+      "Body": "Dear {UserName},\n\nPlease enter {Code} on the registration page in order to confirm your email address. This code is valid in 5 minutes.\n\nIf you did not expect to receive this email, please ignore it.\n\nPhiZone"
     },
     {
       "Mode": 1,

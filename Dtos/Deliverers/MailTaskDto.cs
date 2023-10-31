@@ -1,15 +1,12 @@
-﻿using PhiZoneApi.Enums;
-using PhiZoneApi.Models;
-
-namespace PhiZoneApi.Dtos.Deliverers;
+﻿namespace PhiZoneApi.Dtos.Deliverers;
 
 public class MailTaskDto
 {
-    public User User { get; init; } = null!;
+    public string UserName { get; set; } = null!;
+
+    public string EmailAddress { get; set; } = null!;
 
     public string EmailSubject { get; init; } = null!;
 
     public string EmailBody { get; init; } = null!;
-
-    public SucceedingAction? SucceedingAction { get; init; }
 }

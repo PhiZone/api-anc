@@ -9,7 +9,6 @@ using PhiZoneApi.Constants;
 using PhiZoneApi.Dtos.Deliverers;
 using PhiZoneApi.Enums;
 using PhiZoneApi.Interfaces;
-using PhiZoneApi.Models;
 using StackExchange.Redis;
 
 namespace PhiZoneApi.Services;
@@ -32,10 +31,9 @@ public class MailService : IMailService
         _logger = logger;
     }
 
-    public async Task<MailTaskDto?> GenerateEmailAsync(User user, EmailRequestMode mode, SucceedingAction? action)
+    public async Task<MailTaskDto?> GenerateEmailAsync(string email, string userName, string language,
+        EmailRequestMode mode)
     {
-        if (user.Email == null || user.UserName == null) throw new ArgumentNullException(nameof(user));
-
         string code;
         var random = new Random();
         var db = _redis.GetDatabase();
@@ -44,23 +42,23 @@ public class MailService : IMailService
             code = random.Next(1000000, 2000000).ToString()[1..];
         } while (await db.KeyExistsAsync($"EMAIL:{mode}:{code}"));
 
-        if (!await db.StringSetAsync($"EMAIL:{mode}:{code}", user.Email, TimeSpan.FromSeconds(305))) return null;
+        if (!await db.StringSetAsync($"EMAIL:{mode}:{code}", email, TimeSpan.FromSeconds(305))) return null;
 
-        var template = _templateService.GetEmailTemplate(mode, user.Language)!;
+        var template = _templateService.GetEmailTemplate(mode, language)!;
 
         return new MailTaskDto
         {
-            User = user,
+            EmailAddress = email,
+            UserName = userName,
             EmailSubject = template.Subject,
             EmailBody = _templateService.ReplacePlaceholders(template.Body,
-                new Dictionary<string, string> { { "UserName", user.UserName }, { "Code", code } }),
-            SucceedingAction = action
+                new Dictionary<string, string> { { "UserName", userName }, { "Code", code } })
         };
     }
 
-    public async Task<string> PublishEmailAsync(User user, EmailRequestMode mode, SucceedingAction? action)
+    public async Task<string> PublishEmailAsync(string email, string userName, string language, EmailRequestMode mode)
     {
-        var mailDto = await GenerateEmailAsync(user, mode, action);
+        var mailDto = await GenerateEmailAsync(email, userName, language, mode);
         if (mailDto == null) return ResponseCodes.RedisError;
 
         var body = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(mailDto));
@@ -76,7 +74,7 @@ public class MailService : IMailService
         }
 
         var db = _redis.GetDatabase();
-        await db.StringSetAsync($"COOLDOWN:{mode}:{user.Email}", DateTimeOffset.UtcNow.AddMinutes(5).ToString(),
+        await db.StringSetAsync($"COOLDOWN:{mode}:{email}", DateTimeOffset.UtcNow.AddMinutes(5).ToString(),
             TimeSpan.FromMinutes(5));
         return string.Empty;
     }
@@ -86,7 +84,7 @@ public class MailService : IMailService
         using var emailMessage = new MimeMessage();
         var emailFrom = new MailboxAddress(_settings.SenderName, _settings.SenderAddress);
         emailMessage.From.Add(emailFrom);
-        var emailTo = new MailboxAddress(mailTaskDto.User.UserName, mailTaskDto.User.Email);
+        var emailTo = new MailboxAddress(mailTaskDto.UserName, mailTaskDto.EmailAddress);
         emailMessage.To.Add(emailTo);
 
         emailMessage.Subject = mailTaskDto.EmailSubject;
@@ -106,7 +104,7 @@ public class MailService : IMailService
         catch (Exception ex)
         {
             _logger.LogWarning(LogEvents.MailFailure, ex, "Failed to send an email to {Email} for {User}",
-                mailTaskDto.User.Email, mailTaskDto.User.UserName);
+                mailTaskDto.EmailAddress, mailTaskDto.UserName);
             return ex.Message;
         }
 

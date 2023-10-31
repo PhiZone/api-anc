@@ -136,7 +136,6 @@ builder.Services.AddScoped<ITapTapService, TapTapService>();
 builder.Services.AddScoped<IMailService, MailService>();
 builder.Services.AddScoped<IMultimediaService, MultimediaService>();
 builder.Services.AddScoped<ITemplateService, TemplateService>();
-builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddSingleton<IFileStorageService, FileStorageService>();
 builder.Services.AddSingleton<IRabbitMqService, RabbitMqService>();
 builder.Services.AddSingleton<IFeishuService, FeishuService>();
@@ -144,15 +143,13 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(
     ConnectionMultiplexer.Connect(builder.Configuration.GetValue<string>("RedisConnection") ?? "localhost"));
 builder.Services.AddSingleton<IHostedService>(provider => new MailSenderService(
     provider.GetService<IServiceScopeFactory>()!.CreateScope().ServiceProvider.GetService<IMailService>()!,
-    provider.GetService<IRabbitMqService>()!,
-    provider.GetService<IServiceScopeFactory>()!.CreateScope().ServiceProvider.GetService<IUserService>()!));
+    provider.GetService<IRabbitMqService>()!));
 builder.Services.AddSingleton<IHostedService>(provider => new SongConverterService(
     provider.GetService<IRabbitMqService>()!,
     provider.GetService<IServiceScopeFactory>()!.CreateScope().ServiceProvider.GetService<ISongService>()!,
     provider.GetService<IServiceScopeFactory>()!.CreateScope().ServiceProvider.GetService<ISongRepository>()!,
     provider.GetService<IServiceScopeFactory>()!.CreateScope().ServiceProvider.GetService<ISongSubmissionRepository>()!,
-    provider.GetService<IFeishuService>()!,
-    provider.GetService<ILogger<SongConverterService>>()!));
+    provider.GetService<IFeishuService>()!, provider.GetService<ILogger<SongConverterService>>()!));
 builder.Services.AddHostedService<DatabaseSeeder>();
 
 if (args.Length >= 1)
@@ -175,8 +172,7 @@ builder.Services.Configure<LanguageSettings>(builder.Configuration.GetSection("L
 builder.Services.Configure<RabbitMqSettings>(builder.Configuration.GetSection("RabbitMQSettings"));
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
-    options.ForwardedHeaders =
-        ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
 });
 builder.Services.Configure<FormOptions>(options =>
 {

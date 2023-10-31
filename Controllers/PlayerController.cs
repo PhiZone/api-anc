@@ -356,6 +356,11 @@ public class PlayerController : Controller
         } while (await db.KeyExistsAsync($"PLAY:{token}"));
 
         var chart = await _chartRepository.GetChartAsync(chartId);
+        if (await _resourceService.IsBlacklisted(chart.OwnerId, currentUser.Id))
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Blacklisted
+            });
         if (chart.IsLocked)
             return BadRequest(new ResponseDto<object>
             {

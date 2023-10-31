@@ -1159,6 +1159,11 @@ public class ChartController : Controller
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
         var chart = await _chartRepository.GetChartAsync(id);
+        if (await _resourceService.IsBlacklisted(chart.OwnerId, currentUser.Id))
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Blacklisted
+            });
         if (chart.IsLocked)
             return BadRequest(new ResponseDto<object>
             {
@@ -1310,6 +1315,11 @@ public class ChartController : Controller
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
         var chart = await _chartRepository.GetChartAsync(id);
+        if (await _resourceService.IsBlacklisted(chart.OwnerId, currentUser.Id))
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Blacklisted
+            });
         if (chart.IsLocked)
             return BadRequest(new ResponseDto<object>
             {

@@ -37,12 +37,11 @@ public class CommentController : Controller
     private readonly IReplyRepository _replyRepository;
     private readonly IResourceService _resourceService;
     private readonly UserManager<User> _userManager;
-    private readonly IUserService _userService;
 
     public CommentController(ICommentRepository commentRepository, IOptions<DataSettings> dataSettings,
         IDtoMapper dtoMapper, IFilterService filterService, UserManager<User> userManager,
         IReplyRepository replyRepository, ILikeRepository likeRepository, ILikeService likeService, IMapper mapper,
-        IResourceService resourceService, INotificationService notificationService, IUserService userService)
+        IResourceService resourceService, INotificationService notificationService)
     {
         _commentRepository = commentRepository;
         _dataSettings = dataSettings;
@@ -55,7 +54,6 @@ public class CommentController : Controller
         _mapper = mapper;
         _resourceService = resourceService;
         _notificationService = notificationService;
-        _userService = userService;
     }
 
     /// <summary>
@@ -255,7 +253,7 @@ public class CommentController : Controller
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
         var comment = await _commentRepository.GetCommentAsync(id);
-        if (await _userService.IsBlacklisted(comment.OwnerId, currentUser.Id))
+        if (await _resourceService.IsBlacklisted(comment.OwnerId, currentUser.Id))
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Blacklisted
@@ -362,6 +360,11 @@ public class CommentController : Controller
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
         var comment = await _commentRepository.GetCommentAsync(id);
+        if (await _resourceService.IsBlacklisted(comment.OwnerId, currentUser.Id))
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Blacklisted
+            });
         if (!await _likeService.CreateLikeAsync(comment, currentUser.Id))
             return BadRequest(new ResponseDto<object>
             {

@@ -16,6 +16,7 @@ using PhiZoneApi.Filters;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 using PhiZoneApi.Utils;
+using StackExchange.Redis;
 
 // ReSharper disable RouteTemplates.ActionRoutePrefixCanBeExtractedToControllerRoute
 
@@ -32,26 +33,28 @@ public class UserController : Controller
     private readonly IDtoMapper _dtoMapper;
     private readonly IFileStorageService _fileStorageService;
     private readonly IFilterService _filterService;
-    private readonly IMailService _mailService;
     private readonly IMapper _mapper;
+    private readonly IPlayConfigurationRepository _playConfigurationRepository;
     private readonly IRecordRepository _recordRepository;
     private readonly IRecordService _recordService;
+    private readonly IConnectionMultiplexer _redis;
     private readonly IRegionRepository _regionRepository;
     private readonly IResourceService _resourceService;
+    private readonly ITemplateService _templateService;
     private readonly UserManager<User> _userManager;
     private readonly IUserRelationRepository _userRelationRepository;
     private readonly IUserRepository _userRepository;
 
     public UserController(IUserRepository userRepository, IUserRelationRepository userRelationRepository,
-        UserManager<User> userManager, IMailService mailService, IFilterService filterService,
+        UserManager<User> userManager, IFilterService filterService,
         IFileStorageService fileStorageService, IOptions<DataSettings> dataSettings, IMapper mapper,
         IDtoMapper dtoMapper, IRegionRepository regionRepository, IRecordRepository recordRepository,
-        IRecordService recordService, IResourceService resourceService)
+        IRecordService recordService, IResourceService resourceService, IConnectionMultiplexer redis,
+        ITemplateService templateService, IPlayConfigurationRepository playConfigurationRepository)
     {
         _userRepository = userRepository;
         _userRelationRepository = userRelationRepository;
         _userManager = userManager;
-        _mailService = mailService;
         _filterService = filterService;
         _fileStorageService = fileStorageService;
         _dataSettings = dataSettings;
@@ -61,6 +64,9 @@ public class UserController : Controller
         _recordRepository = recordRepository;
         _recordService = recordService;
         _resourceService = resourceService;
+        _redis = redis;
+        _templateService = templateService;
+        _playConfigurationRepository = playConfigurationRepository;
     }
 
     /// <summary>
@@ -156,6 +162,21 @@ public class UserController : Controller
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> Register([FromForm] UserRegistrationDto dto)
     {
+        var db = _redis.GetDatabase();
+        var key = $"EMAIL:{EmailRequestMode.EmailConfirmation}:{dto.EmailConfirmationCode}";
+        if (!await db.KeyExistsAsync(key))
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidCode
+            });
+        var email = await db.StringGetAsync(key);
+        if (email != dto.Email)
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidCode
+            });
+        db.KeyDelete(key);
+
         var user = await _userManager.FindByEmailAsync(dto.Email);
         if (user != null)
             return BadRequest(new ResponseDto<object>
@@ -190,14 +211,31 @@ public class UserController : Controller
                     : null,
             DateJoined = DateTimeOffset.UtcNow
         };
-
+        await _userManager.CreateAsync(user);
         user.PasswordHash = _userManager.PasswordHasher.HashPassword(user, dto.Password);
-
-        var errorCode =
-            await _mailService.PublishEmailAsync(user, EmailRequestMode.EmailConfirmation, SucceedingAction.Create);
-        if (!errorCode.Equals(string.Empty))
-            return StatusCode(StatusCodes.Status500InternalServerError,
-                new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = errorCode });
+        user.EmailConfirmed = true;
+        user.LockoutEnabled = false;
+        await _userManager.UpdateAsync(user);
+        await _userManager.AddToRoleAsync(user, Roles.Member.Name);
+        var configuration = new PlayConfiguration
+        {
+            Name = _templateService.GetMessage("default", user.Language),
+            PerfectJudgment = 80,
+            GoodJudgment = 160,
+            AspectRatio = null,
+            NoteSize = 1,
+            ChartMirroring = ChartMirroringMode.Off,
+            BackgroundLuminance = 0.5,
+            BackgroundBlur = 1,
+            SimultaneousNoteHint = true,
+            FcApIndicator = true,
+            ChartOffset = 0,
+            HitSoundVolume = 0,
+            MusicVolume = 0,
+            OwnerId = user.Id,
+            DateCreated = DateTimeOffset.UtcNow
+        };
+        await _playConfigurationRepository.CreatePlayConfigurationAsync(configuration);
 
         return StatusCode(StatusCodes.Status201Created);
     }
@@ -225,6 +263,21 @@ public class UserController : Controller
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> Register([FromBody] UserRegistrationBriefDto dto)
     {
+        var db = _redis.GetDatabase();
+        var key = $"EMAIL:{EmailRequestMode.EmailConfirmation}:{dto.EmailConfirmationCode}";
+        if (!await db.KeyExistsAsync(key))
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidCode
+            });
+        var email = await db.StringGetAsync(key);
+        if (email != dto.Email)
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidCode
+            });
+        db.KeyDelete(key);
+
         var user = await _userManager.FindByEmailAsync(dto.Email);
         if (user != null)
             return BadRequest(new ResponseDto<object>
@@ -254,14 +307,31 @@ public class UserController : Controller
                     : null,
             DateJoined = DateTimeOffset.UtcNow
         };
-
+        await _userManager.CreateAsync(user);
         user.PasswordHash = _userManager.PasswordHasher.HashPassword(user, dto.Password);
-
-        var errorCode =
-            await _mailService.PublishEmailAsync(user, EmailRequestMode.EmailConfirmation, SucceedingAction.Create);
-        if (!errorCode.Equals(string.Empty))
-            return StatusCode(StatusCodes.Status500InternalServerError,
-                new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = errorCode });
+        user.EmailConfirmed = true;
+        user.LockoutEnabled = false;
+        await _userManager.UpdateAsync(user);
+        await _userManager.AddToRoleAsync(user, Roles.Member.Name);
+        var configuration = new PlayConfiguration
+        {
+            Name = _templateService.GetMessage("default", user.Language),
+            PerfectJudgment = 80,
+            GoodJudgment = 160,
+            AspectRatio = null,
+            NoteSize = 1,
+            ChartMirroring = ChartMirroringMode.Off,
+            BackgroundLuminance = 0.5,
+            BackgroundBlur = 1,
+            SimultaneousNoteHint = true,
+            FcApIndicator = true,
+            ChartOffset = 0,
+            HitSoundVolume = 0,
+            MusicVolume = 0,
+            OwnerId = user.Id,
+            DateCreated = DateTimeOffset.UtcNow
+        };
+        await _playConfigurationRepository.CreatePlayConfigurationAsync(configuration);
 
         return StatusCode(StatusCodes.Status201Created);
     }

@@ -228,6 +228,11 @@ public class ReplyController : Controller
             return NotFound(new ResponseDto<object>
                 { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
         var reply = await _replyRepository.GetReplyAsync(id);
+        if (await _resourceService.IsBlacklisted(reply.OwnerId, currentUser.Id))
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Blacklisted
+            });
         if (!await _likeService.CreateLikeAsync(reply, currentUser.Id))
             return BadRequest(new ResponseDto<object>
             {
