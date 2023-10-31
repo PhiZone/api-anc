@@ -17,6 +17,8 @@ public interface IResourceService
 
     List<int> GetAuthorIds(string name);
 
+    Task<bool> IsBlacklisted(int user1, int user2);
+
     Task<bool> HasPermission(User user, Role targetRole);
 
     Task<bool> HasPermission(User user, int priority);

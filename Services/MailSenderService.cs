@@ -1,7 +1,6 @@
 ﻿using System.Text;
 using Newtonsoft.Json;
 using PhiZoneApi.Dtos.Deliverers;
-using PhiZoneApi.Enums;
 using PhiZoneApi.Interfaces;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
@@ -12,12 +11,10 @@ public class MailSenderService : BackgroundService
 {
     private readonly IModel _channel;
     private readonly IMailService _mailService;
-    private readonly IUserService _userService;
 
-    public MailSenderService(IMailService mailService, IRabbitMqService rabbitMqService, IUserService userService)
+    public MailSenderService(IMailService mailService, IRabbitMqService rabbitMqService)
     {
         _mailService = mailService;
-        _userService = userService;
         _channel = rabbitMqService.GetConnection().CreateModel();
     }
 
@@ -31,22 +28,7 @@ public class MailSenderService : BackgroundService
             var body = args.Body.ToArray();
             var message = Encoding.UTF8.GetString(body);
             var mailDto = JsonConvert.DeserializeObject<MailTaskDto>(message);
-
-            var result = await _mailService.SendMailAsync(mailDto!);
-            if (result == string.Empty)
-                switch (mailDto!.SucceedingAction)
-                {
-                    case SucceedingAction.Create:
-                        await _userService.CreateUser(mailDto.User);
-                        break;
-                    case SucceedingAction.Update:
-                        break;
-                    case null:
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException(nameof(SucceedingAction), "Unsupported value.");
-                }
-
+            await _mailService.SendMailAsync(mailDto!);
             _channel.BasicAck(args.DeliveryTag, false);
         };
 

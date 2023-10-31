@@ -306,26 +306,28 @@ public class AuthenticationController : Controller
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> SendEmail([FromBody] UserEmailRequestDto dto)
+    public async Task<IActionResult> SendEmail([FromBody] UserEmailRequestDto dto, [FromQuery] bool wait = false)
     {
         var user = await _userManager.FindByEmailAsync(dto.Email);
-        if (user == null)
-            return NotFound(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNotFound
-            });
-
-        if (dto.Mode != EmailRequestMode.EmailConfirmation && !await _resourceService.HasPermission(user, Roles.Member))
-            return StatusCode(StatusCodes.Status403Forbidden,
-                new ResponseDto<object>
+        if (dto.Mode != EmailRequestMode.EmailConfirmation)
+        {
+            if (user == null)
+                return NotFound(new ResponseDto<object>
                 {
-                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNotFound
                 });
+            if (!await _resourceService.HasPermission(user, Roles.Member))
+                return StatusCode(StatusCodes.Status403Forbidden,
+                    new ResponseDto<object>
+                    {
+                        Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                    });
+        }
 
         var db = _redis.GetDatabase();
-        if (await db.KeyExistsAsync($"COOLDOWN:{dto.Mode}:{user.Email}"))
+        if (await db.KeyExistsAsync($"COOLDOWN:{dto.Mode}:{dto.Email}"))
         {
-            var dateAvailable = DateTimeOffset.Parse((await db.StringGetAsync($"COOLDOWN:{dto.Mode}:{user.Email}"))!);
+            var dateAvailable = DateTimeOffset.Parse((await db.StringGetAsync($"COOLDOWN:{dto.Mode}:{dto.Email}"))!);
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorTemporarilyUnavailable,
@@ -334,29 +336,45 @@ public class AuthenticationController : Controller
             });
         }
 
-        if (dto.Mode == EmailRequestMode.EmailConfirmation && user.EmailConfirmed)
-            return BadRequest(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
-            });
-
-        var mailDto = await _mailService.GenerateEmailAsync(user, dto.Mode, null);
-        if (mailDto == null)
-            return StatusCode(StatusCodes.Status500InternalServerError,
-                new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.RedisError });
-
-        try
+        if (dto.Mode == EmailRequestMode.EmailConfirmation)
         {
-            await _mailService.SendMailAsync(mailDto);
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(StatusCodes.Status500InternalServerError,
-                new ResponseDto<object>
+            if (user != null)
+                return BadRequest(new ResponseDto<object>
                 {
-                    Status = ResponseStatus.ErrorWithMessage, Code = ResponseCodes.MailError, Message = ex.Message
+                    Status = ResponseStatus.ErrorBrief,
+                    Code = string.Equals(user.UserName, dto.UserName, StringComparison.InvariantCultureIgnoreCase)
+                        ? ResponseCodes.AlreadyDone
+                        : ResponseCodes.EmailOccupied
+                });
+
+            user = await _userManager.FindByNameAsync(dto.UserName);
+            if (user != null)
+                return BadRequest(new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNameOccupied
                 });
         }
+
+        if (wait)
+            try
+            {
+                var mailDto = await _mailService.GenerateEmailAsync(dto.Email, dto.UserName, dto.Language, dto.Mode);
+                if (mailDto == null)
+                    return StatusCode(StatusCodes.Status500InternalServerError,
+                        new ResponseDto<object>
+                            { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.RedisError });
+                await _mailService.SendMailAsync(mailDto);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new ResponseDto<object>
+                    {
+                        Status = ResponseStatus.ErrorWithMessage, Code = ResponseCodes.MailError, Message = ex.Message
+                    });
+            }
+        else
+            await _mailService.PublishEmailAsync(dto.Email, dto.UserName, dto.Language, dto.Mode);
 
         return NoContent();
     }
@@ -384,46 +402,6 @@ public class AuthenticationController : Controller
 
         user.PasswordHash = _userManager.PasswordHasher.HashPassword(user, dto.Password);
         await _userManager.UpdateAsync(user);
-        return NoContent();
-    }
-
-    /// <summary>
-    ///     Activates user's account.
-    /// </summary>
-    /// <param name="dto">Code from the confirmation email.</param>
-    /// <returns>An empty body.</returns>
-    /// <response code="204">Returns an empty body.</response>
-    /// <response code="400">
-    ///     When
-    ///     1. the input code is invalid;
-    ///     2. the user has already been activated.
-    /// </response>
-    [HttpPost("activate")]
-    [Consumes("application/json")]
-    [Produces("application/json")]
-    [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
-    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> Activate([FromBody] ConfirmationCodeDto dto)
-    {
-        var user = await RedeemCode(dto.Code, EmailRequestMode.EmailConfirmation);
-        switch (user)
-        {
-            case null:
-                return BadRequest(new ResponseDto<object>
-                {
-                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidCode
-                });
-            case { EmailConfirmed: true, LockoutEnabled: false }:
-                return BadRequest(new ResponseDto<object>
-                {
-                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
-                });
-        }
-
-        user.EmailConfirmed = true;
-        user.LockoutEnabled = false;
-        await _userManager.UpdateAsync(user);
-        await _userManager.AddToRoleAsync(user, Roles.Member.Name);
         return NoContent();
     }
 

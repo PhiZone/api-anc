@@ -1084,7 +1084,11 @@ public class SongController : Controller
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
         var song = await _songRepository.GetSongAsync(id);
-
+        if (await _resourceService.IsBlacklisted(song.OwnerId, currentUser.Id))
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Blacklisted
+            });
         if (song.IsLocked)
             return BadRequest(new ResponseDto<object>
             {
@@ -1228,7 +1232,11 @@ public class SongController : Controller
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
         var song = await _songRepository.GetSongAsync(id);
-
+        if (await _resourceService.IsBlacklisted(song.OwnerId, currentUser.Id))
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Blacklisted
+            });
         if (song.IsLocked)
             return BadRequest(new ResponseDto<object>
             {

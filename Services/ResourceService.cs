@@ -1,6 +1,7 @@
 ﻿using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Identity;
 using PhiZoneApi.Constants;
+using PhiZoneApi.Enums;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 using Role = PhiZoneApi.Constants.Role;
@@ -13,14 +14,17 @@ public partial class ResourceService : IResourceService
     private readonly ISongRepository _songRepository;
     private readonly ISongSubmissionRepository _songSubmissionRepository;
     private readonly UserManager<User> _userManager;
+    private readonly IUserRelationRepository _userRelationRepository;
 
     public ResourceService(UserManager<User> userManager, ISongRepository songRepository,
-        ISongSubmissionRepository songSubmissionRepository, IChartRepository chartRepository)
+        ISongSubmissionRepository songSubmissionRepository, IChartRepository chartRepository,
+        IUserRelationRepository userRelationRepository)
     {
         _userManager = userManager;
         _songRepository = songRepository;
         _songSubmissionRepository = songSubmissionRepository;
         _chartRepository = chartRepository;
+        _userRelationRepository = userRelationRepository;
     }
 
     public string GetRichText<T>(string id, string display, string? addition = null)
@@ -64,6 +68,15 @@ public partial class ResourceService : IResourceService
         }
 
         return result;
+    }
+
+    public async Task<bool> IsBlacklisted(int user1, int user2)
+    {
+        if (await _userRelationRepository.RelationExistsAsync(user1, user2))
+            if ((await _userRelationRepository.GetRelationAsync(user1, user2)).Type == UserRelationType.Blacklisted)
+                return true;
+        if (!await _userRelationRepository.RelationExistsAsync(user2, user1)) return false;
+        return (await _userRelationRepository.GetRelationAsync(user2, user1)).Type == UserRelationType.Blacklisted;
     }
 
     public async Task<bool> HasPermission(User user, Role targetRole)

@@ -473,7 +473,11 @@ public class ChapterController : Controller
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
         var chapter = await _chapterRepository.GetChapterAsync(id);
-
+        if (await _resourceService.IsBlacklisted(chapter.OwnerId, currentUser.Id))
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Blacklisted
+            });
         if (chapter.IsLocked)
             return BadRequest(new ResponseDto<object>
             {
@@ -617,7 +621,11 @@ public class ChapterController : Controller
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
         var chapter = await _chapterRepository.GetChapterAsync(id);
-
+        if (await _resourceService.IsBlacklisted(chapter.OwnerId, currentUser.Id))
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Blacklisted
+            });
         if (chapter.IsLocked)
             return BadRequest(new ResponseDto<object>
             {

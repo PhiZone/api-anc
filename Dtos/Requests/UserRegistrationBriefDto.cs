@@ -45,4 +45,8 @@ public class UserRegistrationBriefDto
 
     [DataType(DataType.Date, ErrorMessage = ResponseCodes.InvalidDate)]
     public DateTimeOffset? DateOfBirth { get; set; }
+
+    [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
+    [MaxLength(6, ErrorMessage = ResponseCodes.ValueTooLong)]
+    public string EmailConfirmationCode { get; set; } = null!;
 }

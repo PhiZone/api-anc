@@ -471,6 +471,11 @@ public class RecordController : Controller
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
         var record = await _recordRepository.GetRecordAsync(id);
+        if (await _resourceService.IsBlacklisted(record.OwnerId, currentUser.Id))
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Blacklisted
+            });
         if (!await _likeService.CreateLikeAsync(record, currentUser.Id))
             return BadRequest(new ResponseDto<object>
             {
@@ -599,7 +604,11 @@ public class RecordController : Controller
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
         var record = await _recordRepository.GetRecordAsync(id);
-
+        if (await _resourceService.IsBlacklisted(record.OwnerId, currentUser.Id))
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Blacklisted
+            });
         var result = await _resourceService.ParseUserContent(dto.Content);
         var comment = new Comment
         {

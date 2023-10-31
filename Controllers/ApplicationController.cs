@@ -409,6 +409,11 @@ public class ApplicationController : Controller
             return NotFound(new ResponseDto<object>
                 { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
         var application = await _applicationRepository.GetApplicationAsync(id);
+        if (await _resourceService.IsBlacklisted(application.OwnerId, currentUser.Id))
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Blacklisted
+            });
         if (!await _likeService.CreateLikeAsync(application, currentUser.Id))
             return BadRequest(new ResponseDto<object>
             {
@@ -528,6 +533,11 @@ public class ApplicationController : Controller
             return NotFound(new ResponseDto<object>
                 { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
         var application = await _applicationRepository.GetApplicationAsync(id);
+        if (await _resourceService.IsBlacklisted(application.OwnerId, currentUser.Id))
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Blacklisted
+            });
 
         var result = await _resourceService.ParseUserContent(dto.Content);
         var comment = new Comment

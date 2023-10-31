@@ -345,6 +345,11 @@ public class AnnouncementController : Controller
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
         var announcement = await _announcementRepository.GetAnnouncementAsync(id);
+        if (await _resourceService.IsBlacklisted(announcement.OwnerId, currentUser.Id))
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Blacklisted
+            });
         if (!await _likeService.CreateLikeAsync(announcement, currentUser.Id))
             return BadRequest(new ResponseDto<object>
             {
@@ -468,6 +473,11 @@ public class AnnouncementController : Controller
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
         var announcement = await _announcementRepository.GetAnnouncementAsync(id);
+        if (await _resourceService.IsBlacklisted(announcement.OwnerId, currentUser.Id))
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Blacklisted
+            });
 
         var result = await _resourceService.ParseUserContent(dto.Content);
         var comment = new Comment
