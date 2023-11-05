@@ -7,9 +7,6 @@
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
         <Company>PhiZone</Company>
         <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
-    </PropertyGroup>
-
-    <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
         <NoWarn>1701,1702,IL2121,1570,1572,1573,1591</NoWarn>
     </PropertyGroup>
 

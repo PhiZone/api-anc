@@ -272,8 +272,7 @@ public class SubmissionService : ISubmissionService
             await _chartRepository.UpdateChartAsync(chart);
         }
 
-        await _notificationService.Notify(chartSubmission.Owner, null, NotificationType.System,
-            "chart-submission-approval",
+        await _notificationService.Notify(owner, null, NotificationType.System, "chart-submission-approval",
             new Dictionary<string, string>
             {
                 {
@@ -305,8 +304,8 @@ public class SubmissionService : ISubmissionService
 
     public async Task RejectChart(ChartSubmission chartSubmission)
     {
-        await _notificationService.Notify(chartSubmission.Owner, null, NotificationType.System,
-            "chart-submission-rejection",
+        await _notificationService.Notify((await _userManager.FindByIdAsync(chartSubmission.OwnerId.ToString()))!, null,
+            NotificationType.System, "chart-submission-rejection",
             new Dictionary<string, string>
             {
                 {
