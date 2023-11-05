@@ -70,10 +70,19 @@ public class QualificationMigrationService : IHostedService
         {
             var charter = (await _userManager.FindByIdAsync(id.ToString()))!;
             _logger.LogInformation(LogEvents.QualificationMigration, "Granting permission to {UserName}", charter.UserName);
-            if (!await _resourceService.HasPermission(charter, Roles.Qualified))
+            var roles = await _userManager.GetRolesAsync(charter);
+            if (roles.Count >= 1)
             {
-                await _userManager.AddToRoleAsync(charter, Roles.Qualified.Name);
+                var realRole = roles.Select(role => Roles.List.FirstOrDefault(r => r.Name == role)).OrderByDescending(role => role?.Priority ?? 0).First()!;
+                foreach (var r in roles.Where(role => role != realRole.Name))
+                {
+                    await _userManager.RemoveFromRoleAsync(charter, r);
+                }
             }
+            if (await _resourceService.HasPermission(charter, Roles.Qualified)) continue;
+            var role = await _resourceService.GetRole(charter);
+            if (role != null) await _userManager.RemoveFromRoleAsync(charter, role.Name);
+            await _userManager.AddToRoleAsync(charter, Roles.Qualified.Name);
         }
     }
 }
