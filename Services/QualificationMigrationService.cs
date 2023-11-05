@@ -49,23 +49,31 @@ public class QualificationMigrationService : IHostedService
     {
         var charts =
             await _chartRepository.GetChartsAsync(new List<string> { "DateCreated" }, new List<bool> { false }, 0, -1);
+        var charters = new HashSet<int>();
         foreach (var chart in charts)
         {
             _logger.LogInformation(LogEvents.QualificationMigration, "Migrating authorships for Chart #{Id}", chart.Id);
             var ids = _resourceService.GetAuthorIds(chart.AuthorName);
+            if (!ids.Contains(chart.OwnerId)) ids.Add(chart.OwnerId);
             foreach (var id in ids)
             {
+                charters.Add(id);
                 if (await _authorshipRepository.AuthorshipExistsAsync(chart.Id, id)) continue;
                 var authorship = new Authorship
                 {
-                    ResourceId = chart.Id,
-                    AuthorId = id,
-                    DateCreated = chart.DateCreated
+                    ResourceId = chart.Id, AuthorId = id, DateCreated = chart.DateCreated
                 };
                 await _authorshipRepository.CreateAuthorshipAsync(authorship);
             }
         }
-
-        // await _chartRepository.UpdateQualificationsAsync(charts);
+        foreach (var id in charters)
+        {
+            var charter = (await _userManager.FindByIdAsync(id.ToString()))!;
+            _logger.LogInformation(LogEvents.QualificationMigration, "Granting permission to {UserName}", charter.UserName);
+            if (!await _resourceService.HasPermission(charter, Roles.Qualified))
+            {
+                await _userManager.AddToRoleAsync(charter, Roles.Qualified.Name);
+            }
+        }
     }
 }
