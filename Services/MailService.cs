@@ -81,20 +81,20 @@ public class MailService : IMailService
 
     public async Task<string> SendMailAsync(MailTaskDto mailTaskDto)
     {
-        using var emailMessage = new MimeMessage();
-        var emailFrom = new MailboxAddress(_settings.SenderName, _settings.SenderAddress);
-        emailMessage.From.Add(emailFrom);
-        var emailTo = new MailboxAddress(mailTaskDto.UserName, mailTaskDto.EmailAddress);
-        emailMessage.To.Add(emailTo);
-
-        emailMessage.Subject = mailTaskDto.EmailSubject;
-
-        var emailBodyBuilder = new BodyBuilder { TextBody = mailTaskDto.EmailBody };
-
-        emailMessage.Body = emailBodyBuilder.ToMessageBody();
-
         try
         {
+            using var emailMessage = new MimeMessage();
+            var emailFrom = new MailboxAddress(_settings.SenderName, _settings.SenderAddress);
+            emailMessage.From.Add(emailFrom);
+            var emailTo = new MailboxAddress(mailTaskDto.UserName, mailTaskDto.EmailAddress);
+            emailMessage.To.Add(emailTo);
+
+            emailMessage.Subject = mailTaskDto.EmailSubject;
+
+            var emailBodyBuilder = new BodyBuilder { TextBody = mailTaskDto.EmailBody };
+
+            emailMessage.Body = emailBodyBuilder.ToMessageBody();
+
             using var mailClient = new SmtpClient();
             await mailClient.ConnectAsync(_settings.Server, _settings.Port, SecureSocketOptions.SslOnConnect);
             await mailClient.AuthenticateAsync(_settings.UserName, _settings.Password);
