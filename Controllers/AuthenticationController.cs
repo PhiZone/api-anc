@@ -347,6 +347,18 @@ public class AuthenticationController : Controller
                         : ResponseCodes.EmailOccupied
                 });
 
+            if (dto.UserName == null)
+                return BadRequest(new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidUserName
+                });
+
+            if (dto.Language == null)
+                return BadRequest(new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidLanguageCode
+                });
+
             user = await _userManager.FindByNameAsync(dto.UserName);
             if (user != null)
                 return BadRequest(new ResponseDto<object>
@@ -358,11 +370,14 @@ public class AuthenticationController : Controller
         if (wait)
             try
             {
-                var mailDto = await _mailService.GenerateEmailAsync(dto.Email, dto.UserName, dto.Language, dto.Mode);
+                var mailDto = await _mailService.GenerateEmailAsync(dto.Email, dto.UserName ?? user!.UserName!,
+                    dto.Language ?? user!.Language, dto.Mode);
                 if (mailDto == null)
                     return StatusCode(StatusCodes.Status500InternalServerError,
                         new ResponseDto<object>
-                            { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.RedisError });
+                        {
+                            Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.RedisError
+                        });
                 await _mailService.SendMailAsync(mailDto);
             }
             catch (Exception ex)
@@ -370,11 +385,14 @@ public class AuthenticationController : Controller
                 return StatusCode(StatusCodes.Status500InternalServerError,
                     new ResponseDto<object>
                     {
-                        Status = ResponseStatus.ErrorWithMessage, Code = ResponseCodes.MailError, Message = ex.Message
+                        Status = ResponseStatus.ErrorWithMessage,
+                        Code = ResponseCodes.MailError,
+                        Message = ex.Message
                     });
             }
         else
-            await _mailService.PublishEmailAsync(dto.Email, dto.UserName, dto.Language, dto.Mode);
+            await _mailService.PublishEmailAsync(dto.Email, dto.UserName ?? user!.UserName!,
+                dto.Language ?? user!.Language, dto.Mode);
 
         return NoContent();
     }
