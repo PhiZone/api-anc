@@ -163,7 +163,7 @@ public class UserController : Controller
     public async Task<IActionResult> Register([FromForm] UserRegistrationDto dto)
     {
         var db = _redis.GetDatabase();
-        var key = $"EMAIL:{EmailRequestMode.EmailConfirmation}:{dto.EmailConfirmationCode}";
+        var key = $"phizone:email:{EmailRequestMode.EmailConfirmation}:{dto.EmailConfirmationCode}";
         if (!await db.KeyExistsAsync(key))
             return BadRequest(new ResponseDto<object>
             {
@@ -264,7 +264,7 @@ public class UserController : Controller
     public async Task<IActionResult> Register([FromBody] UserRegistrationBriefDto dto)
     {
         var db = _redis.GetDatabase();
-        var key = $"EMAIL:{EmailRequestMode.EmailConfirmation}:{dto.EmailConfirmationCode}";
+        var key = $"phizone:email:{EmailRequestMode.EmailConfirmation}:{dto.EmailConfirmationCode}";
         if (!await db.KeyExistsAsync(key))
             return BadRequest(new ResponseDto<object>
             {

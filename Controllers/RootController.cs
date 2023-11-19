@@ -81,7 +81,7 @@ public class RootController : Controller
         {
             Status = ResponseStatus.Ok,
             Code = ResponseCodes.Ok,
-            Data = new HeadlineDto { Headline = await db.StringGetAsync("HEADLINE") }
+            Data = new HeadlineDto { Headline = await db.StringGetAsync("phizone:headline") }
         });
     }
 
@@ -100,7 +100,7 @@ public class RootController : Controller
         {
             Status = ResponseStatus.Ok,
             Code = ResponseCodes.Ok,
-            Data = new HeadlineDto { Headline = await db.StringGetAsync("STUDIO_HEADLINE") }
+            Data = new HeadlineDto { Headline = await db.StringGetAsync("phizone:studio_headline") }
         });
     }
 }

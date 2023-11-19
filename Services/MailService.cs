@@ -40,9 +40,9 @@ public class MailService : IMailService
         do
         {
             code = random.Next(1000000, 2000000).ToString()[1..];
-        } while (await db.KeyExistsAsync($"EMAIL:{mode}:{code}"));
+        } while (await db.KeyExistsAsync($"phizone:email:{mode}:{code}"));
 
-        if (!await db.StringSetAsync($"EMAIL:{mode}:{code}", email, TimeSpan.FromSeconds(305))) return null;
+        if (!await db.StringSetAsync($"phizone:email:{mode}:{code}", email, TimeSpan.FromSeconds(305))) return null;
 
         var template = _templateService.GetEmailTemplate(mode, language)!;
 
@@ -74,7 +74,7 @@ public class MailService : IMailService
         }
 
         var db = _redis.GetDatabase();
-        await db.StringSetAsync($"COOLDOWN:{mode}:{email}", DateTimeOffset.UtcNow.AddMinutes(5).ToString(),
+        await db.StringSetAsync($"phizone:cooldown:{mode}:{email}", DateTimeOffset.UtcNow.AddMinutes(5).ToString(),
             TimeSpan.FromMinutes(5));
         return string.Empty;
     }
