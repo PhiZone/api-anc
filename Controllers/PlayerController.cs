@@ -353,7 +353,7 @@ public class PlayerController : Controller
         do
         {
             token = Guid.NewGuid();
-        } while (await db.KeyExistsAsync($"PLAY:{token}"));
+        } while (await db.KeyExistsAsync($"phizone:play:{token}"));
 
         var chart = await _chartRepository.GetChartAsync(chartId);
         if (await _resourceService.IsBlacklisted(chart.OwnerId, currentUser.Id))
@@ -379,7 +379,7 @@ public class PlayerController : Controller
             EarliestEndTime = DateTimeOffset.UtcNow.Add(song.Duration!.Value),
             Timestamp = timestamp
         };
-        await db.StringSetAsync($"PLAY:{token}", JsonConvert.SerializeObject(info), TimeSpan.FromDays(14));
+        await db.StringSetAsync($"phizone:play:{token}", JsonConvert.SerializeObject(info), TimeSpan.FromDays(14));
         return Ok(new ResponseDto<PlayResponseDto>
         {
             Status = ResponseStatus.Ok, Data = new PlayResponseDto { Token = token, Timestamp = timestamp }

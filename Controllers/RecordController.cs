@@ -168,13 +168,13 @@ public class RecordController : Controller
     public async Task<IActionResult> CreateRecord([FromBody] RecordCreationDto dto)
     {
         var db = _redis.GetDatabase();
-        if (!await db.KeyExistsAsync($"PLAY:{dto.Token}"))
+        if (!await db.KeyExistsAsync($"phizone:play:{dto.Token}"))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidToken
             });
 
-        var info = JsonConvert.DeserializeObject<PlayInfoDto>((await db.StringGetAsync($"PLAY:{dto.Token}"))!)!;
+        var info = JsonConvert.DeserializeObject<PlayInfoDto>((await db.StringGetAsync($"phizone:play:{dto.Token}"))!)!;
         if (DateTimeOffset.UtcNow < info.EarliestEndTime)
             return BadRequest(new ResponseDto<object>
             {
@@ -247,7 +247,7 @@ public class RecordController : Controller
                     $"Max combo ({dto.MaxCombo}) is not within the expected range [{minExpectation}, {maxExpectation}]."
             });
 
-        db.KeyDelete($"PLAY:{dto.Token}");
+        db.KeyDelete($"phizone:play:{dto.Token}");
 
         if (!await _playConfigurationRepository.PlayConfigurationExistsAsync(info.ConfigurationId))
             return NotFound(new ResponseDto<object>

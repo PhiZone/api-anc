@@ -98,7 +98,7 @@ public class PetController : Controller
             });
 
         var db = _redis.GetDatabase();
-        var key = $"PET:0:{currentUser.Id}";
+        var key = $"phizone:pet:0:{currentUser.Id}";
 
         var questions = new List<PetQuestionDto>();
         var deliverer = new PetDelivererDto();
@@ -175,7 +175,7 @@ public class PetController : Controller
             });
 
         var db = _redis.GetDatabase();
-        var key = $"PET:0:{currentUser.Id}";
+        var key = $"phizone:pet:0:{currentUser.Id}";
         if (!await db.KeyExistsAsync(key))
             return BadRequest(new ResponseDto<object>
             {
@@ -220,7 +220,7 @@ public class PetController : Controller
         subjectiveDeliverer.Score = score;
         subjectiveDeliverer.DateStarted = objectiveDeliverer.DateStarted;
 
-        await db.StringSetAsync($"PET:1:{currentUser.Id}", JsonConvert.SerializeObject(subjectiveDeliverer),
+        await db.StringSetAsync($"phizone:pet:1:{currentUser.Id}", JsonConvert.SerializeObject(subjectiveDeliverer),
             TimeSpan.FromHours(1));
         return Ok(new ResponseDto<IEnumerable<PetQuestionDto>>
         {
@@ -261,7 +261,7 @@ public class PetController : Controller
             });
 
         var db = _redis.GetDatabase();
-        var key = $"PET:1:{currentUser.Id}";
+        var key = $"phizone:pet:1:{currentUser.Id}";
         if (!await db.KeyExistsAsync(key))
             return BadRequest(new ResponseDto<object>
             {
