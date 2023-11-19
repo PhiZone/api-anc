@@ -41,7 +41,7 @@ public class ETagFilter : ActionFilterAttribute
             if (incomingETag == eTag) executedContext.Result = new StatusCodeResult(StatusCodes.Status304NotModified);
         }
 
-        response.Headers.Add(HeaderNames.ETag, new[] { eTag });
+        response.Headers.Append(HeaderNames.ETag, eTag);
     }
 
     private string ComputeETag(object? value)
