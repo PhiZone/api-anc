@@ -8,11 +8,11 @@ namespace PhiZoneApi.Services;
 public class QualificationMigrationService : IHostedService
 {
     private readonly IServiceProvider _serviceProvider;
-    private ILogger<QualificationMigrationService> _logger = null!;
-    private UserManager<User> _userManager = null!;
-    private IChartRepository _chartRepository = null!;
     private IAuthorshipRepository _authorshipRepository = null!;
+    private IChartRepository _chartRepository = null!;
+    private ILogger<QualificationMigrationService> _logger = null!;
     private IResourceService _resourceService = null!;
+    private UserManager<User> _userManager = null!;
 
     public QualificationMigrationService(IServiceProvider serviceProvider)
     {
@@ -66,19 +66,21 @@ public class QualificationMigrationService : IHostedService
                 await _authorshipRepository.CreateAuthorshipAsync(authorship);
             }
         }
+
         foreach (var id in charters)
         {
             var charter = (await _userManager.FindByIdAsync(id.ToString()))!;
-            _logger.LogInformation(LogEvents.QualificationMigration, "Granting permission to {UserName}", charter.UserName);
+            _logger.LogInformation(LogEvents.QualificationMigration, "Granting permission to {UserName}",
+                charter.UserName);
             var roles = await _userManager.GetRolesAsync(charter);
             if (roles.Count >= 1)
             {
-                var realRole = roles.Select(role => Roles.List.FirstOrDefault(r => r.Name == role)).OrderByDescending(role => role?.Priority ?? 0).First()!;
+                var realRole = roles.Select(role => Roles.List.FirstOrDefault(r => r.Name == role))
+                    .OrderByDescending(role => role?.Priority ?? 0).First()!;
                 foreach (var r in roles.Where(role => role != realRole.Name))
-                {
                     await _userManager.RemoveFromRoleAsync(charter, r);
-                }
             }
+
             if (await _resourceService.HasPermission(charter, Roles.Qualified)) continue;
             var role = await _resourceService.GetRole(charter);
             if (role != null) await _userManager.RemoveFromRoleAsync(charter, role.Name);
