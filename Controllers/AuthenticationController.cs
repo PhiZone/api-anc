@@ -327,7 +327,8 @@ public class AuthenticationController : Controller
         var db = _redis.GetDatabase();
         if (await db.KeyExistsAsync($"phizone:cooldown:{dto.Mode}:{dto.Email}"))
         {
-            var dateAvailable = DateTimeOffset.Parse((await db.StringGetAsync($"phizone:cooldown:{dto.Mode}:{dto.Email}"))!);
+            var dateAvailable =
+                DateTimeOffset.Parse((await db.StringGetAsync($"phizone:cooldown:{dto.Mode}:{dto.Email}"))!);
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorTemporarilyUnavailable,
