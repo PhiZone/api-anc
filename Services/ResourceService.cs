@@ -23,9 +23,9 @@ public class ResourceService(UserManager<User> userManager, ISongRepository song
         return $"[PZ{typeof(T).Name}{addition}:{id}:{display}:PZRT]";
     }
 
-    public string GetComplexRichText<T>(string id1, string id2, string display)
+    public string GetComplexRichText(string type, string id1, string id2, string display, string? addition = null)
     {
-        return $"[PZ{typeof(T).Name}:{id1}:{id2}:{display}:PZCRT]";
+        return $"[PZ{type}{addition}:{id1}:{id2}:{display}:PZCRT]";
     }
 
     public async Task<string> GetDisplayName(Chart chart)

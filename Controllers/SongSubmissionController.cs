@@ -69,8 +69,8 @@ public class SongSubmissionController(ISongSubmissionRepository songSubmissionRe
             submission => isVolunteer || submission.OwnerId == currentUser.Id);
         var songSubmissions = await songSubmissionRepository.GetSongSubmissionsAsync(dto.Order, dto.Desc, position,
             dto.PerPage, dto.Search, predicateExpr);
+        var list = mapper.Map<List<SongSubmissionDto>>(songSubmissions);
         var total = await songSubmissionRepository.CountSongSubmissionsAsync(dto.Search, predicateExpr);
-        var list = songSubmissions.Select(songSubmission => mapper.Map<SongSubmissionDto>(songSubmission)).ToList();
 
         return Ok(new ResponseDto<IEnumerable<SongSubmissionDto>>
         {

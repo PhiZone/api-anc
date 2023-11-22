@@ -28,16 +28,14 @@ namespace PhiZoneApi.Controllers;
 [ApiController]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
 public class ChartSubmissionController(IChartSubmissionRepository chartSubmissionRepository,
-        IOptions<DataSettings> dataSettings, UserManager<User> userManager, IFilterService filterService,
-        IFileStorageService fileStorageService, IDtoMapper dtoMapper, IMapper mapper, ISongRepository songRepository,
-        IVolunteerVoteService volunteerVoteService, IResourceService resourceService,
-        ISongSubmissionRepository songSubmissionRepository, IChartService chartService,
-        IVolunteerVoteRepository volunteerVoteRepository, IAdmissionRepository admissionRepository,
-        INotificationService notificationService, ITemplateService templateService,
-        ICollaborationRepository collaborationRepository,
-        IChartAssetSubmissionRepository chartAssetSubmissionRepository, ILogger<ChartSubmissionController> logger,
-        IFeishuService feishuService)
-    : Controller
+    IOptions<DataSettings> dataSettings, UserManager<User> userManager, IFilterService filterService,
+    IFileStorageService fileStorageService, IDtoMapper dtoMapper, IMapper mapper, ISongRepository songRepository,
+    IVolunteerVoteService volunteerVoteService, IResourceService resourceService,
+    ISongSubmissionRepository songSubmissionRepository, IChartService chartService,
+    IVolunteerVoteRepository volunteerVoteRepository, IAdmissionRepository admissionRepository,
+    INotificationService notificationService, ITemplateService templateService,
+    ICollaborationRepository collaborationRepository, IChartAssetSubmissionRepository chartAssetSubmissionRepository,
+    ILogger<ChartSubmissionController> logger, IFeishuService feishuService) : Controller
 {
     /// <summary>
     ///     Retrieves chart submissions.
@@ -253,7 +251,8 @@ public class ChartSubmissionController(IChartSubmissionRepository chartSubmissio
             VolunteerStatus = RequestStatus.Waiting,
             AdmissionStatus =
                 song != null
-                    ? song.OwnerId == currentUser.Id || song.Accessibility == Accessibility.AllowAny
+                    ?
+                    song.OwnerId == currentUser.Id || song.Accessibility == Accessibility.AllowAny
                         ? RequestStatus.Approved
                         : RequestStatus.Waiting
                     : songSubmission!.OwnerId == currentUser.Id ||
@@ -285,9 +284,7 @@ public class ChartSubmissionController(IChartSubmissionRepository chartSubmissio
             await notificationService.Notify(song.Owner, currentUser, NotificationType.Requests, "chart-admission",
                 new Dictionary<string, string>
                 {
-                    {
-                        "User", resourceService.GetRichText<User>(currentUser.Id.ToString(), currentUser.UserName!)
-                    },
+                    { "User", resourceService.GetRichText<User>(currentUser.Id.ToString(), currentUser.UserName!) },
                     {
                         "Chart",
                         resourceService.GetRichText<ChartSubmission>(chartSubmission.Id.ToString(),
@@ -296,8 +293,44 @@ public class ChartSubmissionController(IChartSubmissionRepository chartSubmissio
                     { "Song", resourceService.GetRichText<Song>(song.Id.ToString(), song.GetDisplay()) },
                     {
                         "Admission",
-                        resourceService.GetComplexRichText<Admission>(admission.AdmitteeId.ToString(),
+                        resourceService.GetComplexRichText("SongAdmission", admission.AdmitteeId.ToString(),
                             admission.AdmitterId.ToString(),
+                            templateService.GetMessage("more-info", admission.Requestee.Language)!)
+                    }
+                });
+        }
+        else if (songSubmission != null && songSubmission.OwnerId != currentUser.Id &&
+                 songSubmission.Accessibility == Accessibility.RequireReview)
+        {
+            var admission = new Admission
+            {
+                AdmitterId = songSubmission.Id,
+                AdmitteeId = chartSubmission.Id,
+                Status = RequestStatus.Waiting,
+                RequesterId = currentUser.Id,
+                RequesteeId = songSubmission.OwnerId,
+                DateCreated = DateTimeOffset.UtcNow
+            };
+            await admissionRepository.CreateAdmissionAsync(admission);
+            await notificationService.Notify(songSubmission.Owner, currentUser, NotificationType.Requests,
+                "chart-admission",
+                new Dictionary<string, string>
+                {
+                    { "User", resourceService.GetRichText<User>(currentUser.Id.ToString(), currentUser.UserName!) },
+                    {
+                        "Chart",
+                        resourceService.GetRichText<ChartSubmission>(chartSubmission.Id.ToString(),
+                            await resourceService.GetDisplayName(chartSubmission))
+                    },
+                    {
+                        "Song",
+                        resourceService.GetRichText<SongSubmission>(songSubmission.Id.ToString(),
+                            songSubmission.GetDisplay())
+                    },
+                    {
+                        "Admission",
+                        resourceService.GetComplexRichText("SongSubmissionAdmission",
+                            admission.AdmitteeId.ToString(), admission.AdmitterId.ToString(),
                             templateService.GetMessage("more-info", admission.Requestee.Language)!)
                     }
                 });
@@ -641,8 +674,8 @@ public class ChartSubmissionController(IChartSubmissionRepository chartSubmissio
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetChartSubmissionAssets([FromRoute] Guid id,
-        [FromQuery] ArrayRequestDto dto, [FromQuery] ChartAssetSubmissionFilterDto? filterDto = null)
+    public async Task<IActionResult> GetChartSubmissionAssets([FromRoute] Guid id, [FromQuery] ArrayRequestDto dto,
+        [FromQuery] ChartAssetSubmissionFilterDto? filterDto = null)
     {
         if (!await chartSubmissionRepository.ChartSubmissionExistsAsync(id))
             return NotFound(new ResponseDto<object>
@@ -670,8 +703,8 @@ public class ChartSubmissionController(IChartSubmissionRepository chartSubmissio
             e => e.ChartSubmissionId == id);
         var chartAssets = await chartAssetSubmissionRepository.GetChartAssetSubmissionsAsync(dto.Order, dto.Desc,
             position, dto.PerPage, predicateExpr);
+        var list = mapper.Map<List<ChartAssetDto>>(chartAssets);
         var total = await chartAssetSubmissionRepository.CountChartAssetSubmissionsAsync(predicateExpr);
-        var list = chartAssets.Select(chartAsset => mapper.Map<ChartAssetDto>(chartAsset)).ToList();
 
         return Ok(new ResponseDto<IEnumerable<ChartAssetDto>>
         {
@@ -794,8 +827,8 @@ public class ChartSubmissionController(IChartSubmissionRepository chartSubmissio
             File = (await fileStorageService.Upload<ChartAsset>(
                 chartSubmission.Title ?? (chartSubmission.SongId != null
                     ? (await songRepository.GetSongAsync(chartSubmission.SongId.Value)).Title
-                    : (await songSubmissionRepository.GetSongSubmissionAsync(chartSubmission.SongSubmissionId!
-                        .Value)).Title), dto.File)).Item1,
+                    : (await songSubmissionRepository.GetSongSubmissionAsync(
+                        chartSubmission.SongSubmissionId!.Value)).Title), dto.File)).Item1,
             OwnerId = currentUser.Id,
             DateCreated = DateTimeOffset.UtcNow,
             DateUpdated = DateTimeOffset.UtcNow
@@ -1118,8 +1151,7 @@ public class ChartSubmissionController(IChartSubmissionRepository chartSubmissio
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<VolunteerVoteDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetChartSubmissionVotes([FromRoute] Guid id,
-        [FromQuery] ArrayRequestDto dto)
+    public async Task<IActionResult> GetChartSubmissionVotes([FromRoute] Guid id, [FromQuery] ArrayRequestDto dto)
     {
         dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
             dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
