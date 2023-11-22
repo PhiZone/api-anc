@@ -9,20 +9,13 @@ using PhiZoneApi.Utils;
 
 namespace PhiZoneApi.Repositories;
 
-public class PetChoiceRepository : IPetChoiceRepository
+public class PetChoiceRepository(ApplicationDbContext context) : IPetChoiceRepository
 {
-    private readonly ApplicationDbContext _context;
-
-    public PetChoiceRepository(ApplicationDbContext context)
-    {
-        _context = context;
-    }
-
     public async Task<ICollection<PetChoice>> GetPetChoicesAsync(List<string> order, List<bool> desc, int position,
         int take,
         string? search = null, Expression<Func<PetChoice, bool>>? predicate = null)
     {
-        var result = _context.PetChoices.OrderBy(order, desc);
+        var result = context.PetChoices.OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
         if (search != null)
         {
@@ -36,43 +29,43 @@ public class PetChoiceRepository : IPetChoiceRepository
 
     public async Task<PetChoice> GetPetChoiceAsync(Guid id)
     {
-        return (await _context.PetChoices.FirstOrDefaultAsync(petChoice => petChoice.Id == id))!;
+        return (await context.PetChoices.FirstOrDefaultAsync(petChoice => petChoice.Id == id))!;
     }
 
     public async Task<bool> PetChoiceExistsAsync(Guid id)
     {
-        return await _context.PetChoices.AnyAsync(petChoice => petChoice.Id == id);
+        return await context.PetChoices.AnyAsync(petChoice => petChoice.Id == id);
     }
 
     public async Task<bool> CreatePetChoiceAsync(PetChoice petChoice)
     {
-        await _context.PetChoices.AddAsync(petChoice);
+        await context.PetChoices.AddAsync(petChoice);
         return await SaveAsync();
     }
 
     public async Task<bool> UpdatePetChoiceAsync(PetChoice petChoice)
     {
-        _context.PetChoices.Update(petChoice);
+        context.PetChoices.Update(petChoice);
         return await SaveAsync();
     }
 
     public async Task<bool> RemovePetChoiceAsync(Guid id)
     {
-        _context.PetChoices.Remove(
-            (await _context.PetChoices.FirstOrDefaultAsync(petChoice => petChoice.Id == id))!);
+        context.PetChoices.Remove(
+            (await context.PetChoices.FirstOrDefaultAsync(petChoice => petChoice.Id == id))!);
         return await SaveAsync();
     }
 
     public async Task<bool> SaveAsync()
     {
-        var saved = await _context.SaveChangesAsync();
+        var saved = await context.SaveChangesAsync();
         return saved > 0;
     }
 
     public async Task<int> CountPetChoicesAsync(string? search = null,
         Expression<Func<PetChoice, bool>>? predicate = null)
     {
-        var result = _context.PetChoices.AsQueryable();
+        var result = context.PetChoices.AsQueryable();
 
         if (predicate != null) result = result.Where(predicate);
         if (search != null)

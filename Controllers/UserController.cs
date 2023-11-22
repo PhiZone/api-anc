@@ -27,48 +27,14 @@ namespace PhiZoneApi.Controllers;
 [ApiController]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme,
     Policy = "AllowAnonymous")]
-public class UserController : Controller
-{
-    private readonly IOptions<DataSettings> _dataSettings;
-    private readonly IDtoMapper _dtoMapper;
-    private readonly IFileStorageService _fileStorageService;
-    private readonly IFilterService _filterService;
-    private readonly IMapper _mapper;
-    private readonly IPlayConfigurationRepository _playConfigurationRepository;
-    private readonly IRecordRepository _recordRepository;
-    private readonly IRecordService _recordService;
-    private readonly IConnectionMultiplexer _redis;
-    private readonly IRegionRepository _regionRepository;
-    private readonly IResourceService _resourceService;
-    private readonly ITemplateService _templateService;
-    private readonly UserManager<User> _userManager;
-    private readonly IUserRelationRepository _userRelationRepository;
-    private readonly IUserRepository _userRepository;
-
-    public UserController(IUserRepository userRepository, IUserRelationRepository userRelationRepository,
+public class UserController(IUserRepository userRepository, IUserRelationRepository userRelationRepository,
         UserManager<User> userManager, IFilterService filterService,
         IFileStorageService fileStorageService, IOptions<DataSettings> dataSettings, IMapper mapper,
         IDtoMapper dtoMapper, IRegionRepository regionRepository, IRecordRepository recordRepository,
         IRecordService recordService, IResourceService resourceService, IConnectionMultiplexer redis,
         ITemplateService templateService, IPlayConfigurationRepository playConfigurationRepository)
-    {
-        _userRepository = userRepository;
-        _userRelationRepository = userRelationRepository;
-        _userManager = userManager;
-        _filterService = filterService;
-        _fileStorageService = fileStorageService;
-        _dataSettings = dataSettings;
-        _mapper = mapper;
-        _dtoMapper = dtoMapper;
-        _regionRepository = regionRepository;
-        _recordRepository = recordRepository;
-        _recordService = recordService;
-        _resourceService = resourceService;
-        _redis = redis;
-        _templateService = templateService;
-        _playConfigurationRepository = playConfigurationRepository;
-    }
-
+    : Controller
+{
     /// <summary>
     ///     Retrieves users.
     /// </summary>
@@ -82,18 +48,18 @@ public class UserController : Controller
     public async Task<IActionResult> GetUsers([FromQuery] ArrayRequestDto dto,
         [FromQuery] UserFilterDto? filterDto = null)
     {
-        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        dto.PerPage = dto.PerPage > 0 && dto.PerPage < _dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
-            dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : _dataSettings.Value.PaginationMaxPerPage;
+        var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
+            dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
-        var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser);
-        var users = await _userRepository.GetUsersAsync(dto.Order, dto.Desc, position, dto.PerPage, dto.Search,
+        var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser);
+        var users = await userRepository.GetUsersAsync(dto.Order, dto.Desc, position, dto.PerPage, dto.Search,
             predicateExpr);
-        var total = await _userRepository.CountUsersAsync(dto.Search, predicateExpr);
+        var total = await userRepository.CountUsersAsync(dto.Search, predicateExpr);
         var list = new List<UserDto>();
 
-        foreach (var user in users) list.Add(await _dtoMapper.MapUserAsync<UserDto>(user, currentUser));
+        foreach (var user in users) list.Add(await dtoMapper.MapUserAsync<UserDto>(user, currentUser));
 
         return Ok(new ResponseDto<IEnumerable<UserDto>>
         {
@@ -127,14 +93,14 @@ public class UserController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetUser([FromRoute] int id)
     {
-        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        var user = await _userManager.FindByIdAsync(id.ToString());
+        var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        var user = await userManager.FindByIdAsync(id.ToString());
         if (user == null)
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNotFound
             });
-        var dto = await _dtoMapper.MapUserAsync<UserDto>(user, currentUser);
+        var dto = await dtoMapper.MapUserAsync<UserDto>(user, currentUser);
 
         return Ok(new ResponseDto<UserDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
     }
@@ -162,7 +128,7 @@ public class UserController : Controller
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> Register([FromForm] UserRegistrationDto dto)
     {
-        var db = _redis.GetDatabase();
+        var db = redis.GetDatabase();
         var key = $"phizone:email:{EmailRequestMode.EmailConfirmation}:{dto.EmailConfirmationCode}";
         if (!await db.KeyExistsAsync(key))
             return BadRequest(new ResponseDto<object>
@@ -177,14 +143,14 @@ public class UserController : Controller
             });
         db.KeyDelete(key);
 
-        var user = await _userManager.FindByEmailAsync(dto.Email);
+        var user = await userManager.FindByEmailAsync(dto.Email);
         if (user != null)
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.EmailOccupied
             });
 
-        user = await _userManager.FindByNameAsync(dto.UserName);
+        user = await userManager.FindByNameAsync(dto.UserName);
         if (user != null)
             return BadRequest(new ResponseDto<object>
             {
@@ -193,7 +159,7 @@ public class UserController : Controller
 
         string? avatarUrl = null;
         if (dto.Avatar != null)
-            avatarUrl = (await _fileStorageService.UploadImage<User>(dto.UserName, dto.Avatar, (1, 1))).Item1;
+            avatarUrl = (await fileStorageService.UploadImage<User>(dto.UserName, dto.Avatar, (1, 1))).Item1;
 
         user = new User
         {
@@ -204,22 +170,22 @@ public class UserController : Controller
             Language = dto.Language,
             Gender = dto.Gender,
             Biography = dto.Biography,
-            RegionId = (await _regionRepository.GetRegionAsync(dto.RegionCode)).Id,
+            RegionId = (await regionRepository.GetRegionAsync(dto.RegionCode)).Id,
             DateOfBirth =
                 dto.DateOfBirth != null
                     ? new DateTimeOffset(dto.DateOfBirth.GetValueOrDefault().DateTime, TimeSpan.Zero)
                     : null,
             DateJoined = DateTimeOffset.UtcNow
         };
-        await _userManager.CreateAsync(user);
-        user.PasswordHash = _userManager.PasswordHasher.HashPassword(user, dto.Password);
+        await userManager.CreateAsync(user);
+        user.PasswordHash = userManager.PasswordHasher.HashPassword(user, dto.Password);
         user.EmailConfirmed = true;
         user.LockoutEnabled = false;
-        await _userManager.UpdateAsync(user);
-        await _userManager.AddToRoleAsync(user, Roles.Member.Name);
+        await userManager.UpdateAsync(user);
+        await userManager.AddToRoleAsync(user, Roles.Member.Name);
         var configuration = new PlayConfiguration
         {
-            Name = _templateService.GetMessage("default", user.Language),
+            Name = templateService.GetMessage("default", user.Language),
             PerfectJudgment = 80,
             GoodJudgment = 160,
             AspectRatio = null,
@@ -235,7 +201,7 @@ public class UserController : Controller
             OwnerId = user.Id,
             DateCreated = DateTimeOffset.UtcNow
         };
-        await _playConfigurationRepository.CreatePlayConfigurationAsync(configuration);
+        await playConfigurationRepository.CreatePlayConfigurationAsync(configuration);
 
         return StatusCode(StatusCodes.Status201Created);
     }
@@ -263,7 +229,7 @@ public class UserController : Controller
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> Register([FromBody] UserRegistrationBriefDto dto)
     {
-        var db = _redis.GetDatabase();
+        var db = redis.GetDatabase();
         var key = $"phizone:email:{EmailRequestMode.EmailConfirmation}:{dto.EmailConfirmationCode}";
         if (!await db.KeyExistsAsync(key))
             return BadRequest(new ResponseDto<object>
@@ -278,14 +244,14 @@ public class UserController : Controller
             });
         db.KeyDelete(key);
 
-        var user = await _userManager.FindByEmailAsync(dto.Email);
+        var user = await userManager.FindByEmailAsync(dto.Email);
         if (user != null)
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.EmailOccupied
             });
 
-        user = await _userManager.FindByNameAsync(dto.UserName);
+        user = await userManager.FindByNameAsync(dto.UserName);
         if (user != null)
             return BadRequest(new ResponseDto<object>
             {
@@ -300,22 +266,22 @@ public class UserController : Controller
             Language = dto.Language,
             Gender = dto.Gender,
             Biography = dto.Biography,
-            RegionId = (await _regionRepository.GetRegionAsync(dto.RegionCode)).Id,
+            RegionId = (await regionRepository.GetRegionAsync(dto.RegionCode)).Id,
             DateOfBirth =
                 dto.DateOfBirth != null
                     ? new DateTimeOffset(dto.DateOfBirth.GetValueOrDefault().DateTime, TimeSpan.Zero)
                     : null,
             DateJoined = DateTimeOffset.UtcNow
         };
-        await _userManager.CreateAsync(user);
-        user.PasswordHash = _userManager.PasswordHasher.HashPassword(user, dto.Password);
+        await userManager.CreateAsync(user);
+        user.PasswordHash = userManager.PasswordHasher.HashPassword(user, dto.Password);
         user.EmailConfirmed = true;
         user.LockoutEnabled = false;
-        await _userManager.UpdateAsync(user);
-        await _userManager.AddToRoleAsync(user, Roles.Member.Name);
+        await userManager.UpdateAsync(user);
+        await userManager.AddToRoleAsync(user, Roles.Member.Name);
         var configuration = new PlayConfiguration
         {
-            Name = _templateService.GetMessage("default", user.Language),
+            Name = templateService.GetMessage("default", user.Language),
             PerfectJudgment = 80,
             GoodJudgment = 160,
             AspectRatio = null,
@@ -331,7 +297,7 @@ public class UserController : Controller
             OwnerId = user.Id,
             DateCreated = DateTimeOffset.UtcNow
         };
-        await _playConfigurationRepository.CreatePlayConfigurationAsync(configuration);
+        await playConfigurationRepository.CreatePlayConfigurationAsync(configuration);
 
         return StatusCode(StatusCodes.Status201Created);
     }
@@ -359,7 +325,7 @@ public class UserController : Controller
     public async Task<IActionResult> UpdateUser([FromRoute] int id,
         [FromBody] JsonPatchDocument<UserUpdateDto> patchDocument)
     {
-        var user = await _userManager.FindByIdAsync(id.ToString());
+        var user = await userManager.FindByIdAsync(id.ToString());
 
         if (user == null)
             return NotFound(new ResponseDto<object>
@@ -367,19 +333,19 @@ public class UserController : Controller
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNotFound
             });
 
-        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         if (currentUser == null) return Unauthorized();
 
-        if ((currentUser.Id == id && !await _resourceService.HasPermission(currentUser, Roles.Member)) ||
-            (currentUser.Id != id && !await _resourceService.HasPermission(currentUser, Roles.Administrator)))
+        if ((currentUser.Id == id && !await resourceService.HasPermission(currentUser, Roles.Member)) ||
+            (currentUser.Id != id && !await resourceService.HasPermission(currentUser, Roles.Administrator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
-        var dto = _mapper.Map<UserUpdateDto>(user);
-        dto.RegionCode = (await _regionRepository.GetRegionAsync(user.RegionId)).Code;
+        var dto = mapper.Map<UserUpdateDto>(user);
+        dto.RegionCode = (await regionRepository.GetRegionAsync(user.RegionId)).Code;
         patchDocument.ApplyTo(dto, ModelState);
 
         if (!TryValidateModel(dto))
@@ -394,7 +360,7 @@ public class UserController : Controller
         if (patchDocument.Operations.FirstOrDefault(operation =>
                 operation.path == "/userName" && operation.op is "add" or "replace") != null)
         {
-            var otherUser = await _userManager.FindByNameAsync(dto.UserName);
+            var otherUser = await userManager.FindByNameAsync(dto.UserName);
             if (otherUser != null && otherUser.Id != user.Id)
                 return BadRequest(new ResponseDto<object>
                 {
@@ -423,10 +389,10 @@ public class UserController : Controller
         user.Gender = dto.Gender;
         user.Biography = dto.Biography;
         user.Language = dto.Language;
-        user.RegionId = (await _regionRepository.GetRegionAsync(dto.RegionCode)).Id;
+        user.RegionId = (await regionRepository.GetRegionAsync(dto.RegionCode)).Id;
 
         // Save
-        await _userManager.UpdateAsync(user);
+        await userManager.UpdateAsync(user);
 
         return NoContent();
     }
@@ -453,7 +419,7 @@ public class UserController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> UpdateUserAvatar([FromRoute] int id, [FromForm] FileDto dto)
     {
-        var user = await _userManager.FindByIdAsync(id.ToString());
+        var user = await userManager.FindByIdAsync(id.ToString());
 
         if (user == null)
             return NotFound(new ResponseDto<object>
@@ -461,21 +427,21 @@ public class UserController : Controller
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNotFound
             });
 
-        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         if (currentUser == null) return Unauthorized();
 
-        if ((currentUser.Id == id && !await _resourceService.HasPermission(currentUser, Roles.Member)) ||
-            (currentUser.Id != id && !await _resourceService.HasPermission(currentUser, Roles.Administrator)))
+        if ((currentUser.Id == id && !await resourceService.HasPermission(currentUser, Roles.Member)) ||
+            (currentUser.Id != id && !await resourceService.HasPermission(currentUser, Roles.Administrator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
         if (dto.File != null)
-            user.Avatar = (await _fileStorageService.UploadImage<User>(user.UserName ?? "Avatar", dto.File, (1, 1)))
+            user.Avatar = (await fileStorageService.UploadImage<User>(user.UserName ?? "Avatar", dto.File, (1, 1)))
                 .Item1;
 
-        await _userManager.UpdateAsync(user);
+        await userManager.UpdateAsync(user);
         return NoContent();
     }
 
@@ -499,7 +465,7 @@ public class UserController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> RemoveUserAvatar([FromRoute] int id)
     {
-        var user = await _userManager.FindByIdAsync(id.ToString());
+        var user = await userManager.FindByIdAsync(id.ToString());
 
         if (user == null)
             return NotFound(new ResponseDto<object>
@@ -507,11 +473,11 @@ public class UserController : Controller
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNotFound
             });
 
-        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         if (currentUser == null) return Unauthorized();
 
-        if ((currentUser.Id == id && !await _resourceService.HasPermission(currentUser, Roles.Member)) ||
-            (currentUser.Id != id && !await _resourceService.HasPermission(currentUser, Roles.Administrator)))
+        if ((currentUser.Id == id && !await resourceService.HasPermission(currentUser, Roles.Member)) ||
+            (currentUser.Id != id && !await resourceService.HasPermission(currentUser, Roles.Administrator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -520,7 +486,7 @@ public class UserController : Controller
 
         user.Avatar = null;
 
-        await _userManager.UpdateAsync(user);
+        await userManager.UpdateAsync(user);
         return NoContent();
     }
 
@@ -540,7 +506,7 @@ public class UserController : Controller
     public async Task<IActionResult> GetFollowers([FromRoute] int id, [FromQuery] ArrayRequestDto dto,
         [FromQuery] UserRelationFilterDto? filterDto = null)
     {
-        var user = await _userManager.FindByIdAsync(id.ToString());
+        var user = await userManager.FindByIdAsync(id.ToString());
 
         if (user == null)
             return NotFound(new ResponseDto<object>
@@ -548,19 +514,19 @@ public class UserController : Controller
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNotFound
             });
 
-        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        dto.PerPage = dto.PerPage > 0 && dto.PerPage < _dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
-            dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : _dataSettings.Value.PaginationMaxPerPage;
+        var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
+            dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
-        var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser);
+        var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser);
         var followers =
-            await _userRelationRepository.GetFollowersAsync(user.Id, dto.Order, dto.Desc, position, dto.PerPage,
+            await userRelationRepository.GetFollowersAsync(user.Id, dto.Order, dto.Desc, position, dto.PerPage,
                 predicateExpr);
-        var total = await _userRelationRepository.CountFollowersAsync(user.Id, predicateExpr);
+        var total = await userRelationRepository.CountFollowersAsync(user.Id, predicateExpr);
         var list = new List<UserDto>();
 
-        foreach (var follower in followers) list.Add(await _dtoMapper.MapFollowerAsync<UserDto>(follower, currentUser));
+        foreach (var follower in followers) list.Add(await dtoMapper.MapFollowerAsync<UserDto>(follower, currentUser));
 
         return Ok(new ResponseDto<IEnumerable<UserDto>>
         {
@@ -590,7 +556,7 @@ public class UserController : Controller
     public async Task<IActionResult> GetFollowees([FromRoute] int id, [FromQuery] ArrayRequestDto dto,
         [FromQuery] UserRelationFilterDto? filterDto = null)
     {
-        var user = await _userManager.FindByIdAsync(id.ToString());
+        var user = await userManager.FindByIdAsync(id.ToString());
 
         if (user == null)
             return NotFound(new ResponseDto<object>
@@ -598,19 +564,19 @@ public class UserController : Controller
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNotFound
             });
 
-        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        dto.PerPage = dto.PerPage > 0 && dto.PerPage < _dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
-            dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : _dataSettings.Value.PaginationMaxPerPage;
+        var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
+            dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
-        var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser);
+        var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser);
         var followees =
-            await _userRelationRepository.GetFolloweesAsync(user.Id, dto.Order, dto.Desc, position, dto.PerPage,
+            await userRelationRepository.GetFolloweesAsync(user.Id, dto.Order, dto.Desc, position, dto.PerPage,
                 predicateExpr);
-        var total = await _userRelationRepository.CountFolloweesAsync(user.Id, predicateExpr);
+        var total = await userRelationRepository.CountFolloweesAsync(user.Id, predicateExpr);
         var list = new List<UserDto>();
 
-        foreach (var followee in followees) list.Add(await _dtoMapper.MapFolloweeAsync<UserDto>(followee, currentUser));
+        foreach (var followee in followees) list.Add(await dtoMapper.MapFolloweeAsync<UserDto>(followee, currentUser));
 
         return Ok(new ResponseDto<IEnumerable<UserDto>>
         {
@@ -644,7 +610,7 @@ public class UserController : Controller
     public async Task<IActionResult> Follow([FromRoute] int id,
         [FromQuery] UserRelationType type = UserRelationType.Following)
     {
-        var user = await _userManager.FindByIdAsync(id.ToString());
+        var user = await userManager.FindByIdAsync(id.ToString());
 
         if (user == null)
             return NotFound(new ResponseDto<object>
@@ -652,7 +618,7 @@ public class UserController : Controller
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNotFound
             });
 
-        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         if (currentUser == null) return Unauthorized();
 
         if (currentUser.Id == id)
@@ -661,9 +627,9 @@ public class UserController : Controller
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
             });
 
-        if (await _userRelationRepository.RelationExistsAsync(user.Id, currentUser.Id))
+        if (await userRelationRepository.RelationExistsAsync(user.Id, currentUser.Id))
         {
-            var opposite = await _userRelationRepository.GetRelationAsync(user.Id, currentUser.Id);
+            var opposite = await userRelationRepository.GetRelationAsync(user.Id, currentUser.Id);
             if (opposite.Type == UserRelationType.Blacklisted)
                 return BadRequest(new ResponseDto<object>
                 {
@@ -671,7 +637,7 @@ public class UserController : Controller
                 });
 
             if (type == UserRelationType.Blacklisted)
-                await _userRelationRepository.RemoveRelationAsync(user.Id, currentUser.Id);
+                await userRelationRepository.RemoveRelationAsync(user.Id, currentUser.Id);
         }
 
         var relation = new UserRelation
@@ -679,15 +645,15 @@ public class UserController : Controller
             FolloweeId = user.Id, FollowerId = currentUser.Id, Type = type, DateCreated = DateTimeOffset.UtcNow
         };
 
-        if (await _userRelationRepository.RelationExistsAsync(currentUser.Id, user.Id))
+        if (await userRelationRepository.RelationExistsAsync(currentUser.Id, user.Id))
         {
-            if (!await _userRelationRepository.UpdateRelationAsync(relation))
+            if (!await userRelationRepository.UpdateRelationAsync(relation))
                 return StatusCode(StatusCodes.Status500InternalServerError,
                     new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
         }
         else
         {
-            if (!await _userRelationRepository.CreateRelationAsync(relation))
+            if (!await userRelationRepository.CreateRelationAsync(relation))
                 return StatusCode(StatusCodes.Status500InternalServerError,
                     new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
         }
@@ -718,7 +684,7 @@ public class UserController : Controller
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> Unfollow([FromRoute] int id)
     {
-        var user = await _userManager.FindByIdAsync(id.ToString());
+        var user = await userManager.FindByIdAsync(id.ToString());
 
         if (user == null)
             return NotFound(new ResponseDto<object>
@@ -726,7 +692,7 @@ public class UserController : Controller
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNotFound
             });
 
-        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         if (currentUser == null) return Unauthorized();
 
         if (currentUser.Id == id)
@@ -735,13 +701,13 @@ public class UserController : Controller
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
             });
 
-        if (!await _userRelationRepository.RelationExistsAsync(currentUser.Id, user.Id))
+        if (!await userRelationRepository.RelationExistsAsync(currentUser.Id, user.Id))
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
             });
 
-        if (!await _userRelationRepository.RemoveRelationAsync(currentUser.Id, user.Id))
+        if (!await userRelationRepository.RemoveRelationAsync(currentUser.Id, user.Id))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
@@ -759,13 +725,13 @@ public class UserController : Controller
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<UserBestRecordsDto>))]
     public async Task<IActionResult> GetBestRecords([FromRoute] int id)
     {
-        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        var phi1 = (await _recordRepository.GetRecordsAsync(new List<string> { "Rks" }, new List<bool> { true }, 0, 1,
+        var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        var phi1 = (await recordRepository.GetRecordsAsync(new List<string> { "Rks" }, new List<bool> { true }, 0, 1,
             r => r.OwnerId == id && r.Score == 1000000 && r.Chart.IsRanked)).FirstOrDefault();
-        var phi1Dto = phi1 != null ? await _dtoMapper.MapRecordAsync<RecordDto>(phi1) : null;
-        var b19 = await _recordService.GetBest19(id);
+        var phi1Dto = phi1 != null ? await dtoMapper.MapRecordAsync<RecordDto>(phi1) : null;
+        var b19 = await recordService.GetBest19(id);
         var b19Dto = new List<RecordDto>();
-        foreach (var record in b19) b19Dto.Add(await _dtoMapper.MapRecordAsync<RecordDto>(record, currentUser));
+        foreach (var record in b19) b19Dto.Add(await dtoMapper.MapRecordAsync<RecordDto>(record, currentUser));
         return Ok(new ResponseDto<UserBestRecordsDto>
         {
             Status = ResponseStatus.Ok,

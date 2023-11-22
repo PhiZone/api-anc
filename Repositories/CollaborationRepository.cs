@@ -1,4 +1,5 @@
-﻿using System.Linq.Expressions;
+﻿using System.Diagnostics;
+using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using PhiZoneApi.Data;
 using PhiZoneApi.Interfaces;
@@ -13,6 +14,7 @@ public class CollaborationRepository : ICollaborationRepository
 
     public CollaborationRepository(ApplicationDbContext context)
     {
+        Debug.Assert(context != null, nameof(context) + " != null");
         _context = context;
     }
 

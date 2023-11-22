@@ -9,19 +9,12 @@ using PhiZoneApi.Utils;
 
 namespace PhiZoneApi.Repositories;
 
-public class RegionRepository : IRegionRepository
+public class RegionRepository(ApplicationDbContext context) : IRegionRepository
 {
-    private readonly ApplicationDbContext _context;
-
-    public RegionRepository(ApplicationDbContext context)
-    {
-        _context = context;
-    }
-
     public async Task<ICollection<Region>> GetRegionsAsync(List<string> order, List<bool> desc, int position, int take,
         string? search = null, Expression<Func<Region, bool>>? predicate = null)
     {
-        var result = _context.Regions.OrderBy(order, desc);
+        var result = context.Regions.OrderBy(order, desc);
 
         if (predicate != null) result = result.Where(predicate);
 
@@ -38,19 +31,19 @@ public class RegionRepository : IRegionRepository
 
     public async Task<Region> GetRegionAsync(int id)
     {
-        return (await _context.Regions.FirstOrDefaultAsync(region => region.Id == id))!;
+        return (await context.Regions.FirstOrDefaultAsync(region => region.Id == id))!;
     }
 
     public async Task<Region> GetRegionAsync(string code)
     {
-        return (await _context.Regions.FirstOrDefaultAsync(region => string.Equals(region.Code, code.ToUpper())))!;
+        return (await context.Regions.FirstOrDefaultAsync(region => string.Equals(region.Code, code.ToUpper())))!;
     }
 
     public async Task<ICollection<User>> GetRegionUsersAsync(int id, List<string> order, List<bool> desc, int position,
         int take, string? search = null, Expression<Func<User, bool>>? predicate = null)
     {
-        var region = (await _context.Regions.FirstOrDefaultAsync(region => region.Id == id))!;
-        var result = _context.Users.Where(user => user.Region == region).OrderBy(order, desc);
+        var region = (await context.Regions.FirstOrDefaultAsync(region => region.Id == id))!;
+        var result = context.Users.Where(user => user.Region == region).OrderBy(order, desc);
 
         if (predicate != null) result = result.Where(predicate);
 
@@ -72,9 +65,9 @@ public class RegionRepository : IRegionRepository
         int position,
         int take, string? search = null, Expression<Func<User, bool>>? predicate = null)
     {
-        var region = (await _context.Regions.FirstOrDefaultAsync(region =>
+        var region = (await context.Regions.FirstOrDefaultAsync(region =>
             string.Equals(region.Code, code.ToUpper())))!;
-        var result = _context.Users.Where(user => user.Region == region).OrderBy(order, desc);
+        var result = context.Users.Where(user => user.Region == region).OrderBy(order, desc);
 
         if (predicate != null) result = result.Where(predicate);
 
@@ -94,52 +87,52 @@ public class RegionRepository : IRegionRepository
 
     public async Task<bool> RegionExistsAsync(int id)
     {
-        return await _context.Regions.AnyAsync(region => region.Id == id);
+        return await context.Regions.AnyAsync(region => region.Id == id);
     }
 
     public async Task<bool> RegionExistsAsync(string code)
     {
-        return await _context.Regions.AnyAsync(region => string.Equals(region.Code, code.ToUpper()));
+        return await context.Regions.AnyAsync(region => string.Equals(region.Code, code.ToUpper()));
     }
 
     public bool RegionExists(string code)
     {
-        return _context.Regions.Any(region => string.Equals(region.Code, code.ToUpper()));
+        return context.Regions.Any(region => string.Equals(region.Code, code.ToUpper()));
     }
 
     public async Task<bool> CreateRegionAsync(Region region)
     {
-        await _context.Regions.AddAsync(region);
+        await context.Regions.AddAsync(region);
         return await SaveAsync();
     }
 
     public async Task<bool> UpdateRegionAsync(Region region)
     {
-        _context.Regions.Update(region);
+        context.Regions.Update(region);
         return await SaveAsync();
     }
 
     public async Task<bool> RemoveRegionAsync(string code)
     {
-        _context.Regions.Remove((await _context.Regions.FirstOrDefaultAsync(region => region.Code == code.ToUpper()))!);
+        context.Regions.Remove((await context.Regions.FirstOrDefaultAsync(region => region.Code == code.ToUpper()))!);
         return await SaveAsync();
     }
 
     public async Task<bool> RemoveRegionAsync(int id)
     {
-        _context.Regions.Remove((await _context.Regions.FirstOrDefaultAsync(region => region.Id == id))!);
+        context.Regions.Remove((await context.Regions.FirstOrDefaultAsync(region => region.Id == id))!);
         return await SaveAsync();
     }
 
     public async Task<bool> SaveAsync()
     {
-        var saved = await _context.SaveChangesAsync();
+        var saved = await context.SaveChangesAsync();
         return saved > 0;
     }
 
     public async Task<int> CountRegionsAsync(string? search = null, Expression<Func<Region, bool>>? predicate = null)
     {
-        var result = _context.Regions.AsQueryable();
+        var result = context.Regions.AsQueryable();
 
         if (predicate != null) result = result.Where(predicate);
 
@@ -156,9 +149,9 @@ public class RegionRepository : IRegionRepository
     public async Task<int> CountRegionUsersAsync(string code, string? search = null,
         Expression<Func<User, bool>>? predicate = null)
     {
-        var region = (await _context.Regions.FirstOrDefaultAsync(region =>
+        var region = (await context.Regions.FirstOrDefaultAsync(region =>
             string.Equals(region.Code, code.ToUpper())))!;
-        var result = _context.Users.Where(user => user.Region == region);
+        var result = context.Users.Where(user => user.Region == region);
 
         if (predicate != null) result = result.Where(predicate);
 
@@ -178,8 +171,8 @@ public class RegionRepository : IRegionRepository
     public async Task<int> CountRegionUsersAsync(int id, string? search = null,
         Expression<Func<User, bool>>? predicate = null)
     {
-        var region = (await _context.Regions.FirstOrDefaultAsync(region => region.Id == id))!;
-        var result = _context.Users.Where(user => user.Region == region);
+        var region = (await context.Regions.FirstOrDefaultAsync(region => region.Id == id))!;
+        var result = context.Users.Where(user => user.Region == region);
 
         if (predicate != null) result = result.Where(predicate);
 

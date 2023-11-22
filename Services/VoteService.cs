@@ -4,53 +4,45 @@ using PhiZoneApi.Models;
 
 namespace PhiZoneApi.Services;
 
-public class VoteService : IVoteService
+public class VoteService(IVoteRepository voteRepository, IChartRepository chartRepository)
+    : IVoteService
 {
-    private readonly IChartRepository _chartRepository;
-    private readonly List<int> _experienceList;
-    private readonly List<double> _multiplierList;
-    private readonly IVoteRepository _voteRepository;
-
-    public VoteService(IVoteRepository voteRepository, IChartRepository chartRepository)
+    private readonly List<int> _experienceList = new()
     {
-        _voteRepository = voteRepository;
-        _chartRepository = chartRepository;
-        _experienceList = new List<int>
-        {
-            0,
-            50,
-            100,
-            500,
-            1000,
-            3000,
-            6000,
-            10000,
-            30000,
-            60000,
-            100000
-        };
-        _multiplierList = new List<double>
-        {
-            0.0,
-            1.0,
-            1.1,
-            1.2,
-            1.3,
-            1.4,
-            1.5,
-            1.6,
-            1.8,
-            2.0,
-            3.0
-        };
-    }
+        0,
+        50,
+        100,
+        500,
+        1000,
+        3000,
+        6000,
+        10000,
+        30000,
+        60000,
+        100000
+    };
+
+    private readonly List<double> _multiplierList = new()
+    {
+        0.0,
+        1.0,
+        1.1,
+        1.2,
+        1.3,
+        1.4,
+        1.5,
+        1.6,
+        1.8,
+        2.0,
+        3.0
+    };
 
     public async Task<bool> CreateVoteAsync(VoteRequestDto dto, Chart chart, User user)
     {
         bool result;
-        if (await _voteRepository.VoteExistsAsync(chart.Id, user.Id))
+        if (await voteRepository.VoteExistsAsync(chart.Id, user.Id))
         {
-            var vote = await _voteRepository.GetVoteAsync(chart.Id, user.Id);
+            var vote = await voteRepository.GetVoteAsync(chart.Id, user.Id);
             vote.Arrangement = dto.Arrangement;
             vote.Feel = dto.Feel;
             vote.VisualEffects = dto.VisualEffects;
@@ -60,7 +52,7 @@ public class VoteService : IVoteService
             vote.Total = dto.Arrangement + dto.Feel + dto.VisualEffects + dto.Creativity + dto.Concord + dto.Impression;
             vote.Multiplier = GetMultiplier(user);
             vote.DateCreated = DateTimeOffset.UtcNow;
-            result = await _voteRepository.UpdateVoteAsync(vote);
+            result = await voteRepository.UpdateVoteAsync(vote);
         }
         else
         {
@@ -79,7 +71,7 @@ public class VoteService : IVoteService
                 OwnerId = user.Id,
                 DateCreated = DateTimeOffset.UtcNow
             };
-            result = await _voteRepository.CreateVoteAsync(vote);
+            result = await voteRepository.CreateVoteAsync(vote);
         }
 
         return result && await UpdateChartAsync(chart);
@@ -87,15 +79,15 @@ public class VoteService : IVoteService
 
     public async Task<bool> RemoveVoteAsync(Chart chart, int userId)
     {
-        if (!await _voteRepository.VoteExistsAsync(chart.Id, userId)) return false;
-        var vote = await _voteRepository.GetVoteAsync(chart.Id, userId);
-        var result = await _voteRepository.RemoveVoteAsync(vote.Id);
+        if (!await voteRepository.VoteExistsAsync(chart.Id, userId)) return false;
+        var vote = await voteRepository.GetVoteAsync(chart.Id, userId);
+        var result = await voteRepository.RemoveVoteAsync(vote.Id);
         return result && await UpdateChartAsync(chart);
     }
 
     public async Task<bool> UpdateChartAsync(Chart chart)
     {
-        var votes = await _voteRepository.GetVotesAsync(new List<string> { "DateCreated" }, new List<bool> { false }, 0,
+        var votes = await voteRepository.GetVotesAsync(new List<string> { "DateCreated" }, new List<bool> { false }, 0,
             -1, vote => vote.ChartId == chart.Id);
         var amount = votes.Sum(vote => vote.Multiplier);
         var r = GetReliability(amount);
@@ -107,7 +99,7 @@ public class VoteService : IVoteService
         chart.RatingOnCreativity = GetRating(votes.Sum(vote => vote.Creativity * vote.Multiplier), amount, r);
         chart.RatingOnConcord = GetRating(votes.Sum(vote => vote.Concord * vote.Multiplier), amount, r);
         chart.RatingOnImpression = GetRating(votes.Sum(vote => vote.Impression * vote.Multiplier), amount, r);
-        return await _chartRepository.UpdateChartAsync(chart);
+        return await chartRepository.UpdateChartAsync(chart);
     }
 
     private double GetMultiplier(User user)

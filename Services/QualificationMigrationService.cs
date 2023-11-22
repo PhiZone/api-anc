@@ -5,23 +5,17 @@ using PhiZoneApi.Models;
 
 namespace PhiZoneApi.Services;
 
-public class QualificationMigrationService : IHostedService
+public class QualificationMigrationService(IServiceProvider serviceProvider) : IHostedService
 {
-    private readonly IServiceProvider _serviceProvider;
     private IAuthorshipRepository _authorshipRepository = null!;
     private IChartRepository _chartRepository = null!;
     private ILogger<QualificationMigrationService> _logger = null!;
     private IResourceService _resourceService = null!;
     private UserManager<User> _userManager = null!;
 
-    public QualificationMigrationService(IServiceProvider serviceProvider)
-    {
-        _serviceProvider = serviceProvider;
-    }
-
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        await using var scope = _serviceProvider.CreateAsyncScope();
+        await using var scope = serviceProvider.CreateAsyncScope();
         _logger = scope.ServiceProvider.GetRequiredService<ILogger<QualificationMigrationService>>();
         _userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
         _chartRepository = scope.ServiceProvider.GetRequiredService<IChartRepository>();

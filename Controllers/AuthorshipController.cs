@@ -23,24 +23,10 @@ namespace PhiZoneApi.Controllers;
 [ApiController]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme,
     Policy = "AllowAnonymous")]
-public class AuthorshipController : Controller
-{
-    private readonly IAuthorshipRepository _authorshipRepository;
-    private readonly IDtoMapper _dtoMapper;
-    private readonly IMapper _mapper;
-    private readonly IResourceService _resourceService;
-    private readonly UserManager<User> _userManager;
-
-    public AuthorshipController(IAuthorshipRepository authorshipRepository,
+public class AuthorshipController(IAuthorshipRepository authorshipRepository,
         IDtoMapper dtoMapper, UserManager<User> userManager, IMapper mapper, IResourceService resourceService)
-    {
-        _authorshipRepository = authorshipRepository;
-        _dtoMapper = dtoMapper;
-        _userManager = userManager;
-        _mapper = mapper;
-        _resourceService = resourceService;
-    }
-
+    : Controller
+{
     /// <summary>
     ///     Retrieves a specific authorship.
     /// </summary>
@@ -61,13 +47,13 @@ public class AuthorshipController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetAuthorship([FromRoute] Guid id)
     {
-        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        if (!await _authorshipRepository.AuthorshipExistsAsync(id))
+        var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        if (!await authorshipRepository.AuthorshipExistsAsync(id))
             return NotFound(new ResponseDto<object>
                 { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
-        var authorship = await _authorshipRepository.GetAuthorshipAsync(id);
-        var dto = await _dtoMapper.MapUserAsync<AuthorDto>(
-            (await _userManager.FindByIdAsync(authorship.AuthorId.ToString()))!, currentUser);
+        var authorship = await authorshipRepository.GetAuthorshipAsync(id);
+        var dto = await dtoMapper.MapUserAsync<AuthorDto>(
+            (await userManager.FindByIdAsync(authorship.AuthorId.ToString()))!, currentUser);
         dto.Position = authorship.Position;
 
         return Ok(new ResponseDto<AuthorDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
@@ -96,22 +82,22 @@ public class AuthorshipController : Controller
     public async Task<IActionResult> UpdateAuthorship([FromRoute] Guid id,
         [FromBody] JsonPatchDocument<AuthorshipRequestDto> patchDocument)
     {
-        if (!await _authorshipRepository.AuthorshipExistsAsync(id))
+        if (!await authorshipRepository.AuthorshipExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _resourceService.HasPermission(currentUser, Roles.Administrator))
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!await resourceService.HasPermission(currentUser, Roles.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
-        var authorship = await _authorshipRepository.GetAuthorshipAsync(id);
-        var dto = _mapper.Map<AuthorshipRequestDto>(authorship);
+        var authorship = await authorshipRepository.GetAuthorshipAsync(id);
+        var dto = mapper.Map<AuthorshipRequestDto>(authorship);
         patchDocument.ApplyTo(dto, ModelState);
 
         if (!TryValidateModel(dto))
@@ -122,7 +108,7 @@ public class AuthorshipController : Controller
                 Errors = ModelErrorTranslator.Translate(ModelState)
             });
 
-        if (await _userManager.FindByIdAsync(dto.AuthorId.ToString()) == null)
+        if (await userManager.FindByIdAsync(dto.AuthorId.ToString()) == null)
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNotFound
@@ -131,7 +117,7 @@ public class AuthorshipController : Controller
         authorship.AuthorId = dto.AuthorId;
         authorship.Position = dto.Position;
 
-        if (!await _authorshipRepository.UpdateAuthorshipAsync(authorship))
+        if (!await authorshipRepository.UpdateAuthorshipAsync(authorship))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
@@ -160,22 +146,22 @@ public class AuthorshipController : Controller
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> RemoveAuthorship([FromRoute] Guid id)
     {
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
 
-        if (!await _authorshipRepository.AuthorshipExistsAsync(id))
+        if (!await authorshipRepository.AuthorshipExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        if (!await _resourceService.HasPermission(currentUser, Roles.Administrator))
+        if (!await resourceService.HasPermission(currentUser, Roles.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
-        if (!await _authorshipRepository.RemoveAuthorshipAsync(id))
+        if (!await authorshipRepository.RemoveAuthorshipAsync(id))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 

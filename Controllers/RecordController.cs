@@ -31,53 +31,15 @@ namespace PhiZoneApi.Controllers;
 [ApiController]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme,
     Policy = "AllowAnonymous")]
-public class RecordController : Controller
-{
-    private readonly IApplicationRepository _applicationRepository;
-    private readonly IChartRepository _chartRepository;
-    private readonly ICommentRepository _commentRepository;
-    private readonly IOptions<DataSettings> _dataSettings;
-    private readonly IDtoMapper _dtoMapper;
-    private readonly IFilterService _filterService;
-    private readonly ILikeRepository _likeRepository;
-    private readonly ILikeService _likeService;
-    private readonly ILogger<RecordController> _logger;
-    private readonly IMapper _mapper;
-    private readonly INotificationService _notificationService;
-    private readonly IPlayConfigurationRepository _playConfigurationRepository;
-    private readonly IRecordRepository _recordRepository;
-    private readonly IRecordService _recordService;
-    private readonly IConnectionMultiplexer _redis;
-    private readonly IResourceService _resourceService;
-    private readonly UserManager<User> _userManager;
-
-    public RecordController(IRecordRepository recordRepository, IOptions<DataSettings> dataSettings,
+public class RecordController(IRecordRepository recordRepository, IOptions<DataSettings> dataSettings,
         UserManager<User> userManager, IFilterService filterService, IDtoMapper dtoMapper, IMapper mapper,
         IChartRepository chartRepository, ILikeRepository likeRepository,
         ILikeService likeService, ICommentRepository commentRepository, IConnectionMultiplexer redis,
         IApplicationRepository applicationRepository, IPlayConfigurationRepository playConfigurationRepository,
         IRecordService recordService, IResourceService resourceService, ILogger<RecordController> logger,
         INotificationService notificationService)
-    {
-        _recordRepository = recordRepository;
-        _dataSettings = dataSettings;
-        _userManager = userManager;
-        _filterService = filterService;
-        _dtoMapper = dtoMapper;
-        _mapper = mapper;
-        _chartRepository = chartRepository;
-        _likeRepository = likeRepository;
-        _likeService = likeService;
-        _commentRepository = commentRepository;
-        _redis = redis;
-        _applicationRepository = applicationRepository;
-        _playConfigurationRepository = playConfigurationRepository;
-        _recordService = recordService;
-        _resourceService = resourceService;
-        _logger = logger;
-        _notificationService = notificationService;
-    }
-
+    : Controller
+{
     /// <summary>
     ///     Retrieves records.
     /// </summary>
@@ -91,18 +53,18 @@ public class RecordController : Controller
     public async Task<IActionResult> GetRecords([FromQuery] ArrayRequestDto dto,
         [FromQuery] RecordFilterDto? filterDto = null)
     {
-        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        dto.PerPage = dto.PerPage > 0 && dto.PerPage < _dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
-            dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : _dataSettings.Value.PaginationMaxPerPage;
+        var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
+            dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
-        var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser);
-        var records = await _recordRepository.GetRecordsAsync(dto.Order, dto.Desc, position,
+        var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser);
+        var records = await recordRepository.GetRecordsAsync(dto.Order, dto.Desc, position,
             dto.PerPage, predicateExpr);
-        var total = await _recordRepository.CountRecordsAsync(predicateExpr);
+        var total = await recordRepository.CountRecordsAsync(predicateExpr);
         var list = new List<RecordDto>();
 
-        foreach (var record in records) list.Add(await _dtoMapper.MapRecordAsync<RecordDto>(record, currentUser));
+        foreach (var record in records) list.Add(await dtoMapper.MapRecordAsync<RecordDto>(record, currentUser));
 
         return Ok(new ResponseDto<IEnumerable<RecordDto>>
         {
@@ -136,14 +98,14 @@ public class RecordController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetRecord([FromRoute] Guid id)
     {
-        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        if (!await _recordRepository.RecordExistsAsync(id))
+        var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        if (!await recordRepository.RecordExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        var record = await _recordRepository.GetRecordAsync(id);
-        var dto = await _dtoMapper.MapRecordAsync<RecordDto>(record, currentUser);
+        var record = await recordRepository.GetRecordAsync(id);
+        var dto = await dtoMapper.MapRecordAsync<RecordDto>(record, currentUser);
 
         return Ok(new ResponseDto<RecordDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
     }
@@ -167,7 +129,7 @@ public class RecordController : Controller
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> CreateRecord([FromBody] RecordCreationDto dto)
     {
-        var db = _redis.GetDatabase();
+        var db = redis.GetDatabase();
         if (!await db.KeyExistsAsync($"phizone:play:{dto.Token}"))
             return NotFound(new ResponseDto<object>
             {
@@ -183,26 +145,26 @@ public class RecordController : Controller
                 Message = "Your request is made earlier than expected."
             });
 
-        if (!await _applicationRepository.ApplicationExistsAsync(info.ApplicationId))
+        if (!await applicationRepository.ApplicationExistsAsync(info.ApplicationId))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ApplicationNotFound
             });
 
-        var player = await _userManager.FindByIdAsync(info.PlayerId.ToString());
+        var player = await userManager.FindByIdAsync(info.PlayerId.ToString());
         if (player == null)
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNotFound
             });
 
-        if (!await _chartRepository.ChartExistsAsync(info.ChartId))
+        if (!await chartRepository.ChartExistsAsync(info.ChartId))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        var chart = await _chartRepository.GetChartAsync(info.ChartId);
+        var chart = await chartRepository.GetChartAsync(info.ChartId);
         if (chart.FileChecksum != null && !chart.FileChecksum.Equals(dto.Checksum))
             return BadRequest(new ResponseDto<object>
             {
@@ -211,13 +173,13 @@ public class RecordController : Controller
                 Message = "File checksum validation has failed."
             });
 
-        var secret = (await _applicationRepository.GetApplicationAsync(info.ApplicationId)).Secret!;
+        var secret = (await applicationRepository.GetApplicationAsync(info.ApplicationId)).Secret!;
         var digest =
             $"{info.ChartId}:{info.ConfigurationId}:{info.PlayerId}:{dto.MaxCombo}:{dto.Perfect}:{dto.GoodEarly}:{dto.GoodLate}:{dto.Bad}:{dto.Miss}:{info.Timestamp}";
         using var hasher = new HMACSHA256(Encoding.UTF8.GetBytes(secret));
         var hmac = Convert.ToBase64String(
             await hasher.ComputeHashAsync(new MemoryStream(Encoding.UTF8.GetBytes(digest))));
-        _logger.LogDebug(LogEvents.RecordDebug, "{Digest} - {Hmac}", digest, hmac);
+        logger.LogDebug(LogEvents.RecordDebug, "{Digest} - {Hmac}", digest, hmac);
         if (!dto.Hmac.Equals(hmac, StringComparison.OrdinalIgnoreCase))
             return BadRequest(new ResponseDto<object>
             {
@@ -249,32 +211,32 @@ public class RecordController : Controller
 
         db.KeyDelete($"phizone:play:{dto.Token}");
 
-        if (!await _playConfigurationRepository.PlayConfigurationExistsAsync(info.ConfigurationId))
+        if (!await playConfigurationRepository.PlayConfigurationExistsAsync(info.ConfigurationId))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ConfigurationNotFound
             });
 
-        var configuration = await _playConfigurationRepository.GetPlayConfigurationAsync(info.ConfigurationId);
+        var configuration = await playConfigurationRepository.GetPlayConfigurationAsync(info.ConfigurationId);
 
-        var score = _recordService.CalculateScore(dto.Perfect, dto.GoodEarly + dto.GoodLate, dto.Bad, dto.Miss,
+        var score = recordService.CalculateScore(dto.Perfect, dto.GoodEarly + dto.GoodLate, dto.Bad, dto.Miss,
             dto.MaxCombo);
-        var accuracy = _recordService.CalculateAccuracy(dto.Perfect, dto.GoodEarly + dto.GoodLate, dto.Bad, dto.Miss);
-        var rksFactor = _recordService.CalculateRksFactor(configuration.PerfectJudgment, configuration.GoodJudgment);
-        var rks = _recordService.CalculateRks(dto.Perfect, dto.GoodEarly + dto.GoodLate, dto.Bad, dto.Miss,
+        var accuracy = recordService.CalculateAccuracy(dto.Perfect, dto.GoodEarly + dto.GoodLate, dto.Bad, dto.Miss);
+        var rksFactor = recordService.CalculateRksFactor(configuration.PerfectJudgment, configuration.GoodJudgment);
+        var rks = recordService.CalculateRks(dto.Perfect, dto.GoodEarly + dto.GoodLate, dto.Bad, dto.Miss,
             chart.Difficulty, dto.StdDeviation) * rksFactor;
         var rksBefore = player.Rks;
         var experienceDelta = 0;
         var highestAccuracy = 0d;
-        if (await _recordRepository.CountRecordsAsync(record =>
+        if (await recordRepository.CountRecordsAsync(record =>
                 record.ChartId == info.ChartId && record.OwnerId == player.Id) > 0)
-            highestAccuracy = (await _recordRepository.GetRecordsAsync(new List<string> { "Accuracy" },
+            highestAccuracy = (await recordRepository.GetRecordsAsync(new List<string> { "Accuracy" },
                 new List<bool> { true }, 0, 1,
                 record => record.ChartId == info.ChartId && record.OwnerId == player.Id)).FirstOrDefault()!.Accuracy;
 
-        _logger.LogInformation(LogEvents.RecordInfo,
+        logger.LogInformation(LogEvents.RecordInfo,
             "New record: {User} - {Chart} {Score} {Accuracy} {Rks} {StdDeviation}ms",
-            player.UserName, await _resourceService.GetDisplayName(chart), score, accuracy.ToString("P2"),
+            player.UserName, await resourceService.GetDisplayName(chart), score, accuracy.ToString("P2"),
             rks.ToString("N3"), dto.StdDeviation.ToString("N3"));
 
         var record = new Record
@@ -298,7 +260,7 @@ public class RecordController : Controller
             DateCreated = DateTimeOffset.UtcNow
         };
 
-        if (!await _recordRepository.CreateRecordAsync(record))
+        if (!await recordRepository.CreateRecordAsync(record))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
@@ -314,7 +276,7 @@ public class RecordController : Controller
         if ((accuracy >= 0.98 && (highestAccuracy is >= 0.97 and < 0.98 || accuracy - highestAccuracy >= 0.01)) ||
             (Math.Abs(accuracy - 1d) < 1e-7 && highestAccuracy < 1))
         {
-            var pos = await _recordRepository.CountRecordsAsync(r => r.ChartId == info.ChartId && r.Rks > rks) + 1;
+            var pos = await recordRepository.CountRecordsAsync(r => r.ChartId == info.ChartId && r.Rks > rks) + 1;
             if (pos <= 1000)
             {
                 var temp = Math.Pow(chart.Difficulty, 7d / 5);
@@ -323,20 +285,20 @@ public class RecordController : Controller
         }
 
         var phiRks =
-            (await _recordRepository.GetRecordsAsync(new List<string> { "Rks" }, new List<bool> { true }, 0, 1,
+            (await recordRepository.GetRecordsAsync(new List<string> { "Rks" }, new List<bool> { true }, 0, 1,
                 r => r.OwnerId == player.Id && r.Score == 1000000 && r.Chart.IsRanked)).FirstOrDefault()
             ?.Rks ?? 0d;
-        var best19Rks = (await _recordService.GetBest19(player.Id)).Sum(r => r.Rks);
+        var best19Rks = (await recordService.GetBest19(player.Id)).Sum(r => r.Rks);
         var rksAfter = (phiRks + best19Rks) / 20;
 
         if (!chart.IsRanked) experienceDelta = (int)(experienceDelta * 0.1);
 
         player.Experience += experienceDelta;
         player.Rks = rksAfter;
-        await _userManager.UpdateAsync(player);
+        await userManager.UpdateAsync(player);
 
-        chart.PlayCount = await _chartRepository.CountChartRecordsAsync(chart.Id);
-        await _chartRepository.UpdateChartAsync(chart);
+        chart.PlayCount = await chartRepository.CountChartRecordsAsync(chart.Id);
+        await chartRepository.UpdateChartAsync(chart);
 
         return StatusCode(StatusCodes.Status201Created,
             new ResponseDto<RecordResponseDto>
@@ -348,7 +310,7 @@ public class RecordController : Controller
                     Score = score,
                     Accuracy = accuracy,
                     IsFullCombo = record.IsFullCombo,
-                    Player = await _dtoMapper.MapUserAsync<UserDto>(player),
+                    Player = await dtoMapper.MapUserAsync<UserDto>(player),
                     ExperienceDelta = experienceDelta,
                     RksBefore = rksBefore,
                     DateCreated = record.DateCreated
@@ -378,21 +340,21 @@ public class RecordController : Controller
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> RemoveRecord([FromRoute] Guid id)
     {
-        if (!await _recordRepository.RecordExistsAsync(id))
+        if (!await recordRepository.RecordExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _resourceService.HasPermission(currentUser, Roles.Administrator))
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!await resourceService.HasPermission(currentUser, Roles.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
-        if (!await _recordRepository.RemoveRecordAsync(id))
+        if (!await recordRepository.RemoveRecordAsync(id))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
@@ -414,19 +376,19 @@ public class RecordController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetRecordLikes([FromRoute] Guid id, [FromQuery] ArrayRequestDto dto)
     {
-        dto.PerPage = dto.PerPage > 0 && dto.PerPage < _dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
-            dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : _dataSettings.Value.PaginationMaxPerPage;
+        dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
+            dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
-        if (!await _recordRepository.RecordExistsAsync(id))
+        if (!await recordRepository.RecordExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        var likes = await _likeRepository.GetLikesAsync(dto.Order, dto.Desc, position, dto.PerPage,
+        var likes = await likeRepository.GetLikesAsync(dto.Order, dto.Desc, position, dto.PerPage,
             e => e.ResourceId == id);
-        var list = _mapper.Map<List<LikeDto>>(likes);
-        var total = await _likeRepository.CountLikesAsync(e => e.ResourceId == id);
+        var list = mapper.Map<List<LikeDto>>(likes);
+        var total = await likeRepository.CountLikesAsync(e => e.ResourceId == id);
 
         return Ok(new ResponseDto<IEnumerable<LikeDto>>
         {
@@ -458,25 +420,25 @@ public class RecordController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> CreateLike([FromRoute] Guid id)
     {
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _resourceService.HasPermission(currentUser, Roles.Member))
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!await resourceService.HasPermission(currentUser, Roles.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        if (!await _recordRepository.RecordExistsAsync(id))
+        if (!await recordRepository.RecordExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        var record = await _recordRepository.GetRecordAsync(id);
-        if (await _resourceService.IsBlacklisted(record.OwnerId, currentUser.Id))
+        var record = await recordRepository.GetRecordAsync(id);
+        if (await resourceService.IsBlacklisted(record.OwnerId, currentUser.Id))
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Blacklisted
             });
-        if (!await _likeService.CreateLikeAsync(record, currentUser.Id))
+        if (!await likeService.CreateLikeAsync(record, currentUser.Id))
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
@@ -503,20 +465,20 @@ public class RecordController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> RemoveLike([FromRoute] Guid id)
     {
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _resourceService.HasPermission(currentUser, Roles.Member))
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!await resourceService.HasPermission(currentUser, Roles.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        if (!await _recordRepository.RecordExistsAsync(id))
+        if (!await recordRepository.RecordExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        var record = await _recordRepository.GetRecordAsync(id);
-        if (!await _likeService.RemoveLikeAsync(record, currentUser.Id))
+        var record = await recordRepository.GetRecordAsync(id);
+        if (!await likeService.RemoveLikeAsync(record, currentUser.Id))
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
@@ -540,22 +502,22 @@ public class RecordController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetRecordComments([FromRoute] Guid id, [FromQuery] ArrayRequestDto dto)
     {
-        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        dto.PerPage = dto.PerPage > 0 && dto.PerPage < _dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
-            dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : _dataSettings.Value.PaginationMaxPerPage;
+        var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
+            dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
-        if (!await _recordRepository.RecordExistsAsync(id))
+        if (!await recordRepository.RecordExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        var comments = await _commentRepository.GetCommentsAsync(dto.Order, dto.Desc, position, dto.PerPage,
+        var comments = await commentRepository.GetCommentsAsync(dto.Order, dto.Desc, position, dto.PerPage,
             e => e.ResourceId == id);
         var list = new List<CommentDto>();
-        var total = await _commentRepository.CountCommentsAsync(e => e.ResourceId == id);
+        var total = await commentRepository.CountCommentsAsync(e => e.ResourceId == id);
 
-        foreach (var comment in comments) list.Add(await _dtoMapper.MapCommentAsync<CommentDto>(comment, currentUser));
+        foreach (var comment in comments) list.Add(await dtoMapper.MapCommentAsync<CommentDto>(comment, currentUser));
 
         return Ok(new ResponseDto<IEnumerable<CommentDto>>
         {
@@ -591,25 +553,25 @@ public class RecordController : Controller
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> CreateComment([FromRoute] Guid id, [FromBody] CommentCreationDto dto)
     {
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _resourceService.HasPermission(currentUser, Roles.Member))
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!await resourceService.HasPermission(currentUser, Roles.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        if (!await _recordRepository.RecordExistsAsync(id))
+        if (!await recordRepository.RecordExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        var record = await _recordRepository.GetRecordAsync(id);
-        if (await _resourceService.IsBlacklisted(record.OwnerId, currentUser.Id))
+        var record = await recordRepository.GetRecordAsync(id);
+        if (await resourceService.IsBlacklisted(record.OwnerId, currentUser.Id))
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Blacklisted
             });
-        var result = await _resourceService.ParseUserContent(dto.Content);
+        var result = await resourceService.ParseUserContent(dto.Content);
         var comment = new Comment
         {
             ResourceId = record.Id,
@@ -618,14 +580,14 @@ public class RecordController : Controller
             OwnerId = currentUser.Id,
             DateCreated = DateTimeOffset.UtcNow
         };
-        if (!await _commentRepository.CreateCommentAsync(comment))
+        if (!await commentRepository.CreateCommentAsync(comment))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
-        await _notificationService.NotifyComment(comment, record, await _resourceService.GetDisplayName(record),
+        await notificationService.NotifyComment(comment, record, await resourceService.GetDisplayName(record),
             dto.Content);
-        await _notificationService.NotifyMentions(result.Item2, currentUser,
-            _resourceService.GetRichText<Comment>(comment.Id.ToString(), dto.Content));
+        await notificationService.NotifyMentions(result.Item2, currentUser,
+            resourceService.GetRichText<Comment>(comment.Id.ToString(), dto.Content));
 
         return StatusCode(StatusCodes.Status201Created);
     }

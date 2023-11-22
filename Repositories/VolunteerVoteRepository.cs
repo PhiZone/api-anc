@@ -9,21 +9,14 @@ using PhiZoneApi.Utils;
 
 namespace PhiZoneApi.Repositories;
 
-public class VolunteerVoteRepository : IVolunteerVoteRepository
+public class VolunteerVoteRepository(ApplicationDbContext context) : IVolunteerVoteRepository
 {
-    private readonly ApplicationDbContext _context;
-
-    public VolunteerVoteRepository(ApplicationDbContext context)
-    {
-        _context = context;
-    }
-
     public async Task<ICollection<VolunteerVote>> GetVolunteerVotesAsync(List<string> order, List<bool> desc,
         int position,
         int take,
         Expression<Func<VolunteerVote, bool>>? predicate = null)
     {
-        var result = _context.VolunteerVotes.OrderBy(order, desc);
+        var result = context.VolunteerVotes.OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
         result = result.Skip(position);
         return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
@@ -31,59 +24,59 @@ public class VolunteerVoteRepository : IVolunteerVoteRepository
 
     public async Task<VolunteerVote> GetVolunteerVoteAsync(Guid id)
     {
-        return (await _context.VolunteerVotes.FirstOrDefaultAsync(vote => vote.Id == id))!;
+        return (await context.VolunteerVotes.FirstOrDefaultAsync(vote => vote.Id == id))!;
     }
 
     public async Task<VolunteerVote> GetVolunteerVoteAsync(Guid chartId, int userId)
     {
-        return (await _context.VolunteerVotes.FirstOrDefaultAsync(
+        return (await context.VolunteerVotes.FirstOrDefaultAsync(
             vote => vote.Chart.Id == chartId && vote.OwnerId == userId))!;
     }
 
     public async Task<bool> VolunteerVoteExistsAsync(Guid id)
     {
-        return (await _context.VolunteerVotes.AnyAsync(vote => vote.Id == id))!;
+        return (await context.VolunteerVotes.AnyAsync(vote => vote.Id == id))!;
     }
 
     public async Task<bool> VolunteerVoteExistsAsync(Guid chartId, int userId)
     {
-        return (await _context.VolunteerVotes.AnyAsync(
+        return (await context.VolunteerVotes.AnyAsync(
             vote => vote.Chart.Id == chartId && vote.OwnerId == userId))!;
     }
 
     public async Task<bool> CreateVolunteerVoteAsync(VolunteerVote vote)
     {
-        await _context.VolunteerVotes.AddAsync(vote);
+        await context.VolunteerVotes.AddAsync(vote);
         return await SaveAsync();
     }
 
     public async Task<bool> UpdateVolunteerVoteAsync(VolunteerVote vote)
     {
-        _context.VolunteerVotes.Update(vote);
+        context.VolunteerVotes.Update(vote);
         return await SaveAsync();
     }
 
     public async Task<bool> RemoveVolunteerVoteAsync(Guid id)
     {
-        _context.VolunteerVotes.Remove((await _context.VolunteerVotes.FirstOrDefaultAsync(vote => vote.Id == id))!);
+        context.VolunteerVotes.Remove((await context.VolunteerVotes.FirstOrDefaultAsync(vote => vote.Id == id))!);
         return await SaveAsync();
     }
 
     public async Task<bool> RemoveVolunteerVotesAsync(IEnumerable<VolunteerVote> votes)
     {
-        _context.VolunteerVotes.RemoveRange(votes);
+        context.VolunteerVotes.RemoveRange(votes);
         return await SaveAsync();
     }
 
     public async Task<bool> SaveAsync()
     {
-        var saved = await _context.SaveChangesAsync();
+        var saved = await context.SaveChangesAsync();
         return saved > 0;
     }
 
     public async Task<int> CountVolunteerVotesAsync(Expression<Func<VolunteerVote, bool>>? predicate = null)
     {
-        var result = _context.VolunteerVotes.AsQueryable();
+        var result = context.VolunteerVotes.AsQueryable();
 
         if (predicate != null) result = result.Where(predicate);
 

@@ -22,27 +22,11 @@ namespace PhiZoneApi.Controllers;
 [ApiVersion("2.0")]
 [ApiController]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
-public class NotificationController : Controller
-{
-    private readonly IOptions<DataSettings> _dataSettings;
-    private readonly IDtoMapper _dtoMapper;
-    private readonly IFilterService _filterService;
-    private readonly INotificationRepository _notificationRepository;
-    private readonly IResourceService _resourceService;
-    private readonly UserManager<User> _userManager;
-
-    public NotificationController(IOptions<DataSettings> dataSettings, INotificationRepository notificationRepository,
+public class NotificationController(IOptions<DataSettings> dataSettings, INotificationRepository notificationRepository,
         UserManager<User> userManager, IResourceService resourceService, IFilterService filterService,
         IDtoMapper dtoMapper)
-    {
-        _dataSettings = dataSettings;
-        _notificationRepository = notificationRepository;
-        _userManager = userManager;
-        _resourceService = resourceService;
-        _filterService = filterService;
-        _dtoMapper = dtoMapper;
-    }
-
+    : Controller
+{
     /// <summary>
     ///     Retrieves notifications.
     /// </summary>
@@ -58,19 +42,19 @@ public class NotificationController : Controller
     public async Task<IActionResult> GetNotifications([FromQuery] ArrayRequestDto dto,
         [FromQuery] NotificationRequestDto notificationDto, [FromQuery] NotificationFilterDto? filterDto = null)
     {
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        dto.PerPage = dto.PerPage > 0 && dto.PerPage < _dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
-            dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : _dataSettings.Value.PaginationMaxPerPage;
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
+            dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
-        var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser,
+        var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser,
             e => e.OwnerId == currentUser.Id && (notificationDto.GetRead ? e.DateRead != null : e.DateRead == null));
-        var notifications = await _notificationRepository.GetNotificationsAsync(dto.Order, dto.Desc, position,
+        var notifications = await notificationRepository.GetNotificationsAsync(dto.Order, dto.Desc, position,
             dto.PerPage, dto.Search, predicateExpr);
-        var total = await _notificationRepository.CountNotificationsAsync(dto.Search, predicateExpr);
+        var total = await notificationRepository.CountNotificationsAsync(dto.Search, predicateExpr);
         var list = new List<NotificationDto>();
         foreach (var notification in notifications)
-            list.Add(await _dtoMapper.MapNotificationAsync<NotificationDto>(notification, currentUser));
+            list.Add(await dtoMapper.MapNotificationAsync<NotificationDto>(notification, currentUser));
 
         return Ok(new ResponseDto<IEnumerable<NotificationDto>>
         {
@@ -99,20 +83,20 @@ public class NotificationController : Controller
     public async Task<IActionResult> ReadNotifications([FromQuery] ArrayRequestDto dto,
         [FromQuery] NotificationRequestDto notificationDto, [FromQuery] NotificationFilterDto? filterDto = null)
     {
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        dto.PerPage = dto.PerPage > 0 && dto.PerPage < _dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
-            dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : _dataSettings.Value.PaginationMaxPerPage;
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
+            dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
-        var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser,
+        var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser,
             e => e.OwnerId == currentUser.Id && (notificationDto.GetRead ? e.DateRead != null : e.DateRead == null));
-        var notifications = await _notificationRepository.GetNotificationsAsync(dto.Order, dto.Desc, position,
+        var notifications = await notificationRepository.GetNotificationsAsync(dto.Order, dto.Desc, position,
             dto.PerPage, dto.Search, predicateExpr);
 
         var now = DateTimeOffset.UtcNow;
         foreach (var notification in notifications) notification.DateRead = now;
 
-        await _notificationRepository.UpdateNotificationsAsync(notifications);
+        await notificationRepository.UpdateNotificationsAsync(notifications);
 
         return NoContent();
     }
@@ -141,21 +125,21 @@ public class NotificationController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetNotification([FromRoute] Guid id)
     {
-        if (!await _notificationRepository.NotificationExistsAsync(id))
+        if (!await notificationRepository.NotificationExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        var notification = await _notificationRepository.GetNotificationAsync(id);
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        var notification = await notificationRepository.GetNotificationAsync(id);
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if (notification.OwnerId != currentUser.Id &&
-            !await _resourceService.HasPermission(currentUser, Roles.Administrator))
+            !await resourceService.HasPermission(currentUser, Roles.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        var dto = await _dtoMapper.MapNotificationAsync<NotificationDto>(notification);
+        var dto = await dtoMapper.MapNotificationAsync<NotificationDto>(notification);
 
         return Ok(new ResponseDto<NotificationDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
     }
@@ -180,15 +164,15 @@ public class NotificationController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> ReadNotification([FromRoute] Guid id)
     {
-        if (!await _notificationRepository.NotificationExistsAsync(id))
+        if (!await notificationRepository.NotificationExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        var notification = await _notificationRepository.GetNotificationAsync(id);
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        var notification = await notificationRepository.GetNotificationAsync(id);
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if (notification.OwnerId != currentUser.Id &&
-            !await _resourceService.HasPermission(currentUser, Roles.Administrator))
+            !await resourceService.HasPermission(currentUser, Roles.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -196,7 +180,7 @@ public class NotificationController : Controller
                 });
 
         notification.DateRead = DateTimeOffset.UtcNow;
-        await _notificationRepository.UpdateNotificationAsync(notification);
+        await notificationRepository.UpdateNotificationAsync(notification);
 
         return NoContent();
     }
@@ -222,22 +206,22 @@ public class NotificationController : Controller
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> RemoveNotification([FromRoute] Guid id)
     {
-        if (!await _notificationRepository.NotificationExistsAsync(id))
+        if (!await notificationRepository.NotificationExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        var notification = await _notificationRepository.GetNotificationAsync(id);
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        var notification = await notificationRepository.GetNotificationAsync(id);
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if (notification.OwnerId != currentUser.Id &&
-            !await _resourceService.HasPermission(currentUser, Roles.Administrator))
+            !await resourceService.HasPermission(currentUser, Roles.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
-        if (!await _notificationRepository.RemoveNotificationAsync(id))
+        if (!await notificationRepository.RemoveNotificationAsync(id))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 

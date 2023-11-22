@@ -9,20 +9,13 @@ using PhiZoneApi.Utils;
 
 namespace PhiZoneApi.Repositories;
 
-public class ChartSubmissionRepository : IChartSubmissionRepository
+public class ChartSubmissionRepository(ApplicationDbContext context) : IChartSubmissionRepository
 {
-    private readonly ApplicationDbContext _context;
-
-    public ChartSubmissionRepository(ApplicationDbContext context)
-    {
-        _context = context;
-    }
-
     public async Task<ICollection<ChartSubmission>> GetChartSubmissionsAsync(List<string> order, List<bool> desc,
         int position,
         int take, string? search = null, Expression<Func<ChartSubmission, bool>>? predicate = null)
     {
-        var result = _context.ChartSubmissions.OrderBy(order, desc);
+        var result = context.ChartSubmissions.OrderBy(order, desc);
 
         if (predicate != null) result = result.Where(predicate);
 
@@ -55,7 +48,7 @@ public class ChartSubmissionRepository : IChartSubmissionRepository
         List<bool> desc,
         int position, int take, string? search = null, Expression<Func<ChartSubmission, bool>>? predicate = null)
     {
-        var result = _context.ChartSubmissions.Where(chart => chart.OwnerId == userId).OrderBy(order, desc);
+        var result = context.ChartSubmissions.Where(chart => chart.OwnerId == userId).OrderBy(order, desc);
 
         if (predicate != null) result = result.Where(predicate);
 
@@ -86,43 +79,43 @@ public class ChartSubmissionRepository : IChartSubmissionRepository
 
     public async Task<ChartSubmission> GetChartSubmissionAsync(Guid id)
     {
-        return (await _context.ChartSubmissions.FirstOrDefaultAsync(chart => chart.Id == id))!;
+        return (await context.ChartSubmissions.FirstOrDefaultAsync(chart => chart.Id == id))!;
     }
 
     public async Task<bool> ChartSubmissionExistsAsync(Guid id)
     {
-        return (await _context.ChartSubmissions.AnyAsync(chart => chart.Id == id))!;
+        return (await context.ChartSubmissions.AnyAsync(chart => chart.Id == id))!;
     }
 
     public async Task<bool> CreateChartSubmissionAsync(ChartSubmission chart)
     {
-        await _context.ChartSubmissions.AddAsync(chart);
+        await context.ChartSubmissions.AddAsync(chart);
         return await SaveAsync();
     }
 
     public async Task<bool> UpdateChartSubmissionAsync(ChartSubmission chart)
     {
-        _context.ChartSubmissions.Update(chart);
+        context.ChartSubmissions.Update(chart);
         return await SaveAsync();
     }
 
     public async Task<bool> RemoveChartSubmissionAsync(Guid id)
     {
-        _context.ChartSubmissions.Remove(
-            (await _context.ChartSubmissions.FirstOrDefaultAsync(chart => chart.Id == id))!);
+        context.ChartSubmissions.Remove(
+            (await context.ChartSubmissions.FirstOrDefaultAsync(chart => chart.Id == id))!);
         return await SaveAsync();
     }
 
     public async Task<bool> SaveAsync()
     {
-        var saved = await _context.SaveChangesAsync();
+        var saved = await context.SaveChangesAsync();
         return saved > 0;
     }
 
     public async Task<int> CountChartSubmissionsAsync(string? search = null,
         Expression<Func<ChartSubmission, bool>>? predicate = null)
     {
-        var result = _context.ChartSubmissions.AsQueryable();
+        var result = context.ChartSubmissions.AsQueryable();
 
         if (predicate != null) result = result.Where(predicate);
 
@@ -153,7 +146,7 @@ public class ChartSubmissionRepository : IChartSubmissionRepository
     public async Task<int> CountUserChartSubmissionsAsync(int userId, string? search = null,
         Expression<Func<ChartSubmission, bool>>? predicate = null)
     {
-        var result = _context.ChartSubmissions.Where(chart => chart.OwnerId == userId).AsQueryable();
+        var result = context.ChartSubmissions.Where(chart => chart.OwnerId == userId).AsQueryable();
 
         if (predicate != null) result = result.Where(predicate);
 

@@ -4,15 +4,8 @@ using PhiZoneApi.Interfaces;
 
 namespace PhiZoneApi.Services;
 
-public class MultimediaService : IMultimediaService
+public class MultimediaService(ILogger<MultimediaService> logger) : IMultimediaService
 {
-    private readonly ILogger<MultimediaService> _logger;
-
-    public MultimediaService(ILogger<MultimediaService> logger)
-    {
-        _logger = logger;
-    }
-
     public MemoryStream CropImage(IFormFile file, (int, int) aspectRatio)
     {
         return CropImage(Image.Load(file.OpenReadStream()), aspectRatio);
@@ -39,7 +32,7 @@ public class MultimediaService : IMultimediaService
         }
         catch (Exception ex)
         {
-            _logger.LogError(LogEvents.AudioFailure, ex, "Failed to convert audio for {File}", file.FileName);
+            logger.LogError(LogEvents.AudioFailure, ex, "Failed to convert audio for {File}", file.FileName);
             return null;
         }
     }
@@ -60,7 +53,7 @@ public class MultimediaService : IMultimediaService
         }
         catch (Exception ex)
         {
-            _logger.LogError(LogEvents.AudioFailure, ex, "Failed to convert audio from bytes");
+            logger.LogError(LogEvents.AudioFailure, ex, "Failed to convert audio from bytes");
             return null;
         }
     }

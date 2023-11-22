@@ -5,45 +5,23 @@ using PhiZoneApi.Models;
 
 namespace PhiZoneApi.Services;
 
-public class SubmissionService : ISubmissionService
-{
-    private readonly IAuthorshipRepository _authorshipRepository;
-    private readonly IChartRepository _chartRepository;
-    private readonly IChartSubmissionRepository _chartSubmissionRepository;
-    private readonly ICollaborationRepository _collaborationRepository;
-    private readonly INotificationService _notificationService;
-    private readonly IResourceService _resourceService;
-    private readonly ISongRepository _songRepository;
-    private readonly UserManager<User> _userManager;
-    private readonly IUserRelationRepository _userRelationRepository;
-
-    public SubmissionService(ISongRepository songRepository, INotificationService notificationService,
+public class SubmissionService(ISongRepository songRepository, INotificationService notificationService,
         IResourceService resourceService, IChartRepository chartRepository,
         IChartSubmissionRepository chartSubmissionRepository, ICollaborationRepository collaborationRepository,
         IAuthorshipRepository authorshipRepository, UserManager<User> userManager,
         IUserRelationRepository userRelationRepository)
-    {
-        _songRepository = songRepository;
-        _notificationService = notificationService;
-        _resourceService = resourceService;
-        _chartRepository = chartRepository;
-        _chartSubmissionRepository = chartSubmissionRepository;
-        _collaborationRepository = collaborationRepository;
-        _authorshipRepository = authorshipRepository;
-        _userManager = userManager;
-        _userRelationRepository = userRelationRepository;
-    }
-
+    : ISubmissionService
+{
     public async Task<Song> ApproveSong(SongSubmission songSubmission, bool isOriginal, bool isHidden)
     {
         Song song;
-        var owner = (await _userManager.FindByIdAsync(songSubmission.OwnerId.ToString()))!;
+        var owner = (await userManager.FindByIdAsync(songSubmission.OwnerId.ToString()))!;
         var description = songSubmission.Description;
         List<User>? mentions = null;
 
         if (description != null)
         {
-            var result = await _resourceService.ParseUserContent(description);
+            var result = await resourceService.ParseUserContent(description);
             description = result.Item1;
             mentions = result.Item2;
         }
@@ -78,33 +56,33 @@ public class SubmissionService : ISubmissionService
                 DateCreated = DateTimeOffset.UtcNow,
                 DateUpdated = DateTimeOffset.UtcNow
             };
-            await _songRepository.CreateSongAsync(song);
+            await songRepository.CreateSongAsync(song);
 
             if (!isHidden)
-                foreach (var relation in await _userRelationRepository.GetRelationsAsync(
+                foreach (var relation in await userRelationRepository.GetRelationsAsync(
                              new List<string> { "DateCreated" }, new List<bool> { false }, 0, -1,
                              e => e.FolloweeId == songSubmission.OwnerId && e.Type != UserRelationType.Blacklisted))
-                    await _notificationService.Notify(
-                        (await _userManager.FindByIdAsync(relation.FollowerId.ToString()))!,
-                        (await _userManager.FindByIdAsync(songSubmission.OwnerId.ToString()))!,
+                    await notificationService.Notify(
+                        (await userManager.FindByIdAsync(relation.FollowerId.ToString()))!,
+                        (await userManager.FindByIdAsync(songSubmission.OwnerId.ToString()))!,
                         NotificationType.Updates, "song-follower-update",
                         new Dictionary<string, string>
                         {
                             {
                                 "User",
-                                _resourceService.GetRichText<User>(songSubmission.OwnerId.ToString(), owner.UserName!)
+                                resourceService.GetRichText<User>(songSubmission.OwnerId.ToString(), owner.UserName!)
                             },
-                            { "Song", _resourceService.GetRichText<Song>(song.Id.ToString(), song.GetDisplay()) }
+                            { "Song", resourceService.GetRichText<Song>(song.Id.ToString(), song.GetDisplay()) }
                         });
 
-            foreach (var chartSubmission in await _chartSubmissionRepository.GetChartSubmissionsAsync(
+            foreach (var chartSubmission in await chartSubmissionRepository.GetChartSubmissionsAsync(
                          new List<string> { "DateCreated" }, new List<bool> { false }, 0, -1,
                          predicate: e => e.Status == RequestStatus.Approved))
                 await ApproveChart(chartSubmission);
         }
         else
         {
-            song = await _songRepository.GetSongAsync(songSubmission.RepresentationId.Value);
+            song = await songRepository.GetSongAsync(songSubmission.RepresentationId.Value);
 
             song.Title = songSubmission.Title;
             song.EditionType = songSubmission.EditionType;
@@ -130,25 +108,25 @@ public class SubmissionService : ISubmissionService
             song.OwnerId = songSubmission.OwnerId;
             song.DateUpdated = DateTimeOffset.UtcNow;
 
-            await _songRepository.UpdateSongAsync(song);
+            await songRepository.UpdateSongAsync(song);
         }
 
-        await _notificationService.Notify(songSubmission.Owner, null, NotificationType.System,
+        await notificationService.Notify(songSubmission.Owner, null, NotificationType.System,
             "song-submission-approval",
             new Dictionary<string, string>
             {
                 {
                     "Song",
-                    _resourceService.GetRichText<SongSubmission>(songSubmission.Id.ToString(),
+                    resourceService.GetRichText<SongSubmission>(songSubmission.Id.ToString(),
                         songSubmission.GetDisplay())
                 }
             });
 
-        foreach (var collaboration in await _collaborationRepository.GetCollaborationsAsync(
+        foreach (var collaboration in await collaborationRepository.GetCollaborationsAsync(
                      new List<string> { "DateCreated" }, new List<bool> { false }, 0, -1,
                      e => e.SubmissionId == songSubmission.Id && e.Status == RequestStatus.Approved))
         {
-            if (await _authorshipRepository.AuthorshipExistsAsync(song.Id, collaboration.InviteeId)) continue;
+            if (await authorshipRepository.AuthorshipExistsAsync(song.Id, collaboration.InviteeId)) continue;
             var authorship = new Authorship
             {
                 ResourceId = song.Id,
@@ -156,25 +134,25 @@ public class SubmissionService : ISubmissionService
                 Position = collaboration.Position,
                 DateCreated = DateTimeOffset.UtcNow
             };
-            await _authorshipRepository.CreateAuthorshipAsync(authorship);
+            await authorshipRepository.CreateAuthorshipAsync(authorship);
         }
 
         if (description != null && mentions != null)
-            await _notificationService.NotifyMentions(mentions, owner,
-                _resourceService.GetRichText<Song>(song.Id.ToString(), songSubmission.Description!));
+            await notificationService.NotifyMentions(mentions, owner,
+                resourceService.GetRichText<Song>(song.Id.ToString(), songSubmission.Description!));
 
         return song;
     }
 
     public async Task RejectSong(SongSubmission songSubmission)
     {
-        await _notificationService.Notify((await _userManager.FindByIdAsync(songSubmission.OwnerId.ToString()))!, null,
+        await notificationService.Notify((await userManager.FindByIdAsync(songSubmission.OwnerId.ToString()))!, null,
             NotificationType.System, "song-submission-rejection",
             new Dictionary<string, string>
             {
                 {
                     "Song",
-                    _resourceService.GetRichText<SongSubmission>(songSubmission.Id.ToString(),
+                    resourceService.GetRichText<SongSubmission>(songSubmission.Id.ToString(),
                         songSubmission.GetDisplay())
                 },
                 { "Reason", songSubmission.Message! }
@@ -186,13 +164,13 @@ public class SubmissionService : ISubmissionService
         if (chartSubmission.SongId == null) return;
 
         Chart chart;
-        var owner = (await _userManager.FindByIdAsync(chartSubmission.OwnerId.ToString()))!;
+        var owner = (await userManager.FindByIdAsync(chartSubmission.OwnerId.ToString()))!;
         var description = chartSubmission.Description;
         List<User>? mentions = null;
 
         if (description != null)
         {
-            var result = await _resourceService.ParseUserContent(description);
+            var result = await resourceService.ParseUserContent(description);
             description = result.Item1;
             mentions = result.Item2;
         }
@@ -222,34 +200,34 @@ public class SubmissionService : ISubmissionService
                 DateCreated = DateTimeOffset.UtcNow,
                 DateUpdated = DateTimeOffset.UtcNow
             };
-            await _chartRepository.CreateChartAsync(chart);
+            await chartRepository.CreateChartAsync(chart);
             chartSubmission.RepresentationId = chart.Id;
-            await _chartSubmissionRepository.UpdateChartSubmissionAsync(chartSubmission);
+            await chartSubmissionRepository.UpdateChartSubmissionAsync(chartSubmission);
 
-            if (!(await _songRepository.GetSongAsync(chartSubmission.SongId.Value)).IsHidden)
-                foreach (var relation in await _userRelationRepository.GetRelationsAsync(
+            if (!(await songRepository.GetSongAsync(chartSubmission.SongId.Value)).IsHidden)
+                foreach (var relation in await userRelationRepository.GetRelationsAsync(
                              new List<string> { "DateCreated" }, new List<bool> { false }, 0, -1,
                              e => e.FolloweeId == chartSubmission.OwnerId && e.Type != UserRelationType.Blacklisted))
-                    await _notificationService.Notify(
-                        (await _userManager.FindByIdAsync(relation.FollowerId.ToString()))!,
-                        (await _userManager.FindByIdAsync(chartSubmission.OwnerId.ToString()))!,
+                    await notificationService.Notify(
+                        (await userManager.FindByIdAsync(relation.FollowerId.ToString()))!,
+                        (await userManager.FindByIdAsync(chartSubmission.OwnerId.ToString()))!,
                         NotificationType.Updates, "chart-follower-update",
                         new Dictionary<string, string>
                         {
                             {
                                 "User",
-                                _resourceService.GetRichText<User>(chartSubmission.OwnerId.ToString(), owner.UserName!)
+                                resourceService.GetRichText<User>(chartSubmission.OwnerId.ToString(), owner.UserName!)
                             },
                             {
                                 "Chart",
-                                _resourceService.GetRichText<Chart>(chart.Id.ToString(),
-                                    await _resourceService.GetDisplayName(chart))
+                                resourceService.GetRichText<Chart>(chart.Id.ToString(),
+                                    await resourceService.GetDisplayName(chart))
                             }
                         });
         }
         else
         {
-            chart = await _chartRepository.GetChartAsync(chartSubmission.RepresentationId.Value);
+            chart = await chartRepository.GetChartAsync(chartSubmission.RepresentationId.Value);
             chart.Title = chartSubmission.Title;
             chart.LevelType = chartSubmission.LevelType;
             chart.Level = chartSubmission.Level;
@@ -269,24 +247,24 @@ public class SubmissionService : ISubmissionService
             chart.SongId = chartSubmission.SongId.Value;
             chart.OwnerId = chartSubmission.OwnerId;
             chart.DateUpdated = DateTimeOffset.UtcNow;
-            await _chartRepository.UpdateChartAsync(chart);
+            await chartRepository.UpdateChartAsync(chart);
         }
 
-        await _notificationService.Notify(owner, null, NotificationType.System, "chart-submission-approval",
+        await notificationService.Notify(owner, null, NotificationType.System, "chart-submission-approval",
             new Dictionary<string, string>
             {
                 {
                     "Chart",
-                    _resourceService.GetRichText<ChartSubmission>(chartSubmission.Id.ToString(),
-                        await _resourceService.GetDisplayName(chartSubmission))
+                    resourceService.GetRichText<ChartSubmission>(chartSubmission.Id.ToString(),
+                        await resourceService.GetDisplayName(chartSubmission))
                 }
             });
 
-        foreach (var collaboration in await _collaborationRepository.GetCollaborationsAsync(
+        foreach (var collaboration in await collaborationRepository.GetCollaborationsAsync(
                      new List<string> { "DateCreated" }, new List<bool> { false }, 0, -1,
                      e => e.SubmissionId == chartSubmission.Id && e.Status == RequestStatus.Approved))
         {
-            if (await _authorshipRepository.AuthorshipExistsAsync(chart.Id, collaboration.InviteeId)) continue;
+            if (await authorshipRepository.AuthorshipExistsAsync(chart.Id, collaboration.InviteeId)) continue;
             var authorship = new Authorship
             {
                 ResourceId = chart.Id,
@@ -294,24 +272,24 @@ public class SubmissionService : ISubmissionService
                 Position = collaboration.Position,
                 DateCreated = DateTimeOffset.UtcNow
             };
-            await _authorshipRepository.CreateAuthorshipAsync(authorship);
+            await authorshipRepository.CreateAuthorshipAsync(authorship);
         }
 
         if (description != null && mentions != null)
-            await _notificationService.NotifyMentions(mentions, owner,
-                _resourceService.GetRichText<Chart>(chart.Id.ToString(), chartSubmission.Description!));
+            await notificationService.NotifyMentions(mentions, owner,
+                resourceService.GetRichText<Chart>(chart.Id.ToString(), chartSubmission.Description!));
     }
 
     public async Task RejectChart(ChartSubmission chartSubmission)
     {
-        await _notificationService.Notify((await _userManager.FindByIdAsync(chartSubmission.OwnerId.ToString()))!, null,
+        await notificationService.Notify((await userManager.FindByIdAsync(chartSubmission.OwnerId.ToString()))!, null,
             NotificationType.System, "chart-submission-rejection",
             new Dictionary<string, string>
             {
                 {
                     "Chart",
-                    _resourceService.GetRichText<ChartSubmission>(chartSubmission.Id.ToString(),
-                        await _resourceService.GetDisplayName(chartSubmission))
+                    resourceService.GetRichText<ChartSubmission>(chartSubmission.Id.ToString(),
+                        await resourceService.GetDisplayName(chartSubmission))
                 }
             });
     }

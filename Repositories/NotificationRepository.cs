@@ -9,20 +9,13 @@ using PhiZoneApi.Utils;
 
 namespace PhiZoneApi.Repositories;
 
-public class NotificationRepository : INotificationRepository
+public class NotificationRepository(ApplicationDbContext context) : INotificationRepository
 {
-    private readonly ApplicationDbContext _context;
-
-    public NotificationRepository(ApplicationDbContext context)
-    {
-        _context = context;
-    }
-
     public async Task<ICollection<Notification>> GetNotificationsAsync(List<string> order, List<bool> desc,
         int position, int take,
         string? search = null, Expression<Func<Notification, bool>>? predicate = null)
     {
-        var result = _context.Notifications.OrderBy(order, desc);
+        var result = context.Notifications.OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
 
         if (search != null)
@@ -37,49 +30,49 @@ public class NotificationRepository : INotificationRepository
 
     public async Task<Notification> GetNotificationAsync(Guid id)
     {
-        return (await _context.Notifications.FirstOrDefaultAsync(notification => notification.Id == id))!;
+        return (await context.Notifications.FirstOrDefaultAsync(notification => notification.Id == id))!;
     }
 
     public async Task<bool> NotificationExistsAsync(Guid id)
     {
-        return await _context.Notifications.AnyAsync(notification => notification.Id == id);
+        return await context.Notifications.AnyAsync(notification => notification.Id == id);
     }
 
     public async Task<bool> CreateNotificationAsync(Notification notification)
     {
-        await _context.Notifications.AddAsync(notification);
+        await context.Notifications.AddAsync(notification);
         return await SaveAsync();
     }
 
     public async Task<bool> UpdateNotificationAsync(Notification notification)
     {
-        _context.Notifications.Update(notification);
+        context.Notifications.Update(notification);
         return await SaveAsync();
     }
 
     public async Task<bool> UpdateNotificationsAsync(IEnumerable<Notification> notifications)
     {
-        _context.Notifications.UpdateRange(notifications);
+        context.Notifications.UpdateRange(notifications);
         return await SaveAsync();
     }
 
     public async Task<bool> RemoveNotificationAsync(Guid id)
     {
-        _context.Notifications.Remove(
-            (await _context.Notifications.FirstOrDefaultAsync(notification => notification.Id == id))!);
+        context.Notifications.Remove(
+            (await context.Notifications.FirstOrDefaultAsync(notification => notification.Id == id))!);
         return await SaveAsync();
     }
 
     public async Task<bool> SaveAsync()
     {
-        var saved = await _context.SaveChangesAsync();
+        var saved = await context.SaveChangesAsync();
         return saved > 0;
     }
 
     public async Task<int> CountNotificationsAsync(string? search = null,
         Expression<Func<Notification, bool>>? predicate = null)
     {
-        var result = _context.Notifications.AsQueryable();
+        var result = context.Notifications.AsQueryable();
 
         if (predicate != null) result = result.Where(predicate);
 

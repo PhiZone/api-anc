@@ -9,19 +9,12 @@ using PhiZoneApi.Utils;
 
 namespace PhiZoneApi.Repositories;
 
-public class ChartRepository : IChartRepository
+public class ChartRepository(ApplicationDbContext context) : IChartRepository
 {
-    private readonly ApplicationDbContext _context;
-
-    public ChartRepository(ApplicationDbContext context)
-    {
-        _context = context;
-    }
-
     public async Task<ICollection<Chart>> GetChartsAsync(List<string> order, List<bool> desc, int position, int take,
         string? search = null, Expression<Func<Chart, bool>>? predicate = null)
     {
-        var result = _context.Charts.OrderBy(order, desc);
+        var result = context.Charts.OrderBy(order, desc);
 
         if (predicate != null) result = result.Where(predicate);
 
@@ -46,13 +39,13 @@ public class ChartRepository : IChartRepository
 
     public async Task<Chart> GetChartAsync(Guid id)
     {
-        return (await _context.Charts.FirstOrDefaultAsync(chart => chart.Id == id))!;
+        return (await context.Charts.FirstOrDefaultAsync(chart => chart.Id == id))!;
     }
 
     public async Task<Chart?> GetRandomChartAsync(string? search = null,
         Expression<Func<Chart, bool>>? predicate = null)
     {
-        var result = _context.Charts.OrderBy(chart => EF.Functions.Random()).AsQueryable();
+        var result = context.Charts.OrderBy(chart => EF.Functions.Random()).AsQueryable();
 
         if (predicate != null) result = result.Where(predicate);
 
@@ -78,8 +71,8 @@ public class ChartRepository : IChartRepository
         int position,
         int take, Expression<Func<Record, bool>>? predicate = null)
     {
-        var chart = (await _context.Charts.FirstOrDefaultAsync(chart => chart.Id == id))!;
-        var result = _context.Records.Where(record => record.Chart.Id == chart.Id).OrderBy(order, desc);
+        var chart = (await context.Charts.FirstOrDefaultAsync(chart => chart.Id == id))!;
+        var result = context.Records.Where(record => record.Chart.Id == chart.Id).OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
         result = result.Skip(position);
         return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
@@ -87,42 +80,42 @@ public class ChartRepository : IChartRepository
 
     public async Task<bool> ChartExistsAsync(Guid id)
     {
-        return (await _context.Charts.AnyAsync(chart => chart.Id == id))!;
+        return (await context.Charts.AnyAsync(chart => chart.Id == id))!;
     }
 
     public async Task<bool> CreateChartAsync(Chart chart)
     {
-        await _context.Charts.AddAsync(chart);
+        await context.Charts.AddAsync(chart);
         return await SaveAsync();
     }
 
     public async Task<bool> UpdateChartAsync(Chart chart)
     {
-        _context.Charts.Update(chart);
+        context.Charts.Update(chart);
         return await SaveAsync();
     }
 
     public async Task<bool> UpdateChartsAsync(IEnumerable<Chart> charts)
     {
-        _context.Charts.UpdateRange(charts);
+        context.Charts.UpdateRange(charts);
         return await SaveAsync();
     }
 
     public async Task<bool> RemoveChartAsync(Guid id)
     {
-        _context.Charts.Remove((await _context.Charts.FirstOrDefaultAsync(chart => chart.Id == id))!);
+        context.Charts.Remove((await context.Charts.FirstOrDefaultAsync(chart => chart.Id == id))!);
         return await SaveAsync();
     }
 
     public async Task<bool> SaveAsync()
     {
-        var saved = await _context.SaveChangesAsync();
+        var saved = await context.SaveChangesAsync();
         return saved > 0;
     }
 
     public async Task<int> CountChartsAsync(string? search = null, Expression<Func<Chart, bool>>? predicate = null)
     {
-        var result = _context.Charts.AsQueryable();
+        var result = context.Charts.AsQueryable();
 
         if (predicate != null) result = result.Where(predicate);
 
@@ -147,8 +140,8 @@ public class ChartRepository : IChartRepository
     public async Task<int> CountChartRecordsAsync(Guid id,
         Expression<Func<Record, bool>>? predicate = null)
     {
-        var chart = (await _context.Charts.FirstOrDefaultAsync(chart => chart.Id == id))!;
-        var result = _context.Records.Where(record => record.Chart.Id == chart.Id);
+        var chart = (await context.Charts.FirstOrDefaultAsync(chart => chart.Id == id))!;
+        var result = context.Records.Where(record => record.Chart.Id == chart.Id);
 
         if (predicate != null) result = result.Where(predicate);
 

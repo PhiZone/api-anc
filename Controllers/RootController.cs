@@ -10,34 +10,12 @@ namespace PhiZoneApi.Controllers;
 [Route("")]
 [ApiVersion("2.0")]
 [ApiController]
-public class RootController : Controller
-{
-    private readonly IChapterRepository _chapterRepository;
-    private readonly IChartRepository _chartRepository;
-    private readonly ICommentRepository _commentRepository;
-    private readonly ILikeRepository _likeRepository;
-    private readonly IRecordRepository _recordRepository;
-    private readonly IConnectionMultiplexer _redis;
-    private readonly IReplyRepository _replyRepository;
-    private readonly ISongRepository _songRepository;
-    private readonly IUserRepository _userRepository;
-
-    public RootController(IUserRepository userRepository, IChapterRepository chapterRepository,
+public class RootController(IUserRepository userRepository, IChapterRepository chapterRepository,
         ISongRepository songRepository, IChartRepository chartRepository, ICommentRepository commentRepository,
         ILikeRepository likeRepository, IRecordRepository recordRepository, IReplyRepository replyRepository,
         IConnectionMultiplexer redis)
-    {
-        _userRepository = userRepository;
-        _chapterRepository = chapterRepository;
-        _songRepository = songRepository;
-        _chartRepository = chartRepository;
-        _commentRepository = commentRepository;
-        _likeRepository = likeRepository;
-        _recordRepository = recordRepository;
-        _replyRepository = replyRepository;
-        _redis = redis;
-    }
-
+    : Controller
+{
     /// <summary>
     ///     Retrieves an abstract of site info.
     /// </summary>
@@ -54,14 +32,14 @@ public class RootController : Controller
             Code = ResponseCodes.Ok,
             Data = new AbstractDto
             {
-                UserCount = await _userRepository.CountUsersAsync(),
-                RecordCount = await _recordRepository.CountRecordsAsync(),
-                ChartCount = await _chartRepository.CountChartsAsync(predicate: e => !e.IsHidden),
-                SongCount = await _songRepository.CountSongsAsync(predicate: e => !e.IsHidden),
-                ChapterCount = await _chapterRepository.CountChaptersAsync(predicate: e => !e.IsHidden),
-                LikeCount = await _likeRepository.CountLikesAsync(),
-                CommentCount = await _commentRepository.CountCommentsAsync(),
-                ReplyCount = await _replyRepository.CountRepliesAsync()
+                UserCount = await userRepository.CountUsersAsync(),
+                RecordCount = await recordRepository.CountRecordsAsync(),
+                ChartCount = await chartRepository.CountChartsAsync(predicate: e => !e.IsHidden),
+                SongCount = await songRepository.CountSongsAsync(predicate: e => !e.IsHidden),
+                ChapterCount = await chapterRepository.CountChaptersAsync(predicate: e => !e.IsHidden),
+                LikeCount = await likeRepository.CountLikesAsync(),
+                CommentCount = await commentRepository.CountCommentsAsync(),
+                ReplyCount = await replyRepository.CountRepliesAsync()
             }
         });
     }
@@ -76,7 +54,7 @@ public class RootController : Controller
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<HeadlineDto>))]
     public async Task<IActionResult> GetHeadline()
     {
-        var db = _redis.GetDatabase();
+        var db = redis.GetDatabase();
         return Ok(new ResponseDto<HeadlineDto>
         {
             Status = ResponseStatus.Ok,
@@ -95,7 +73,7 @@ public class RootController : Controller
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<HeadlineDto>))]
     public async Task<IActionResult> GetStudioHeadline()
     {
-        var db = _redis.GetDatabase();
+        var db = redis.GetDatabase();
         return Ok(new ResponseDto<HeadlineDto>
         {
             Status = ResponseStatus.Ok,

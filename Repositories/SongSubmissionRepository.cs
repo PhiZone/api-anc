@@ -9,19 +9,12 @@ using PhiZoneApi.Utils;
 
 namespace PhiZoneApi.Repositories;
 
-public class SongSubmissionRepository : ISongSubmissionRepository
+public class SongSubmissionRepository(ApplicationDbContext context) : ISongSubmissionRepository
 {
-    private readonly ApplicationDbContext _context;
-
-    public SongSubmissionRepository(ApplicationDbContext context)
-    {
-        _context = context;
-    }
-
     public async Task<ICollection<SongSubmission>> GetSongSubmissionsAsync(List<string> order, List<bool> desc,
         int position, int take, string? search = null, Expression<Func<SongSubmission, bool>>? predicate = null)
     {
-        var result = _context.SongSubmissions.OrderBy(order, desc);
+        var result = context.SongSubmissions.OrderBy(order, desc);
 
         if (predicate != null) result = result.Where(predicate);
 
@@ -43,7 +36,7 @@ public class SongSubmissionRepository : ISongSubmissionRepository
         List<bool> desc, int position, int take, string? search = null,
         Expression<Func<SongSubmission, bool>>? predicate = null)
     {
-        var result = _context.SongSubmissions.Where(song => song.OwnerId == userId).OrderBy(order, desc);
+        var result = context.SongSubmissions.Where(song => song.OwnerId == userId).OrderBy(order, desc);
 
         if (predicate != null) result = result.Where(predicate);
 
@@ -63,42 +56,42 @@ public class SongSubmissionRepository : ISongSubmissionRepository
 
     public async Task<SongSubmission> GetSongSubmissionAsync(Guid id)
     {
-        return (await _context.SongSubmissions.FirstOrDefaultAsync(song => song.Id == id))!;
+        return (await context.SongSubmissions.FirstOrDefaultAsync(song => song.Id == id))!;
     }
 
     public async Task<bool> SongSubmissionExistsAsync(Guid id)
     {
-        return (await _context.SongSubmissions.AnyAsync(song => song.Id == id))!;
+        return (await context.SongSubmissions.AnyAsync(song => song.Id == id))!;
     }
 
     public async Task<bool> CreateSongSubmissionAsync(SongSubmission song)
     {
-        await _context.SongSubmissions.AddAsync(song);
+        await context.SongSubmissions.AddAsync(song);
         return await SaveAsync();
     }
 
     public async Task<bool> UpdateSongSubmissionAsync(SongSubmission song)
     {
-        _context.SongSubmissions.Update(song);
+        context.SongSubmissions.Update(song);
         return await SaveAsync();
     }
 
     public async Task<bool> RemoveSongSubmissionAsync(Guid id)
     {
-        _context.SongSubmissions.Remove((await _context.SongSubmissions.FirstOrDefaultAsync(song => song.Id == id))!);
+        context.SongSubmissions.Remove((await context.SongSubmissions.FirstOrDefaultAsync(song => song.Id == id))!);
         return await SaveAsync();
     }
 
     public async Task<bool> SaveAsync()
     {
-        var saved = await _context.SaveChangesAsync();
+        var saved = await context.SaveChangesAsync();
         return saved > 0;
     }
 
     public async Task<int> CountSongSubmissionsAsync(string? search = null,
         Expression<Func<SongSubmission, bool>>? predicate = null)
     {
-        var result = _context.SongSubmissions.AsQueryable();
+        var result = context.SongSubmissions.AsQueryable();
 
         if (predicate != null) result = result.Where(predicate);
 
@@ -118,7 +111,7 @@ public class SongSubmissionRepository : ISongSubmissionRepository
     public async Task<int> CountUserSongSubmissionsAsync(int userId, string? search = null,
         Expression<Func<SongSubmission, bool>>? predicate = null)
     {
-        var result = _context.SongSubmissions.Where(song => song.OwnerId == userId).AsQueryable();
+        var result = context.SongSubmissions.Where(song => song.OwnerId == userId).AsQueryable();
 
         if (predicate != null) result = result.Where(predicate);
 
