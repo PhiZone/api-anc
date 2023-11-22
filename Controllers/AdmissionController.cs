@@ -30,7 +30,7 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
     IOptions<DataSettings> dataSettings) : Controller
 {
     /// <summary>
-    ///     Retrieves admissions into chapters.
+    ///     Retrieves admissions received by chapters.
     /// </summary>
     /// <returns>An array of admissions.</returns>
     /// <response code="200">Returns an array of admissions.</response>
@@ -58,8 +58,9 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser,
-            admission => (isModerator && all) || admission.RequesteeId == currentUser.Id ||
-                         admission.RequesterId == currentUser.Id);
+            admission => admission.AdmitterType == AdmitterType.Chapter && ((isModerator && all) ||
+                                                                            admission.RequesteeId == currentUser.Id ||
+                                                                            admission.RequesterId == currentUser.Id));
         var admissions =
             await admissionRepository.GetAdmissionsAsync(dto.Order, dto.Desc, position, dto.PerPage, predicateExpr);
         var total = await admissionRepository.CountAdmissionsAsync(predicateExpr);
@@ -81,7 +82,7 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
     }
 
     /// <summary>
-    ///     Retrieves admissions into songs.
+    ///     Retrieves admissions received by songs.
     /// </summary>
     /// <returns>An array of admissions.</returns>
     /// <response code="200">Returns an array of admissions.</response>
@@ -109,8 +110,9 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser,
-            admission => (isModerator && all) || admission.RequesteeId == currentUser.Id ||
-                         admission.RequesterId == currentUser.Id);
+            admission => admission.AdmitterType == AdmitterType.Song && ((isModerator && all) ||
+                                                                         admission.RequesteeId == currentUser.Id ||
+                                                                         admission.RequesterId == currentUser.Id));
         var admissions =
             await admissionRepository.GetAdmissionsAsync(dto.Order, dto.Desc, position, dto.PerPage, predicateExpr);
         var total = await admissionRepository.CountAdmissionsAsync(predicateExpr);
@@ -132,7 +134,7 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
     }
 
     /// <summary>
-    ///     Retrieves admissions into song submissions.
+    ///     Retrieves admissions received by song submissions.
     /// </summary>
     /// <returns>An array of admissions.</returns>
     /// <response code="200">Returns an array of admissions.</response>
@@ -160,8 +162,8 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser,
-            admission => (isModerator && all) || admission.RequesteeId == currentUser.Id ||
-                         admission.RequesterId == currentUser.Id);
+            admission => admission.AdmitterType == AdmitterType.SongSubmission && ((isModerator && all) ||
+                admission.RequesteeId == currentUser.Id || admission.RequesterId == currentUser.Id));
         var admissions =
             await admissionRepository.GetAdmissionsAsync(dto.Order, dto.Desc, position, dto.PerPage, predicateExpr);
         var total = await admissionRepository.CountAdmissionsAsync(predicateExpr);
@@ -184,7 +186,7 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
     }
 
     /// <summary>
-    ///     Retrieves an admission received by a chapter requested from a song.
+    ///     Retrieves an admission received by a chapter.
     /// </summary>
     /// <param name="chapterId">A chapter's ID.</param>
     /// <param name="songId">A song's ID.</param>
@@ -248,7 +250,7 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
     }
 
     /// <summary>
-    ///     Retrieves an admission received by a song requested from a chart submission.
+    ///     Retrieves an admission received by a song.
     /// </summary>
     /// <param name="songId">A song's ID.</param>
     /// <param name="chartSubmissionId">A chart submission's ID.</param>
@@ -313,7 +315,7 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
     }
 
     /// <summary>
-    ///     Retrieves an admission received by a song submission requested from a chart submission.
+    ///     Retrieves an admission received by a song submission.
     /// </summary>
     /// <param name="songSubmissionId">A song submission's ID.</param>
     /// <param name="chartSubmissionId">A chart submission's ID.</param>
@@ -432,12 +434,10 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
                 });
 
         if (admission.Status == RequestStatus.Approved)
-        {
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
             });
-        }
 
         if (!await admissionRepository.RemoveAdmissionAsync(chapterId, songId))
             return StatusCode(StatusCodes.Status500InternalServerError,
@@ -568,7 +568,7 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
             });
-        
+
         if (!await chartSubmissionRepository.ChartSubmissionExistsAsync(chartId))
             return NotFound(new ResponseDto<object>
             {
@@ -580,7 +580,7 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        
+
         var admission = await admissionRepository.GetAdmissionAsync(songId, chartId);
         if (admission.Status != RequestStatus.Waiting)
             return BadRequest(new ResponseDto<object>
@@ -660,15 +660,15 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> ReviewSongSubmissionAdmission([FromRoute] Guid songSubmissionId, [FromRoute] Guid chartId,
-        bool approve)
+    public async Task<IActionResult> ReviewSongSubmissionAdmission([FromRoute] Guid songSubmissionId,
+        [FromRoute] Guid chartId, bool approve)
     {
         if (!await songSubmissionRepository.SongSubmissionExistsAsync(songSubmissionId))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
             });
-        
+
         if (!await chartSubmissionRepository.ChartSubmissionExistsAsync(chartId))
             return NotFound(new ResponseDto<object>
             {
@@ -680,7 +680,7 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        
+
         var admission = await admissionRepository.GetAdmissionAsync(songSubmissionId, chartId);
         if (admission.Status != RequestStatus.Waiting)
             return BadRequest(new ResponseDto<object>

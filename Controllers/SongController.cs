@@ -647,7 +647,7 @@ public class SongController(ISongRepository songRepository, IOptions<DataSetting
     }
 
     /// <summary>
-    ///     Retrieves chapter admitters requested from a song.
+    ///     Retrieves admissions received by chapters.
     /// </summary>
     /// <param name="id">A song's ID.</param>
     /// <returns>An array of chapter admitters.</returns>
@@ -702,7 +702,7 @@ public class SongController(ISongRepository songRepository, IOptions<DataSetting
     }
 
     /// <summary>
-    ///     Retrieves an admission into a chapter requested from a song.
+    ///     Retrieves an admission received by a chapter.
     /// </summary>
     /// <param name="id">A song's ID.</param>
     /// <param name="chapterId">A chapter's ID.</param>
@@ -912,12 +912,10 @@ public class SongController(ISongRepository songRepository, IOptions<DataSetting
 
         var admission = await admissionRepository.GetAdmissionAsync(chapterId, id);
         if (admission.Status != RequestStatus.Approved)
-        {
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
             });
-        }
 
         if (!await admissionRepository.RemoveAdmissionAsync(chapterId, id))
             return StatusCode(StatusCodes.Status500InternalServerError,

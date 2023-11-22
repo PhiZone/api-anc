@@ -25,4 +25,6 @@ public class Admission
     public User Requestee { get; set; } = null!;
 
     public DateTimeOffset DateCreated { get; set; }
+    
+    public AdmitterType AdmitterType { get; set; }
 }
