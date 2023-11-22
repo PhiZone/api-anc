@@ -71,9 +71,9 @@ public class UserInfoController(UserManager<User> userManager, IDtoMapper mapper
     /// <response code="403">When the user does not have sufficient permission.</response>
     /// <response code="404">When the specified user is not found.</response>
     [HttpPost("bindings/tapTap")]
-    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Consumes("application/json")]
     [Produces("application/json")]
+    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]

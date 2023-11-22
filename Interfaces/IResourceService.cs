@@ -7,7 +7,7 @@ public interface IResourceService
 {
     string GetRichText<T>(string id, string display, string? addition = null);
 
-    string GetComplexRichText<T>(string id1, string id2, string display);
+    string GetComplexRichText(string type, string id1, string id2, string display, string? addition = null);
 
     Task<string> GetDisplayName(Chart chart);
 

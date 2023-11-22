@@ -52,7 +52,7 @@ public class DtoMapper(IUserRelationRepository userRelationRepository, IRegionRe
         return dto;
     }
 
-    public async Task<AdmissionDto<TAdmitter, TAdmittee>> MapSongAdmissionAsync<TAdmitter, TAdmittee>(
+    public async Task<AdmissionDto<TAdmitter, TAdmittee>> MapChapterAdmissionAsync<TAdmitter, TAdmittee>(
         Admission admission, User? currentUser = null) where TAdmitter : ChapterDto where TAdmittee : SongDto
     {
         var dto = new AdmissionDto<TAdmitter, TAdmittee>
@@ -71,13 +71,32 @@ public class DtoMapper(IUserRelationRepository userRelationRepository, IRegionRe
         return dto;
     }
 
-    public async Task<AdmissionDto<TAdmitter, TAdmittee>> MapChartAdmissionAsync<TAdmitter, TAdmittee>(
+    public async Task<AdmissionDto<TAdmitter, TAdmittee>> MapSongAdmissionAsync<TAdmitter, TAdmittee>(
         Admission admission, User? currentUser = null) where TAdmitter : SongDto where TAdmittee : ChartSubmissionDto
     {
         var dto = new AdmissionDto<TAdmitter, TAdmittee>
         {
             Admitter =
                 await MapSongAsync<TAdmitter>(await songRepository.GetSongAsync(admission.AdmitterId), currentUser),
+            Admittee =
+                await MapChartSubmissionAsync<TAdmittee>(
+                    await chartSubmissionRepository.GetChartSubmissionAsync(admission.AdmitteeId), currentUser),
+            Status = admission.Status,
+            Label = admission.Label,
+            RequesterId = admission.RequesterId,
+            RequesteeId = admission.RequesteeId,
+            DateCreated = admission.DateCreated
+        };
+        return dto;
+    }
+
+    public async Task<AdmissionDto<TAdmitter, TAdmittee>> MapSongSubmissionAdmissionAsync<TAdmitter, TAdmittee>(
+        Admission admission, User? currentUser = null) where TAdmitter : SongSubmissionDto
+        where TAdmittee : ChartSubmissionDto
+    {
+        var dto = new AdmissionDto<TAdmitter, TAdmittee>
+        {
+            Admitter = mapper.Map<TAdmitter>(await songRepository.GetSongAsync(admission.AdmitterId)),
             Admittee =
                 await MapChartSubmissionAsync<TAdmittee>(
                     await chartSubmissionRepository.GetChartSubmissionAsync(admission.AdmitteeId), currentUser),

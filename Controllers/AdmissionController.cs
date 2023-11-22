@@ -21,26 +21,28 @@ namespace PhiZoneApi.Controllers;
 [Route("admissions")]
 [ApiVersion("2.0")]
 [ApiController]
-[Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme,
-    Policy = "AllowAnonymous")]
+[Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
 public class AdmissionController(IAdmissionRepository admissionRepository, UserManager<User> userManager,
     IResourceService resourceService, ITemplateService templateService, INotificationService notificationService,
-    IChapterRepository chapterRepository, ISongRepository songRepository, IFilterService filterService,
-    IDtoMapper dtoMapper, IChartSubmissionRepository chartSubmissionRepository, ISubmissionService submissionService,
+    IChapterRepository chapterRepository, ISongRepository songRepository,
+    ISongSubmissionRepository songSubmissionRepository, IFilterService filterService, IDtoMapper dtoMapper,
+    IChartSubmissionRepository chartSubmissionRepository, ISubmissionService submissionService,
     IOptions<DataSettings> dataSettings) : Controller
 {
     /// <summary>
-    ///     Retrieves song admissions.
+    ///     Retrieves admissions into chapters.
     /// </summary>
-    /// <returns>An array of song admissions.</returns>
-    /// <response code="200">Returns an array of song admissions.</response>
+    /// <returns>An array of admissions.</returns>
+    /// <response code="200">Returns an array of admissions.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
-    [HttpGet("songs")]
+    /// <response code="401">When the user is not authorized.</response>
+    [HttpGet("chapters")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK,
         Type = typeof(ResponseDto<IEnumerable<AdmissionDto<ChapterDto, SongDto>>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetSongAdmissions([FromQuery] ArrayRequestDto dto,
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    public async Task<IActionResult> GetChapterAdmissions([FromQuery] ArrayRequestDto dto,
         [FromQuery] AdmissionFilterDto? filterDto = null, [FromQuery] bool all = false)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
@@ -64,7 +66,7 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
         var list = new List<AdmissionDto<ChapterDto, SongDto>>();
 
         foreach (var admission in admissions)
-            list.Add(await dtoMapper.MapSongAdmissionAsync<ChapterDto, SongDto>(admission, currentUser));
+            list.Add(await dtoMapper.MapChapterAdmissionAsync<ChapterDto, SongDto>(admission, currentUser));
 
         return Ok(new ResponseDto<IEnumerable<AdmissionDto<ChapterDto, SongDto>>>
         {
@@ -79,17 +81,19 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
     }
 
     /// <summary>
-    ///     Retrieves chart admissions.
+    ///     Retrieves admissions into songs.
     /// </summary>
-    /// <returns>An array of chart admissions.</returns>
-    /// <response code="200">Returns an array of chart admissions.</response>
+    /// <returns>An array of admissions.</returns>
+    /// <response code="200">Returns an array of admissions.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
-    [HttpGet("charts")]
+    /// <response code="401">When the user is not authorized.</response>
+    [HttpGet("songs")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK,
         Type = typeof(ResponseDto<IEnumerable<AdmissionDto<SongDto, ChartSubmissionDto>>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetChartAdmissions([FromQuery] ArrayRequestDto dto,
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    public async Task<IActionResult> GetSongAdmissions([FromQuery] ArrayRequestDto dto,
         [FromQuery] AdmissionFilterDto? filterDto = null, [FromQuery] bool all = false)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
@@ -113,7 +117,7 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
         var list = new List<AdmissionDto<SongDto, ChartSubmissionDto>>();
 
         foreach (var admission in admissions)
-            list.Add(await dtoMapper.MapChartAdmissionAsync<SongDto, ChartSubmissionDto>(admission, currentUser));
+            list.Add(await dtoMapper.MapSongAdmissionAsync<SongDto, ChartSubmissionDto>(admission, currentUser));
 
         return Ok(new ResponseDto<IEnumerable<AdmissionDto<SongDto, ChartSubmissionDto>>>
         {
@@ -128,25 +132,79 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
     }
 
     /// <summary>
-    ///     Retrieves an admission requested from a song.
+    ///     Retrieves admissions into song submissions.
     /// </summary>
-    /// <param name="songId">A song's ID.</param>
+    /// <returns>An array of admissions.</returns>
+    /// <response code="200">Returns an array of admissions.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="401">When the user is not authorized.</response>
+    [HttpGet("songSubmissions")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK,
+        Type = typeof(ResponseDto<IEnumerable<AdmissionDto<SongSubmissionDto, ChartSubmissionDto>>>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    public async Task<IActionResult> GetSongSubmissionAdmissions([FromQuery] ArrayRequestDto dto,
+        [FromQuery] AdmissionFilterDto? filterDto = null, [FromQuery] bool all = false)
+    {
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        var isModerator = await resourceService.HasPermission(currentUser, Roles.Moderator);
+        if (!await resourceService.HasPermission(currentUser, Roles.Qualified))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+        dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
+            dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
+        dto.Page = dto.Page > 1 ? dto.Page : 1;
+        var position = dto.PerPage * (dto.Page - 1);
+        var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser,
+            admission => (isModerator && all) || admission.RequesteeId == currentUser.Id ||
+                         admission.RequesterId == currentUser.Id);
+        var admissions =
+            await admissionRepository.GetAdmissionsAsync(dto.Order, dto.Desc, position, dto.PerPage, predicateExpr);
+        var total = await admissionRepository.CountAdmissionsAsync(predicateExpr);
+        var list = new List<AdmissionDto<SongSubmissionDto, ChartSubmissionDto>>();
+
+        foreach (var admission in admissions)
+            list.Add(await dtoMapper.MapSongSubmissionAdmissionAsync<SongSubmissionDto, ChartSubmissionDto>(admission,
+                currentUser));
+
+        return Ok(new ResponseDto<IEnumerable<AdmissionDto<SongSubmissionDto, ChartSubmissionDto>>>
+        {
+            Status = ResponseStatus.Ok,
+            Code = ResponseCodes.Ok,
+            Total = total,
+            PerPage = dto.PerPage,
+            HasPrevious = position > 0,
+            HasNext = dto.PerPage > 0 && dto.PerPage * dto.Page < total,
+            Data = list
+        });
+    }
+
+    /// <summary>
+    ///     Retrieves an admission received by a chapter requested from a song.
+    /// </summary>
     /// <param name="chapterId">A chapter's ID.</param>
+    /// <param name="songId">A song's ID.</param>
     /// <returns>An admission.</returns>
     /// <response code="200">Returns an admission.</response>
     /// <response code="304">
     ///     When the resource has not been updated since last retrieval. Requires <c>If-None-Match</c>.
     /// </response>
     /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="401">When the user is not authorized.</response>
     /// <response code="404">When the specified song, chapter, or admission is not found.</response>
-    [HttpGet("songs/{songId:guid}/{chapterId:guid}")]
+    [HttpGet("chapters/{chapterId:guid}/{songId:guid}")]
     [ServiceFilter(typeof(ETagFilter))]
     [Consumes("application/json")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<AdmissionDto<ChapterDto, SongDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetSongAdmission([FromRoute] Guid songId, [FromRoute] Guid chapterId)
+    public async Task<IActionResult> GetChapterAdmission([FromRoute] Guid chapterId, [FromRoute] Guid songId)
     {
         if (!await songRepository.SongExistsAsync(songId))
             return NotFound(new ResponseDto<object>
@@ -166,12 +224,14 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.RelationNotFound
             });
 
-        var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         var song = await songRepository.GetSongAsync(songId);
-
+        var chapter = await chapterRepository.GetChapterAsync(chapterId);
         var admission = await admissionRepository.GetAdmissionAsync(chapterId, songId);
-        if (!(currentUser != null && (song.OwnerId == currentUser.Id ||
-                                      await resourceService.HasPermission(currentUser, Roles.Moderator))) &&
+        if ((((song.OwnerId == currentUser.Id || chapter.OwnerId == currentUser.Id) &&
+              !await resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+             (song.OwnerId != currentUser.Id && chapter.OwnerId != currentUser.Id &&
+              !await resourceService.HasPermission(currentUser, Roles.Moderator))) &&
             admission.Status != RequestStatus.Approved)
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
@@ -179,7 +239,7 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
-        var dto = await dtoMapper.MapSongAdmissionAsync<ChapterDto, SongDto>(admission, currentUser);
+        var dto = await dtoMapper.MapChapterAdmissionAsync<ChapterDto, SongDto>(admission, currentUser);
 
         return Ok(new ResponseDto<AdmissionDto<ChapterDto, SongDto>>
         {
@@ -188,58 +248,63 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
     }
 
     /// <summary>
-    ///     Retrieves an admission requested from a chart.
+    ///     Retrieves an admission received by a song requested from a chart submission.
     /// </summary>
-    /// <param name="chartId">A chart's ID.</param>
     /// <param name="songId">A song's ID.</param>
+    /// <param name="chartSubmissionId">A chart submission's ID.</param>
     /// <returns>An admission.</returns>
     /// <response code="200">Returns an admission.</response>
     /// <response code="304">
     ///     When the resource has not been updated since last retrieval. Requires <c>If-None-Match</c>.
     /// </response>
     /// <response code="400">When any of the parameters is invalid.</response>
-    /// <response code="404">When the specified chart, song, or admission is not found.</response>
-    [HttpGet("charts/{chartId:guid}/{songId:guid}")]
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="404">When the specified chart submission, song, or admission is not found.</response>
+    [HttpGet("songs/{songId:guid}/{chartSubmissionId:guid}")]
     [ServiceFilter(typeof(ETagFilter))]
-    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Consumes("application/json")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK,
         Type = typeof(ResponseDto<AdmissionDto<SongDto, ChartSubmissionDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetChartAdmission([FromRoute] Guid chartId, [FromRoute] Guid songId)
+    public async Task<IActionResult> GetSongAdmission([FromRoute] Guid songId, [FromRoute] Guid chartSubmissionId)
     {
-        if (!await chartSubmissionRepository.ChartSubmissionExistsAsync(chartId))
-            return NotFound(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
-            });
-
         if (!await songRepository.SongExistsAsync(songId))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
             });
 
-        if (!await admissionRepository.AdmissionExistsAsync(songId, chartId))
+        if (!await chartSubmissionRepository.ChartSubmissionExistsAsync(chartSubmissionId))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+
+        if (!await admissionRepository.AdmissionExistsAsync(songId, chartSubmissionId))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.RelationNotFound
             });
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        var chart = await chartSubmissionRepository.GetChartSubmissionAsync(chartId);
-        if ((chart.OwnerId == currentUser.Id && !await resourceService.HasPermission(currentUser, Roles.Qualified)) ||
-            (chart.OwnerId != currentUser.Id && !await resourceService.HasPermission(currentUser, Roles.Moderator)))
+        var chart = await chartSubmissionRepository.GetChartSubmissionAsync(chartSubmissionId);
+        var song = await songRepository.GetSongAsync(songId);
+        var admission = await admissionRepository.GetAdmissionAsync(songId, chartSubmissionId);
+        if ((((chart.OwnerId == currentUser.Id || song.OwnerId == currentUser.Id) &&
+              !await resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+             (chart.OwnerId != currentUser.Id && song.OwnerId != currentUser.Id &&
+              !await resourceService.HasPermission(currentUser, Roles.Moderator))) &&
+            admission.Status != RequestStatus.Approved)
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
-        var admission = await admissionRepository.GetAdmissionAsync(songId, chartId);
-        var dto = await dtoMapper.MapChartAdmissionAsync<SongDto, ChartSubmissionDto>(admission, currentUser);
+        var dto = await dtoMapper.MapSongAdmissionAsync<SongDto, ChartSubmissionDto>(admission, currentUser);
 
         return Ok(new ResponseDto<AdmissionDto<SongDto, ChartSubmissionDto>>
         {
@@ -248,10 +313,77 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
     }
 
     /// <summary>
-    ///     Removes a song admission.
+    ///     Retrieves an admission received by a song submission requested from a chart submission.
     /// </summary>
-    /// <param name="songId">A song's ID.</param>
+    /// <param name="songSubmissionId">A song submission's ID.</param>
+    /// <param name="chartSubmissionId">A chart submission's ID.</param>
+    /// <returns>An admission.</returns>
+    /// <response code="200">Returns an admission.</response>
+    /// <response code="304">
+    ///     When the resource has not been updated since last retrieval. Requires <c>If-None-Match</c>.
+    /// </response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="404">When the specified chart submission, song submission, or admission is not found.</response>
+    [HttpGet("songSubmissions/{songSubmissionId:guid}/{chartSubmissionId:guid}")]
+    [ServiceFilter(typeof(ETagFilter))]
+    [Consumes("application/json")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK,
+        Type = typeof(ResponseDto<AdmissionDto<SongSubmissionDto, ChartSubmissionDto>>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> GetSongSubmissionAdmission([FromRoute] Guid songSubmissionId,
+        [FromRoute] Guid chartSubmissionId)
+    {
+        if (!await songSubmissionRepository.SongSubmissionExistsAsync(songSubmissionId))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
+            });
+
+        if (!await chartSubmissionRepository.ChartSubmissionExistsAsync(chartSubmissionId))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+
+        if (!await admissionRepository.AdmissionExistsAsync(songSubmissionId, chartSubmissionId))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.RelationNotFound
+            });
+
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        var chart = await chartSubmissionRepository.GetChartSubmissionAsync(chartSubmissionId);
+        var songSubmission = await songSubmissionRepository.GetSongSubmissionAsync(songSubmissionId);
+        var admission = await admissionRepository.GetAdmissionAsync(songSubmissionId, chartSubmissionId);
+        if ((((chart.OwnerId == currentUser.Id || songSubmission.OwnerId == currentUser.Id) &&
+              !await resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+             (chart.OwnerId != currentUser.Id && songSubmission.OwnerId != currentUser.Id &&
+              !await resourceService.HasPermission(currentUser, Roles.Moderator))) &&
+            admission.Status != RequestStatus.Approved)
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+
+        var dto = await dtoMapper.MapSongSubmissionAdmissionAsync<SongSubmissionDto, ChartSubmissionDto>(admission,
+            currentUser);
+
+        return Ok(new ResponseDto<AdmissionDto<SongSubmissionDto, ChartSubmissionDto>>
+        {
+            Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto
+        });
+    }
+
+    /// <summary>
+    ///     Removes an admission received by a chapter.
+    /// </summary>
     /// <param name="chapterId">A chapter's ID.</param>
+    /// <param name="songId">A song's ID.</param>
     /// <returns>An empty body.</returns>
     /// <response code="204">Returns an empty body.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
@@ -259,7 +391,7 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
     /// <response code="403">When the user does not have sufficient permission.</response>
     /// <response code="404">When the specified admission is not found.</response>
     /// <response code="500">When an internal server error has occurred.</response>
-    [HttpDelete("songs/{songId:guid}/{chapterId:guid}")]
+    [HttpDelete("chapters/{chapterId:guid}/{songId:guid}")]
     [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
@@ -267,23 +399,24 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> RemoveSongAdmission([FromRoute] Guid songId, [FromRoute] Guid chapterId)
+    public async Task<IActionResult> RemoveChapterAdmission([FromRoute] Guid chapterId, [FromRoute] Guid songId)
     {
+        if (!await chapterRepository.ChapterExistsAsync(chapterId))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
+            });
+
         if (!await songRepository.SongExistsAsync(songId))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        if (!await chapterRepository.ChapterExistsAsync(chapterId))
-            return NotFound(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
-            });
         if (!await admissionRepository.AdmissionExistsAsync(chapterId, songId))
             return NotFound(new ResponseDto<object>
             {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
             });
 
         var admission = await admissionRepository.GetAdmissionAsync(chapterId, songId);
@@ -291,12 +424,21 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
         if ((admission.RequesterId == currentUser.Id &&
              !await resourceService.HasPermission(currentUser, Roles.Qualified)) ||
             (admission.RequesterId != currentUser.Id &&
-             !await resourceService.HasPermission(currentUser, Roles.Moderator)))
+             !await resourceService.HasPermission(currentUser, Roles.Administrator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
+
+        if (admission.Status == RequestStatus.Approved)
+        {
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
+            });
+        }
+
         if (!await admissionRepository.RemoveAdmissionAsync(chapterId, songId))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
@@ -305,67 +447,10 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
     }
 
     /// <summary>
-    ///     Removes a chart admission.
+    ///     Reviews an admission received by a chapter.
     /// </summary>
-    /// <param name="chartId">A chart's ID.</param>
-    /// <param name="songId">A song's ID.</param>
-    /// <returns>An empty body.</returns>
-    /// <response code="204">Returns an empty body.</response>
-    /// <response code="400">When any of the parameters is invalid.</response>
-    /// <response code="401">When the user is not authorized.</response>
-    /// <response code="403">When the user does not have sufficient permission.</response>
-    /// <response code="404">When the specified admission is not found.</response>
-    /// <response code="500">When an internal server error has occurred.</response>
-    [HttpDelete("charts/{chartId:guid}/{songId:guid}")]
-    [Produces("application/json")]
-    [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
-    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
-    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
-    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
-    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> RemoveChartAdmission([FromRoute] Guid chartId, [FromRoute] Guid songId)
-    {
-        if (!await chartSubmissionRepository.ChartSubmissionExistsAsync(chartId))
-            return NotFound(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
-            });
-
-        if (!await songRepository.SongExistsAsync(songId))
-            return NotFound(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
-            });
-        if (!await admissionRepository.AdmissionExistsAsync(songId, chartId))
-            return NotFound(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
-            });
-
-        var admission = await admissionRepository.GetAdmissionAsync(songId, chartId);
-        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if ((admission.RequesterId == currentUser.Id &&
-             !await resourceService.HasPermission(currentUser, Roles.Qualified)) ||
-            (admission.RequesterId != currentUser.Id &&
-             !await resourceService.HasPermission(currentUser, Roles.Moderator)))
-            return StatusCode(StatusCodes.Status403Forbidden,
-                new ResponseDto<object>
-                {
-                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
-                });
-        if (!await admissionRepository.RemoveAdmissionAsync(songId, chartId))
-            return StatusCode(StatusCodes.Status500InternalServerError,
-                new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
-
-        return NoContent();
-    }
-
-    /// <summary>
-    ///     Reviews a song admission.
-    /// </summary>
-    /// <param name="songId">A song's ID.</param>
     /// <param name="chapterId">A chapter's ID.</param>
+    /// <param name="songId">A song's ID.</param>
     /// <returns>An empty body.</returns>
     /// <response code="204">Returns an empty body.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
@@ -373,7 +458,7 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
     /// <response code="403">When the user does not have sufficient permission.</response>
     /// <response code="404">When the specified admission is not found.</response>
     /// <response code="500">When an internal server error has occurred.</response>
-    [HttpPost("songs/{songId:guid}/{chapterId:guid}/review")]
+    [HttpPost("chapters/{chapterId:guid}/{songId:guid}/review")]
     [Consumes("application/json")]
     [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
@@ -382,25 +467,27 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> ReviewSongAdmission([FromRoute] Guid songId, [FromRoute] Guid chapterId,
+    public async Task<IActionResult> ReviewChapterAdmission([FromRoute] Guid chapterId, [FromRoute] Guid songId,
         bool approve)
     {
+        if (!await chapterRepository.ChapterExistsAsync(chapterId))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
+            });
+
         if (!await songRepository.SongExistsAsync(songId))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        if (!await chapterRepository.ChapterExistsAsync(chapterId))
-            return NotFound(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
-            });
         if (!await admissionRepository.AdmissionExistsAsync(chapterId, songId))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
+
         var admission = await admissionRepository.GetAdmissionAsync(chapterId, songId);
         if (admission.Status != RequestStatus.Waiting)
             return BadRequest(new ResponseDto<object>
@@ -443,7 +530,7 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
                 },
                 {
                     "Admission",
-                    resourceService.GetComplexRichText<Admission>(admission.AdmitteeId.ToString(),
+                    resourceService.GetComplexRichText("ChapterAdmission", admission.AdmitteeId.ToString(),
                         admission.AdmitterId.ToString(),
                         templateService.GetMessage("more-info", admission.Requestee.Language)!)
                 }
@@ -453,10 +540,10 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
     }
 
     /// <summary>
-    ///     Reviews a chart admission.
+    ///     Reviews an admission received by a song.
     /// </summary>
-    /// <param name="chartId">A chart's ID.</param>
     /// <param name="songId">A song's ID.</param>
+    /// <param name="chartId">A chart's ID.</param>
     /// <returns>An empty body.</returns>
     /// <response code="204">Returns an empty body.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
@@ -464,7 +551,7 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
     /// <response code="403">When the user does not have sufficient permission.</response>
     /// <response code="404">When the specified admission is not found.</response>
     /// <response code="500">When an internal server error has occurred.</response>
-    [HttpPost("charts/{chartId:guid}/{songId:guid}/review")]
+    [HttpPost("songs/{songId:guid}/{chartId:guid}/review")]
     [Consumes("application/json")]
     [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
@@ -473,26 +560,128 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> ReviewChartAdmission([FromRoute] Guid chartId, [FromRoute] Guid songId,
+    public async Task<IActionResult> ReviewSongAdmission([FromRoute] Guid songId, [FromRoute] Guid chartId,
         bool approve)
     {
+        if (!await songRepository.SongExistsAsync(songId))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
+            });
+        
         if (!await chartSubmissionRepository.ChartSubmissionExistsAsync(chartId))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        if (!await songRepository.SongExistsAsync(songId))
-            return NotFound(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
-            });
         if (!await admissionRepository.AdmissionExistsAsync(songId, chartId))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
+        
         var admission = await admissionRepository.GetAdmissionAsync(songId, chartId);
+        if (admission.Status != RequestStatus.Waiting)
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
+            });
+
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if ((admission.RequesteeId == currentUser.Id &&
+             !await resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+            (admission.RequesteeId != currentUser.Id &&
+             !await resourceService.HasPermission(currentUser, Roles.Administrator)))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+        var chart = await chartSubmissionRepository.GetChartSubmissionAsync(chartId);
+        string key;
+        if (approve)
+        {
+            admission.Status = RequestStatus.Approved;
+            key = "admission-approval";
+            chart.AdmissionStatus = RequestStatus.Approved;
+            if (chart.VolunteerStatus == RequestStatus.Approved) await submissionService.ApproveChart(chart);
+        }
+        else
+        {
+            admission.Status = RequestStatus.Rejected;
+            key = "admission-rejection";
+            chart.AdmissionStatus = RequestStatus.Rejected;
+            chart.Status = RequestStatus.Rejected;
+            await submissionService.RejectChart(chart);
+        }
+
+        if (!await admissionRepository.UpdateAdmissionAsync(admission) ||
+            !await chartSubmissionRepository.UpdateChartSubmissionAsync(chart))
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+
+        await notificationService.Notify(admission.Requester, admission.Requestee, NotificationType.Requests, key,
+            new Dictionary<string, string>
+            {
+                {
+                    "User",
+                    resourceService.GetRichText<User>(admission.RequesteeId.ToString(), admission.Requestee.UserName!)
+                },
+                {
+                    "Admission",
+                    resourceService.GetComplexRichText("SongAdmission", admission.AdmitteeId.ToString(),
+                        admission.AdmitterId.ToString(),
+                        templateService.GetMessage("more-info", admission.Requestee.Language)!)
+                }
+            });
+
+        return NoContent();
+    }
+
+    /// <summary>
+    ///     Reviews an admission received by a song submission.
+    /// </summary>
+    /// <param name="songSubmissionId">A song submission's ID.</param>
+    /// <param name="chartId">A chart's ID.</param>
+    /// <returns>An empty body.</returns>
+    /// <response code="204">Returns an empty body.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
+    /// <response code="404">When the specified admission is not found.</response>
+    /// <response code="500">When an internal server error has occurred.</response>
+    [HttpPost("songSubmissions/{songSubmissionId:guid}/{chartId:guid}/review")]
+    [Consumes("application/json")]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> ReviewSongSubmissionAdmission([FromRoute] Guid songSubmissionId, [FromRoute] Guid chartId,
+        bool approve)
+    {
+        if (!await songSubmissionRepository.SongSubmissionExistsAsync(songSubmissionId))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
+            });
+        
+        if (!await chartSubmissionRepository.ChartSubmissionExistsAsync(chartId))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+
+        if (!await admissionRepository.AdmissionExistsAsync(songSubmissionId, chartId))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+        
+        var admission = await admissionRepository.GetAdmissionAsync(songSubmissionId, chartId);
         if (admission.Status != RequestStatus.Waiting)
             return BadRequest(new ResponseDto<object>
             {
@@ -541,7 +730,7 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
                 },
                 {
                     "Admission",
-                    resourceService.GetComplexRichText<Admission>(admission.AdmitteeId.ToString(),
+                    resourceService.GetComplexRichText("SongSubmissionAdmission", admission.AdmitteeId.ToString(),
                         admission.AdmitterId.ToString(),
                         templateService.GetMessage("more-info", admission.Requestee.Language)!)
                 }

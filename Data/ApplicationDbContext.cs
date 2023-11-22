@@ -38,6 +38,7 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, int>
     public DbSet<PetQuestion> PetQuestions { get; set; } = null!;
     public DbSet<PetChoice> PetChoices { get; set; } = null!;
     public DbSet<PetAnswer> PetAnswers { get; set; } = null!;
+    public DbSet<ResourceRecord> ResourceRecords { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
