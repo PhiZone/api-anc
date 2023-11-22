@@ -7,41 +7,30 @@ using PhiZoneApi.Models;
 
 namespace PhiZoneApi.Services;
 
-public class VolunteerVoteService : IVolunteerVoteService
+public class VolunteerVoteService(IVolunteerVoteRepository volunteerVoteRepository,
+    IChartSubmissionRepository chartSubmissionRepository, ISubmissionService submissionService) : IVolunteerVoteService
 {
-    private readonly IChartSubmissionRepository _chartSubmissionRepository;
-    private readonly ISubmissionService _submissionService;
-    private readonly IVolunteerVoteRepository _volunteerVoteRepository;
-    private readonly Dictionary<int, (double, double)> _voteScoreDictionary;
-
-    public VolunteerVoteService(IVolunteerVoteRepository volunteerVoteRepository,
-        IChartSubmissionRepository chartSubmissionRepository, ISubmissionService submissionService)
+    private readonly Dictionary<int, (double, double, double)> _voteScoreDictionary = new()
     {
-        _volunteerVoteRepository = volunteerVoteRepository;
-        _chartSubmissionRepository = chartSubmissionRepository;
-        _submissionService = submissionService;
-        _voteScoreDictionary = new Dictionary<int, (double, double)>
-        {
-            { 2, (-2, 2.5) },
-            { 3, (-1.6, 1.6) },
-            { 4, (-1.5, 1) },
-            { 5, (-0.8, 0.5) },
-            { 6, (0, 0) }
-        };
-    }
+        { 2, (-2, 1.5, 2.5) },
+        { 3, (-1.6, 1.3, 2.3) },
+        { 4, (-1.5, 1, 1.75) },
+        { 5, (-0.8, 0.5, 1.2) },
+        { 6, (0, 0, 1.0) }
+    };
 
     public async Task<bool> CreateVolunteerVoteAsync(VolunteerVoteRequestDto dto, ChartSubmission chartSubmission,
         User user)
     {
         bool result;
-        if (await _volunteerVoteRepository.VolunteerVoteExistsAsync(chartSubmission.Id, user.Id))
+        if (await volunteerVoteRepository.VolunteerVoteExistsAsync(chartSubmission.Id, user.Id))
         {
             var volunteerVolunteerVote =
-                await _volunteerVoteRepository.GetVolunteerVoteAsync(chartSubmission.Id, user.Id);
+                await volunteerVoteRepository.GetVolunteerVoteAsync(chartSubmission.Id, user.Id);
             volunteerVolunteerVote.Score = dto.Score;
             volunteerVolunteerVote.Message = dto.Message;
             volunteerVolunteerVote.DateCreated = DateTimeOffset.UtcNow;
-            result = await _volunteerVoteRepository.UpdateVolunteerVoteAsync(volunteerVolunteerVote);
+            result = await volunteerVoteRepository.UpdateVolunteerVoteAsync(volunteerVolunteerVote);
         }
         else
         {
@@ -53,7 +42,7 @@ public class VolunteerVoteService : IVolunteerVoteService
                 OwnerId = user.Id,
                 DateCreated = DateTimeOffset.UtcNow
             };
-            result = await _volunteerVoteRepository.CreateVolunteerVoteAsync(volunteerVolunteerVote);
+            result = await volunteerVoteRepository.CreateVolunteerVoteAsync(volunteerVolunteerVote);
         }
 
         return result && await UpdateChartSubmissionAsync(chartSubmission);
@@ -61,15 +50,15 @@ public class VolunteerVoteService : IVolunteerVoteService
 
     public async Task<bool> RemoveVolunteerVoteAsync(ChartSubmission chartSubmission, int userId)
     {
-        if (!await _volunteerVoteRepository.VolunteerVoteExistsAsync(chartSubmission.Id, userId)) return false;
-        var volunteerVolunteerVote = await _volunteerVoteRepository.GetVolunteerVoteAsync(chartSubmission.Id, userId);
-        var result = await _volunteerVoteRepository.RemoveVolunteerVoteAsync(volunteerVolunteerVote.Id);
+        if (!await volunteerVoteRepository.VolunteerVoteExistsAsync(chartSubmission.Id, userId)) return false;
+        var volunteerVolunteerVote = await volunteerVoteRepository.GetVolunteerVoteAsync(chartSubmission.Id, userId);
+        var result = await volunteerVoteRepository.RemoveVolunteerVoteAsync(volunteerVolunteerVote.Id);
         return result && await UpdateChartSubmissionAsync(chartSubmission);
     }
 
     private async Task<bool> UpdateChartSubmissionAsync(ChartSubmission chartSubmission)
     {
-        var votes = await _volunteerVoteRepository.GetVolunteerVotesAsync(new List<string> { "DateCreated" },
+        var votes = await volunteerVoteRepository.GetVolunteerVotesAsync(new List<string> { "DateCreated" },
             new List<bool> { false }, 0, -1,
             vote => vote.ChartId == chartSubmission.Id && vote.DateCreated > chartSubmission.DateUpdated);
         if (_voteScoreDictionary.TryGetValue(votes.Count, out var scoreRange))
@@ -79,19 +68,20 @@ public class VolunteerVoteService : IVolunteerVoteService
             {
                 chartSubmission.VolunteerStatus = RequestStatus.Rejected;
                 chartSubmission.Status = RequestStatus.Rejected;
-                await _submissionService.RejectChart(chartSubmission);
+                await submissionService.RejectChart(chartSubmission);
             }
             else if (score >= scoreRange.Item2)
             {
+                chartSubmission.IsRanked = chartSubmission.IsRanked && score >= scoreRange.Item3;
                 chartSubmission.VolunteerStatus = RequestStatus.Approved;
                 if (chartSubmission.AdmissionStatus == RequestStatus.Approved)
                 {
                     chartSubmission.Status = RequestStatus.Approved;
-                    await _submissionService.ApproveChart(chartSubmission);
+                    await submissionService.ApproveChart(chartSubmission);
                 }
             }
         }
 
-        return await _chartSubmissionRepository.UpdateChartSubmissionAsync(chartSubmission);
+        return await chartSubmissionRepository.UpdateChartSubmissionAsync(chartSubmission);
     }
 }

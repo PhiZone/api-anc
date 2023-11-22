@@ -28,41 +28,13 @@ namespace PhiZoneApi.Controllers;
 [ApiController]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme,
     Policy = "AllowAnonymous")]
-public class ChapterController : Controller
-{
-    private readonly IChapterRepository _chapterRepository;
-    private readonly ICommentRepository _commentRepository;
-    private readonly IOptions<DataSettings> _dataSettings;
-    private readonly IDtoMapper _dtoMapper;
-    private readonly IFileStorageService _fileStorageService;
-    private readonly IFilterService _filterService;
-    private readonly ILikeRepository _likeRepository;
-    private readonly ILikeService _likeService;
-    private readonly IMapper _mapper;
-    private readonly INotificationService _notificationService;
-    private readonly IResourceService _resourceService;
-    private readonly UserManager<User> _userManager;
-
-    public ChapterController(IChapterRepository chapterRepository, IOptions<DataSettings> dataSettings,
+public class ChapterController(IChapterRepository chapterRepository, IOptions<DataSettings> dataSettings,
         UserManager<User> userManager, IFilterService filterService, IFileStorageService fileStorageService,
         IDtoMapper dtoMapper, IMapper mapper, ILikeRepository likeRepository, ILikeService likeService,
         ICommentRepository commentRepository, IResourceService resourceService,
         INotificationService notificationService)
-    {
-        _chapterRepository = chapterRepository;
-        _dataSettings = dataSettings;
-        _userManager = userManager;
-        _filterService = filterService;
-        _dtoMapper = dtoMapper;
-        _mapper = mapper;
-        _likeRepository = likeRepository;
-        _likeService = likeService;
-        _commentRepository = commentRepository;
-        _resourceService = resourceService;
-        _notificationService = notificationService;
-        _fileStorageService = fileStorageService;
-    }
-
+    : Controller
+{
     /// <summary>
     ///     Retrieves chapters.
     /// </summary>
@@ -76,18 +48,18 @@ public class ChapterController : Controller
     public async Task<IActionResult> GetChapters([FromQuery] ArrayRequestDto dto,
         [FromQuery] ChapterFilterDto? filterDto = null)
     {
-        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        dto.PerPage = dto.PerPage > 0 && dto.PerPage < _dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
-            dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : _dataSettings.Value.PaginationMaxPerPage;
+        var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
+            dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
-        var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser);
-        var chapters = await _chapterRepository.GetChaptersAsync(dto.Order, dto.Desc, position,
+        var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser);
+        var chapters = await chapterRepository.GetChaptersAsync(dto.Order, dto.Desc, position,
             dto.PerPage, dto.Search, predicateExpr);
-        var total = await _chapterRepository.CountChaptersAsync(dto.Search, predicateExpr);
+        var total = await chapterRepository.CountChaptersAsync(dto.Search, predicateExpr);
         var list = new List<ChapterDto>();
 
-        foreach (var chapter in chapters) list.Add(await _dtoMapper.MapChapterAsync<ChapterDto>(chapter, currentUser));
+        foreach (var chapter in chapters) list.Add(await dtoMapper.MapChapterAsync<ChapterDto>(chapter, currentUser));
 
         return Ok(new ResponseDto<IEnumerable<ChapterDto>>
         {
@@ -121,14 +93,14 @@ public class ChapterController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetChapter([FromRoute] Guid id)
     {
-        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        if (!await _chapterRepository.ChapterExistsAsync(id))
+        var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        if (!await chapterRepository.ChapterExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        var chapter = await _chapterRepository.GetChapterAsync(id);
-        var dto = await _dtoMapper.MapChapterAsync<ChapterDto>(chapter, currentUser);
+        var chapter = await chapterRepository.GetChapterAsync(id);
+        var dto = await dtoMapper.MapChapterAsync<ChapterDto>(chapter, currentUser);
 
         return Ok(new ResponseDto<ChapterDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
     }
@@ -153,14 +125,14 @@ public class ChapterController : Controller
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> CreateChapter([FromForm] ChapterCreationDto dto)
     {
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _resourceService.HasPermission(currentUser, Roles.Administrator))
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!await resourceService.HasPermission(currentUser, Roles.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        var illustrationUrl = (await _fileStorageService.UploadImage<Chapter>(dto.Title, dto.Illustration, (16, 9)))
+        var illustrationUrl = (await fileStorageService.UploadImage<Chapter>(dto.Title, dto.Illustration, (16, 9)))
             .Item1;
         var chapter = new Chapter
         {
@@ -176,7 +148,7 @@ public class ChapterController : Controller
             DateCreated = DateTimeOffset.UtcNow,
             DateUpdated = DateTimeOffset.UtcNow
         };
-        if (!await _chapterRepository.CreateChapterAsync(chapter))
+        if (!await chapterRepository.CreateChapterAsync(chapter))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
@@ -208,23 +180,23 @@ public class ChapterController : Controller
     public async Task<IActionResult> UpdateChapter([FromRoute] Guid id,
         [FromBody] JsonPatchDocument<ChapterUpdateDto> patchDocument)
     {
-        if (!await _chapterRepository.ChapterExistsAsync(id))
+        if (!await chapterRepository.ChapterExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        var chapter = await _chapterRepository.GetChapterAsync(id);
+        var chapter = await chapterRepository.GetChapterAsync(id);
 
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _resourceService.HasPermission(currentUser, Roles.Administrator))
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!await resourceService.HasPermission(currentUser, Roles.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
-        var dto = _mapper.Map<ChapterUpdateDto>(chapter);
+        var dto = mapper.Map<ChapterUpdateDto>(chapter);
         patchDocument.ApplyTo(dto, ModelState);
 
         if (!TryValidateModel(dto))
@@ -244,7 +216,7 @@ public class ChapterController : Controller
         chapter.IsLocked = dto.IsLocked;
         chapter.DateUpdated = DateTimeOffset.UtcNow;
 
-        if (!await _chapterRepository.UpdateChapterAsync(chapter))
+        if (!await chapterRepository.UpdateChapterAsync(chapter))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
@@ -276,16 +248,16 @@ public class ChapterController : Controller
     public async Task<IActionResult> UpdateChapterIllustration([FromRoute] Guid id,
         [FromForm] FileDto dto)
     {
-        if (!await _chapterRepository.ChapterExistsAsync(id))
+        if (!await chapterRepository.ChapterExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        var chapter = await _chapterRepository.GetChapterAsync(id);
+        var chapter = await chapterRepository.GetChapterAsync(id);
 
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _resourceService.HasPermission(currentUser, Roles.Administrator))
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!await resourceService.HasPermission(currentUser, Roles.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -294,11 +266,11 @@ public class ChapterController : Controller
         if (dto.File != null)
         {
             chapter.Illustration =
-                (await _fileStorageService.UploadImage<Chapter>(chapter.Title, dto.File, (16, 9))).Item1;
+                (await fileStorageService.UploadImage<Chapter>(chapter.Title, dto.File, (16, 9))).Item1;
             chapter.DateUpdated = DateTimeOffset.UtcNow;
         }
 
-        if (!await _chapterRepository.UpdateChapterAsync(chapter))
+        if (!await chapterRepository.UpdateChapterAsync(chapter))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
         return NoContent();
@@ -326,21 +298,21 @@ public class ChapterController : Controller
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> RemoveChapter([FromRoute] Guid id)
     {
-        if (!await _chapterRepository.ChapterExistsAsync(id))
+        if (!await chapterRepository.ChapterExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _resourceService.HasPermission(currentUser, Roles.Administrator))
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!await resourceService.HasPermission(currentUser, Roles.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
-        if (!await _chapterRepository.RemoveChapterAsync(id))
+        if (!await chapterRepository.RemoveChapterAsync(id))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
@@ -363,25 +335,25 @@ public class ChapterController : Controller
     public async Task<IActionResult> GetChapterSongs([FromRoute] Guid id, [FromQuery] ArrayRequestDto dto,
         [FromQuery] AdmissionFilterDto? filterDto = null)
     {
-        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        dto.PerPage = dto.PerPage > 0 && dto.PerPage < _dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
-            dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : _dataSettings.Value.PaginationMaxPerPage;
+        var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
+            dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
-        var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser);
-        if (!await _chapterRepository.ChapterExistsAsync(id))
+        var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser);
+        if (!await chapterRepository.ChapterExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        var admissions = await _chapterRepository.GetChapterSongsAsync(id, dto.Order, dto.Desc, position, dto.PerPage,
+        var admissions = await chapterRepository.GetChapterSongsAsync(id, dto.Order, dto.Desc, position, dto.PerPage,
             dto.Search, predicateExpr);
         var list = new List<SongAdmitteeDto>();
-        var total = await _chapterRepository.CountChapterSongsAsync(id, dto.Search, predicateExpr);
+        var total = await chapterRepository.CountChapterSongsAsync(id, dto.Search, predicateExpr);
 
         foreach (var admission in admissions)
-            list.Add(await _dtoMapper.MapChapterSongAsync<SongAdmitteeDto>(admission, currentUser));
+            list.Add(await dtoMapper.MapChapterSongAsync<SongAdmitteeDto>(admission, currentUser));
 
         return Ok(new ResponseDto<IEnumerable<SongAdmitteeDto>>
         {
@@ -410,31 +382,31 @@ public class ChapterController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetChapterLikes([FromRoute] Guid id, [FromQuery] ArrayRequestDto dto)
     {
-        dto.PerPage = dto.PerPage > 0 && dto.PerPage < _dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
-            dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : _dataSettings.Value.PaginationMaxPerPage;
+        dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
+            dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
 
-        if (!await _chapterRepository.ChapterExistsAsync(id))
+        if (!await chapterRepository.ChapterExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        var chapter = await _chapterRepository.GetChapterAsync(id);
+        var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        var chapter = await chapterRepository.GetChapterAsync(id);
 
-        if ((currentUser == null || !await _resourceService.HasPermission(currentUser, Roles.Administrator)) &&
+        if ((currentUser == null || !await resourceService.HasPermission(currentUser, Roles.Administrator)) &&
             chapter.IsLocked)
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Locked
             });
 
-        var likes = await _likeRepository.GetLikesAsync(dto.Order, dto.Desc, position, dto.PerPage,
+        var likes = await likeRepository.GetLikesAsync(dto.Order, dto.Desc, position, dto.PerPage,
             e => e.ResourceId == id);
-        var list = _mapper.Map<List<LikeDto>>(likes);
-        var total = await _likeRepository.CountLikesAsync(e => e.ResourceId == id);
+        var list = mapper.Map<List<LikeDto>>(likes);
+        var total = await likeRepository.CountLikesAsync(e => e.ResourceId == id);
 
         return Ok(new ResponseDto<IEnumerable<LikeDto>>
         {
@@ -466,14 +438,14 @@ public class ChapterController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> CreateLike([FromRoute] Guid id)
     {
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _chapterRepository.ChapterExistsAsync(id))
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!await chapterRepository.ChapterExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        var chapter = await _chapterRepository.GetChapterAsync(id);
-        if (await _resourceService.IsBlacklisted(chapter.OwnerId, currentUser.Id))
+        var chapter = await chapterRepository.GetChapterAsync(id);
+        if (await resourceService.IsBlacklisted(chapter.OwnerId, currentUser.Id))
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Blacklisted
@@ -484,7 +456,7 @@ public class ChapterController : Controller
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Locked
             });
 
-        if (!await _likeService.CreateLikeAsync(chapter, currentUser.Id))
+        if (!await likeService.CreateLikeAsync(chapter, currentUser.Id))
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
@@ -509,13 +481,13 @@ public class ChapterController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> RemoveLike([FromRoute] Guid id)
     {
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _chapterRepository.ChapterExistsAsync(id))
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!await chapterRepository.ChapterExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        var chapter = await _chapterRepository.GetChapterAsync(id);
+        var chapter = await chapterRepository.GetChapterAsync(id);
 
         if (chapter.IsLocked)
             return BadRequest(new ResponseDto<object>
@@ -523,7 +495,7 @@ public class ChapterController : Controller
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Locked
             });
 
-        if (!await _likeService.RemoveLikeAsync(chapter, currentUser.Id))
+        if (!await likeService.RemoveLikeAsync(chapter, currentUser.Id))
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
@@ -547,32 +519,32 @@ public class ChapterController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetChapterComments([FromRoute] Guid id, [FromQuery] ArrayRequestDto dto)
     {
-        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        dto.PerPage = dto.PerPage > 0 && dto.PerPage < _dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
-            dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : _dataSettings.Value.PaginationMaxPerPage;
+        var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
+            dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
-        if (!await _chapterRepository.ChapterExistsAsync(id))
+        if (!await chapterRepository.ChapterExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        var chapter = await _chapterRepository.GetChapterAsync(id);
+        var chapter = await chapterRepository.GetChapterAsync(id);
 
-        if ((currentUser == null || !await _resourceService.HasPermission(currentUser, Roles.Administrator)) &&
+        if ((currentUser == null || !await resourceService.HasPermission(currentUser, Roles.Administrator)) &&
             chapter.IsLocked)
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Locked
             });
 
-        var comments = await _commentRepository.GetCommentsAsync(dto.Order, dto.Desc, position, dto.PerPage,
+        var comments = await commentRepository.GetCommentsAsync(dto.Order, dto.Desc, position, dto.PerPage,
             e => e.ResourceId == id);
         var list = new List<CommentDto>();
-        var total = await _commentRepository.CountCommentsAsync(e => e.ResourceId == id);
+        var total = await commentRepository.CountCommentsAsync(e => e.ResourceId == id);
 
-        foreach (var comment in comments) list.Add(await _dtoMapper.MapCommentAsync<CommentDto>(comment, currentUser));
+        foreach (var comment in comments) list.Add(await dtoMapper.MapCommentAsync<CommentDto>(comment, currentUser));
 
         return Ok(new ResponseDto<IEnumerable<CommentDto>>
         {
@@ -608,20 +580,20 @@ public class ChapterController : Controller
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> CreateComment([FromRoute] Guid id, [FromBody] CommentCreationDto dto)
     {
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _resourceService.HasPermission(currentUser, Roles.Member))
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!await resourceService.HasPermission(currentUser, Roles.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        if (!await _chapterRepository.ChapterExistsAsync(id))
+        if (!await chapterRepository.ChapterExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        var chapter = await _chapterRepository.GetChapterAsync(id);
-        if (await _resourceService.IsBlacklisted(chapter.OwnerId, currentUser.Id))
+        var chapter = await chapterRepository.GetChapterAsync(id);
+        if (await resourceService.IsBlacklisted(chapter.OwnerId, currentUser.Id))
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Blacklisted
@@ -632,7 +604,7 @@ public class ChapterController : Controller
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Locked
             });
 
-        var result = await _resourceService.ParseUserContent(dto.Content);
+        var result = await resourceService.ParseUserContent(dto.Content);
         var comment = new Comment
         {
             ResourceId = chapter.Id,
@@ -641,13 +613,13 @@ public class ChapterController : Controller
             OwnerId = currentUser.Id,
             DateCreated = DateTimeOffset.UtcNow
         };
-        if (!await _commentRepository.CreateCommentAsync(comment))
+        if (!await commentRepository.CreateCommentAsync(comment))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
-        await _notificationService.NotifyComment(comment, chapter, chapter.GetDisplay(), dto.Content);
-        await _notificationService.NotifyMentions(result.Item2, currentUser,
-            _resourceService.GetRichText<Comment>(comment.Id.ToString(), dto.Content));
+        await notificationService.NotifyComment(comment, chapter, chapter.GetDisplay(), dto.Content);
+        await notificationService.NotifyMentions(result.Item2, currentUser,
+            resourceService.GetRichText<Comment>(comment.Id.ToString(), dto.Content));
 
         return StatusCode(StatusCodes.Status201Created);
     }

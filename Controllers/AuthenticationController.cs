@@ -27,31 +27,11 @@ namespace PhiZoneApi.Controllers;
 [ApiVersion("2.0")]
 [Route("auth")]
 [Produces("application/json")]
-public class AuthenticationController : Controller
-{
-    private readonly IDtoMapper _dtoMapper;
-    private readonly ILogger<AuthenticationController> _logger;
-    private readonly IMailService _mailService;
-    private readonly IConnectionMultiplexer _redis;
-    private readonly IResourceService _resourceService;
-    private readonly ITapTapService _tapTapService;
-    private readonly UserManager<User> _userManager;
-    private readonly IUserRepository _userRepository;
-
-    public AuthenticationController(UserManager<User> userManager, IConnectionMultiplexer redis,
+public class AuthenticationController(UserManager<User> userManager, IConnectionMultiplexer redis,
         IMailService mailService, IResourceService resourceService, ITapTapService tapTapService,
         IUserRepository userRepository, IDtoMapper dtoMapper, ILogger<AuthenticationController> logger)
-    {
-        _userManager = userManager;
-        _mailService = mailService;
-        _resourceService = resourceService;
-        _tapTapService = tapTapService;
-        _userRepository = userRepository;
-        _dtoMapper = dtoMapper;
-        _logger = logger;
-        _redis = redis;
-    }
-
+    : Controller
+{
     /// <summary>
     ///     Retrieves authentication credentials.
     /// </summary>
@@ -94,7 +74,7 @@ public class AuthenticationController : Controller
 
         if (mode == LoginMode.TapTap)
         {
-            var response = await _tapTapService.Login(new TapTapRequestDto
+            var response = await tapTapService.Login(new TapTapRequestDto
             {
                 MacKey = dto.username!, AccessToken = dto.password!
             });
@@ -115,7 +95,7 @@ public class AuthenticationController : Controller
 
             var responseDto =
                 JsonConvert.DeserializeObject<TapTapDelivererDto>(await response.Content.ReadAsStringAsync())!;
-            var user = await _userRepository.GetUserByTapUnionId(responseDto.Data.Unionid);
+            var user = await userRepository.GetUserByTapUnionId(responseDto.Data.Unionid);
             if (user == null)
                 return NotFound(new AuthenticationProperties(new Dictionary<string, string>
                 {
@@ -133,7 +113,7 @@ public class AuthenticationController : Controller
             identity.AddClaim(Claims.Subject, user.Id.ToString(), Destinations.AccessToken);
             identity.AddClaim(Claims.Username, user.UserName!, Destinations.AccessToken);
 
-            foreach (var role in await _userManager.GetRolesAsync(user))
+            foreach (var role in await userManager.GetRolesAsync(user))
                 identity.AddClaim(Claims.Role, role, Destinations.AccessToken);
 
             var claimsPrincipal = new ClaimsPrincipal(identity);
@@ -141,14 +121,14 @@ public class AuthenticationController : Controller
 
             user.DateLastLoggedIn = DateTimeOffset.UtcNow;
             user.AccessFailedCount = 0;
-            await _userManager.UpdateAsync(user);
+            await userManager.UpdateAsync(user);
 
             return SignIn(claimsPrincipal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
         }
 
         if (request.IsPasswordGrantType())
         {
-            var user = await _userManager.FindByEmailAsync(request.Username!);
+            var user = await userManager.FindByEmailAsync(request.Username!);
             if (user == null)
                 return NotFound(new AuthenticationProperties(new Dictionary<string, string>
                 {
@@ -156,7 +136,7 @@ public class AuthenticationController : Controller
                     [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
                         "Unable to find a user with provided credentials."
                 }!));
-            if (!await _resourceService.HasPermission(user, Roles.Member))
+            if (!await resourceService.HasPermission(user, Roles.Member))
                 return Forbid(
                     new AuthenticationProperties(new Dictionary<string, string>
                     {
@@ -171,20 +151,20 @@ public class AuthenticationController : Controller
             var isPasswordCorrect = true;
             try
             {
-                if (!await _userManager.CheckPasswordAsync(user, request.Password!)) isPasswordCorrect = false;
+                if (!await userManager.CheckPasswordAsync(user, request.Password!)) isPasswordCorrect = false;
             }
             catch (FormatException)
             {
                 if (!ObsoletePasswordUtil.Check(request.Password!, user.PasswordHash!))
                     isPasswordCorrect = false;
                 else
-                    user.PasswordHash = _userManager.PasswordHasher.HashPassword(user, request.Password!);
+                    user.PasswordHash = userManager.PasswordHasher.HashPassword(user, request.Password!);
             }
 
             if (!isPasswordCorrect)
             {
                 user.AccessFailedCount++;
-                await _userManager.UpdateAsync(user);
+                await userManager.UpdateAsync(user);
 
                 return Forbid(
                     new AuthenticationProperties(new Dictionary<string, string>
@@ -201,7 +181,7 @@ public class AuthenticationController : Controller
             identity.AddClaim(Claims.Subject, user.Id.ToString(), Destinations.AccessToken);
             identity.AddClaim(Claims.Username, user.UserName!, Destinations.AccessToken);
 
-            foreach (var role in await _userManager.GetRolesAsync(user))
+            foreach (var role in await userManager.GetRolesAsync(user))
                 identity.AddClaim(Claims.Role, role, Destinations.AccessToken);
 
             var claimsPrincipal = new ClaimsPrincipal(identity);
@@ -209,9 +189,9 @@ public class AuthenticationController : Controller
 
             user.DateLastLoggedIn = DateTimeOffset.UtcNow;
             user.AccessFailedCount = 0;
-            await _userManager.UpdateAsync(user);
+            await userManager.UpdateAsync(user);
 
-            _logger.LogInformation(LogEvents.UserInfo, "New login: #{Id} {UserName}", user.Id, user.UserName);
+            logger.LogInformation(LogEvents.UserInfo, "New login: #{Id} {UserName}", user.Id, user.UserName);
 
             return SignIn(claimsPrincipal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
         }
@@ -220,7 +200,7 @@ public class AuthenticationController : Controller
         {
             var result = await HttpContext.AuthenticateAsync(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
 
-            var user = await _userManager.FindByIdAsync(result.Principal!.GetClaim(Claims.Subject)!);
+            var user = await userManager.FindByIdAsync(result.Principal!.GetClaim(Claims.Subject)!);
             if (user == null)
                 return Forbid(
                     new AuthenticationProperties(new Dictionary<string, string>
@@ -236,16 +216,16 @@ public class AuthenticationController : Controller
             var identity = new ClaimsIdentity(result.Principal!.Claims,
                 TokenValidationParameters.DefaultAuthenticationType, Claims.Name, Claims.Role);
 
-            identity.SetClaim(Claims.Subject, await _userManager.GetUserIdAsync(user))
-                .SetClaim(Claims.Email, await _userManager.GetEmailAsync(user))
-                .SetClaim(Claims.Name, await _userManager.GetUserNameAsync(user))
-                .SetClaims(Claims.Role, (await _userManager.GetRolesAsync(user)).ToImmutableArray());
+            identity.SetClaim(Claims.Subject, await userManager.GetUserIdAsync(user))
+                .SetClaim(Claims.Email, await userManager.GetEmailAsync(user))
+                .SetClaim(Claims.Name, await userManager.GetUserNameAsync(user))
+                .SetClaims(Claims.Role, (await userManager.GetRolesAsync(user)).ToImmutableArray());
 
             identity.SetDestinations(GetDestinations);
 
             user.DateLastLoggedIn = DateTimeOffset.UtcNow;
             user.AccessFailedCount = 0;
-            await _userManager.UpdateAsync(user);
+            await userManager.UpdateAsync(user);
 
             return SignIn(new ClaimsPrincipal(identity), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
         }
@@ -308,7 +288,7 @@ public class AuthenticationController : Controller
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> SendEmail([FromBody] UserEmailRequestDto dto, [FromQuery] bool wait = false)
     {
-        var user = await _userManager.FindByEmailAsync(dto.Email);
+        var user = await userManager.FindByEmailAsync(dto.Email);
         if (dto.Mode != EmailRequestMode.EmailConfirmation)
         {
             if (user == null)
@@ -316,7 +296,7 @@ public class AuthenticationController : Controller
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNotFound
                 });
-            if (!await _resourceService.HasPermission(user, Roles.Member))
+            if (!await resourceService.HasPermission(user, Roles.Member))
                 return StatusCode(StatusCodes.Status403Forbidden,
                     new ResponseDto<object>
                     {
@@ -324,7 +304,7 @@ public class AuthenticationController : Controller
                     });
         }
 
-        var db = _redis.GetDatabase();
+        var db = redis.GetDatabase();
         if (await db.KeyExistsAsync($"phizone:cooldown:{dto.Mode}:{dto.Email}"))
         {
             var dateAvailable =
@@ -360,7 +340,7 @@ public class AuthenticationController : Controller
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidLanguageCode
                 });
 
-            user = await _userManager.FindByNameAsync(dto.UserName);
+            user = await userManager.FindByNameAsync(dto.UserName);
             if (user != null)
                 return BadRequest(new ResponseDto<object>
                 {
@@ -371,7 +351,7 @@ public class AuthenticationController : Controller
         if (wait)
             try
             {
-                var mailDto = await _mailService.GenerateEmailAsync(dto.Email, dto.UserName ?? user!.UserName!,
+                var mailDto = await mailService.GenerateEmailAsync(dto.Email, dto.UserName ?? user!.UserName!,
                     dto.Language ?? user!.Language, dto.Mode);
                 if (mailDto == null)
                     return StatusCode(StatusCodes.Status500InternalServerError,
@@ -379,7 +359,7 @@ public class AuthenticationController : Controller
                         {
                             Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.RedisError
                         });
-                await _mailService.SendMailAsync(mailDto);
+                await mailService.SendMailAsync(mailDto);
             }
             catch (Exception ex)
             {
@@ -392,7 +372,7 @@ public class AuthenticationController : Controller
                     });
             }
         else
-            await _mailService.PublishEmailAsync(dto.Email, dto.UserName ?? user!.UserName!,
+            await mailService.PublishEmailAsync(dto.Email, dto.UserName ?? user!.UserName!,
                 dto.Language ?? user!.Language, dto.Mode);
 
         return NoContent();
@@ -419,8 +399,8 @@ public class AuthenticationController : Controller
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidCode
             });
 
-        user.PasswordHash = _userManager.PasswordHasher.HashPassword(user, dto.Password);
-        await _userManager.UpdateAsync(user);
+        user.PasswordHash = userManager.PasswordHasher.HashPassword(user, dto.Password);
+        await userManager.UpdateAsync(user);
         return NoContent();
     }
 
@@ -437,7 +417,7 @@ public class AuthenticationController : Controller
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> RetrieveTapTapInfo([FromBody] TapTapRequestDto dto)
     {
-        var response = await _tapTapService.Login(dto);
+        var response = await tapTapService.Login(dto);
 
         if (response == null)
             return BadRequest(new ResponseDto<object>
@@ -455,7 +435,7 @@ public class AuthenticationController : Controller
 
         var responseDto =
             JsonConvert.DeserializeObject<TapTapDelivererDto>(await response.Content.ReadAsStringAsync())!;
-        var user = await _userRepository.GetUserByTapUnionId(responseDto.Data.Unionid);
+        var user = await userRepository.GetUserByTapUnionId(responseDto.Data.Unionid);
 
         return Ok(new ResponseDto<TapTapResponseDto>
         {
@@ -467,7 +447,7 @@ public class AuthenticationController : Controller
                 Avatar = responseDto.Data.Avatar,
                 OpenId = responseDto.Data.Openid,
                 UnionId = responseDto.Data.Unionid,
-                User = user != null ? await _dtoMapper.MapUserAsync<UserDetailedDto>(user) : null
+                User = user != null ? await dtoMapper.MapUserAsync<UserDetailedDto>(user) : null
             }
         });
     }
@@ -493,18 +473,18 @@ public class AuthenticationController : Controller
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidCode
             });
 
-        await _userManager.DeleteAsync(user);
+        await userManager.DeleteAsync(user);
         return NoContent();
     }
 
     private async Task<User?> RedeemCode(string code, EmailRequestMode mode)
     {
-        var db = _redis.GetDatabase();
+        var db = redis.GetDatabase();
         var key = $"phizone:email:{mode}:{code}";
         if (!await db.KeyExistsAsync(key)) return null;
         var email = await db.StringGetAsync(key);
         db.KeyDelete(key);
-        var user = (await _userManager.FindByEmailAsync(email!))!;
+        var user = (await userManager.FindByEmailAsync(email!))!;
         return user;
     }
 
@@ -561,7 +541,7 @@ public class AuthenticationController : Controller
             }
 
             user.LockoutEnabled = false;
-            await _userManager.UpdateAsync(user);
+            await userManager.UpdateAsync(user);
         }
         else // permanent
         {

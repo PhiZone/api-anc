@@ -27,30 +27,7 @@ namespace PhiZoneApi.Controllers;
 [ApiVersion("2.0")]
 [ApiController]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
-public class ChartSubmissionController : Controller
-{
-    private readonly IAdmissionRepository _admissionRepository;
-    private readonly IChartAssetSubmissionRepository _chartAssetSubmissionRepository;
-    private readonly IChartService _chartService;
-    private readonly IChartSubmissionRepository _chartSubmissionRepository;
-    private readonly ICollaborationRepository _collaborationRepository;
-    private readonly IOptions<DataSettings> _dataSettings;
-    private readonly IDtoMapper _dtoMapper;
-    private readonly IFeishuService _feishuService;
-    private readonly IFileStorageService _fileStorageService;
-    private readonly IFilterService _filterService;
-    private readonly ILogger<ChartSubmissionController> _logger;
-    private readonly IMapper _mapper;
-    private readonly INotificationService _notificationService;
-    private readonly IResourceService _resourceService;
-    private readonly ISongRepository _songRepository;
-    private readonly ISongSubmissionRepository _songSubmissionRepository;
-    private readonly ITemplateService _templateService;
-    private readonly UserManager<User> _userManager;
-    private readonly IVolunteerVoteRepository _volunteerVoteRepository;
-    private readonly IVolunteerVoteService _volunteerVoteService;
-
-    public ChartSubmissionController(IChartSubmissionRepository chartSubmissionRepository,
+public class ChartSubmissionController(IChartSubmissionRepository chartSubmissionRepository,
         IOptions<DataSettings> dataSettings, UserManager<User> userManager, IFilterService filterService,
         IFileStorageService fileStorageService, IDtoMapper dtoMapper, IMapper mapper, ISongRepository songRepository,
         IVolunteerVoteService volunteerVoteService, IResourceService resourceService,
@@ -60,29 +37,8 @@ public class ChartSubmissionController : Controller
         ICollaborationRepository collaborationRepository,
         IChartAssetSubmissionRepository chartAssetSubmissionRepository, ILogger<ChartSubmissionController> logger,
         IFeishuService feishuService)
-    {
-        _chartSubmissionRepository = chartSubmissionRepository;
-        _dataSettings = dataSettings;
-        _userManager = userManager;
-        _filterService = filterService;
-        _dtoMapper = dtoMapper;
-        _mapper = mapper;
-        _songRepository = songRepository;
-        _volunteerVoteService = volunteerVoteService;
-        _resourceService = resourceService;
-        _songSubmissionRepository = songSubmissionRepository;
-        _chartService = chartService;
-        _volunteerVoteRepository = volunteerVoteRepository;
-        _admissionRepository = admissionRepository;
-        _notificationService = notificationService;
-        _templateService = templateService;
-        _collaborationRepository = collaborationRepository;
-        _chartAssetSubmissionRepository = chartAssetSubmissionRepository;
-        _logger = logger;
-        _feishuService = feishuService;
-        _fileStorageService = fileStorageService;
-    }
-
+    : Controller
+{
     /// <summary>
     ///     Retrieves chart submissions.
     /// </summary>
@@ -100,27 +56,27 @@ public class ChartSubmissionController : Controller
     public async Task<IActionResult> GetChartSubmissions([FromQuery] ArrayRequestDto dto,
         [FromQuery] ChartSubmissionFilterDto? filterDto = null)
     {
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        var isVolunteer = await _resourceService.HasPermission(currentUser, Roles.Volunteer);
-        if (!await _resourceService.HasPermission(currentUser, Roles.Qualified))
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        var isVolunteer = await resourceService.HasPermission(currentUser, Roles.Volunteer);
+        if (!await resourceService.HasPermission(currentUser, Roles.Qualified))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        dto.PerPage = dto.PerPage > 0 && dto.PerPage < _dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
-            dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : _dataSettings.Value.PaginationMaxPerPage;
+        dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
+            dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
-        var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser,
+        var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser,
             submission => isVolunteer || submission.OwnerId == currentUser.Id);
-        var chartSubmissions = await _chartSubmissionRepository.GetChartSubmissionsAsync(dto.Order, dto.Desc, position,
+        var chartSubmissions = await chartSubmissionRepository.GetChartSubmissionsAsync(dto.Order, dto.Desc, position,
             dto.PerPage, dto.Search, predicateExpr);
-        var total = await _chartSubmissionRepository.CountChartSubmissionsAsync(dto.Search, predicateExpr);
+        var total = await chartSubmissionRepository.CountChartSubmissionsAsync(dto.Search, predicateExpr);
         var list = new List<ChartSubmissionDto>();
 
         foreach (var chartSubmission in chartSubmissions)
-            list.Add(await _dtoMapper.MapChartSubmissionAsync<ChartSubmissionDto>(chartSubmission, currentUser));
+            list.Add(await dtoMapper.MapChartSubmissionAsync<ChartSubmissionDto>(chartSubmission, currentUser));
 
         return Ok(new ResponseDto<IEnumerable<ChartSubmissionDto>>
         {
@@ -158,21 +114,21 @@ public class ChartSubmissionController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetChartSubmission([FromRoute] Guid id)
     {
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _resourceService.HasPermission(currentUser, Roles.Qualified))
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!await resourceService.HasPermission(currentUser, Roles.Qualified))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        if (!await _chartSubmissionRepository.ChartSubmissionExistsAsync(id))
+        if (!await chartSubmissionRepository.ChartSubmissionExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        var chartSubmission = await _chartSubmissionRepository.GetChartSubmissionAsync(id);
+        var chartSubmission = await chartSubmissionRepository.GetChartSubmissionAsync(id);
 
-        var dto = await _dtoMapper.MapChartSubmissionAsync<ChartSubmissionDto>(chartSubmission);
+        var dto = await dtoMapper.MapChartSubmissionAsync<ChartSubmissionDto>(chartSubmission);
 
         return Ok(new ResponseDto<ChartSubmissionDto>
         {
@@ -199,15 +155,15 @@ public class ChartSubmissionController : Controller
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> CreateChartSubmission([FromForm] ChartSubmissionCreationDto dto)
     {
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _resourceService.HasPermission(currentUser, Roles.Qualified))
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!await resourceService.HasPermission(currentUser, Roles.Qualified))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
-        if (!_resourceService.GetAuthorIds(dto.AuthorName).Contains(currentUser.Id))
+        if (!resourceService.GetAuthorIds(dto.AuthorName).Contains(currentUser.Id))
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidAuthorInfo
@@ -216,13 +172,13 @@ public class ChartSubmissionController : Controller
         Song? song = null;
         if (dto.SongId != null)
         {
-            if (!await _songRepository.SongExistsAsync(dto.SongId.Value))
+            if (!await songRepository.SongExistsAsync(dto.SongId.Value))
                 return NotFound(new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
                 });
 
-            song = await _songRepository.GetSongAsync(dto.SongId.Value);
+            song = await songRepository.GetSongAsync(dto.SongId.Value);
             if (song.OwnerId != currentUser.Id && song.Accessibility == Accessibility.RefuseAny)
                 return BadRequest(new ResponseDto<object>
                 {
@@ -233,13 +189,13 @@ public class ChartSubmissionController : Controller
         SongSubmission? songSubmission = null;
         if (dto.SongSubmissionId != null)
         {
-            if (!await _songSubmissionRepository.SongSubmissionExistsAsync(dto.SongSubmissionId.Value))
+            if (!await songSubmissionRepository.SongSubmissionExistsAsync(dto.SongSubmissionId.Value))
                 return NotFound(new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
                 });
 
-            songSubmission = await _songSubmissionRepository.GetSongSubmissionAsync(dto.SongSubmissionId.Value);
+            songSubmission = await songSubmissionRepository.GetSongSubmissionAsync(dto.SongSubmissionId.Value);
             if (songSubmission.OwnerId != currentUser.Id)
                 return BadRequest(new ResponseDto<object>
                 {
@@ -247,7 +203,7 @@ public class ChartSubmissionController : Controller
                 });
             if (songSubmission.RepresentationId != null)
             {
-                song = await _songRepository.GetSongAsync(songSubmission.RepresentationId.Value);
+                song = await songRepository.GetSongAsync(songSubmission.RepresentationId.Value);
                 songSubmission = null;
             }
         }
@@ -261,12 +217,12 @@ public class ChartSubmissionController : Controller
             });
 
         var illustrationUrl = dto.Illustration != null
-            ? (await _fileStorageService.UploadImage<Chart>(
+            ? (await fileStorageService.UploadImage<Chart>(
                 dto.Title ?? (song != null ? song.Title : songSubmission!.Title), dto.Illustration, (16, 9))).Item1
             : null;
 
         var chartSubmissionInfo = dto.File != null
-            ? await _chartService.Upload(dto.Title ?? (song != null ? song.Title : songSubmission!.Title), dto.File)
+            ? await chartService.Upload(dto.Title ?? (song != null ? song.Title : songSubmission!.Title), dto.File)
             : null;
 
         if (dto.File != null && chartSubmissionInfo == null)
@@ -309,7 +265,7 @@ public class ChartSubmissionController : Controller
             DateUpdated = DateTimeOffset.UtcNow
         };
 
-        if (!await _chartSubmissionRepository.CreateChartSubmissionAsync(chartSubmission))
+        if (!await chartSubmissionRepository.CreateChartSubmissionAsync(chartSubmission))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
@@ -325,30 +281,30 @@ public class ChartSubmissionController : Controller
                 RequesteeId = song.OwnerId,
                 DateCreated = DateTimeOffset.UtcNow
             };
-            await _admissionRepository.CreateAdmissionAsync(admission);
-            await _notificationService.Notify(song.Owner, currentUser, NotificationType.Requests, "chart-admission",
+            await admissionRepository.CreateAdmissionAsync(admission);
+            await notificationService.Notify(song.Owner, currentUser, NotificationType.Requests, "chart-admission",
                 new Dictionary<string, string>
                 {
                     {
-                        "User", _resourceService.GetRichText<User>(currentUser.Id.ToString(), currentUser.UserName!)
+                        "User", resourceService.GetRichText<User>(currentUser.Id.ToString(), currentUser.UserName!)
                     },
                     {
                         "Chart",
-                        _resourceService.GetRichText<ChartSubmission>(chartSubmission.Id.ToString(),
-                            await _resourceService.GetDisplayName(chartSubmission))
+                        resourceService.GetRichText<ChartSubmission>(chartSubmission.Id.ToString(),
+                            await resourceService.GetDisplayName(chartSubmission))
                     },
-                    { "Song", _resourceService.GetRichText<Song>(song.Id.ToString(), song.GetDisplay()) },
+                    { "Song", resourceService.GetRichText<Song>(song.Id.ToString(), song.GetDisplay()) },
                     {
                         "Admission",
-                        _resourceService.GetComplexRichText<Admission>(admission.AdmitteeId.ToString(),
+                        resourceService.GetComplexRichText<Admission>(admission.AdmitteeId.ToString(),
                             admission.AdmitterId.ToString(),
-                            _templateService.GetMessage("more-info", admission.Requestee.Language)!)
+                            templateService.GetMessage("more-info", admission.Requestee.Language)!)
                     }
                 });
         }
 
-        await _feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
-        _logger.LogInformation(LogEvents.ChartInfo, "New chart submission: {Title} [{Level} {Difficulty}]",
+        await feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
+        logger.LogInformation(LogEvents.ChartInfo, "New chart submission: {Title} [{Level} {Difficulty}]",
             dto.Title ?? song?.Title ?? songSubmission!.Title, dto.Level, Math.Floor(dto.Difficulty));
 
         return StatusCode(StatusCodes.Status201Created);
@@ -378,26 +334,26 @@ public class ChartSubmissionController : Controller
     public async Task<IActionResult> UpdateChartSubmission([FromRoute] Guid id,
         [FromBody] JsonPatchDocument<ChartSubmissionUpdateDto> patchDocument)
     {
-        if (!await _chartSubmissionRepository.ChartSubmissionExistsAsync(id))
+        if (!await chartSubmissionRepository.ChartSubmissionExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        var chartSubmission = await _chartSubmissionRepository.GetChartSubmissionAsync(id);
+        var chartSubmission = await chartSubmissionRepository.GetChartSubmissionAsync(id);
 
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if ((chartSubmission.OwnerId == currentUser.Id &&
-             !await _resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+             !await resourceService.HasPermission(currentUser, Roles.Qualified)) ||
             (chartSubmission.OwnerId != currentUser.Id &&
-             !await _resourceService.HasPermission(currentUser, Roles.Moderator)))
+             !await resourceService.HasPermission(currentUser, Roles.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
-        var dto = _mapper.Map<ChartSubmissionUpdateDto>(chartSubmission);
+        var dto = mapper.Map<ChartSubmissionUpdateDto>(chartSubmission);
         patchDocument.ApplyTo(dto, ModelState);
 
         if (!TryValidateModel(dto))
@@ -409,7 +365,7 @@ public class ChartSubmissionController : Controller
             });
 
         if (currentUser.Id == chartSubmission.OwnerId &&
-            !_resourceService.GetAuthorIds(dto.AuthorName).Contains(currentUser.Id))
+            !resourceService.GetAuthorIds(dto.AuthorName).Contains(currentUser.Id))
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidAuthorInfo
@@ -428,11 +384,11 @@ public class ChartSubmissionController : Controller
         chartSubmission.VolunteerStatus = RequestStatus.Waiting;
         chartSubmission.DateUpdated = DateTimeOffset.UtcNow;
 
-        if (!await _chartSubmissionRepository.UpdateChartSubmissionAsync(chartSubmission))
+        if (!await chartSubmissionRepository.UpdateChartSubmissionAsync(chartSubmission))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
-        await _feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
+        await feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
         return NoContent();
     }
 
@@ -459,19 +415,19 @@ public class ChartSubmissionController : Controller
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> UpdateChartSubmissionFile([FromRoute] Guid id, [FromForm] FileDto dto)
     {
-        if (!await _chartSubmissionRepository.ChartSubmissionExistsAsync(id))
+        if (!await chartSubmissionRepository.ChartSubmissionExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        var chartSubmission = await _chartSubmissionRepository.GetChartSubmissionAsync(id);
+        var chartSubmission = await chartSubmissionRepository.GetChartSubmissionAsync(id);
 
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if ((chartSubmission.OwnerId == currentUser.Id &&
-             !await _resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+             !await resourceService.HasPermission(currentUser, Roles.Qualified)) ||
             (chartSubmission.OwnerId != currentUser.Id &&
-             !await _resourceService.HasPermission(currentUser, Roles.Moderator)))
+             !await resourceService.HasPermission(currentUser, Roles.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -480,10 +436,10 @@ public class ChartSubmissionController : Controller
 
         if (dto.File != null)
         {
-            var chartSubmissionInfo = await _chartService.Upload(
+            var chartSubmissionInfo = await chartService.Upload(
                 chartSubmission.Title ?? (chartSubmission.SongId != null
-                    ? (await _songRepository.GetSongAsync(chartSubmission.SongId.Value)).Title
-                    : (await _songSubmissionRepository.GetSongSubmissionAsync(chartSubmission.SongSubmissionId!.Value))
+                    ? (await songRepository.GetSongAsync(chartSubmission.SongId.Value)).Title
+                    : (await songSubmissionRepository.GetSongSubmissionAsync(chartSubmission.SongSubmissionId!.Value))
                     .Title), dto.File);
             if (chartSubmissionInfo == null)
                 return BadRequest(new ResponseDto<object>
@@ -500,11 +456,11 @@ public class ChartSubmissionController : Controller
             chartSubmission.DateUpdated = DateTimeOffset.UtcNow;
         }
 
-        if (!await _chartSubmissionRepository.UpdateChartSubmissionAsync(chartSubmission))
+        if (!await chartSubmissionRepository.UpdateChartSubmissionAsync(chartSubmission))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
-        await _feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
+        await feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
         return NoContent();
     }
 
@@ -531,19 +487,19 @@ public class ChartSubmissionController : Controller
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> UpdateChartSubmissionIllustration([FromRoute] Guid id, [FromForm] FileDto dto)
     {
-        if (!await _chartSubmissionRepository.ChartSubmissionExistsAsync(id))
+        if (!await chartSubmissionRepository.ChartSubmissionExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        var chartSubmission = await _chartSubmissionRepository.GetChartSubmissionAsync(id);
+        var chartSubmission = await chartSubmissionRepository.GetChartSubmissionAsync(id);
 
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if ((chartSubmission.OwnerId == currentUser.Id &&
-             !await _resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+             !await resourceService.HasPermission(currentUser, Roles.Qualified)) ||
             (chartSubmission.OwnerId != currentUser.Id &&
-             !await _resourceService.HasPermission(currentUser, Roles.Moderator)))
+             !await resourceService.HasPermission(currentUser, Roles.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -552,21 +508,21 @@ public class ChartSubmissionController : Controller
 
         if (dto.File != null)
         {
-            chartSubmission.Illustration = (await _fileStorageService.UploadImage<Chart>(
+            chartSubmission.Illustration = (await fileStorageService.UploadImage<Chart>(
                 chartSubmission.Title ?? (chartSubmission.SongId != null
-                    ? (await _songRepository.GetSongAsync(chartSubmission.SongId.Value)).Title
-                    : (await _songSubmissionRepository.GetSongSubmissionAsync(chartSubmission.SongSubmissionId!.Value))
+                    ? (await songRepository.GetSongAsync(chartSubmission.SongId.Value)).Title
+                    : (await songSubmissionRepository.GetSongSubmissionAsync(chartSubmission.SongSubmissionId!.Value))
                     .Title), dto.File, (16, 9))).Item1;
             chartSubmission.Status = RequestStatus.Waiting;
             chartSubmission.VolunteerStatus = RequestStatus.Waiting;
             chartSubmission.DateUpdated = DateTimeOffset.UtcNow;
         }
 
-        if (!await _chartSubmissionRepository.UpdateChartSubmissionAsync(chartSubmission))
+        if (!await chartSubmissionRepository.UpdateChartSubmissionAsync(chartSubmission))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
-        await _feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
+        await feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
         return NoContent();
     }
 
@@ -592,19 +548,19 @@ public class ChartSubmissionController : Controller
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> RemoveChartSubmissionIllustration([FromRoute] Guid id)
     {
-        if (!await _chartSubmissionRepository.ChartSubmissionExistsAsync(id))
+        if (!await chartSubmissionRepository.ChartSubmissionExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        var chartSubmission = await _chartSubmissionRepository.GetChartSubmissionAsync(id);
+        var chartSubmission = await chartSubmissionRepository.GetChartSubmissionAsync(id);
 
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if ((chartSubmission.OwnerId == currentUser.Id &&
-             !await _resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+             !await resourceService.HasPermission(currentUser, Roles.Qualified)) ||
             (chartSubmission.OwnerId != currentUser.Id &&
-             !await _resourceService.HasPermission(currentUser, Roles.Moderator)))
+             !await resourceService.HasPermission(currentUser, Roles.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -616,11 +572,11 @@ public class ChartSubmissionController : Controller
         chartSubmission.VolunteerStatus = RequestStatus.Waiting;
         chartSubmission.DateUpdated = DateTimeOffset.UtcNow;
 
-        if (!await _chartSubmissionRepository.UpdateChartSubmissionAsync(chartSubmission))
+        if (!await chartSubmissionRepository.UpdateChartSubmissionAsync(chartSubmission))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
-        await _feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
+        await feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
         return NoContent();
     }
 
@@ -645,26 +601,26 @@ public class ChartSubmissionController : Controller
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> RemoveChartSubmission([FromRoute] Guid id)
     {
-        if (!await _chartSubmissionRepository.ChartSubmissionExistsAsync(id))
+        if (!await chartSubmissionRepository.ChartSubmissionExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        var chartSubmission = await _chartSubmissionRepository.GetChartSubmissionAsync(id);
+        var chartSubmission = await chartSubmissionRepository.GetChartSubmissionAsync(id);
 
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if ((chartSubmission.OwnerId == currentUser.Id &&
-             !await _resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+             !await resourceService.HasPermission(currentUser, Roles.Qualified)) ||
             (chartSubmission.OwnerId != currentUser.Id &&
-             !await _resourceService.HasPermission(currentUser, Roles.Moderator)))
+             !await resourceService.HasPermission(currentUser, Roles.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
-        if (!await _chartSubmissionRepository.RemoveChartSubmissionAsync(id))
+        if (!await chartSubmissionRepository.RemoveChartSubmissionAsync(id))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
@@ -688,34 +644,34 @@ public class ChartSubmissionController : Controller
     public async Task<IActionResult> GetChartSubmissionAssets([FromRoute] Guid id,
         [FromQuery] ArrayRequestDto dto, [FromQuery] ChartAssetSubmissionFilterDto? filterDto = null)
     {
-        if (!await _chartSubmissionRepository.ChartSubmissionExistsAsync(id))
+        if (!await chartSubmissionRepository.ChartSubmissionExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
             });
 
-        var chartSubmission = await _chartSubmissionRepository.GetChartSubmissionAsync(id);
+        var chartSubmission = await chartSubmissionRepository.GetChartSubmissionAsync(id);
 
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if ((chartSubmission.OwnerId == currentUser.Id &&
-             !await _resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+             !await resourceService.HasPermission(currentUser, Roles.Qualified)) ||
             (chartSubmission.OwnerId != currentUser.Id &&
-             !await _resourceService.HasPermission(currentUser, Roles.Moderator)))
+             !await resourceService.HasPermission(currentUser, Roles.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        dto.PerPage = dto.PerPage > 0 && dto.PerPage < _dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
-            dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : _dataSettings.Value.PaginationMaxPerPage;
+        dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
+            dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
-        var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser,
+        var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser,
             e => e.ChartSubmissionId == id);
-        var chartAssets = await _chartAssetSubmissionRepository.GetChartAssetSubmissionsAsync(dto.Order, dto.Desc,
+        var chartAssets = await chartAssetSubmissionRepository.GetChartAssetSubmissionsAsync(dto.Order, dto.Desc,
             position, dto.PerPage, predicateExpr);
-        var total = await _chartAssetSubmissionRepository.CountChartAssetSubmissionsAsync(predicateExpr);
-        var list = chartAssets.Select(chartAsset => _mapper.Map<ChartAssetDto>(chartAsset)).ToList();
+        var total = await chartAssetSubmissionRepository.CountChartAssetSubmissionsAsync(predicateExpr);
+        var list = chartAssets.Select(chartAsset => mapper.Map<ChartAssetDto>(chartAsset)).ToList();
 
         return Ok(new ResponseDto<IEnumerable<ChartAssetDto>>
         {
@@ -755,34 +711,34 @@ public class ChartSubmissionController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetChartSubmissionAsset([FromRoute] Guid id, [FromRoute] Guid assetId)
     {
-        if (!await _chartSubmissionRepository.ChartSubmissionExistsAsync(id))
+        if (!await chartSubmissionRepository.ChartSubmissionExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
             });
 
-        var chartSubmission = await _chartSubmissionRepository.GetChartSubmissionAsync(id);
+        var chartSubmission = await chartSubmissionRepository.GetChartSubmissionAsync(id);
 
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if ((chartSubmission.OwnerId == currentUser.Id &&
-             !await _resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+             !await resourceService.HasPermission(currentUser, Roles.Qualified)) ||
             (chartSubmission.OwnerId != currentUser.Id &&
-             !await _resourceService.HasPermission(currentUser, Roles.Moderator)))
+             !await resourceService.HasPermission(currentUser, Roles.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
-        if (!await _chartAssetSubmissionRepository.ChartAssetSubmissionExistsAsync(assetId))
+        if (!await chartAssetSubmissionRepository.ChartAssetSubmissionExistsAsync(assetId))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        var chartAsset = await _chartAssetSubmissionRepository.GetChartAssetSubmissionAsync(assetId);
+        var chartAsset = await chartAssetSubmissionRepository.GetChartAssetSubmissionAsync(assetId);
 
-        var dto = _mapper.Map<ChartAssetDto>(chartAsset);
+        var dto = mapper.Map<ChartAssetDto>(chartAsset);
 
         return Ok(new ResponseDto<ChartAssetDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
     }
@@ -811,19 +767,19 @@ public class ChartSubmissionController : Controller
     public async Task<IActionResult> CreateChartSubmissionAsset([FromRoute] Guid id,
         [FromForm] ChartAssetCreationDto dto)
     {
-        if (!await _chartSubmissionRepository.ChartSubmissionExistsAsync(id))
+        if (!await chartSubmissionRepository.ChartSubmissionExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
             });
 
-        var chartSubmission = await _chartSubmissionRepository.GetChartSubmissionAsync(id);
+        var chartSubmission = await chartSubmissionRepository.GetChartSubmissionAsync(id);
 
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if ((chartSubmission.OwnerId == currentUser.Id &&
-             !await _resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+             !await resourceService.HasPermission(currentUser, Roles.Qualified)) ||
             (chartSubmission.OwnerId != currentUser.Id &&
-             !await _resourceService.HasPermission(currentUser, Roles.Moderator)))
+             !await resourceService.HasPermission(currentUser, Roles.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -835,18 +791,18 @@ public class ChartSubmissionController : Controller
             ChartSubmissionId = id,
             Type = dto.Type,
             Name = dto.Name,
-            File = (await _fileStorageService.Upload<ChartAsset>(
+            File = (await fileStorageService.Upload<ChartAsset>(
                 chartSubmission.Title ?? (chartSubmission.SongId != null
-                    ? (await _songRepository.GetSongAsync(chartSubmission.SongId.Value)).Title
-                    : (await _songSubmissionRepository.GetSongSubmissionAsync(chartSubmission.SongSubmissionId!
+                    ? (await songRepository.GetSongAsync(chartSubmission.SongId.Value)).Title
+                    : (await songSubmissionRepository.GetSongSubmissionAsync(chartSubmission.SongSubmissionId!
                         .Value)).Title), dto.File)).Item1,
             OwnerId = currentUser.Id,
             DateCreated = DateTimeOffset.UtcNow,
             DateUpdated = DateTimeOffset.UtcNow
         };
 
-        if (!await _chartAssetSubmissionRepository.CreateChartAssetSubmissionAsync(chartAsset) ||
-            !await _chartSubmissionRepository.UpdateChartSubmissionAsync(chartSubmission))
+        if (!await chartAssetSubmissionRepository.CreateChartAssetSubmissionAsync(chartAsset) ||
+            !await chartSubmissionRepository.UpdateChartSubmissionAsync(chartSubmission))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
@@ -878,34 +834,34 @@ public class ChartSubmissionController : Controller
     public async Task<IActionResult> UpdateChartSubmissionAsset([FromRoute] Guid id, [FromRoute] Guid assetId,
         [FromBody] JsonPatchDocument<ChartAssetUpdateDto> patchDocument)
     {
-        if (!await _chartSubmissionRepository.ChartSubmissionExistsAsync(id))
+        if (!await chartSubmissionRepository.ChartSubmissionExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
             });
 
-        var chartSubmission = await _chartSubmissionRepository.GetChartSubmissionAsync(id);
+        var chartSubmission = await chartSubmissionRepository.GetChartSubmissionAsync(id);
 
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if ((chartSubmission.OwnerId == currentUser.Id &&
-             !await _resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+             !await resourceService.HasPermission(currentUser, Roles.Qualified)) ||
             (chartSubmission.OwnerId != currentUser.Id &&
-             !await _resourceService.HasPermission(currentUser, Roles.Moderator)))
+             !await resourceService.HasPermission(currentUser, Roles.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
-        if (!await _chartAssetSubmissionRepository.ChartAssetSubmissionExistsAsync(assetId))
+        if (!await chartAssetSubmissionRepository.ChartAssetSubmissionExistsAsync(assetId))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        var chartAsset = await _chartAssetSubmissionRepository.GetChartAssetSubmissionAsync(assetId);
+        var chartAsset = await chartAssetSubmissionRepository.GetChartAssetSubmissionAsync(assetId);
 
-        var dto = _mapper.Map<ChartAssetUpdateDto>(chartAsset);
+        var dto = mapper.Map<ChartAssetUpdateDto>(chartAsset);
         patchDocument.ApplyTo(dto, ModelState);
 
         if (!TryValidateModel(dto))
@@ -923,12 +879,12 @@ public class ChartSubmissionController : Controller
         chartSubmission.VolunteerStatus = RequestStatus.Waiting;
         chartSubmission.DateUpdated = DateTimeOffset.UtcNow;
 
-        if (!await _chartAssetSubmissionRepository.UpdateChartAssetSubmissionAsync(chartAsset) ||
-            !await _chartSubmissionRepository.UpdateChartSubmissionAsync(chartSubmission))
+        if (!await chartAssetSubmissionRepository.UpdateChartAssetSubmissionAsync(chartAsset) ||
+            !await chartSubmissionRepository.UpdateChartSubmissionAsync(chartSubmission))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
-        await _feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
+        await feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
         return NoContent();
     }
 
@@ -957,39 +913,39 @@ public class ChartSubmissionController : Controller
     public async Task<IActionResult> UpdateChartSubmissionAssetFile([FromRoute] Guid id, [FromRoute] Guid assetId,
         [FromForm] FileDto dto)
     {
-        if (!await _chartSubmissionRepository.ChartSubmissionExistsAsync(id))
+        if (!await chartSubmissionRepository.ChartSubmissionExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
             });
 
-        var chartSubmission = await _chartSubmissionRepository.GetChartSubmissionAsync(id);
+        var chartSubmission = await chartSubmissionRepository.GetChartSubmissionAsync(id);
 
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if ((chartSubmission.OwnerId == currentUser.Id &&
-             !await _resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+             !await resourceService.HasPermission(currentUser, Roles.Qualified)) ||
             (chartSubmission.OwnerId != currentUser.Id &&
-             !await _resourceService.HasPermission(currentUser, Roles.Moderator)))
+             !await resourceService.HasPermission(currentUser, Roles.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
-        if (!await _chartAssetSubmissionRepository.ChartAssetSubmissionExistsAsync(assetId))
+        if (!await chartAssetSubmissionRepository.ChartAssetSubmissionExistsAsync(assetId))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        var chartAsset = await _chartAssetSubmissionRepository.GetChartAssetSubmissionAsync(assetId);
+        var chartAsset = await chartAssetSubmissionRepository.GetChartAssetSubmissionAsync(assetId);
 
         if (dto.File != null)
         {
-            chartAsset.File = (await _fileStorageService.Upload<ChartAsset>(
+            chartAsset.File = (await fileStorageService.Upload<ChartAsset>(
                 chartSubmission.Title ?? (chartSubmission.SongId != null
-                    ? (await _songRepository.GetSongAsync(chartSubmission.SongId.Value)).Title
-                    : (await _songSubmissionRepository.GetSongSubmissionAsync(chartSubmission.SongSubmissionId!.Value))
+                    ? (await songRepository.GetSongAsync(chartSubmission.SongId.Value)).Title
+                    : (await songSubmissionRepository.GetSongSubmissionAsync(chartSubmission.SongSubmissionId!.Value))
                     .Title), dto.File)).Item1;
             chartAsset.DateUpdated = DateTimeOffset.UtcNow;
             chartSubmission.Status = RequestStatus.Waiting;
@@ -997,12 +953,12 @@ public class ChartSubmissionController : Controller
             chartSubmission.DateUpdated = DateTimeOffset.UtcNow;
         }
 
-        if (!await _chartAssetSubmissionRepository.UpdateChartAssetSubmissionAsync(chartAsset) ||
-            !await _chartSubmissionRepository.UpdateChartSubmissionAsync(chartSubmission))
+        if (!await chartAssetSubmissionRepository.UpdateChartAssetSubmissionAsync(chartAsset) ||
+            !await chartSubmissionRepository.UpdateChartSubmissionAsync(chartSubmission))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
-        await _feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
+        await feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
         return NoContent();
     }
 
@@ -1029,26 +985,26 @@ public class ChartSubmissionController : Controller
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> RemoveChartSubmissionAsset([FromRoute] Guid id, [FromRoute] Guid assetId)
     {
-        if (!await _chartSubmissionRepository.ChartSubmissionExistsAsync(id))
+        if (!await chartSubmissionRepository.ChartSubmissionExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
             });
 
-        var chartSubmission = await _chartSubmissionRepository.GetChartSubmissionAsync(id);
+        var chartSubmission = await chartSubmissionRepository.GetChartSubmissionAsync(id);
 
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if ((chartSubmission.OwnerId == currentUser.Id &&
-             !await _resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+             !await resourceService.HasPermission(currentUser, Roles.Qualified)) ||
             (chartSubmission.OwnerId != currentUser.Id &&
-             !await _resourceService.HasPermission(currentUser, Roles.Moderator)))
+             !await resourceService.HasPermission(currentUser, Roles.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
-        if (!await _chartAssetSubmissionRepository.ChartAssetSubmissionExistsAsync(assetId))
+        if (!await chartAssetSubmissionRepository.ChartAssetSubmissionExistsAsync(assetId))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
@@ -1058,12 +1014,12 @@ public class ChartSubmissionController : Controller
         chartSubmission.VolunteerStatus = RequestStatus.Waiting;
         chartSubmission.DateUpdated = DateTimeOffset.UtcNow;
 
-        if (!await _chartAssetSubmissionRepository.RemoveChartAssetSubmissionAsync(assetId) ||
-            !await _chartSubmissionRepository.UpdateChartSubmissionAsync(chartSubmission))
+        if (!await chartAssetSubmissionRepository.RemoveChartAssetSubmissionAsync(assetId) ||
+            !await chartSubmissionRepository.UpdateChartSubmissionAsync(chartSubmission))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
-        await _feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
+        await feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
         return NoContent();
     }
 
@@ -1087,32 +1043,32 @@ public class ChartSubmissionController : Controller
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> CreateCollaboration([FromRoute] Guid id, [FromBody] CollaborationCreationDto dto)
     {
-        if (!await _chartSubmissionRepository.ChartSubmissionExistsAsync(id))
+        if (!await chartSubmissionRepository.ChartSubmissionExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        var chartSubmission = await _chartSubmissionRepository.GetChartSubmissionAsync(id);
+        var chartSubmission = await chartSubmissionRepository.GetChartSubmissionAsync(id);
 
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if ((chartSubmission.OwnerId == currentUser.Id &&
-             !await _resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+             !await resourceService.HasPermission(currentUser, Roles.Qualified)) ||
             (chartSubmission.OwnerId != currentUser.Id &&
-             !await _resourceService.HasPermission(currentUser, Roles.Moderator)))
+             !await resourceService.HasPermission(currentUser, Roles.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        var invitee = await _userManager.FindByIdAsync(dto.InviteeId.ToString());
+        var invitee = await userManager.FindByIdAsync(dto.InviteeId.ToString());
         if (invitee == null)
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNotFound
             });
 
-        if (await _collaborationRepository.CollaborationExistsAsync(id, dto.InviteeId))
+        if (await collaborationRepository.CollaborationExistsAsync(id, dto.InviteeId))
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
@@ -1127,23 +1083,23 @@ public class ChartSubmissionController : Controller
             DateCreated = DateTimeOffset.UtcNow
         };
 
-        if (!await _collaborationRepository.CreateCollaborationAsync(collaboration))
+        if (!await collaborationRepository.CreateCollaborationAsync(collaboration))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
-        await _notificationService.Notify(invitee, currentUser, NotificationType.Requests, "chart-collab",
+        await notificationService.Notify(invitee, currentUser, NotificationType.Requests, "chart-collab",
             new Dictionary<string, string>
             {
-                { "User", _resourceService.GetRichText<User>(currentUser.Id.ToString(), currentUser.UserName!) },
+                { "User", resourceService.GetRichText<User>(currentUser.Id.ToString(), currentUser.UserName!) },
                 {
                     "Chart",
-                    _resourceService.GetRichText<ChartSubmission>(chartSubmission.Id.ToString(),
-                        await _resourceService.GetDisplayName(chartSubmission))
+                    resourceService.GetRichText<ChartSubmission>(chartSubmission.Id.ToString(),
+                        await resourceService.GetDisplayName(chartSubmission))
                 },
                 {
                     "Collaboration",
-                    _resourceService.GetRichText<Collaboration>(collaboration.Id.ToString(),
-                        _templateService.GetMessage("more-info", invitee.Language)!)
+                    resourceService.GetRichText<Collaboration>(collaboration.Id.ToString(),
+                        templateService.GetMessage("more-info", invitee.Language)!)
                 }
             });
         return StatusCode(StatusCodes.Status201Created);
@@ -1165,33 +1121,33 @@ public class ChartSubmissionController : Controller
     public async Task<IActionResult> GetChartSubmissionVotes([FromRoute] Guid id,
         [FromQuery] ArrayRequestDto dto)
     {
-        dto.PerPage = dto.PerPage > 0 && dto.PerPage < _dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
-            dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : _dataSettings.Value.PaginationMaxPerPage;
+        dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
+            dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
 
-        if (!await _chartSubmissionRepository.ChartSubmissionExistsAsync(id))
+        if (!await chartSubmissionRepository.ChartSubmissionExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        var chartSubmission = await _chartSubmissionRepository.GetChartSubmissionAsync(id);
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        var chartSubmission = await chartSubmissionRepository.GetChartSubmissionAsync(id);
         if ((chartSubmission.OwnerId == currentUser.Id &&
-             !await _resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+             !await resourceService.HasPermission(currentUser, Roles.Qualified)) ||
             (chartSubmission.OwnerId != currentUser.Id &&
-             !await _resourceService.HasPermission(currentUser, Roles.Volunteer)))
+             !await resourceService.HasPermission(currentUser, Roles.Volunteer)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
-        var votes = await _volunteerVoteRepository.GetVolunteerVotesAsync(dto.Order, dto.Desc, position, dto.PerPage,
+        var votes = await volunteerVoteRepository.GetVolunteerVotesAsync(dto.Order, dto.Desc, position, dto.PerPage,
             e => e.ChartId == id);
-        var list = _mapper.Map<List<VolunteerVoteDto>>(votes);
-        var total = await _volunteerVoteRepository.CountVolunteerVotesAsync(e => e.ChartId == id);
+        var list = mapper.Map<List<VolunteerVoteDto>>(votes);
+        var total = await volunteerVoteRepository.CountVolunteerVotesAsync(e => e.ChartId == id);
 
         return Ok(new ResponseDto<IEnumerable<VolunteerVoteDto>>
         {
@@ -1224,25 +1180,25 @@ public class ChartSubmissionController : Controller
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> CreateVote([FromRoute] Guid id, [FromBody] VolunteerVoteRequestDto dto)
     {
-        if (!await _chartSubmissionRepository.ChartSubmissionExistsAsync(id))
+        if (!await chartSubmissionRepository.ChartSubmissionExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        var chartSubmission = await _chartSubmissionRepository.GetChartSubmissionAsync(id);
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        var chartSubmission = await chartSubmissionRepository.GetChartSubmissionAsync(id);
         if ((chartSubmission.OwnerId == currentUser.Id &&
-             !await _resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+             !await resourceService.HasPermission(currentUser, Roles.Qualified)) ||
             (chartSubmission.OwnerId != currentUser.Id &&
-             !await _resourceService.HasPermission(currentUser, Roles.Volunteer)))
+             !await resourceService.HasPermission(currentUser, Roles.Volunteer)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
-        if (!await _volunteerVoteService.CreateVolunteerVoteAsync(dto, chartSubmission, currentUser))
+        if (!await volunteerVoteService.CreateVolunteerVoteAsync(dto, chartSubmission, currentUser))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
@@ -1266,24 +1222,24 @@ public class ChartSubmissionController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> RemoveVote([FromRoute] Guid id)
     {
-        if (!await _chartSubmissionRepository.ChartSubmissionExistsAsync(id))
+        if (!await chartSubmissionRepository.ChartSubmissionExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        var chartSubmission = await _chartSubmissionRepository.GetChartSubmissionAsync(id);
-        var vote = await _volunteerVoteRepository.GetVolunteerVoteAsync(chartSubmission.Id, currentUser.Id);
-        if ((vote.OwnerId == currentUser.Id && !await _resourceService.HasPermission(currentUser, Roles.Volunteer)) ||
-            (vote.OwnerId != currentUser.Id && !await _resourceService.HasPermission(currentUser, Roles.Moderator)))
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        var chartSubmission = await chartSubmissionRepository.GetChartSubmissionAsync(id);
+        var vote = await volunteerVoteRepository.GetVolunteerVoteAsync(chartSubmission.Id, currentUser.Id);
+        if ((vote.OwnerId == currentUser.Id && !await resourceService.HasPermission(currentUser, Roles.Volunteer)) ||
+            (vote.OwnerId != currentUser.Id && !await resourceService.HasPermission(currentUser, Roles.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
-        if (!await _volunteerVoteService.RemoveVolunteerVoteAsync(chartSubmission, currentUser.Id))
+        if (!await volunteerVoteService.RemoveVolunteerVoteAsync(chartSubmission, currentUser.Id))
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone

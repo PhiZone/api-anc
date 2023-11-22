@@ -28,41 +28,13 @@ namespace PhiZoneApi.Controllers;
 [ApiController]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme,
     Policy = "AllowAnonymous")]
-public class ApplicationController : Controller
-{
-    private readonly IApplicationRepository _applicationRepository;
-    private readonly ICommentRepository _commentRepository;
-    private readonly IOptions<DataSettings> _dataSettings;
-    private readonly IDtoMapper _dtoMapper;
-    private readonly IFileStorageService _fileStorageService;
-    private readonly IFilterService _filterService;
-    private readonly ILikeRepository _likeRepository;
-    private readonly ILikeService _likeService;
-    private readonly IMapper _mapper;
-    private readonly INotificationService _notificationService;
-    private readonly IResourceService _resourceService;
-    private readonly UserManager<User> _userManager;
-
-    public ApplicationController(IApplicationRepository applicationRepository, IOptions<DataSettings> dataSettings,
+public class ApplicationController(IApplicationRepository applicationRepository, IOptions<DataSettings> dataSettings,
         UserManager<User> userManager, IFilterService filterService, IFileStorageService fileStorageService,
         IDtoMapper dtoMapper, IMapper mapper, ILikeRepository likeRepository, ILikeService likeService,
         ICommentRepository commentRepository, IResourceService resourceService,
         INotificationService notificationService)
-    {
-        _applicationRepository = applicationRepository;
-        _dataSettings = dataSettings;
-        _userManager = userManager;
-        _filterService = filterService;
-        _dtoMapper = dtoMapper;
-        _mapper = mapper;
-        _likeRepository = likeRepository;
-        _likeService = likeService;
-        _commentRepository = commentRepository;
-        _resourceService = resourceService;
-        _notificationService = notificationService;
-        _fileStorageService = fileStorageService;
-    }
-
+    : Controller
+{
     /// <summary>
     ///     Retrieves applications.
     /// </summary>
@@ -76,19 +48,19 @@ public class ApplicationController : Controller
     public async Task<IActionResult> GetApplications([FromQuery] ArrayRequestDto dto,
         [FromQuery] ApplicationFilterDto? filterDto = null)
     {
-        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        dto.PerPage = dto.PerPage > 0 && dto.PerPage < _dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
-            dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : _dataSettings.Value.PaginationMaxPerPage;
+        var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
+            dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
-        var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser);
-        var applications = await _applicationRepository.GetApplicationsAsync(dto.Order, dto.Desc, position,
+        var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser);
+        var applications = await applicationRepository.GetApplicationsAsync(dto.Order, dto.Desc, position,
             dto.PerPage, dto.Search, predicateExpr);
-        var total = await _applicationRepository.CountApplicationsAsync(dto.Search, predicateExpr);
+        var total = await applicationRepository.CountApplicationsAsync(dto.Search, predicateExpr);
         var list = new List<ApplicationDto>();
 
         foreach (var application in applications)
-            list.Add(await _dtoMapper.MapApplicationAsync<ApplicationDto>(application, currentUser));
+            list.Add(await dtoMapper.MapApplicationAsync<ApplicationDto>(application, currentUser));
 
         return Ok(new ResponseDto<IEnumerable<ApplicationDto>>
         {
@@ -122,12 +94,12 @@ public class ApplicationController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetApplication([FromRoute] Guid id)
     {
-        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        if (!await _applicationRepository.ApplicationExistsAsync(id))
+        var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        if (!await applicationRepository.ApplicationExistsAsync(id))
             return NotFound(new ResponseDto<object>
                 { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
-        var application = await _applicationRepository.GetApplicationAsync(id);
-        var dto = await _dtoMapper.MapApplicationAsync<ApplicationDto>(application, currentUser);
+        var application = await applicationRepository.GetApplicationAsync(id);
+        var dto = await dtoMapper.MapApplicationAsync<ApplicationDto>(application, currentUser);
 
         return Ok(new ResponseDto<ApplicationDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
     }
@@ -152,14 +124,14 @@ public class ApplicationController : Controller
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> CreateApplication([FromForm] ApplicationCreationDto dto)
     {
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _resourceService.HasPermission(currentUser, Roles.Administrator))
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!await resourceService.HasPermission(currentUser, Roles.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden, new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief,
                 Code = ResponseCodes.InsufficientPermission
             });
-        var illustrationUrl = (await _fileStorageService.UploadImage<Application>(dto.Name, dto.Illustration, (16, 9)))
+        var illustrationUrl = (await fileStorageService.UploadImage<Application>(dto.Name, dto.Illustration, (16, 9)))
             .Item1;
         var application = new Application
         {
@@ -175,7 +147,7 @@ public class ApplicationController : Controller
             DateCreated = DateTimeOffset.UtcNow,
             DateUpdated = DateTimeOffset.UtcNow
         };
-        if (!await _applicationRepository.CreateApplicationAsync(application))
+        if (!await applicationRepository.CreateApplicationAsync(application))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
@@ -207,23 +179,23 @@ public class ApplicationController : Controller
     public async Task<IActionResult> UpdateApplication([FromRoute] Guid id,
         [FromBody] JsonPatchDocument<ApplicationUpdateDto> patchDocument)
     {
-        if (!await _applicationRepository.ApplicationExistsAsync(id))
+        if (!await applicationRepository.ApplicationExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        var application = await _applicationRepository.GetApplicationAsync(id);
+        var application = await applicationRepository.GetApplicationAsync(id);
 
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _resourceService.HasPermission(currentUser, Roles.Administrator))
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!await resourceService.HasPermission(currentUser, Roles.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden, new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief,
                 Code = ResponseCodes.InsufficientPermission
             });
 
-        var dto = _mapper.Map<ApplicationUpdateDto>(application);
+        var dto = mapper.Map<ApplicationUpdateDto>(application);
         patchDocument.ApplyTo(dto, ModelState);
 
         if (!TryValidateModel(dto))
@@ -244,7 +216,7 @@ public class ApplicationController : Controller
         application.OwnerId = dto.OwnerId;
         application.DateUpdated = DateTimeOffset.UtcNow;
 
-        if (!await _applicationRepository.UpdateApplicationAsync(application))
+        if (!await applicationRepository.UpdateApplicationAsync(application))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
@@ -276,16 +248,16 @@ public class ApplicationController : Controller
     public async Task<IActionResult> UpdateApplicationIllustration([FromRoute] Guid id,
         [FromForm] FileDto dto)
     {
-        if (!await _applicationRepository.ApplicationExistsAsync(id))
+        if (!await applicationRepository.ApplicationExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        var application = await _applicationRepository.GetApplicationAsync(id);
+        var application = await applicationRepository.GetApplicationAsync(id);
 
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _resourceService.HasPermission(currentUser, Roles.Administrator))
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!await resourceService.HasPermission(currentUser, Roles.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden, new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief,
@@ -294,11 +266,11 @@ public class ApplicationController : Controller
         if (dto.File != null)
         {
             application.Illustration =
-                (await _fileStorageService.UploadImage<Application>(application.Name, dto.File, (16, 9))).Item1;
+                (await fileStorageService.UploadImage<Application>(application.Name, dto.File, (16, 9))).Item1;
             application.DateUpdated = DateTimeOffset.UtcNow;
         }
 
-        if (!await _applicationRepository.UpdateApplicationAsync(application))
+        if (!await applicationRepository.UpdateApplicationAsync(application))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
         return NoContent();
@@ -326,21 +298,21 @@ public class ApplicationController : Controller
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> RemoveApplication([FromRoute] Guid id)
     {
-        if (!await _applicationRepository.ApplicationExistsAsync(id))
+        if (!await applicationRepository.ApplicationExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _resourceService.HasPermission(currentUser, Roles.Administrator))
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!await resourceService.HasPermission(currentUser, Roles.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
-        if (!await _applicationRepository.RemoveApplicationAsync(id))
+        if (!await applicationRepository.RemoveApplicationAsync(id))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
@@ -362,17 +334,17 @@ public class ApplicationController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetApplicationLikes([FromRoute] Guid id, [FromQuery] ArrayRequestDto dto)
     {
-        dto.PerPage = dto.PerPage > 0 && dto.PerPage < _dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
-            dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : _dataSettings.Value.PaginationMaxPerPage;
+        dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
+            dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
-        if (!await _applicationRepository.ApplicationExistsAsync(id))
+        if (!await applicationRepository.ApplicationExistsAsync(id))
             return NotFound(new ResponseDto<object>
                 { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
-        var likes = await _likeRepository.GetLikesAsync(dto.Order, dto.Desc, position, dto.PerPage,
+        var likes = await likeRepository.GetLikesAsync(dto.Order, dto.Desc, position, dto.PerPage,
             e => e.ResourceId == id);
-        var list = _mapper.Map<List<LikeDto>>(likes);
-        var total = await _likeRepository.CountLikesAsync(e => e.ResourceId == id);
+        var list = mapper.Map<List<LikeDto>>(likes);
+        var total = await likeRepository.CountLikesAsync(e => e.ResourceId == id);
 
         return Ok(new ResponseDto<IEnumerable<LikeDto>>
         {
@@ -404,17 +376,17 @@ public class ApplicationController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> CreateLike([FromRoute] Guid id)
     {
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _applicationRepository.ApplicationExistsAsync(id))
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!await applicationRepository.ApplicationExistsAsync(id))
             return NotFound(new ResponseDto<object>
                 { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
-        var application = await _applicationRepository.GetApplicationAsync(id);
-        if (await _resourceService.IsBlacklisted(application.OwnerId, currentUser.Id))
+        var application = await applicationRepository.GetApplicationAsync(id);
+        if (await resourceService.IsBlacklisted(application.OwnerId, currentUser.Id))
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Blacklisted
             });
-        if (!await _likeService.CreateLikeAsync(application, currentUser.Id))
+        if (!await likeService.CreateLikeAsync(application, currentUser.Id))
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief,
@@ -442,12 +414,12 @@ public class ApplicationController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> RemoveLike([FromRoute] Guid id)
     {
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _applicationRepository.ApplicationExistsAsync(id))
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!await applicationRepository.ApplicationExistsAsync(id))
             return NotFound(new ResponseDto<object>
                 { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
-        var application = await _applicationRepository.GetApplicationAsync(id);
-        if (!await _likeService.RemoveLikeAsync(application, currentUser.Id))
+        var application = await applicationRepository.GetApplicationAsync(id);
+        if (!await likeService.RemoveLikeAsync(application, currentUser.Id))
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief,
@@ -473,20 +445,20 @@ public class ApplicationController : Controller
     public async Task<IActionResult> GetApplicationComments([FromRoute] Guid id,
         [FromQuery] ArrayRequestDto dto)
     {
-        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        dto.PerPage = dto.PerPage > 0 && dto.PerPage < _dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
-            dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : _dataSettings.Value.PaginationMaxPerPage;
+        var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
+            dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
-        if (!await _applicationRepository.ApplicationExistsAsync(id))
+        if (!await applicationRepository.ApplicationExistsAsync(id))
             return NotFound(new ResponseDto<object>
                 { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
-        var comments = await _commentRepository.GetCommentsAsync(dto.Order, dto.Desc, position, dto.PerPage,
+        var comments = await commentRepository.GetCommentsAsync(dto.Order, dto.Desc, position, dto.PerPage,
             e => e.ResourceId == id);
         var list = new List<CommentDto>();
-        var total = await _commentRepository.CountCommentsAsync(e => e.ResourceId == id);
+        var total = await commentRepository.CountCommentsAsync(e => e.ResourceId == id);
 
-        foreach (var comment in comments) list.Add(await _dtoMapper.MapCommentAsync<CommentDto>(comment, currentUser));
+        foreach (var comment in comments) list.Add(await dtoMapper.MapCommentAsync<CommentDto>(comment, currentUser));
 
         return Ok(new ResponseDto<IEnumerable<CommentDto>>
         {
@@ -522,24 +494,24 @@ public class ApplicationController : Controller
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> CreateComment([FromRoute] Guid id, [FromBody] CommentCreationDto dto)
     {
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _resourceService.HasPermission(currentUser, Roles.Member))
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!await resourceService.HasPermission(currentUser, Roles.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        if (!await _applicationRepository.ApplicationExistsAsync(id))
+        if (!await applicationRepository.ApplicationExistsAsync(id))
             return NotFound(new ResponseDto<object>
                 { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
-        var application = await _applicationRepository.GetApplicationAsync(id);
-        if (await _resourceService.IsBlacklisted(application.OwnerId, currentUser.Id))
+        var application = await applicationRepository.GetApplicationAsync(id);
+        if (await resourceService.IsBlacklisted(application.OwnerId, currentUser.Id))
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Blacklisted
             });
 
-        var result = await _resourceService.ParseUserContent(dto.Content);
+        var result = await resourceService.ParseUserContent(dto.Content);
         var comment = new Comment
         {
             ResourceId = application.Id,
@@ -548,13 +520,13 @@ public class ApplicationController : Controller
             OwnerId = currentUser.Id,
             DateCreated = DateTimeOffset.UtcNow
         };
-        if (!await _commentRepository.CreateCommentAsync(comment))
+        if (!await commentRepository.CreateCommentAsync(comment))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
-        await _notificationService.NotifyComment(comment, application, application.GetDisplay(), dto.Content);
-        await _notificationService.NotifyMentions(result.Item2, currentUser,
-            _resourceService.GetRichText<Comment>(comment.Id.ToString(), dto.Content));
+        await notificationService.NotifyComment(comment, application, application.GetDisplay(), dto.Content);
+        await notificationService.NotifyMentions(result.Item2, currentUser,
+            resourceService.GetRichText<Comment>(comment.Id.ToString(), dto.Content));
 
         return StatusCode(StatusCodes.Status201Created);
     }

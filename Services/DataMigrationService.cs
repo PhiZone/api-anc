@@ -14,15 +14,17 @@ using PhiZoneApi.Utils;
 
 namespace PhiZoneApi.Services;
 
-public partial class DataMigrationService : IHostedService
+public class DataMigrationService(IServiceProvider serviceProvider) : IHostedService
 {
+    private static readonly Regex NonDigitRegex = new(@"[^\d.]+");
+    private static readonly Regex UserRichTextRegex = new(@"(\[PZUser:\d+:[^:]+(?::PZRT)?\])");
+
     private readonly Dictionary<int, Guid> _applicationDictionary = new();
     private readonly Dictionary<int, Guid> _chapterDictionary = new();
     private readonly Dictionary<int, Guid> _chartDictionary = new();
     private readonly Dictionary<int, Guid> _chartSubmissionDictionary = new();
     private readonly Dictionary<int, Guid> _commentDictionary = new();
     private readonly Dictionary<int, Guid> _replyDictionary = new();
-    private readonly IServiceProvider _serviceProvider;
     private readonly Dictionary<int, Guid> _songDictionary = new();
     private readonly Dictionary<int, Guid> _songSubmissionDictionary = new();
     private readonly Dictionary<int, int> _userDictionary = new();
@@ -54,14 +56,9 @@ public partial class DataMigrationService : IHostedService
     private IVoteRepository _voteRepository = null!;
     private IVoteService _voteService = null!;
 
-    public DataMigrationService(IServiceProvider serviceProvider)
-    {
-        _serviceProvider = serviceProvider;
-    }
-
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        await using var scope = _serviceProvider.CreateAsyncScope();
+        await using var scope = serviceProvider.CreateAsyncScope();
 
         _logger = scope.ServiceProvider.GetRequiredService<ILogger<DataMigrationService>>();
         _userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
@@ -380,7 +377,7 @@ public partial class DataMigrationService : IHostedService
                 var illustration = (await _fileStorageService.UploadImage<Song>(title,
                     await File.ReadAllBytesAsync(illustrationPath, cancellationToken), (16, 9))).Item1;
                 var date = reader.GetDateTimeOffset("time");
-                var bpm = NonDigitRegex()
+                var bpm = NonDigitRegex
                     .Split(reader.GetString("bpm"))
                     .Where(s => !s.IsNullOrEmpty())
                     .Select(double.Parse)
@@ -998,7 +995,7 @@ public partial class DataMigrationService : IHostedService
                     await File.ReadAllBytesAsync(illustrationPath, cancellationToken), (16, 9))).Item1;
                 var date = reader.GetDateTimeOffset("time");
                 var edition = reader.GetString("edition");
-                var bpm = NonDigitRegex()
+                var bpm = NonDigitRegex
                     .Split(reader.GetString("bpm"))
                     .Where(s => !s.IsNullOrEmpty())
                     .Select(double.Parse)
@@ -1273,14 +1270,8 @@ public partial class DataMigrationService : IHostedService
 
     private static IEnumerable<string> SplitAuthorName(string input)
     {
-        var regex = UserRichTextRegex();
+        var regex = UserRichTextRegex;
         var segments = regex.Split(input);
         return segments.Where(segment => !string.IsNullOrEmpty(segment)).ToList();
     }
-
-    [GeneratedRegex(@"[^\d.]+")]
-    private static partial Regex NonDigitRegex();
-
-    [GeneratedRegex("(\\[PZUser:\\d+:[^:]+(?::PZRT)?\\])")]
-    private static partial Regex UserRichTextRegex();
 }

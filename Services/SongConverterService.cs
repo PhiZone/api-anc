@@ -6,26 +6,12 @@ using RabbitMQ.Client.Events;
 
 namespace PhiZoneApi.Services;
 
-public class SongConverterService : BackgroundService
-{
-    private readonly IModel _channel;
-    private readonly IFeishuService _feishuService;
-    private readonly ILogger<SongConverterService> _logger;
-    private readonly ISongRepository _songRepository;
-    private readonly ISongService _songService;
-    private readonly ISongSubmissionRepository _songSubmissionRepository;
-
-    public SongConverterService(IRabbitMqService rabbitMqService, ISongService songService,
+public class SongConverterService(IRabbitMqService rabbitMqService, ISongService songService,
         ISongRepository songRepository, ISongSubmissionRepository songSubmissionRepository,
         IFeishuService feishuService, ILogger<SongConverterService> logger)
-    {
-        _songService = songService;
-        _songRepository = songRepository;
-        _songSubmissionRepository = songSubmissionRepository;
-        _feishuService = feishuService;
-        _logger = logger;
-        _channel = rabbitMqService.GetConnection().CreateModel();
-    }
+    : BackgroundService
+{
+    private readonly IModel _channel = rabbitMqService.GetConnection().CreateModel();
 
     protected override Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -44,8 +30,8 @@ public class SongConverterService : BackgroundService
             var body = args.Body.ToArray();
             if (isSubmission)
             {
-                var song = await _songSubmissionRepository.GetSongSubmissionAsync(new Guid(songId));
-                var result = await _songService.UploadAsync(song.Title, body);
+                var song = await songSubmissionRepository.GetSongSubmissionAsync(new Guid(songId));
+                var result = await songService.UploadAsync(song.Title, body);
                 if (result != null)
                 {
                     song.File = result.Value.Item1;
@@ -56,16 +42,16 @@ public class SongConverterService : BackgroundService
                     if (song.PreviewEnd > song.Duration) song.PreviewEnd = song.Duration.Value;
                     if (song.PreviewStart > song.PreviewEnd) song.PreviewStart = TimeSpan.Zero;
 
-                    await _songSubmissionRepository.UpdateSongSubmissionAsync(song);
-                    await _feishuService.Notify(song, FeishuResources.ContentReviewalChat);
-                    _logger.LogInformation(LogEvents.SongInfo, "Completed song submission schedule: {Title}",
+                    await songSubmissionRepository.UpdateSongSubmissionAsync(song);
+                    await feishuService.Notify(song, FeishuResources.ContentReviewalChat);
+                    logger.LogInformation(LogEvents.SongInfo, "Completed song submission schedule: {Title}",
                         song.Title);
                 }
             }
             else
             {
-                var song = await _songRepository.GetSongAsync(new Guid(songId));
-                var result = await _songService.UploadAsync(song.Title, body);
+                var song = await songRepository.GetSongAsync(new Guid(songId));
+                var result = await songService.UploadAsync(song.Title, body);
                 if (result != null)
                 {
                     song.File = result.Value.Item1;
@@ -76,8 +62,8 @@ public class SongConverterService : BackgroundService
                     if (song.PreviewEnd > song.Duration) song.PreviewEnd = song.Duration.Value;
                     if (song.PreviewStart > song.PreviewEnd) song.PreviewStart = TimeSpan.Zero;
 
-                    await _songRepository.UpdateSongAsync(song);
-                    _logger.LogInformation(LogEvents.SongInfo, "Completed song schedule: {Title}", song.Title);
+                    await songRepository.UpdateSongAsync(song);
+                    logger.LogInformation(LogEvents.SongInfo, "Completed song schedule: {Title}", song.Title);
                 }
             }
 

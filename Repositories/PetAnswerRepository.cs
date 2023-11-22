@@ -9,20 +9,13 @@ using PhiZoneApi.Utils;
 
 namespace PhiZoneApi.Repositories;
 
-public class PetAnswerRepository : IPetAnswerRepository
+public class PetAnswerRepository(ApplicationDbContext context) : IPetAnswerRepository
 {
-    private readonly ApplicationDbContext _context;
-
-    public PetAnswerRepository(ApplicationDbContext context)
-    {
-        _context = context;
-    }
-
     public async Task<ICollection<PetAnswer>> GetPetAnswersAsync(List<string> order, List<bool> desc, int position,
         int take,
         string? search = null, Expression<Func<PetAnswer, bool>>? predicate = null)
     {
-        var result = _context.PetAnswers.OrderBy(order, desc);
+        var result = context.PetAnswers.OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
         if (search != null)
         {
@@ -39,42 +32,42 @@ public class PetAnswerRepository : IPetAnswerRepository
 
     public async Task<PetAnswer> GetPetAnswerAsync(Guid id)
     {
-        return (await _context.PetAnswers.FirstOrDefaultAsync(petAnswer => petAnswer.Id == id))!;
+        return (await context.PetAnswers.FirstOrDefaultAsync(petAnswer => petAnswer.Id == id))!;
     }
 
     public async Task<bool> PetAnswerExistsAsync(Guid id)
     {
-        return await _context.PetAnswers.AnyAsync(petAnswer => petAnswer.Id == id);
+        return await context.PetAnswers.AnyAsync(petAnswer => petAnswer.Id == id);
     }
 
     public async Task<bool> CreatePetAnswerAsync(PetAnswer petAnswer)
     {
-        await _context.PetAnswers.AddAsync(petAnswer);
+        await context.PetAnswers.AddAsync(petAnswer);
         return await SaveAsync();
     }
 
     public async Task<bool> UpdatePetAnswerAsync(PetAnswer petAnswer)
     {
-        _context.PetAnswers.Update(petAnswer);
+        context.PetAnswers.Update(petAnswer);
         return await SaveAsync();
     }
 
     public async Task<bool> RemovePetAnswerAsync(Guid id)
     {
-        _context.PetAnswers.Remove((await _context.PetAnswers.FirstOrDefaultAsync(petAnswer => petAnswer.Id == id))!);
+        context.PetAnswers.Remove((await context.PetAnswers.FirstOrDefaultAsync(petAnswer => petAnswer.Id == id))!);
         return await SaveAsync();
     }
 
     public async Task<bool> SaveAsync()
     {
-        var saved = await _context.SaveChangesAsync();
+        var saved = await context.SaveChangesAsync();
         return saved > 0;
     }
 
     public async Task<int> CountPetAnswersAsync(string? search = null,
         Expression<Func<PetAnswer, bool>>? predicate = null)
     {
-        var result = _context.PetAnswers.AsQueryable();
+        var result = context.PetAnswers.AsQueryable();
 
         if (predicate != null) result = result.Where(predicate);
         if (search != null)

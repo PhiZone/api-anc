@@ -10,7 +10,7 @@ public class Admission
 
     public PublicResource Admitter { get; set; } = null!;
 
-    public PublicResource Admittee { get; set; } = null!;
+    public Resource Admittee { get; set; } = null!;
 
     public RequestStatus Status { get; set; }
 

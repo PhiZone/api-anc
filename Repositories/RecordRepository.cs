@@ -7,19 +7,12 @@ using PhiZoneApi.Utils;
 
 namespace PhiZoneApi.Repositories;
 
-public class RecordRepository : IRecordRepository
+public class RecordRepository(ApplicationDbContext context) : IRecordRepository
 {
-    private readonly ApplicationDbContext _context;
-
-    public RecordRepository(ApplicationDbContext context)
-    {
-        _context = context;
-    }
-
     public async Task<ICollection<Record>> GetRecordsAsync(List<string> order, List<bool> desc, int position, int take,
         Expression<Func<Record, bool>>? predicate = null)
     {
-        var result = _context.Records.OrderBy(order, desc);
+        var result = context.Records.OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
         result = result.Skip(position);
         return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
@@ -27,47 +20,47 @@ public class RecordRepository : IRecordRepository
 
     public async Task<Record> GetRecordAsync(Guid id)
     {
-        return (await _context.Records.FirstOrDefaultAsync(record => record.Id == id))!;
+        return (await context.Records.FirstOrDefaultAsync(record => record.Id == id))!;
     }
 
     public async Task<bool> RecordExistsAsync(Guid id)
     {
-        return await _context.Records.AnyAsync(record => record.Id == id);
+        return await context.Records.AnyAsync(record => record.Id == id);
     }
 
     public async Task<bool> CreateRecordAsync(Record record)
     {
-        await _context.Records.AddAsync(record);
+        await context.Records.AddAsync(record);
         return await SaveAsync();
     }
 
     public async Task<bool> UpdateRecordAsync(Record record)
     {
-        _context.Records.Update(record);
+        context.Records.Update(record);
         return await SaveAsync();
     }
 
     public async Task<bool> UpdateRecordsAsync(IEnumerable<Record> records)
     {
-        _context.Records.UpdateRange(records);
+        context.Records.UpdateRange(records);
         return await SaveAsync();
     }
 
     public async Task<bool> RemoveRecordAsync(Guid id)
     {
-        _context.Records.Remove((await _context.Records.FirstOrDefaultAsync(record => record.Id == id))!);
+        context.Records.Remove((await context.Records.FirstOrDefaultAsync(record => record.Id == id))!);
         return await SaveAsync();
     }
 
     public async Task<bool> SaveAsync()
     {
-        var saved = await _context.SaveChangesAsync();
+        var saved = await context.SaveChangesAsync();
         return saved > 0;
     }
 
     public async Task<int> CountRecordsAsync(Expression<Func<Record, bool>>? predicate = null)
     {
-        var result = _context.Records.AsQueryable();
+        var result = context.Records.AsQueryable();
 
         if (predicate != null) result = result.Where(predicate);
 

@@ -7,16 +7,9 @@ using PhiZoneApi.Interfaces;
 
 namespace PhiZoneApi.Services;
 
-public class TapTapService : ITapTapService
+public class TapTapService(IOptions<TapTapSettings> tapTapSettings) : ITapTapService
 {
-    private readonly HttpClient _client;
-    private readonly IOptions<TapTapSettings> _tapTapSettings;
-
-    public TapTapService(IOptions<TapTapSettings> tapTapSettings)
-    {
-        _tapTapSettings = tapTapSettings;
-        _client = new HttpClient { BaseAddress = new Uri(tapTapSettings.Value.TapApiUrl) };
-    }
+    private readonly HttpClient _client = new() { BaseAddress = new Uri(tapTapSettings.Value.TapApiUrl) };
 
     public async Task<HttpResponseMessage?> Login(TapTapRequestDto dto)
     {
@@ -26,8 +19,8 @@ public class TapTapService : ITapTapService
         generator.GetBytes(nonceBytes);
         var nonce = Convert.ToBase64String(nonceBytes);
         var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
-        var parts = _tapTapSettings.Value.TapApiUrl.Split("://");
-        var path = $"/account/profile/v1?client_id={_tapTapSettings.Value.ClientId}";
+        var parts = tapTapSettings.Value.TapApiUrl.Split("://");
+        var path = $"/account/profile/v1?client_id={tapTapSettings.Value.ClientId}";
         var signArray = new List<string>
         {
             timestamp,
@@ -44,7 +37,7 @@ public class TapTapService : ITapTapService
                 new MemoryStream(Encoding.UTF8.GetBytes($"{string.Join('\n', signArray)}\n"))));
         var request = new HttpRequestMessage
         {
-            Method = HttpMethod.Get, RequestUri = new Uri($"{_tapTapSettings.Value.TapApiUrl}{path}")
+            Method = HttpMethod.Get, RequestUri = new Uri($"{tapTapSettings.Value.TapApiUrl}{path}")
         };
         request.Headers.TryAddWithoutValidation("Authorization",
             $"MAC id=\"{dto.AccessToken}\",ts=\"{timestamp}\",nonce=\"{nonce}\",mac=\"{hmac}\"");

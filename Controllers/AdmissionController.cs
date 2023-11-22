@@ -1,9 +1,13 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using OpenIddict.Abstractions;
 using OpenIddict.Validation.AspNetCore;
+using PhiZoneApi.Configurations;
 using PhiZoneApi.Constants;
+using PhiZoneApi.Dtos.Filters;
+using PhiZoneApi.Dtos.Requests;
 using PhiZoneApi.Dtos.Responses;
 using PhiZoneApi.Enums;
 using PhiZoneApi.Filters;
@@ -19,34 +23,108 @@ namespace PhiZoneApi.Controllers;
 [ApiController]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme,
     Policy = "AllowAnonymous")]
-public class AdmissionController : Controller
+public class AdmissionController(IAdmissionRepository admissionRepository, UserManager<User> userManager,
+    IResourceService resourceService, ITemplateService templateService, INotificationService notificationService,
+    IChapterRepository chapterRepository, ISongRepository songRepository, IFilterService filterService,
+    IDtoMapper dtoMapper, IChartSubmissionRepository chartSubmissionRepository, ISubmissionService submissionService,
+    IOptions<DataSettings> dataSettings) : Controller
 {
-    private readonly IAdmissionRepository _admissionRepository;
-    private readonly IChapterRepository _chapterRepository;
-    private readonly IChartSubmissionRepository _chartSubmissionRepository;
-    private readonly IDtoMapper _dtoMapper;
-    private readonly INotificationService _notificationService;
-    private readonly IResourceService _resourceService;
-    private readonly ISongRepository _songRepository;
-    private readonly ISubmissionService _submissionService;
-    private readonly ITemplateService _templateService;
-    private readonly UserManager<User> _userManager;
-
-    public AdmissionController(IAdmissionRepository admissionRepository, UserManager<User> userManager,
-        IResourceService resourceService, ITemplateService templateService, INotificationService notificationService,
-        IChapterRepository chapterRepository, ISongRepository songRepository, IDtoMapper dtoMapper,
-        IChartSubmissionRepository chartSubmissionRepository, ISubmissionService submissionService)
+    /// <summary>
+    ///     Retrieves song admissions.
+    /// </summary>
+    /// <returns>An array of song admissions.</returns>
+    /// <response code="200">Returns an array of song admissions.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    [HttpGet("songs")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK,
+        Type = typeof(ResponseDto<IEnumerable<AdmissionDto<ChapterDto, SongDto>>>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> GetSongAdmissions([FromQuery] ArrayRequestDto dto,
+        [FromQuery] AdmissionFilterDto? filterDto = null, [FromQuery] bool all = false)
     {
-        _admissionRepository = admissionRepository;
-        _userManager = userManager;
-        _resourceService = resourceService;
-        _templateService = templateService;
-        _notificationService = notificationService;
-        _chapterRepository = chapterRepository;
-        _songRepository = songRepository;
-        _dtoMapper = dtoMapper;
-        _chartSubmissionRepository = chartSubmissionRepository;
-        _submissionService = submissionService;
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        var isModerator = await resourceService.HasPermission(currentUser, Roles.Moderator);
+        if (!await resourceService.HasPermission(currentUser, Roles.Qualified))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+        dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
+            dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
+        dto.Page = dto.Page > 1 ? dto.Page : 1;
+        var position = dto.PerPage * (dto.Page - 1);
+        var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser,
+            admission => (isModerator && all) || admission.RequesteeId == currentUser.Id ||
+                         admission.RequesterId == currentUser.Id);
+        var admissions =
+            await admissionRepository.GetAdmissionsAsync(dto.Order, dto.Desc, position, dto.PerPage, predicateExpr);
+        var total = await admissionRepository.CountAdmissionsAsync(predicateExpr);
+        var list = new List<AdmissionDto<ChapterDto, SongDto>>();
+
+        foreach (var admission in admissions)
+            list.Add(await dtoMapper.MapSongAdmissionAsync<ChapterDto, SongDto>(admission, currentUser));
+
+        return Ok(new ResponseDto<IEnumerable<AdmissionDto<ChapterDto, SongDto>>>
+        {
+            Status = ResponseStatus.Ok,
+            Code = ResponseCodes.Ok,
+            Total = total,
+            PerPage = dto.PerPage,
+            HasPrevious = position > 0,
+            HasNext = dto.PerPage > 0 && dto.PerPage * dto.Page < total,
+            Data = list
+        });
+    }
+
+    /// <summary>
+    ///     Retrieves chart admissions.
+    /// </summary>
+    /// <returns>An array of chart admissions.</returns>
+    /// <response code="200">Returns an array of chart admissions.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    [HttpGet("charts")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK,
+        Type = typeof(ResponseDto<IEnumerable<AdmissionDto<SongDto, ChartSubmissionDto>>>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> GetChartAdmissions([FromQuery] ArrayRequestDto dto,
+        [FromQuery] AdmissionFilterDto? filterDto = null, [FromQuery] bool all = false)
+    {
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        var isModerator = await resourceService.HasPermission(currentUser, Roles.Moderator);
+        if (!await resourceService.HasPermission(currentUser, Roles.Qualified))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+        dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
+            dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
+        dto.Page = dto.Page > 1 ? dto.Page : 1;
+        var position = dto.PerPage * (dto.Page - 1);
+        var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser,
+            admission => (isModerator && all) || admission.RequesteeId == currentUser.Id ||
+                         admission.RequesterId == currentUser.Id);
+        var admissions =
+            await admissionRepository.GetAdmissionsAsync(dto.Order, dto.Desc, position, dto.PerPage, predicateExpr);
+        var total = await admissionRepository.CountAdmissionsAsync(predicateExpr);
+        var list = new List<AdmissionDto<SongDto, ChartSubmissionDto>>();
+
+        foreach (var admission in admissions)
+            list.Add(await dtoMapper.MapChartAdmissionAsync<SongDto, ChartSubmissionDto>(admission, currentUser));
+
+        return Ok(new ResponseDto<IEnumerable<AdmissionDto<SongDto, ChartSubmissionDto>>>
+        {
+            Status = ResponseStatus.Ok,
+            Code = ResponseCodes.Ok,
+            Total = total,
+            PerPage = dto.PerPage,
+            HasPrevious = position > 0,
+            HasNext = dto.PerPage > 0 && dto.PerPage * dto.Page < total,
+            Data = list
+        });
     }
 
     /// <summary>
@@ -70,30 +148,30 @@ public class AdmissionController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetSongAdmission([FromRoute] Guid songId, [FromRoute] Guid chapterId)
     {
-        if (!await _songRepository.SongExistsAsync(songId))
+        if (!await songRepository.SongExistsAsync(songId))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        if (!await _chapterRepository.ChapterExistsAsync(chapterId))
+        if (!await chapterRepository.ChapterExistsAsync(chapterId))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
             });
 
-        if (!await _admissionRepository.AdmissionExistsAsync(chapterId, songId))
+        if (!await admissionRepository.AdmissionExistsAsync(chapterId, songId))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.RelationNotFound
             });
 
-        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        var song = await _songRepository.GetSongAsync(songId);
+        var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        var song = await songRepository.GetSongAsync(songId);
 
-        var admission = await _admissionRepository.GetAdmissionAsync(chapterId, songId);
+        var admission = await admissionRepository.GetAdmissionAsync(chapterId, songId);
         if (!(currentUser != null && (song.OwnerId == currentUser.Id ||
-                                      await _resourceService.HasPermission(currentUser, Roles.Administrator))) &&
+                                      await resourceService.HasPermission(currentUser, Roles.Moderator))) &&
             admission.Status != RequestStatus.Approved)
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
@@ -101,7 +179,7 @@ public class AdmissionController : Controller
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
-        var dto = await _dtoMapper.MapSongAdmissionAsync<ChapterDto, SongDto>(admission, currentUser);
+        var dto = await dtoMapper.MapSongAdmissionAsync<ChapterDto, SongDto>(admission, currentUser);
 
         return Ok(new ResponseDto<AdmissionDto<ChapterDto, SongDto>>
         {
@@ -126,43 +204,44 @@ public class AdmissionController : Controller
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Consumes("application/json")]
     [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<AdmissionDto<SongDto, ChartDto>>))]
+    [ProducesResponseType(StatusCodes.Status200OK,
+        Type = typeof(ResponseDto<AdmissionDto<SongDto, ChartSubmissionDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetChartAdmission([FromRoute] Guid chartId, [FromRoute] Guid songId)
     {
-        if (!await _chartSubmissionRepository.ChartSubmissionExistsAsync(chartId))
+        if (!await chartSubmissionRepository.ChartSubmissionExistsAsync(chartId))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        if (!await _songRepository.SongExistsAsync(songId))
+        if (!await songRepository.SongExistsAsync(songId))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
             });
 
-        if (!await _admissionRepository.AdmissionExistsAsync(songId, chartId))
+        if (!await admissionRepository.AdmissionExistsAsync(songId, chartId))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.RelationNotFound
             });
 
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        var chart = await _chartSubmissionRepository.GetChartSubmissionAsync(chartId);
-        if ((chart.OwnerId == currentUser.Id && !await _resourceService.HasPermission(currentUser, Roles.Qualified)) ||
-            (chart.OwnerId != currentUser.Id && !await _resourceService.HasPermission(currentUser, Roles.Moderator)))
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        var chart = await chartSubmissionRepository.GetChartSubmissionAsync(chartId);
+        if ((chart.OwnerId == currentUser.Id && !await resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+            (chart.OwnerId != currentUser.Id && !await resourceService.HasPermission(currentUser, Roles.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
-        var admission = await _admissionRepository.GetAdmissionAsync(songId, chartId);
-        var dto = await _dtoMapper.MapChartAdmissionAsync<SongDto, ChartDto>(admission, currentUser);
+        var admission = await admissionRepository.GetAdmissionAsync(songId, chartId);
+        var dto = await dtoMapper.MapChartAdmissionAsync<SongDto, ChartSubmissionDto>(admission, currentUser);
 
-        return Ok(new ResponseDto<AdmissionDto<SongDto, ChartDto>>
+        return Ok(new ResponseDto<AdmissionDto<SongDto, ChartSubmissionDto>>
         {
             Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto
         });
@@ -190,35 +269,35 @@ public class AdmissionController : Controller
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> RemoveSongAdmission([FromRoute] Guid songId, [FromRoute] Guid chapterId)
     {
-        if (!await _songRepository.SongExistsAsync(songId))
+        if (!await songRepository.SongExistsAsync(songId))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        if (!await _chapterRepository.ChapterExistsAsync(chapterId))
+        if (!await chapterRepository.ChapterExistsAsync(chapterId))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
             });
-        if (!await _admissionRepository.AdmissionExistsAsync(chapterId, songId))
+        if (!await admissionRepository.AdmissionExistsAsync(chapterId, songId))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        var admission = await _admissionRepository.GetAdmissionAsync(chapterId, songId);
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        var admission = await admissionRepository.GetAdmissionAsync(chapterId, songId);
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if ((admission.RequesterId == currentUser.Id &&
-             !await _resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+             !await resourceService.HasPermission(currentUser, Roles.Qualified)) ||
             (admission.RequesterId != currentUser.Id &&
-             !await _resourceService.HasPermission(currentUser, Roles.Administrator)))
+             !await resourceService.HasPermission(currentUser, Roles.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        if (!await _admissionRepository.RemoveAdmissionAsync(chapterId, songId))
+        if (!await admissionRepository.RemoveAdmissionAsync(chapterId, songId))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
@@ -247,35 +326,35 @@ public class AdmissionController : Controller
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> RemoveChartAdmission([FromRoute] Guid chartId, [FromRoute] Guid songId)
     {
-        if (!await _chartSubmissionRepository.ChartSubmissionExistsAsync(chartId))
+        if (!await chartSubmissionRepository.ChartSubmissionExistsAsync(chartId))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        if (!await _songRepository.SongExistsAsync(songId))
+        if (!await songRepository.SongExistsAsync(songId))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
             });
-        if (!await _admissionRepository.AdmissionExistsAsync(songId, chartId))
+        if (!await admissionRepository.AdmissionExistsAsync(songId, chartId))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        var admission = await _admissionRepository.GetAdmissionAsync(songId, chartId);
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        var admission = await admissionRepository.GetAdmissionAsync(songId, chartId);
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if ((admission.RequesterId == currentUser.Id &&
-             !await _resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+             !await resourceService.HasPermission(currentUser, Roles.Qualified)) ||
             (admission.RequesterId != currentUser.Id &&
-             !await _resourceService.HasPermission(currentUser, Roles.Moderator)))
+             !await resourceService.HasPermission(currentUser, Roles.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        if (!await _admissionRepository.RemoveAdmissionAsync(songId, chartId))
+        if (!await admissionRepository.RemoveAdmissionAsync(songId, chartId))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
@@ -306,34 +385,34 @@ public class AdmissionController : Controller
     public async Task<IActionResult> ReviewSongAdmission([FromRoute] Guid songId, [FromRoute] Guid chapterId,
         bool approve)
     {
-        if (!await _songRepository.SongExistsAsync(songId))
+        if (!await songRepository.SongExistsAsync(songId))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        if (!await _chapterRepository.ChapterExistsAsync(chapterId))
+        if (!await chapterRepository.ChapterExistsAsync(chapterId))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
             });
-        if (!await _admissionRepository.AdmissionExistsAsync(chapterId, songId))
+        if (!await admissionRepository.AdmissionExistsAsync(chapterId, songId))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        var admission = await _admissionRepository.GetAdmissionAsync(chapterId, songId);
+        var admission = await admissionRepository.GetAdmissionAsync(chapterId, songId);
         if (admission.Status != RequestStatus.Waiting)
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
             });
 
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if ((admission.RequesteeId == currentUser.Id &&
-             !await _resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+             !await resourceService.HasPermission(currentUser, Roles.Qualified)) ||
             (admission.RequesteeId != currentUser.Id &&
-             !await _resourceService.HasPermission(currentUser, Roles.Administrator)))
+             !await resourceService.HasPermission(currentUser, Roles.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -351,22 +430,22 @@ public class AdmissionController : Controller
             key = "admission-rejection";
         }
 
-        if (!await _admissionRepository.UpdateAdmissionAsync(admission))
+        if (!await admissionRepository.UpdateAdmissionAsync(admission))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
-        await _notificationService.Notify(admission.Requester, admission.Requestee, NotificationType.Requests, key,
+        await notificationService.Notify(admission.Requester, admission.Requestee, NotificationType.Requests, key,
             new Dictionary<string, string>
             {
                 {
                     "User",
-                    _resourceService.GetRichText<User>(admission.RequesteeId.ToString(), admission.Requestee.UserName!)
+                    resourceService.GetRichText<User>(admission.RequesteeId.ToString(), admission.Requestee.UserName!)
                 },
                 {
                     "Admission",
-                    _resourceService.GetComplexRichText<Admission>(admission.AdmitteeId.ToString(),
+                    resourceService.GetComplexRichText<Admission>(admission.AdmitteeId.ToString(),
                         admission.AdmitterId.ToString(),
-                        _templateService.GetMessage("more-info", admission.Requestee.Language)!)
+                        templateService.GetMessage("more-info", admission.Requestee.Language)!)
                 }
             });
 
@@ -397,47 +476,47 @@ public class AdmissionController : Controller
     public async Task<IActionResult> ReviewChartAdmission([FromRoute] Guid chartId, [FromRoute] Guid songId,
         bool approve)
     {
-        if (!await _chartSubmissionRepository.ChartSubmissionExistsAsync(chartId))
+        if (!await chartSubmissionRepository.ChartSubmissionExistsAsync(chartId))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        if (!await _songRepository.SongExistsAsync(songId))
+        if (!await songRepository.SongExistsAsync(songId))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
             });
-        if (!await _admissionRepository.AdmissionExistsAsync(songId, chartId))
+        if (!await admissionRepository.AdmissionExistsAsync(songId, chartId))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        var admission = await _admissionRepository.GetAdmissionAsync(songId, chartId);
+        var admission = await admissionRepository.GetAdmissionAsync(songId, chartId);
         if (admission.Status != RequestStatus.Waiting)
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
             });
 
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if ((admission.RequesteeId == currentUser.Id &&
-             !await _resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+             !await resourceService.HasPermission(currentUser, Roles.Qualified)) ||
             (admission.RequesteeId != currentUser.Id &&
-             !await _resourceService.HasPermission(currentUser, Roles.Administrator)))
+             !await resourceService.HasPermission(currentUser, Roles.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        var chart = await _chartSubmissionRepository.GetChartSubmissionAsync(chartId);
+        var chart = await chartSubmissionRepository.GetChartSubmissionAsync(chartId);
         string key;
         if (approve)
         {
             admission.Status = RequestStatus.Approved;
             key = "admission-approval";
             chart.AdmissionStatus = RequestStatus.Approved;
-            if (chart.VolunteerStatus == RequestStatus.Approved) await _submissionService.ApproveChart(chart);
+            if (chart.VolunteerStatus == RequestStatus.Approved) await submissionService.ApproveChart(chart);
         }
         else
         {
@@ -445,26 +524,26 @@ public class AdmissionController : Controller
             key = "admission-rejection";
             chart.AdmissionStatus = RequestStatus.Rejected;
             chart.Status = RequestStatus.Rejected;
-            await _submissionService.RejectChart(chart);
+            await submissionService.RejectChart(chart);
         }
 
-        if (!await _admissionRepository.UpdateAdmissionAsync(admission) ||
-            !await _chartSubmissionRepository.UpdateChartSubmissionAsync(chart))
+        if (!await admissionRepository.UpdateAdmissionAsync(admission) ||
+            !await chartSubmissionRepository.UpdateChartSubmissionAsync(chart))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
-        await _notificationService.Notify(admission.Requester, admission.Requestee, NotificationType.Requests, key,
+        await notificationService.Notify(admission.Requester, admission.Requestee, NotificationType.Requests, key,
             new Dictionary<string, string>
             {
                 {
                     "User",
-                    _resourceService.GetRichText<User>(admission.RequesteeId.ToString(), admission.Requestee.UserName!)
+                    resourceService.GetRichText<User>(admission.RequesteeId.ToString(), admission.Requestee.UserName!)
                 },
                 {
                     "Admission",
-                    _resourceService.GetComplexRichText<Admission>(admission.AdmitteeId.ToString(),
+                    resourceService.GetComplexRichText<Admission>(admission.AdmitteeId.ToString(),
                         admission.AdmitterId.ToString(),
-                        _templateService.GetMessage("more-info", admission.Requestee.Language)!)
+                        templateService.GetMessage("more-info", admission.Requestee.Language)!)
                 }
             });
 

@@ -9,19 +9,12 @@ using PhiZoneApi.Utils;
 
 namespace PhiZoneApi.Repositories;
 
-public class UserRepository : IUserRepository
+public class UserRepository(ApplicationDbContext context) : IUserRepository
 {
-    private readonly ApplicationDbContext _context;
-
-    public UserRepository(ApplicationDbContext context)
-    {
-        _context = context;
-    }
-
     public async Task<ICollection<User>> GetUsersAsync(List<string> order, List<bool> desc, int position, int take,
         string? search = null, Expression<Func<User, bool>>? predicate = null)
     {
-        var result = _context.Users.OrderBy(order, desc);
+        var result = context.Users.OrderBy(order, desc);
 
         if (predicate != null) result = result.Where(predicate);
 
@@ -41,12 +34,12 @@ public class UserRepository : IUserRepository
 
     public async Task<User?> GetUserByTapUnionId(string unionId)
     {
-        return await _context.Users.FirstOrDefaultAsync(user => user.TapUnionId == unionId);
+        return await context.Users.FirstOrDefaultAsync(user => user.TapUnionId == unionId);
     }
 
     public async Task<int> CountUsersAsync(string? search = null, Expression<Func<User, bool>>? predicate = null)
     {
-        var result = _context.Users.AsQueryable();
+        var result = context.Users.AsQueryable();
 
         if (predicate != null) result = result.Where(predicate);
 

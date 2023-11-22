@@ -24,38 +24,12 @@ namespace PhiZoneApi.Controllers;
 [ApiController]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme,
     Policy = "AllowAnonymous")]
-public class CommentController : Controller
-{
-    private readonly ICommentRepository _commentRepository;
-    private readonly IOptions<DataSettings> _dataSettings;
-    private readonly IDtoMapper _dtoMapper;
-    private readonly IFilterService _filterService;
-    private readonly ILikeRepository _likeRepository;
-    private readonly ILikeService _likeService;
-    private readonly IMapper _mapper;
-    private readonly INotificationService _notificationService;
-    private readonly IReplyRepository _replyRepository;
-    private readonly IResourceService _resourceService;
-    private readonly UserManager<User> _userManager;
-
-    public CommentController(ICommentRepository commentRepository, IOptions<DataSettings> dataSettings,
+public class CommentController(ICommentRepository commentRepository, IOptions<DataSettings> dataSettings,
         IDtoMapper dtoMapper, IFilterService filterService, UserManager<User> userManager,
         IReplyRepository replyRepository, ILikeRepository likeRepository, ILikeService likeService, IMapper mapper,
         IResourceService resourceService, INotificationService notificationService)
-    {
-        _commentRepository = commentRepository;
-        _dataSettings = dataSettings;
-        _dtoMapper = dtoMapper;
-        _filterService = filterService;
-        _userManager = userManager;
-        _replyRepository = replyRepository;
-        _likeRepository = likeRepository;
-        _likeService = likeService;
-        _mapper = mapper;
-        _resourceService = resourceService;
-        _notificationService = notificationService;
-    }
-
+    : Controller
+{
     /// <summary>
     ///     Retrieves comments.
     /// </summary>
@@ -69,18 +43,18 @@ public class CommentController : Controller
     public async Task<IActionResult> GetComments([FromQuery] ArrayRequestDto dto,
         [FromQuery] CommentFilterDto? filterDto = null)
     {
-        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        dto.PerPage = dto.PerPage > 0 && dto.PerPage < _dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
-            dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : _dataSettings.Value.PaginationMaxPerPage;
+        var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
+            dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
-        var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser);
-        var comments = await _commentRepository.GetCommentsAsync(dto.Order, dto.Desc, position,
+        var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser);
+        var comments = await commentRepository.GetCommentsAsync(dto.Order, dto.Desc, position,
             dto.PerPage, predicateExpr);
-        var total = await _commentRepository.CountCommentsAsync(predicateExpr);
+        var total = await commentRepository.CountCommentsAsync(predicateExpr);
         var list = new List<CommentDto>();
 
-        foreach (var comment in comments) list.Add(await _dtoMapper.MapCommentAsync<CommentDto>(comment, currentUser));
+        foreach (var comment in comments) list.Add(await dtoMapper.MapCommentAsync<CommentDto>(comment, currentUser));
 
         return Ok(new ResponseDto<IEnumerable<CommentDto>>
         {
@@ -114,14 +88,14 @@ public class CommentController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetComment([FromRoute] Guid id)
     {
-        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        if (!await _commentRepository.CommentExistsAsync(id))
+        var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        if (!await commentRepository.CommentExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        var comment = await _commentRepository.GetCommentAsync(id);
-        var dto = await _dtoMapper.MapCommentAsync<CommentDto>(comment, currentUser);
+        var comment = await commentRepository.GetCommentAsync(id);
+        var dto = await dtoMapper.MapCommentAsync<CommentDto>(comment, currentUser);
 
         return Ok(new ResponseDto<CommentDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
     }
@@ -148,25 +122,25 @@ public class CommentController : Controller
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> RemoveComment([FromRoute] Guid id)
     {
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
 
-        if (!await _commentRepository.CommentExistsAsync(id))
+        if (!await commentRepository.CommentExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        var comment = await _commentRepository.GetCommentAsync(id);
-        if ((currentUser.Id == comment.OwnerId && !await _resourceService.HasPermission(currentUser, Roles.Member)) ||
+        var comment = await commentRepository.GetCommentAsync(id);
+        if ((currentUser.Id == comment.OwnerId && !await resourceService.HasPermission(currentUser, Roles.Member)) ||
             (currentUser.Id != comment.OwnerId &&
-             !await _resourceService.HasPermission(currentUser, Roles.Moderator)))
+             !await resourceService.HasPermission(currentUser, Roles.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
-        if (!await _commentRepository.RemoveCommentAsync(id))
+        if (!await commentRepository.RemoveCommentAsync(id))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
@@ -189,24 +163,24 @@ public class CommentController : Controller
     public async Task<IActionResult> GetCommentReplies([FromRoute] Guid id, [FromQuery] ArrayRequestDto dto,
         [FromQuery] ReplyFilterDto? filterDto = null)
     {
-        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        dto.PerPage = dto.PerPage > 0 && dto.PerPage < _dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
-            dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : _dataSettings.Value.PaginationMaxPerPage;
+        var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
+            dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
-        var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser);
-        if (!await _commentRepository.CommentExistsAsync(id))
+        var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser);
+        if (!await commentRepository.CommentExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
         var replies =
-            await _commentRepository.GetCommentRepliesAsync(id, dto.Order, dto.Desc, position, dto.PerPage,
+            await commentRepository.GetCommentRepliesAsync(id, dto.Order, dto.Desc, position, dto.PerPage,
                 predicateExpr);
-        var total = await _commentRepository.CountCommentRepliesAsync(id, predicateExpr);
+        var total = await commentRepository.CountCommentRepliesAsync(id, predicateExpr);
         var list = new List<ReplyDto>();
 
-        foreach (var reply in replies) list.Add(await _dtoMapper.MapReplyAsync<ReplyDto>(reply, currentUser));
+        foreach (var reply in replies) list.Add(await dtoMapper.MapReplyAsync<ReplyDto>(reply, currentUser));
 
         return Ok(new ResponseDto<IEnumerable<ReplyDto>>
         {
@@ -240,26 +214,26 @@ public class CommentController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> CreateReply([FromRoute] Guid id, [FromBody] ReplyCreationDto dto)
     {
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _resourceService.HasPermission(currentUser, Roles.Member))
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!await resourceService.HasPermission(currentUser, Roles.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        if (!await _commentRepository.CommentExistsAsync(id))
+        if (!await commentRepository.CommentExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        var comment = await _commentRepository.GetCommentAsync(id);
-        if (await _resourceService.IsBlacklisted(comment.OwnerId, currentUser.Id))
+        var comment = await commentRepository.GetCommentAsync(id);
+        if (await resourceService.IsBlacklisted(comment.OwnerId, currentUser.Id))
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Blacklisted
             });
 
-        var result = await _resourceService.ParseUserContent(dto.Content);
+        var result = await resourceService.ParseUserContent(dto.Content);
         var reply = new Reply
         {
             CommentId = comment.Id,
@@ -268,22 +242,22 @@ public class CommentController : Controller
             OwnerId = currentUser.Id,
             DateCreated = DateTimeOffset.UtcNow
         };
-        if (!await _replyRepository.CreateReplyAsync(reply))
+        if (!await replyRepository.CreateReplyAsync(reply))
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
             });
         if (currentUser.Id != comment.OwnerId)
-            await _notificationService.Notify((await _userManager.FindByIdAsync(comment.OwnerId.ToString()))!,
+            await notificationService.Notify((await userManager.FindByIdAsync(comment.OwnerId.ToString()))!,
                 currentUser,
                 NotificationType.Replies, "new-reply",
                 new Dictionary<string, string>
                 {
-                    { "User", _resourceService.GetRichText<User>(currentUser.Id.ToString(), currentUser.UserName!) },
-                    { "Reply", _resourceService.GetRichText<Reply>(reply.Id.ToString(), reply.GetDisplay()) }
+                    { "User", resourceService.GetRichText<User>(currentUser.Id.ToString(), currentUser.UserName!) },
+                    { "Reply", resourceService.GetRichText<Reply>(reply.Id.ToString(), reply.GetDisplay()) }
                 });
-        await _notificationService.NotifyMentions(result.Item2, currentUser,
-            _resourceService.GetRichText<Reply>(reply.Id.ToString(), reply.GetDisplay()));
+        await notificationService.NotifyMentions(result.Item2, currentUser,
+            resourceService.GetRichText<Reply>(reply.Id.ToString(), reply.GetDisplay()));
 
         return StatusCode(StatusCodes.Status201Created);
     }
@@ -303,19 +277,19 @@ public class CommentController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetCommentLikes([FromRoute] Guid id, [FromQuery] ArrayRequestDto dto)
     {
-        dto.PerPage = dto.PerPage > 0 && dto.PerPage < _dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
-            dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : _dataSettings.Value.PaginationMaxPerPage;
+        dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
+            dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
-        if (!await _commentRepository.CommentExistsAsync(id))
+        if (!await commentRepository.CommentExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        var likes = await _likeRepository.GetLikesAsync(dto.Order, dto.Desc, position, dto.PerPage,
+        var likes = await likeRepository.GetLikesAsync(dto.Order, dto.Desc, position, dto.PerPage,
             e => e.ResourceId == id);
-        var list = _mapper.Map<List<LikeDto>>(likes);
-        var total = await _likeRepository.CountLikesAsync(e => e.ResourceId == id);
+        var list = mapper.Map<List<LikeDto>>(likes);
+        var total = await likeRepository.CountLikesAsync(e => e.ResourceId == id);
 
         return Ok(new ResponseDto<IEnumerable<LikeDto>>
         {
@@ -347,25 +321,25 @@ public class CommentController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> CreateLike([FromRoute] Guid id)
     {
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _resourceService.HasPermission(currentUser, Roles.Member))
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!await resourceService.HasPermission(currentUser, Roles.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        if (!await _commentRepository.CommentExistsAsync(id))
+        if (!await commentRepository.CommentExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        var comment = await _commentRepository.GetCommentAsync(id);
-        if (await _resourceService.IsBlacklisted(comment.OwnerId, currentUser.Id))
+        var comment = await commentRepository.GetCommentAsync(id);
+        if (await resourceService.IsBlacklisted(comment.OwnerId, currentUser.Id))
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Blacklisted
             });
-        if (!await _likeService.CreateLikeAsync(comment, currentUser.Id))
+        if (!await likeService.CreateLikeAsync(comment, currentUser.Id))
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
@@ -392,20 +366,20 @@ public class CommentController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> RemoveLike([FromRoute] Guid id)
     {
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _resourceService.HasPermission(currentUser, Roles.Member))
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!await resourceService.HasPermission(currentUser, Roles.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        if (!await _commentRepository.CommentExistsAsync(id))
+        if (!await commentRepository.CommentExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        var comment = await _commentRepository.GetCommentAsync(id);
-        if (!await _likeService.RemoveLikeAsync(comment, currentUser.Id))
+        var comment = await commentRepository.GetCommentAsync(id);
+        if (!await likeService.RemoveLikeAsync(comment, currentUser.Id))
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone

@@ -26,38 +26,12 @@ namespace PhiZoneApi.Controllers;
 [ApiController]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme,
     Policy = "AllowAnonymous")]
-public class AnnouncementController : Controller
-{
-    private readonly IAnnouncementRepository _announcementRepository;
-    private readonly ICommentRepository _commentRepository;
-    private readonly IOptions<DataSettings> _dataSettings;
-    private readonly IDtoMapper _dtoMapper;
-    private readonly IFilterService _filterService;
-    private readonly ILikeRepository _likeRepository;
-    private readonly ILikeService _likeService;
-    private readonly IMapper _mapper;
-    private readonly INotificationService _notificationService;
-    private readonly IResourceService _resourceService;
-    private readonly UserManager<User> _userManager;
-
-    public AnnouncementController(IAnnouncementRepository announcementRepository, IOptions<DataSettings> dataSettings,
+public class AnnouncementController(IAnnouncementRepository announcementRepository, IOptions<DataSettings> dataSettings,
         IDtoMapper dtoMapper, IFilterService filterService, UserManager<User> userManager,
         ILikeRepository likeRepository, ILikeService likeService, IMapper mapper, ICommentRepository commentRepository,
         IResourceService resourceService, INotificationService notificationService)
-    {
-        _announcementRepository = announcementRepository;
-        _dataSettings = dataSettings;
-        _dtoMapper = dtoMapper;
-        _filterService = filterService;
-        _userManager = userManager;
-        _likeRepository = likeRepository;
-        _likeService = likeService;
-        _mapper = mapper;
-        _commentRepository = commentRepository;
-        _resourceService = resourceService;
-        _notificationService = notificationService;
-    }
-
+    : Controller
+{
     /// <summary>
     ///     Retrieves announcements.
     /// </summary>
@@ -71,19 +45,19 @@ public class AnnouncementController : Controller
     public async Task<IActionResult> GetAnnouncements([FromQuery] ArrayRequestDto dto,
         [FromQuery] AnnouncementFilterDto? filterDto = null)
     {
-        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        dto.PerPage = dto.PerPage > 0 && dto.PerPage < _dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
-            dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : _dataSettings.Value.PaginationMaxPerPage;
+        var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
+            dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
-        var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser);
-        var announcements = await _announcementRepository.GetAnnouncementsAsync(dto.Order, dto.Desc, position,
+        var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser);
+        var announcements = await announcementRepository.GetAnnouncementsAsync(dto.Order, dto.Desc, position,
             dto.PerPage, dto.Search, predicateExpr);
-        var total = await _announcementRepository.CountAnnouncementsAsync(dto.Search, predicateExpr);
+        var total = await announcementRepository.CountAnnouncementsAsync(dto.Search, predicateExpr);
         var list = new List<AnnouncementDto>();
 
         foreach (var announcement in announcements)
-            list.Add(await _dtoMapper.MapAnnouncementAsync<AnnouncementDto>(announcement, currentUser));
+            list.Add(await dtoMapper.MapAnnouncementAsync<AnnouncementDto>(announcement, currentUser));
 
         return Ok(new ResponseDto<IEnumerable<AnnouncementDto>>
         {
@@ -117,14 +91,14 @@ public class AnnouncementController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetAnnouncement([FromRoute] Guid id)
     {
-        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        if (!await _announcementRepository.AnnouncementExistsAsync(id))
+        var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        if (!await announcementRepository.AnnouncementExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        var announcement = await _announcementRepository.GetAnnouncementAsync(id);
-        var dto = await _dtoMapper.MapAnnouncementAsync<AnnouncementDto>(announcement, currentUser);
+        var announcement = await announcementRepository.GetAnnouncementAsync(id);
+        var dto = await dtoMapper.MapAnnouncementAsync<AnnouncementDto>(announcement, currentUser);
 
         return Ok(new ResponseDto<AnnouncementDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
     }
@@ -149,8 +123,8 @@ public class AnnouncementController : Controller
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> CreateAnnouncement([FromBody] AnnouncementRequestDto dto)
     {
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _resourceService.HasPermission(currentUser, Roles.Administrator))
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!await resourceService.HasPermission(currentUser, Roles.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -165,7 +139,7 @@ public class AnnouncementController : Controller
             DateCreated = DateTimeOffset.UtcNow,
             DateUpdated = DateTimeOffset.UtcNow
         };
-        if (!await _announcementRepository.CreateAnnouncementAsync(announcement))
+        if (!await announcementRepository.CreateAnnouncementAsync(announcement))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
@@ -197,23 +171,23 @@ public class AnnouncementController : Controller
     public async Task<IActionResult> UpdateAnnouncement([FromRoute] Guid id,
         [FromBody] JsonPatchDocument<AnnouncementRequestDto> patchDocument)
     {
-        if (!await _announcementRepository.AnnouncementExistsAsync(id))
+        if (!await announcementRepository.AnnouncementExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        var announcement = await _announcementRepository.GetAnnouncementAsync(id);
+        var announcement = await announcementRepository.GetAnnouncementAsync(id);
 
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _resourceService.HasPermission(currentUser, Roles.Administrator))
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!await resourceService.HasPermission(currentUser, Roles.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
-        var dto = _mapper.Map<AnnouncementRequestDto>(announcement);
+        var dto = mapper.Map<AnnouncementRequestDto>(announcement);
         patchDocument.ApplyTo(dto, ModelState);
 
         if (!TryValidateModel(dto))
@@ -228,7 +202,7 @@ public class AnnouncementController : Controller
         announcement.Content = dto.Content;
         announcement.DateUpdated = DateTimeOffset.UtcNow;
 
-        if (!await _announcementRepository.UpdateAnnouncementAsync(announcement))
+        if (!await announcementRepository.UpdateAnnouncementAsync(announcement))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
@@ -257,22 +231,22 @@ public class AnnouncementController : Controller
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> RemoveAnnouncement([FromRoute] Guid id)
     {
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
 
-        if (!await _announcementRepository.AnnouncementExistsAsync(id))
+        if (!await announcementRepository.AnnouncementExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        if (!await _resourceService.HasPermission(currentUser, Roles.Moderator))
+        if (!await resourceService.HasPermission(currentUser, Roles.Moderator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
-        if (!await _announcementRepository.RemoveAnnouncementAsync(id))
+        if (!await announcementRepository.RemoveAnnouncementAsync(id))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
@@ -294,19 +268,19 @@ public class AnnouncementController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetAnnouncementLikes([FromRoute] Guid id, [FromQuery] ArrayRequestDto dto)
     {
-        dto.PerPage = dto.PerPage > 0 && dto.PerPage < _dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
-            dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : _dataSettings.Value.PaginationMaxPerPage;
+        dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
+            dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
-        if (!await _announcementRepository.AnnouncementExistsAsync(id))
+        if (!await announcementRepository.AnnouncementExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        var likes = await _likeRepository.GetLikesAsync(dto.Order, dto.Desc, position, dto.PerPage,
+        var likes = await likeRepository.GetLikesAsync(dto.Order, dto.Desc, position, dto.PerPage,
             e => e.ResourceId == id);
-        var list = _mapper.Map<List<LikeDto>>(likes);
-        var total = await _likeRepository.CountLikesAsync(e => e.ResourceId == id);
+        var list = mapper.Map<List<LikeDto>>(likes);
+        var total = await likeRepository.CountLikesAsync(e => e.ResourceId == id);
 
         return Ok(new ResponseDto<IEnumerable<LikeDto>>
         {
@@ -338,19 +312,19 @@ public class AnnouncementController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> CreateLike([FromRoute] Guid id)
     {
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _announcementRepository.AnnouncementExistsAsync(id))
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!await announcementRepository.AnnouncementExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        var announcement = await _announcementRepository.GetAnnouncementAsync(id);
-        if (await _resourceService.IsBlacklisted(announcement.OwnerId, currentUser.Id))
+        var announcement = await announcementRepository.GetAnnouncementAsync(id);
+        if (await resourceService.IsBlacklisted(announcement.OwnerId, currentUser.Id))
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Blacklisted
             });
-        if (!await _likeService.CreateLikeAsync(announcement, currentUser.Id))
+        if (!await likeService.CreateLikeAsync(announcement, currentUser.Id))
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
@@ -377,14 +351,14 @@ public class AnnouncementController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> RemoveLike([FromRoute] Guid id)
     {
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _announcementRepository.AnnouncementExistsAsync(id))
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!await announcementRepository.AnnouncementExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        var announcement = await _announcementRepository.GetAnnouncementAsync(id);
-        if (!await _likeService.RemoveLikeAsync(announcement, currentUser.Id))
+        var announcement = await announcementRepository.GetAnnouncementAsync(id);
+        if (!await likeService.RemoveLikeAsync(announcement, currentUser.Id))
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
@@ -409,22 +383,22 @@ public class AnnouncementController : Controller
     public async Task<IActionResult> GetAnnouncementComments([FromRoute] Guid id,
         [FromQuery] ArrayRequestDto dto)
     {
-        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        dto.PerPage = dto.PerPage > 0 && dto.PerPage < _dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
-            dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : _dataSettings.Value.PaginationMaxPerPage;
+        var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
+            dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
-        if (!await _announcementRepository.AnnouncementExistsAsync(id))
+        if (!await announcementRepository.AnnouncementExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        var comments = await _commentRepository.GetCommentsAsync(dto.Order, dto.Desc, position, dto.PerPage,
+        var comments = await commentRepository.GetCommentsAsync(dto.Order, dto.Desc, position, dto.PerPage,
             e => e.ResourceId == id);
         var list = new List<CommentDto>();
-        var total = await _commentRepository.CountCommentsAsync(e => e.ResourceId == id);
+        var total = await commentRepository.CountCommentsAsync(e => e.ResourceId == id);
 
-        foreach (var comment in comments) list.Add(await _dtoMapper.MapCommentAsync<CommentDto>(comment, currentUser));
+        foreach (var comment in comments) list.Add(await dtoMapper.MapCommentAsync<CommentDto>(comment, currentUser));
 
         return Ok(new ResponseDto<IEnumerable<CommentDto>>
         {
@@ -460,26 +434,26 @@ public class AnnouncementController : Controller
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> CreateComment([FromRoute] Guid id, [FromBody] CommentCreationDto dto)
     {
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _resourceService.HasPermission(currentUser, Roles.Member))
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!await resourceService.HasPermission(currentUser, Roles.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        if (!await _announcementRepository.AnnouncementExistsAsync(id))
+        if (!await announcementRepository.AnnouncementExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        var announcement = await _announcementRepository.GetAnnouncementAsync(id);
-        if (await _resourceService.IsBlacklisted(announcement.OwnerId, currentUser.Id))
+        var announcement = await announcementRepository.GetAnnouncementAsync(id);
+        if (await resourceService.IsBlacklisted(announcement.OwnerId, currentUser.Id))
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Blacklisted
             });
 
-        var result = await _resourceService.ParseUserContent(dto.Content);
+        var result = await resourceService.ParseUserContent(dto.Content);
         var comment = new Comment
         {
             ResourceId = announcement.Id,
@@ -488,13 +462,13 @@ public class AnnouncementController : Controller
             OwnerId = currentUser.Id,
             DateCreated = DateTimeOffset.UtcNow
         };
-        if (!await _commentRepository.CreateCommentAsync(comment))
+        if (!await commentRepository.CreateCommentAsync(comment))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
-        await _notificationService.NotifyComment(comment, announcement, announcement.GetDisplay(), dto.Content);
-        await _notificationService.NotifyMentions(result.Item2, currentUser,
-            _resourceService.GetRichText<Comment>(comment.Id.ToString(), dto.Content));
+        await notificationService.NotifyComment(comment, announcement, announcement.GetDisplay(), dto.Content);
+        await notificationService.NotifyMentions(result.Item2, currentUser,
+            resourceService.GetRichText<Comment>(comment.Id.ToString(), dto.Content));
 
         return StatusCode(StatusCodes.Status201Created);
     }

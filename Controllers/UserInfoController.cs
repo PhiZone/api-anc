@@ -21,26 +21,10 @@ namespace PhiZoneApi.Controllers;
 [ApiVersion("2.0")]
 [ApiController]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
-public class UserInfoController : Controller
-{
-    private readonly IDtoMapper _mapper;
-    private readonly INotificationRepository _notificationRepository;
-    private readonly IResourceService _resourceService;
-    private readonly ITapTapService _tapTapService;
-    private readonly UserManager<User> _userManager;
-    private readonly IUserRepository _userRepository;
-
-    public UserInfoController(UserManager<User> userManager, IDtoMapper mapper, IResourceService resourceService,
+public class UserInfoController(UserManager<User> userManager, IDtoMapper mapper, IResourceService resourceService,
         IUserRepository userRepository, ITapTapService tapTapService, INotificationRepository notificationRepository)
-    {
-        _userManager = userManager;
-        _mapper = mapper;
-        _resourceService = resourceService;
-        _userRepository = userRepository;
-        _tapTapService = tapTapService;
-        _notificationRepository = notificationRepository;
-    }
-
+    : Controller
+{
     /// <summary>
     ///     Retrieves user's information.
     /// </summary>
@@ -60,18 +44,18 @@ public class UserInfoController : Controller
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetUserInfo()
     {
-        var user = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        var user = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         if (user == null) return Unauthorized();
-        if (!await _resourceService.HasPermission(user, Roles.Member))
+        if (!await resourceService.HasPermission(user, Roles.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
-        var dto = await _mapper.MapUserAsync<UserDetailedDto>(user);
+        var dto = await mapper.MapUserAsync<UserDetailedDto>(user);
         dto.Notifications =
-            await _notificationRepository.CountNotificationsAsync(predicate: e =>
+            await notificationRepository.CountNotificationsAsync(predicate: e =>
                 e.OwnerId == user.Id && e.DateRead == null);
         return Ok(new ResponseDto<UserDetailedDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
     }
@@ -97,9 +81,9 @@ public class UserInfoController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> BindTapTap([FromBody] TapTapRequestDto dto)
     {
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
 
-        if (!await _resourceService.HasPermission(currentUser, Roles.Member))
+        if (!await resourceService.HasPermission(currentUser, Roles.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -109,7 +93,7 @@ public class UserInfoController : Controller
         var unionId = dto.UnionId;
         if (unionId == null)
         {
-            var response = await _tapTapService.Login(dto);
+            var response = await tapTapService.Login(dto);
 
             if (!response!.IsSuccessStatusCode)
                 return BadRequest(new ResponseDto<object>
@@ -125,7 +109,7 @@ public class UserInfoController : Controller
             unionId = responseDto.Data.Unionid;
         }
 
-        var targetUser = await _userRepository.GetUserByTapUnionId(unionId);
+        var targetUser = await userRepository.GetUserByTapUnionId(unionId);
         if (targetUser != null)
             return BadRequest(new ResponseDto<object>
             {
@@ -134,7 +118,7 @@ public class UserInfoController : Controller
             });
 
         currentUser.TapUnionId = unionId;
-        await _userManager.UpdateAsync(currentUser);
+        await userManager.UpdateAsync(currentUser);
         return NoContent();
     }
 
@@ -158,9 +142,9 @@ public class UserInfoController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> UnbindTapTap()
     {
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
 
-        if (!await _resourceService.HasPermission(currentUser, Roles.Member))
+        if (!await resourceService.HasPermission(currentUser, Roles.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -174,7 +158,7 @@ public class UserInfoController : Controller
             });
 
         currentUser.TapUnionId = null;
-        await _userManager.UpdateAsync(currentUser);
+        await userManager.UpdateAsync(currentUser);
         return NoContent();
     }
 }

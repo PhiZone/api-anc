@@ -13,30 +13,18 @@ using StackExchange.Redis;
 
 namespace PhiZoneApi.Services;
 
-public class MailService : IMailService
-{
-    private readonly ILogger<MailService> _logger;
-    private readonly IRabbitMqService _rabbitMqService;
-    private readonly IConnectionMultiplexer _redis;
-    private readonly MailSettings _settings;
-    private readonly ITemplateService _templateService;
-
-    public MailService(IOptions<MailSettings> options, ITemplateService templateService,
+public class MailService(IOptions<MailSettings> options, ITemplateService templateService,
         IRabbitMqService rabbitMqService, IConnectionMultiplexer redis, ILogger<MailService> logger)
-    {
-        _settings = options.Value;
-        _templateService = templateService;
-        _rabbitMqService = rabbitMqService;
-        _redis = redis;
-        _logger = logger;
-    }
+    : IMailService
+{
+    private readonly MailSettings _settings = options.Value;
 
     public async Task<MailTaskDto?> GenerateEmailAsync(string email, string userName, string language,
         EmailRequestMode mode)
     {
         string code;
         var random = new Random();
-        var db = _redis.GetDatabase();
+        var db = redis.GetDatabase();
         do
         {
             code = random.Next(1000000, 2000000).ToString()[1..];
@@ -44,14 +32,14 @@ public class MailService : IMailService
 
         if (!await db.StringSetAsync($"phizone:email:{mode}:{code}", email, TimeSpan.FromSeconds(305))) return null;
 
-        var template = _templateService.GetEmailTemplate(mode, language)!;
+        var template = templateService.GetEmailTemplate(mode, language)!;
 
         return new MailTaskDto
         {
             EmailAddress = email,
             UserName = userName,
             EmailSubject = template.Subject,
-            EmailBody = _templateService.ReplacePlaceholders(template.Body,
+            EmailBody = templateService.ReplacePlaceholders(template.Body,
                 new Dictionary<string, string> { { "UserName", userName }, { "Code", code } })
         };
     }
@@ -65,7 +53,7 @@ public class MailService : IMailService
 
         try
         {
-            using var channel = _rabbitMqService.GetConnection().CreateModel();
+            using var channel = rabbitMqService.GetConnection().CreateModel();
             channel.BasicPublish("", "email", false, null, body);
         }
         catch (Exception)
@@ -73,7 +61,7 @@ public class MailService : IMailService
             return ResponseCodes.MailError;
         }
 
-        var db = _redis.GetDatabase();
+        var db = redis.GetDatabase();
         await db.StringSetAsync($"phizone:cooldown:{mode}:{email}", DateTimeOffset.UtcNow.AddMinutes(5).ToString(),
             TimeSpan.FromMinutes(5));
         return string.Empty;
@@ -103,7 +91,7 @@ public class MailService : IMailService
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(LogEvents.MailFailure, ex, "Failed to send an email to {Email} for {User}",
+            logger.LogWarning(LogEvents.MailFailure, ex, "Failed to send an email to {Email} for {User}",
                 mailTaskDto.EmailAddress, mailTaskDto.UserName);
             return ex.Message;
         }

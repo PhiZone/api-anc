@@ -9,20 +9,13 @@ using PhiZoneApi.Utils;
 
 namespace PhiZoneApi.Repositories;
 
-public class PetQuestionRepository : IPetQuestionRepository
+public class PetQuestionRepository(ApplicationDbContext context) : IPetQuestionRepository
 {
-    private readonly ApplicationDbContext _context;
-
-    public PetQuestionRepository(ApplicationDbContext context)
-    {
-        _context = context;
-    }
-
     public async Task<ICollection<PetQuestion>> GetPetQuestionsAsync(List<string> order, List<bool> desc, int position,
         int take,
         string? search = null, Expression<Func<PetQuestion, bool>>? predicate = null)
     {
-        var result = _context.PetQuestions.OrderBy(order, desc);
+        var result = context.PetQuestions.OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
         if (search != null)
         {
@@ -36,12 +29,12 @@ public class PetQuestionRepository : IPetQuestionRepository
 
     public async Task<PetQuestion> GetPetQuestionAsync(Guid id)
     {
-        return (await _context.PetQuestions.FirstOrDefaultAsync(petQuestion => petQuestion.Id == id))!;
+        return (await context.PetQuestions.FirstOrDefaultAsync(petQuestion => petQuestion.Id == id))!;
     }
 
     public async Task<PetQuestion?> GetRandomPetQuestionAsync(int position, string language)
     {
-        return await _context.PetQuestions
+        return await context.PetQuestions
             .Where(petQuestion => petQuestion.Position == position && petQuestion.Language == language)
             .OrderBy(e => EF.Functions.Random())
             .FirstOrDefaultAsync();
@@ -49,38 +42,38 @@ public class PetQuestionRepository : IPetQuestionRepository
 
     public async Task<bool> PetQuestionExistsAsync(Guid id)
     {
-        return await _context.PetQuestions.AnyAsync(petQuestion => petQuestion.Id == id);
+        return await context.PetQuestions.AnyAsync(petQuestion => petQuestion.Id == id);
     }
 
     public async Task<bool> CreatePetQuestionAsync(PetQuestion petQuestion)
     {
-        await _context.PetQuestions.AddAsync(petQuestion);
+        await context.PetQuestions.AddAsync(petQuestion);
         return await SaveAsync();
     }
 
     public async Task<bool> UpdatePetQuestionAsync(PetQuestion petQuestion)
     {
-        _context.PetQuestions.Update(petQuestion);
+        context.PetQuestions.Update(petQuestion);
         return await SaveAsync();
     }
 
     public async Task<bool> RemovePetQuestionAsync(Guid id)
     {
-        _context.PetQuestions.Remove(
-            (await _context.PetQuestions.FirstOrDefaultAsync(petQuestion => petQuestion.Id == id))!);
+        context.PetQuestions.Remove(
+            (await context.PetQuestions.FirstOrDefaultAsync(petQuestion => petQuestion.Id == id))!);
         return await SaveAsync();
     }
 
     public async Task<bool> SaveAsync()
     {
-        var saved = await _context.SaveChangesAsync();
+        var saved = await context.SaveChangesAsync();
         return saved > 0;
     }
 
     public async Task<int> CountPetQuestionsAsync(string? search = null,
         Expression<Func<PetQuestion, bool>>? predicate = null)
     {
-        var result = _context.PetQuestions.AsQueryable();
+        var result = context.PetQuestions.AsQueryable();
 
         if (predicate != null) result = result.Where(predicate);
         if (search != null)
@@ -94,7 +87,7 @@ public class PetQuestionRepository : IPetQuestionRepository
 
     public async Task<ICollection<PetChoice>> GetQuestionChoicesAsync(Guid questionId)
     {
-        return await _context.PetChoices.Where(petChoice => petChoice.QuestionId == questionId)
+        return await context.PetChoices.Where(petChoice => petChoice.QuestionId == questionId)
             .OrderBy(petChoice => EF.Functions.Random())
             .ToArrayAsync();
     }

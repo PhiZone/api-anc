@@ -25,43 +25,13 @@ namespace PhiZoneApi.Controllers;
 [ApiVersion("2.0")]
 [ApiController]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
-public class CollaborationController : Controller
-{
-    private readonly IAuthorshipRepository _authorshipRepository;
-    private readonly IChartRepository _chartRepository;
-    private readonly IChartSubmissionRepository _chartSubmissionRepository;
-    private readonly ICollaborationRepository _collaborationRepository;
-    private readonly IOptions<DataSettings> _dataSettings;
-    private readonly IFilterService _filterService;
-    private readonly IMapper _mapper;
-    private readonly INotificationService _notificationService;
-    private readonly IResourceService _resourceService;
-    private readonly ISongRepository _songRepository;
-    private readonly ISongSubmissionRepository _songSubmissionRepository;
-    private readonly ITemplateService _templateService;
-    private readonly UserManager<User> _userManager;
-
-    public CollaborationController(ICollaborationRepository collaborationRepository, UserManager<User> userManager,
+public class CollaborationController(ICollaborationRepository collaborationRepository, UserManager<User> userManager,
         IMapper mapper, IResourceService resourceService, IOptions<DataSettings> dataSettings,
         IFilterService filterService, ITemplateService templateService, INotificationService notificationService,
         ISongSubmissionRepository songSubmissionRepository, IChartSubmissionRepository chartSubmissionRepository,
         IAuthorshipRepository authorshipRepository, ISongRepository songRepository, IChartRepository chartRepository)
-    {
-        _collaborationRepository = collaborationRepository;
-        _userManager = userManager;
-        _mapper = mapper;
-        _resourceService = resourceService;
-        _dataSettings = dataSettings;
-        _filterService = filterService;
-        _templateService = templateService;
-        _notificationService = notificationService;
-        _songSubmissionRepository = songSubmissionRepository;
-        _chartSubmissionRepository = chartSubmissionRepository;
-        _authorshipRepository = authorshipRepository;
-        _songRepository = songRepository;
-        _chartRepository = chartRepository;
-    }
-
+    : Controller
+{
     /// <summary>
     ///     Retrieves collaborations.
     /// </summary>
@@ -75,25 +45,25 @@ public class CollaborationController : Controller
     public async Task<IActionResult> GetCollaborations([FromQuery] ArrayRequestDto dto,
         [FromQuery] CollaborationFilterDto? filterDto = null, [FromQuery] bool all = false)
     {
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        var isVolunteer = await _resourceService.HasPermission(currentUser, Roles.Volunteer);
-        if (!await _resourceService.HasPermission(currentUser, Roles.Qualified))
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        var isVolunteer = await resourceService.HasPermission(currentUser, Roles.Volunteer);
+        if (!await resourceService.HasPermission(currentUser, Roles.Qualified))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        dto.PerPage = dto.PerPage > 0 && dto.PerPage < _dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
-            dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : _dataSettings.Value.PaginationMaxPerPage;
+        dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
+            dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
-        var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser,
+        var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser,
             collaboration => (isVolunteer && all) || collaboration.InviteeId == currentUser.Id ||
                              collaboration.InviterId == currentUser.Id);
-        var list = _mapper.Map<List<CollaborationDto>>(
-            await _collaborationRepository.GetCollaborationsAsync(dto.Order, dto.Desc, position, dto.PerPage,
+        var list = mapper.Map<List<CollaborationDto>>(
+            await collaborationRepository.GetCollaborationsAsync(dto.Order, dto.Desc, position, dto.PerPage,
                 predicateExpr));
-        var total = await _collaborationRepository.CountCollaborationsAsync(predicateExpr);
+        var total = await collaborationRepository.CountCollaborationsAsync(predicateExpr);
 
         return Ok(new ResponseDto<IEnumerable<CollaborationDto>>
         {
@@ -127,23 +97,23 @@ public class CollaborationController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetCollaboration([FromRoute] Guid id)
     {
-        if (!await _collaborationRepository.CollaborationExistsAsync(id))
+        if (!await collaborationRepository.CollaborationExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        var collaboration = await _collaborationRepository.GetCollaborationAsync(id);
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        var collaboration = await collaborationRepository.GetCollaborationAsync(id);
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if (((collaboration.InviterId == currentUser.Id || collaboration.InviteeId == currentUser.Id) &&
-             !await _resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+             !await resourceService.HasPermission(currentUser, Roles.Qualified)) ||
             (collaboration.InviterId != currentUser.Id && collaboration.InviteeId != currentUser.Id &&
-             !await _resourceService.HasPermission(currentUser, Roles.Volunteer)))
+             !await resourceService.HasPermission(currentUser, Roles.Volunteer)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        var dto = _mapper.Map<CollaborationDto>(collaboration);
+        var dto = mapper.Map<CollaborationDto>(collaboration);
 
         return Ok(new ResponseDto<CollaborationDto>
         {
@@ -173,24 +143,24 @@ public class CollaborationController : Controller
     public async Task<IActionResult> UpdateCollaboration([FromRoute] Guid id,
         [FromBody] JsonPatchDocument<CollaborationUpdateDto> patchDocument)
     {
-        if (!await _collaborationRepository.CollaborationExistsAsync(id))
+        if (!await collaborationRepository.CollaborationExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        var collaboration = await _collaborationRepository.GetCollaborationAsync(id);
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        var collaboration = await collaborationRepository.GetCollaborationAsync(id);
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if ((collaboration.InviterId == currentUser.Id &&
-             !await _resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+             !await resourceService.HasPermission(currentUser, Roles.Qualified)) ||
             (collaboration.InviterId != currentUser.Id &&
-             !await _resourceService.HasPermission(currentUser, Roles.Administrator)))
+             !await resourceService.HasPermission(currentUser, Roles.Administrator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
-        var dto = _mapper.Map<CollaborationUpdateDto>(collaboration);
+        var dto = mapper.Map<CollaborationUpdateDto>(collaboration);
         patchDocument.ApplyTo(dto, ModelState);
 
         if (!TryValidateModel(dto))
@@ -203,7 +173,7 @@ public class CollaborationController : Controller
 
         collaboration.Position = dto.Position;
 
-        if (!await _collaborationRepository.UpdateCollaborationAsync(collaboration))
+        if (!await collaborationRepository.UpdateCollaborationAsync(collaboration))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
@@ -232,22 +202,22 @@ public class CollaborationController : Controller
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> ReviewCollaboration([FromRoute] Guid id, bool approve)
     {
-        if (!await _collaborationRepository.CollaborationExistsAsync(id))
+        if (!await collaborationRepository.CollaborationExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        var collaboration = await _collaborationRepository.GetCollaborationAsync(id);
+        var collaboration = await collaborationRepository.GetCollaborationAsync(id);
         if (collaboration.Status != RequestStatus.Waiting)
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
             });
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if ((collaboration.InviteeId == currentUser.Id &&
-             !await _resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+             !await resourceService.HasPermission(currentUser, Roles.Qualified)) ||
             (collaboration.InviteeId != currentUser.Id &&
-             !await _resourceService.HasPermission(currentUser, Roles.Administrator)))
+             !await resourceService.HasPermission(currentUser, Roles.Administrator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -260,27 +230,27 @@ public class CollaborationController : Controller
             key = "collab-approval";
             Submission submission;
             PublicResource? resource = null;
-            if (await _songSubmissionRepository.SongSubmissionExistsAsync(collaboration.SubmissionId))
+            if (await songSubmissionRepository.SongSubmissionExistsAsync(collaboration.SubmissionId))
             {
-                submission = await _songSubmissionRepository.GetSongSubmissionAsync(collaboration.SubmissionId);
+                submission = await songSubmissionRepository.GetSongSubmissionAsync(collaboration.SubmissionId);
                 if (submission is { Status: RequestStatus.Approved, RepresentationId: not null })
-                    resource = await _songRepository.GetSongAsync(submission.RepresentationId.Value);
+                    resource = await songRepository.GetSongAsync(submission.RepresentationId.Value);
             }
             else
             {
-                submission = await _chartSubmissionRepository.GetChartSubmissionAsync(collaboration.SubmissionId);
+                submission = await chartSubmissionRepository.GetChartSubmissionAsync(collaboration.SubmissionId);
                 if (submission is { Status: RequestStatus.Approved, RepresentationId: not null })
-                    resource = await _chartRepository.GetChartAsync(submission.RepresentationId.Value);
+                    resource = await chartRepository.GetChartAsync(submission.RepresentationId.Value);
             }
 
             if (resource != null)
             {
-                if (await _authorshipRepository.AuthorshipExistsAsync(resource.Id, collaboration.InviteeId))
+                if (await authorshipRepository.AuthorshipExistsAsync(resource.Id, collaboration.InviteeId))
                 {
                     var authorship =
-                        await _authorshipRepository.GetAuthorshipAsync(resource.Id, collaboration.InviteeId);
+                        await authorshipRepository.GetAuthorshipAsync(resource.Id, collaboration.InviteeId);
                     authorship.Position = collaboration.Position;
-                    await _authorshipRepository.UpdateAuthorshipAsync(authorship);
+                    await authorshipRepository.UpdateAuthorshipAsync(authorship);
                 }
                 else
                 {
@@ -291,7 +261,7 @@ public class CollaborationController : Controller
                         Position = collaboration.Position,
                         DateCreated = DateTimeOffset.UtcNow
                     };
-                    await _authorshipRepository.CreateAuthorshipAsync(authorship);
+                    await authorshipRepository.CreateAuthorshipAsync(authorship);
                 }
             }
         }
@@ -301,20 +271,20 @@ public class CollaborationController : Controller
             key = "collab-rejection";
         }
 
-        if (!await _collaborationRepository.UpdateCollaborationAsync(collaboration))
+        if (!await collaborationRepository.UpdateCollaborationAsync(collaboration))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
-        var inviter = (await _userManager.FindByIdAsync(collaboration.InviterId.ToString()))!;
-        var invitee = (await _userManager.FindByIdAsync(collaboration.InviteeId.ToString()))!;
+        var inviter = (await userManager.FindByIdAsync(collaboration.InviterId.ToString()))!;
+        var invitee = (await userManager.FindByIdAsync(collaboration.InviteeId.ToString()))!;
 
-        await _notificationService.Notify(inviter, invitee, NotificationType.Requests, key,
+        await notificationService.Notify(inviter, invitee, NotificationType.Requests, key,
             new Dictionary<string, string>
             {
-                { "User", _resourceService.GetRichText<User>(invitee.Id.ToString(), invitee.UserName!) },
+                { "User", resourceService.GetRichText<User>(invitee.Id.ToString(), invitee.UserName!) },
                 {
                     "Collaboration",
-                    _resourceService.GetRichText<Collaboration>(collaboration.Id.ToString(),
-                        _templateService.GetMessage("more-info", invitee.Language)!)
+                    resourceService.GetRichText<Collaboration>(collaboration.Id.ToString(),
+                        templateService.GetMessage("more-info", invitee.Language)!)
                 }
             });
 
@@ -342,24 +312,24 @@ public class CollaborationController : Controller
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> RemoveCollaboration([FromRoute] Guid id)
     {
-        if (!await _collaborationRepository.CollaborationExistsAsync(id))
+        if (!await collaborationRepository.CollaborationExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        var collaboration = await _collaborationRepository.GetCollaborationAsync(id);
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        var collaboration = await collaborationRepository.GetCollaborationAsync(id);
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if ((collaboration.InviterId == currentUser.Id &&
-             !await _resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+             !await resourceService.HasPermission(currentUser, Roles.Qualified)) ||
             (collaboration.InviterId != currentUser.Id &&
-             !await _resourceService.HasPermission(currentUser, Roles.Administrator)))
+             !await resourceService.HasPermission(currentUser, Roles.Administrator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        if (!await _collaborationRepository.RemoveCollaborationAsync(id))
+        if (!await collaborationRepository.RemoveCollaborationAsync(id))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 

@@ -11,16 +11,10 @@ using PhiZoneApi.Models;
 
 namespace PhiZoneApi.Services;
 
-public partial class ChartService : IChartService
+public class ChartService(IFileStorageService fileStorageService, ILogger<ChartService> logger)
+    : IChartService
 {
-    private readonly IFileStorageService _fileStorageService;
-    private readonly ILogger<ChartService> _logger;
-
-    public ChartService(IFileStorageService fileStorageService, ILogger<ChartService> logger)
-    {
-        _fileStorageService = fileStorageService;
-        _logger = logger;
-    }
+    private static readonly Regex PecCommandRegex = new("^(-?[0-9]+)|(n[1-4]|bp|cp|cm|cd|cr|ca|cf|cv|#|&)[ -.0-9]+$");
 
     public async Task<(string, string, ChartFormat, int)?> Upload(string fileName, IFormFile file)
     {
@@ -56,7 +50,7 @@ public partial class ChartService : IChartService
             : Serialize(Standardize((PecDto)validationResult.Item2));
         var stream = new MemoryStream(Encoding.UTF8.GetBytes(serialized));
         var uploadResult =
-            await _fileStorageService.Upload<Chart>(fileName, stream, GetExtension(validationResult.Item1));
+            await fileStorageService.Upload<Chart>(fileName, stream, GetExtension(validationResult.Item1));
         return new ValueTuple<string, string, ChartFormat, int>(uploadResult.Item1, uploadResult.Item2,
             validationResult.Item1, validationResult.Item3);
     }
@@ -456,7 +450,7 @@ public partial class ChartService : IChartService
         {
             foreach (var line in input.Split(GetLineSeparator(input)))
             {
-                if (line == string.Empty || !PecCommandRegex().IsMatch(line)) continue;
+                if (line == string.Empty || !PecCommandRegex.IsMatch(line)) continue;
 
                 if (int.TryParse(line, out var number))
                 {
@@ -591,7 +585,7 @@ public partial class ChartService : IChartService
         }
         catch (Exception ex)
         {
-            _logger.LogError(LogEvents.ChartFailure, ex, "Failed to parse chart");
+            logger.LogError(LogEvents.ChartFailure, ex, "Failed to parse chart");
             return null;
         }
     }
@@ -613,7 +607,4 @@ public partial class ChartService : IChartService
     {
         return input.Contains("\r\n") ? "\r\n" : input.Contains('\r') ? "\r" : "\n";
     }
-
-    [GeneratedRegex("^(-?[0-9]+)|(n[1-4]|bp|cp|cm|cd|cr|ca|cf|cv|#|&)[ -.0-9]+$")]
-    private static partial Regex PecCommandRegex();
 }

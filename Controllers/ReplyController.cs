@@ -24,33 +24,11 @@ namespace PhiZoneApi.Controllers;
 [ApiController]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme,
     Policy = "AllowAnonymous")]
-public class ReplyController : Controller
-{
-    private readonly IOptions<DataSettings> _dataSettings;
-    private readonly IDtoMapper _dtoMapper;
-    private readonly IFilterService _filterService;
-    private readonly ILikeRepository _likeRepository;
-    private readonly ILikeService _likeService;
-    private readonly IMapper _mapper;
-    private readonly IReplyRepository _replyRepository;
-    private readonly IResourceService _resourceService;
-    private readonly UserManager<User> _userManager;
-
-    public ReplyController(IReplyRepository replyRepository, IOptions<DataSettings> dataSettings,
+public class ReplyController(IReplyRepository replyRepository, IOptions<DataSettings> dataSettings,
         IDtoMapper dtoMapper, IFilterService filterService, UserManager<User> userManager,
         ILikeRepository likeRepository, ILikeService likeService, IMapper mapper, IResourceService resourceService)
-    {
-        _replyRepository = replyRepository;
-        _dataSettings = dataSettings;
-        _dtoMapper = dtoMapper;
-        _filterService = filterService;
-        _userManager = userManager;
-        _likeRepository = likeRepository;
-        _likeService = likeService;
-        _mapper = mapper;
-        _resourceService = resourceService;
-    }
-
+    : Controller
+{
     /// <summary>
     ///     Retrieves replies.
     /// </summary>
@@ -64,18 +42,18 @@ public class ReplyController : Controller
     public async Task<IActionResult> GetReplies([FromQuery] ArrayRequestDto dto,
         [FromQuery] ReplyFilterDto? filterDto = null)
     {
-        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        dto.PerPage = dto.PerPage > 0 && dto.PerPage < _dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
-            dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : _dataSettings.Value.PaginationMaxPerPage;
+        var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
+            dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
-        var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser);
-        var replies = await _replyRepository.GetRepliesAsync(dto.Order, dto.Desc, position,
+        var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser);
+        var replies = await replyRepository.GetRepliesAsync(dto.Order, dto.Desc, position,
             dto.PerPage, predicateExpr);
-        var total = await _replyRepository.CountRepliesAsync(predicateExpr);
+        var total = await replyRepository.CountRepliesAsync(predicateExpr);
         var list = new List<ReplyDto>();
 
-        foreach (var reply in replies) list.Add(await _dtoMapper.MapReplyAsync<ReplyDto>(reply, currentUser));
+        foreach (var reply in replies) list.Add(await dtoMapper.MapReplyAsync<ReplyDto>(reply, currentUser));
 
         return Ok(new ResponseDto<IEnumerable<ReplyDto>>
         {
@@ -109,12 +87,12 @@ public class ReplyController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetReply([FromRoute] Guid id)
     {
-        var currentUser = await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        if (!await _replyRepository.ReplyExistsAsync(id))
+        var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        if (!await replyRepository.ReplyExistsAsync(id))
             return NotFound(new ResponseDto<object>
                 { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
-        var reply = await _replyRepository.GetReplyAsync(id);
-        var dto = await _dtoMapper.MapReplyAsync<ReplyDto>(reply, currentUser);
+        var reply = await replyRepository.GetReplyAsync(id);
+        var dto = await dtoMapper.MapReplyAsync<ReplyDto>(reply, currentUser);
 
         return Ok(new ResponseDto<ReplyDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
     }
@@ -141,25 +119,25 @@ public class ReplyController : Controller
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> RemoveReply([FromRoute] Guid id)
     {
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
 
-        if (!await _replyRepository.ReplyExistsAsync(id))
+        if (!await replyRepository.ReplyExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        var reply = await _replyRepository.GetReplyAsync(id);
-        if ((currentUser.Id == reply.OwnerId && !await _resourceService.HasPermission(currentUser, Roles.Member)) ||
+        var reply = await replyRepository.GetReplyAsync(id);
+        if ((currentUser.Id == reply.OwnerId && !await resourceService.HasPermission(currentUser, Roles.Member)) ||
             (currentUser.Id != reply.OwnerId &&
-             !await _resourceService.HasPermission(currentUser, Roles.Moderator)))
+             !await resourceService.HasPermission(currentUser, Roles.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
-        if (!await _replyRepository.RemoveReplyAsync(id))
+        if (!await replyRepository.RemoveReplyAsync(id))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
@@ -181,17 +159,17 @@ public class ReplyController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetReplyLikes([FromRoute] Guid id, [FromQuery] ArrayRequestDto dto)
     {
-        dto.PerPage = dto.PerPage > 0 && dto.PerPage < _dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
-            dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : _dataSettings.Value.PaginationMaxPerPage;
+        dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
+            dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
-        if (!await _replyRepository.ReplyExistsAsync(id))
+        if (!await replyRepository.ReplyExistsAsync(id))
             return NotFound(new ResponseDto<object>
                 { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
-        var likes = await _likeRepository.GetLikesAsync(dto.Order, dto.Desc, position, dto.PerPage,
+        var likes = await likeRepository.GetLikesAsync(dto.Order, dto.Desc, position, dto.PerPage,
             e => e.ResourceId == id);
-        var list = _mapper.Map<List<LikeDto>>(likes);
-        var total = await _likeRepository.CountLikesAsync(e => e.ResourceId == id);
+        var list = mapper.Map<List<LikeDto>>(likes);
+        var total = await likeRepository.CountLikesAsync(e => e.ResourceId == id);
 
         return Ok(new ResponseDto<IEnumerable<LikeDto>>
         {
@@ -223,17 +201,17 @@ public class ReplyController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> CreateLike([FromRoute] Guid id)
     {
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _replyRepository.ReplyExistsAsync(id))
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!await replyRepository.ReplyExistsAsync(id))
             return NotFound(new ResponseDto<object>
                 { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
-        var reply = await _replyRepository.GetReplyAsync(id);
-        if (await _resourceService.IsBlacklisted(reply.OwnerId, currentUser.Id))
+        var reply = await replyRepository.GetReplyAsync(id);
+        if (await resourceService.IsBlacklisted(reply.OwnerId, currentUser.Id))
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Blacklisted
             });
-        if (!await _likeService.CreateLikeAsync(reply, currentUser.Id))
+        if (!await likeService.CreateLikeAsync(reply, currentUser.Id))
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
@@ -260,12 +238,12 @@ public class ReplyController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> RemoveLike([FromRoute] Guid id)
     {
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _replyRepository.ReplyExistsAsync(id))
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!await replyRepository.ReplyExistsAsync(id))
             return NotFound(new ResponseDto<object>
                 { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
-        var reply = await _replyRepository.GetReplyAsync(id);
-        if (!await _likeService.RemoveLikeAsync(reply, currentUser.Id))
+        var reply = await replyRepository.GetReplyAsync(id);
+        if (!await likeService.RemoveLikeAsync(reply, currentUser.Id))
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone

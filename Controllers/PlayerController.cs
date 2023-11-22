@@ -29,36 +29,12 @@ namespace PhiZoneApi.Controllers;
 [ApiController]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme,
     Policy = "AllowAnonymous")]
-public class PlayerController : Controller
-{
-    private readonly IApplicationRepository _applicationRepository;
-    private readonly IChartRepository _chartRepository;
-    private readonly IPlayConfigurationRepository _configurationRepository;
-    private readonly IOptions<DataSettings> _dataSettings;
-    private readonly IFilterService _filterService;
-    private readonly IMapper _mapper;
-    private readonly IConnectionMultiplexer _redis;
-    private readonly IResourceService _resourceService;
-    private readonly ISongRepository _songRepository;
-    private readonly UserManager<User> _userManager;
-
-    public PlayerController(IPlayConfigurationRepository configurationRepository, IOptions<DataSettings> dataSettings,
+public class PlayerController(IPlayConfigurationRepository configurationRepository, IOptions<DataSettings> dataSettings,
         UserManager<User> userManager, IFilterService filterService, IMapper mapper, IChartRepository chartRepository,
         IApplicationRepository applicationRepository, IConnectionMultiplexer redis, ISongRepository songRepository,
         IResourceService resourceService)
-    {
-        _configurationRepository = configurationRepository;
-        _dataSettings = dataSettings;
-        _userManager = userManager;
-        _filterService = filterService;
-        _mapper = mapper;
-        _chartRepository = chartRepository;
-        _applicationRepository = applicationRepository;
-        _redis = redis;
-        _songRepository = songRepository;
-        _resourceService = resourceService;
-    }
-
+    : Controller
+{
     /// <summary>
     ///     Retrieves configurations.
     /// </summary>
@@ -74,19 +50,19 @@ public class PlayerController : Controller
     public async Task<IActionResult> GetPlayConfigurations([FromQuery] ArrayRequestDto dto,
         [FromQuery] PlayConfigurationFilterDto? filterDto = null)
     {
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (filterDto != null && !await _resourceService.HasPermission(currentUser, Roles.Administrator))
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (filterDto != null && !await resourceService.HasPermission(currentUser, Roles.Administrator))
             filterDto.RangeOwnerId = new List<int> { currentUser.Id };
 
-        dto.PerPage = dto.PerPage > 0 && dto.PerPage < _dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
-            dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : _dataSettings.Value.PaginationMaxPerPage;
+        dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
+            dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
-        var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser);
-        var list = _mapper.Map<List<PlayConfigurationResponseDto>>(
-            await _configurationRepository.GetPlayConfigurationsAsync(dto.Order, dto.Desc, position, dto.PerPage,
+        var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser);
+        var list = mapper.Map<List<PlayConfigurationResponseDto>>(
+            await configurationRepository.GetPlayConfigurationsAsync(dto.Order, dto.Desc, position, dto.PerPage,
                 dto.Search, predicateExpr));
-        var total = await _configurationRepository.CountPlayConfigurationsAsync(dto.Search, predicateExpr);
+        var total = await configurationRepository.CountPlayConfigurationsAsync(dto.Search, predicateExpr);
 
         return Ok(new ResponseDto<IEnumerable<PlayConfigurationResponseDto>>
         {
@@ -120,11 +96,11 @@ public class PlayerController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetPlayConfiguration([FromRoute] Guid id)
     {
-        if (!await _configurationRepository.PlayConfigurationExistsAsync(id))
+        if (!await configurationRepository.PlayConfigurationExistsAsync(id))
             return NotFound(new ResponseDto<object>
                 { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
-        var configuration = await _configurationRepository.GetPlayConfigurationAsync(id);
-        var dto = _mapper.Map<PlayConfigurationResponseDto>(configuration);
+        var configuration = await configurationRepository.GetPlayConfigurationAsync(id);
+        var dto = mapper.Map<PlayConfigurationResponseDto>(configuration);
 
         return Ok(new ResponseDto<PlayConfigurationResponseDto>
         {
@@ -154,8 +130,8 @@ public class PlayerController : Controller
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> CreatePlayConfiguration([FromBody] PlayConfigurationRequestDto dto)
     {
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _resourceService.HasPermission(currentUser, Roles.Member))
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!await resourceService.HasPermission(currentUser, Roles.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -181,7 +157,7 @@ public class PlayerController : Controller
             OwnerId = currentUser.Id,
             DateCreated = DateTimeOffset.UtcNow
         };
-        if (!await _configurationRepository.CreatePlayConfigurationAsync(configuration))
+        if (!await configurationRepository.CreatePlayConfigurationAsync(configuration))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
@@ -215,26 +191,26 @@ public class PlayerController : Controller
     public async Task<IActionResult> UpdatePlayConfiguration([FromRoute] Guid id,
         [FromBody] JsonPatchDocument<PlayConfigurationRequestDto> patchDocument)
     {
-        if (!await _configurationRepository.PlayConfigurationExistsAsync(id))
+        if (!await configurationRepository.PlayConfigurationExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        var configuration = await _configurationRepository.GetPlayConfigurationAsync(id);
+        var configuration = await configurationRepository.GetPlayConfigurationAsync(id);
 
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if ((currentUser.Id == configuration.OwnerId &&
-             !await _resourceService.HasPermission(currentUser, Roles.Member)) ||
+             !await resourceService.HasPermission(currentUser, Roles.Member)) ||
             (currentUser.Id != configuration.OwnerId &&
-             !await _resourceService.HasPermission(currentUser, Roles.Administrator)))
+             !await resourceService.HasPermission(currentUser, Roles.Administrator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
-        var dto = _mapper.Map<PlayConfigurationRequestDto>(configuration);
+        var dto = mapper.Map<PlayConfigurationRequestDto>(configuration);
         patchDocument.ApplyTo(dto, ModelState);
 
         if (!TryValidateModel(dto))
@@ -247,9 +223,9 @@ public class PlayerController : Controller
 
         if (dto.PerfectJudgment > dto.GoodJudgment) return StatusCode(StatusCodes.Status418ImATeapot);
 
-        configuration = _mapper.Map<PlayConfiguration>(dto);
+        configuration = mapper.Map<PlayConfiguration>(dto);
 
-        if (!await _configurationRepository.UpdatePlayConfigurationAsync(configuration))
+        if (!await configurationRepository.UpdatePlayConfigurationAsync(configuration))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
@@ -278,26 +254,26 @@ public class PlayerController : Controller
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> RemoveConfiguration([FromRoute] Guid id)
     {
-        if (!await _configurationRepository.PlayConfigurationExistsAsync(id))
+        if (!await configurationRepository.PlayConfigurationExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        var configuration = await _configurationRepository.GetPlayConfigurationAsync(id);
+        var configuration = await configurationRepository.GetPlayConfigurationAsync(id);
 
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if ((currentUser.Id == configuration.OwnerId &&
-             !await _resourceService.HasPermission(currentUser, Roles.Member)) ||
+             !await resourceService.HasPermission(currentUser, Roles.Member)) ||
             (currentUser.Id != configuration.OwnerId &&
-             !await _resourceService.HasPermission(currentUser, Roles.Administrator)))
+             !await resourceService.HasPermission(currentUser, Roles.Administrator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
-        if (!await _configurationRepository.RemovePlayConfigurationAsync(configuration.Id))
+        if (!await configurationRepository.RemovePlayConfigurationAsync(configuration.Id))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
@@ -323,40 +299,40 @@ public class PlayerController : Controller
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> Play([FromQuery] Guid chartId, Guid configurationId, Guid applicationId)
     {
-        var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _resourceService.HasPermission(currentUser, Roles.Member))
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!await resourceService.HasPermission(currentUser, Roles.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        if (!await _chartRepository.ChartExistsAsync(chartId))
+        if (!await chartRepository.ChartExistsAsync(chartId))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        if (!await _configurationRepository.PlayConfigurationExistsAsync(configurationId))
+        if (!await configurationRepository.PlayConfigurationExistsAsync(configurationId))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ConfigurationNotFound
             });
 
-        if (!await _applicationRepository.ApplicationExistsAsync(applicationId))
+        if (!await applicationRepository.ApplicationExistsAsync(applicationId))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ApplicationNotFound
             });
 
-        var db = _redis.GetDatabase();
+        var db = redis.GetDatabase();
         Guid token;
         do
         {
             token = Guid.NewGuid();
         } while (await db.KeyExistsAsync($"phizone:play:{token}"));
 
-        var chart = await _chartRepository.GetChartAsync(chartId);
-        if (await _resourceService.IsBlacklisted(chart.OwnerId, currentUser.Id))
+        var chart = await chartRepository.GetChartAsync(chartId);
+        if (await resourceService.IsBlacklisted(chart.OwnerId, currentUser.Id))
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Blacklisted
@@ -367,7 +343,7 @@ public class PlayerController : Controller
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Locked
             });
 
-        var song = await _songRepository.GetSongAsync(chart.SongId);
+        var song = await songRepository.GetSongAsync(chart.SongId);
         var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
         var info = new PlayInfoDto

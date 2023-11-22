@@ -3,15 +3,8 @@ using PhiZoneApi.Models;
 
 namespace PhiZoneApi.Services;
 
-public class RecordService : IRecordService
+public class RecordService(IRecordRepository recordRepository) : IRecordService
 {
-    private readonly IRecordRepository _recordRepository;
-
-    public RecordService(IRecordRepository recordRepository)
-    {
-        _recordRepository = recordRepository;
-    }
-
     public int CalculateScore(int perfect, int good, int bad, int miss, int maxCombo)
     {
         var totalCount = perfect + good + bad + miss;
@@ -61,7 +54,7 @@ public class RecordService : IRecordService
         var charts = new List<Guid>();
         for (var position = 0; result.Count < 19; position += 30)
         {
-            var records = await _recordRepository.GetRecordsAsync(new List<string> { "Rks" }, new List<bool> { true },
+            var records = await recordRepository.GetRecordsAsync(new List<string> { "Rks" }, new List<bool> { true },
                 position, 30,
                 record => record.OwnerId == userId && record.Chart.IsRanked);
             if (records.Count == 0) break;

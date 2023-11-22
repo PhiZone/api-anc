@@ -9,20 +9,13 @@ using PhiZoneApi.Utils;
 
 namespace PhiZoneApi.Repositories;
 
-public class AnnouncementRepository : IAnnouncementRepository
+public class AnnouncementRepository(ApplicationDbContext context) : IAnnouncementRepository
 {
-    private readonly ApplicationDbContext _context;
-
-    public AnnouncementRepository(ApplicationDbContext context)
-    {
-        _context = context;
-    }
-
     public async Task<ICollection<Announcement>> GetAnnouncementsAsync(List<string> order, List<bool> desc,
         int position, int take,
         string? search = null, Expression<Func<Announcement, bool>>? predicate = null)
     {
-        var result = _context.Announcements.OrderBy(order, desc);
+        var result = context.Announcements.OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
         if (search != null)
         {
@@ -37,43 +30,43 @@ public class AnnouncementRepository : IAnnouncementRepository
 
     public async Task<Announcement> GetAnnouncementAsync(Guid id)
     {
-        return (await _context.Announcements.FirstOrDefaultAsync(announcement => announcement.Id == id))!;
+        return (await context.Announcements.FirstOrDefaultAsync(announcement => announcement.Id == id))!;
     }
 
     public async Task<bool> AnnouncementExistsAsync(Guid id)
     {
-        return await _context.Announcements.AnyAsync(announcement => announcement.Id == id);
+        return await context.Announcements.AnyAsync(announcement => announcement.Id == id);
     }
 
     public async Task<bool> CreateAnnouncementAsync(Announcement announcement)
     {
-        await _context.Announcements.AddAsync(announcement);
+        await context.Announcements.AddAsync(announcement);
         return await SaveAsync();
     }
 
     public async Task<bool> UpdateAnnouncementAsync(Announcement announcement)
     {
-        _context.Announcements.Update(announcement);
+        context.Announcements.Update(announcement);
         return await SaveAsync();
     }
 
     public async Task<bool> RemoveAnnouncementAsync(Guid id)
     {
-        _context.Announcements.Remove(
-            (await _context.Announcements.FirstOrDefaultAsync(announcement => announcement.Id == id))!);
+        context.Announcements.Remove(
+            (await context.Announcements.FirstOrDefaultAsync(announcement => announcement.Id == id))!);
         return await SaveAsync();
     }
 
     public async Task<bool> SaveAsync()
     {
-        var saved = await _context.SaveChangesAsync();
+        var saved = await context.SaveChangesAsync();
         return saved > 0;
     }
 
     public async Task<int> CountAnnouncementsAsync(string? search = null,
         Expression<Func<Announcement, bool>>? predicate = null)
     {
-        var result = _context.Announcements.AsQueryable();
+        var result = context.Announcements.AsQueryable();
 
         if (predicate != null) result = result.Where(predicate);
         if (search != null)

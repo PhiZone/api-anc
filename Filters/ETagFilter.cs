@@ -8,14 +8,9 @@ using Newtonsoft.Json;
 namespace PhiZoneApi.Filters;
 
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
-public class ETagFilter : ActionFilterAttribute
+public class ETagFilter(IConfiguration config) : ActionFilterAttribute
 {
-    private readonly string _secret;
-
-    public ETagFilter(IConfiguration config)
-    {
-        _secret = config["Secret"]!;
-    }
+    private readonly string _secret = config["Secret"]!;
 
     public override async Task OnActionExecutionAsync(ActionExecutingContext executingContext,
         ActionExecutionDelegate next)
