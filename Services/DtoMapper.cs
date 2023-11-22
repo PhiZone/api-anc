@@ -125,10 +125,6 @@ public class DtoMapper(IUserRelationRepository userRelationRepository, IRegionRe
 
         foreach (var levelType in Enum.GetValues<ChartLevel>())
         {
-            Console.WriteLine(levelType);
-            Console.WriteLine(song.Id);
-            Console.WriteLine(await chartRepository.CountChartsAsync(predicate: chart =>
-                chart.SongId == song.Id && chart.LevelType == levelType));
             dto.ChartLevels.Add(new ChartLevelDto
             {
                 LevelType = levelType,
