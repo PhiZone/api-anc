@@ -2,5 +2,7 @@ namespace PhiZoneApi.Enums;
 
 public enum AdmitterType
 {
-    Chapter, Song, SongSubmission
+    Chapter,
+    Song,
+    SongSubmission
 }

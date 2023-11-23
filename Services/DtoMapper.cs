@@ -124,14 +124,12 @@ public class DtoMapper(IUserRelationRepository userRelationRepository, IRegionRe
         var dto = mapper.Map<T>(song);
 
         foreach (var levelType in Enum.GetValues<ChartLevel>())
-        {
             dto.ChartLevels.Add(new ChartLevelDto
             {
                 LevelType = levelType,
                 Count = await chartRepository.CountChartsAsync(predicate: chart =>
                     chart.SongId == song.Id && chart.LevelType == levelType)
             });
-        }
 
         dto.CommentCount = await commentRepository.CountCommentsAsync(comment => comment.ResourceId == song.Id);
         dto.DateLiked = currentUser != null && await likeRepository.LikeExistsAsync(song.Id, currentUser.Id)
