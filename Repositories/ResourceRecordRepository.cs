@@ -47,6 +47,12 @@ public class ResourceRecordRepository(ApplicationDbContext context) : IResourceR
         return await SaveAsync();
     }
 
+    public async Task<bool> CreateResourceRecordsAsync(IEnumerable<ResourceRecord> resourceRecords)
+    {
+        await context.ResourceRecords.AddRangeAsync(resourceRecords);
+        return await SaveAsync();
+    }
+
     public async Task<bool> UpdateResourceRecordAsync(ResourceRecord resourceRecord)
     {
         context.ResourceRecords.Update(resourceRecord);

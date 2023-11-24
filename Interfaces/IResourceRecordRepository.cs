@@ -14,6 +14,7 @@ public interface IResourceRecordRepository
     Task<bool> ResourceRecordExistsAsync(Guid id);
 
     Task<bool> CreateResourceRecordAsync(ResourceRecord resourceRecord);
+    Task<bool> CreateResourceRecordsAsync(IEnumerable<ResourceRecord> resourceRecords);
 
     Task<bool> UpdateResourceRecordAsync(ResourceRecord resourceRecord);
 
