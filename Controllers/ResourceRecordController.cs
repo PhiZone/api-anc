@@ -146,6 +146,54 @@ public class ResourceRecordController(IResourceRecordRepository resourceRecordRe
 
         return StatusCode(StatusCodes.Status201Created);
     }
+    /// <summary>
+    ///     Creates new resource records.
+    /// </summary>
+    /// <returns>An empty body.</returns>
+    /// <response code="201">Returns an empty body.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
+    /// <response code="500">When an internal server error has occurred.</response>
+    [HttpPost("batch")]
+    [Consumes("application/json")]
+    [Produces("application/json")]
+    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
+    [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> CreateResourceRecords([FromBody] List<ResourceRecordRequestDto> dtos)
+    {
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!await resourceService.HasPermission(currentUser, Roles.Administrator))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+
+        var resourceRecords = dtos.Select(dto => new ResourceRecord
+        {
+            Type = dto.Type,
+            Title = dto.Title,
+            EditionType = dto.EditionType,
+            Edition = dto.Edition,
+            AuthorName = dto.AuthorName,
+            Description = dto.Description,
+            Strategy = dto.Strategy,
+            Source = dto.Source,
+            CopyrightOwner = dto.CopyrightOwner,
+            DateCreated = DateTimeOffset.UtcNow,
+            DateUpdated = DateTimeOffset.UtcNow
+        });
+        if (!await resourceRecordRepository.CreateResourceRecordsAsync(resourceRecords))
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+
+        return StatusCode(StatusCodes.Status201Created);
+    }
 
     /// <summary>
     ///     Updates a resource record.

@@ -6,11 +6,10 @@ using PhiZoneApi.Models;
 namespace PhiZoneApi.Services;
 
 public class SubmissionService(ISongRepository songRepository, INotificationService notificationService,
-        IResourceService resourceService, IChartRepository chartRepository,
-        IChartSubmissionRepository chartSubmissionRepository, ICollaborationRepository collaborationRepository,
-        IAuthorshipRepository authorshipRepository, UserManager<User> userManager,
-        IUserRelationRepository userRelationRepository)
-    : ISubmissionService
+    IResourceService resourceService, IChartRepository chartRepository,
+    IChartSubmissionRepository chartSubmissionRepository, ISongSubmissionRepository songSubmissionRepository,
+    ICollaborationRepository collaborationRepository, IAuthorshipRepository authorshipRepository,
+    UserManager<User> userManager, IUserRelationRepository userRelationRepository) : ISubmissionService
 {
     public async Task<Song> ApproveSong(SongSubmission songSubmission, bool isOriginal, bool isHidden, bool isLocked)
     {
@@ -62,10 +61,9 @@ public class SubmissionService(ISongRepository songRepository, INotificationServ
                 foreach (var relation in await userRelationRepository.GetRelationsAsync(
                              new List<string> { "DateCreated" }, new List<bool> { false }, 0, -1,
                              e => e.FolloweeId == songSubmission.OwnerId && e.Type != UserRelationType.Blacklisted))
-                    await notificationService.Notify(
-                        (await userManager.FindByIdAsync(relation.FollowerId.ToString()))!,
-                        (await userManager.FindByIdAsync(songSubmission.OwnerId.ToString()))!,
-                        NotificationType.Updates, "song-follower-update",
+                    await notificationService.Notify((await userManager.FindByIdAsync(relation.FollowerId.ToString()))!,
+                        (await userManager.FindByIdAsync(songSubmission.OwnerId.ToString()))!, NotificationType.Updates,
+                        "song-follower-update",
                         new Dictionary<string, string>
                         {
                             {
@@ -77,7 +75,7 @@ public class SubmissionService(ISongRepository songRepository, INotificationServ
 
             foreach (var chartSubmission in await chartSubmissionRepository.GetChartSubmissionsAsync(
                          new List<string> { "DateCreated" }, new List<bool> { false }, 0, -1,
-                         predicate: e => e.Status == RequestStatus.Approved))
+                         predicate: e => e.SongSubmissionId == songSubmission.Id && e.Status == RequestStatus.Approved))
                 await ApproveChart(chartSubmission, song.Id);
         }
         else
@@ -162,7 +160,14 @@ public class SubmissionService(ISongRepository songRepository, INotificationServ
 
     public async Task ApproveChart(ChartSubmission chartSubmission, Guid? songId = null)
     {
-        if (chartSubmission.SongId == null && songId == null) return;
+        songId ??= chartSubmission.SongId ??
+                   (await songSubmissionRepository.GetSongSubmissionAsync(chartSubmission.SongSubmissionId!.Value))
+                   .RepresentationId;
+
+        if (songId == null)
+        {
+            return;
+        }
 
         Chart chart;
         var owner = (await userManager.FindByIdAsync(chartSubmission.OwnerId.ToString()))!;
@@ -196,7 +201,7 @@ public class SubmissionService(ISongRepository songRepository, INotificationServ
                 IsHidden = false,
                 IsLocked = false,
                 NoteCount = chartSubmission.NoteCount,
-                SongId = (chartSubmission.SongId ?? songId)!.Value,
+                SongId = songId.Value,
                 OwnerId = chartSubmission.OwnerId,
                 DateCreated = DateTimeOffset.UtcNow,
                 DateUpdated = DateTimeOffset.UtcNow
@@ -209,8 +214,7 @@ public class SubmissionService(ISongRepository songRepository, INotificationServ
                 foreach (var relation in await userRelationRepository.GetRelationsAsync(
                              new List<string> { "DateCreated" }, new List<bool> { false }, 0, -1,
                              e => e.FolloweeId == chartSubmission.OwnerId && e.Type != UserRelationType.Blacklisted))
-                    await notificationService.Notify(
-                        (await userManager.FindByIdAsync(relation.FollowerId.ToString()))!,
+                    await notificationService.Notify((await userManager.FindByIdAsync(relation.FollowerId.ToString()))!,
                         (await userManager.FindByIdAsync(chartSubmission.OwnerId.ToString()))!,
                         NotificationType.Updates, "chart-follower-update",
                         new Dictionary<string, string>
@@ -245,7 +249,7 @@ public class SubmissionService(ISongRepository songRepository, INotificationServ
             chart.IsHidden = false;
             chart.IsLocked = false;
             chart.NoteCount = chartSubmission.NoteCount;
-            chart.SongId = (chartSubmission.SongId ?? songId)!.Value;
+            chart.SongId = songId.Value;
             chart.OwnerId = chartSubmission.OwnerId;
             chart.DateUpdated = DateTimeOffset.UtcNow;
             await chartRepository.UpdateChartAsync(chart);

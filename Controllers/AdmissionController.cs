@@ -707,8 +707,7 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
             chart.AdmissionStatus = RequestStatus.Approved;
             if (chart.VolunteerStatus == RequestStatus.Approved)
             {
-                var songSubmission = await songSubmissionRepository.GetSongSubmissionAsync(songSubmissionId);
-                await submissionService.ApproveChart(chart, songSubmission.RepresentationId);
+                await submissionService.ApproveChart(chart);
             }
         }
         else
