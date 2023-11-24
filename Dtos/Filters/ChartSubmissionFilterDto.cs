@@ -68,4 +68,8 @@ public class ChartSubmissionFilterDto : FilterDto<ChartSubmission>
     public DateTimeOffset? EarliestDateCreated { get; set; }
 
     public DateTimeOffset? LatestDateCreated { get; set; }
+
+    public DateTimeOffset? EarliestDateUpdated { get; set; }
+
+    public DateTimeOffset? LatestDateUpdated { get; set; }
 }
