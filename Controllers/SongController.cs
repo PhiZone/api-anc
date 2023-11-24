@@ -827,7 +827,9 @@ public class SongController(ISongRepository songRepository, IOptions<DataSetting
             AdmitterId = chapter.Id,
             AdmitteeId = id,
             Status =
-                chapter.Accessibility == Accessibility.AllowAny ? RequestStatus.Approved : RequestStatus.Waiting,
+                chapter.Accessibility == Accessibility.AllowAny || chapter.OwnerId == currentUser.Id
+                    ? RequestStatus.Approved
+                    : RequestStatus.Waiting,
             Label = dto.Label,
             RequesterId = currentUser.Id,
             RequesteeId = chapter.OwnerId,

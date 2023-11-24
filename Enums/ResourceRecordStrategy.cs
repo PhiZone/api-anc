@@ -2,9 +2,9 @@ namespace PhiZoneApi.Enums;
 
 public enum ResourceRecordStrategy
 {
-    Allow,
+    Accept,
     MakeHidden,
     MakeLocked,
     MakeHiddenAndLocked,
-    Deny
+    Reject
 }
