@@ -12,7 +12,7 @@ public class SubmissionService(ISongRepository songRepository, INotificationServ
         IUserRelationRepository userRelationRepository)
     : ISubmissionService
 {
-    public async Task<Song> ApproveSong(SongSubmission songSubmission, bool isOriginal, bool isHidden)
+    public async Task<Song> ApproveSong(SongSubmission songSubmission, bool isOriginal, bool isHidden, bool isLocked)
     {
         Song song;
         var owner = (await userManager.FindByIdAsync(songSubmission.OwnerId.ToString()))!;
@@ -41,7 +41,7 @@ public class SubmissionService(ISongRepository songRepository, INotificationServ
                 Description = description,
                 Accessibility = songSubmission.Accessibility,
                 IsHidden = isHidden,
-                IsLocked = false,
+                IsLocked = isLocked,
                 Lyrics = songSubmission.Lyrics,
                 Bpm = songSubmission.Bpm,
                 MinBpm = songSubmission.MinBpm,
@@ -95,6 +95,7 @@ public class SubmissionService(ISongRepository songRepository, INotificationServ
             song.Description = description;
             song.Accessibility = songSubmission.Accessibility;
             song.IsHidden = isHidden;
+            song.IsLocked = isLocked;
             song.Lyrics = songSubmission.Lyrics;
             song.Bpm = songSubmission.Bpm;
             song.MinBpm = songSubmission.MinBpm;
