@@ -1,6 +1,8 @@
-﻿namespace PhiZoneApi.Dtos.Filters;
+﻿using PhiZoneApi.Models;
 
-public class VoteFilterDto
+namespace PhiZoneApi.Dtos.Filters;
+
+public class VoteFilterDto : FilterDto<Vote>
 {
     public List<Guid>? RangeId { get; set; }
 

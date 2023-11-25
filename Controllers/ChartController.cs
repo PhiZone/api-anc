@@ -1316,19 +1316,13 @@ public class ChartController(IChartRepository chartRepository, IOptions<DataSett
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<VoteDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetChartVotes([FromRoute] Guid id, [FromQuery] ArrayRequestDto dto)
+    public async Task<IActionResult> GetChartVotes([FromRoute] Guid id, [FromQuery] ArrayRequestDto dto, [FromQuery] VoteFilterDto? filterDto = null)
     {
-        dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
-            dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
-        dto.Page = dto.Page > 1 ? dto.Page : 1;
-        var position = dto.PerPage * (dto.Page - 1);
-
         if (!await chartRepository.ChartExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-
         var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         var chart = await chartRepository.GetChartAsync(id);
         if ((currentUser == null || !await resourceService.HasPermission(currentUser, Roles.Administrator)) &&
@@ -1337,9 +1331,14 @@ public class ChartController(IChartRepository chartRepository, IOptions<DataSett
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Locked
             });
-
+        
+        dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
+            dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
+        dto.Page = dto.Page > 1 ? dto.Page : 1;
+        var position = dto.PerPage * (dto.Page - 1);
+        var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser, e => e.ChartId == id);
         var votes = await voteRepository.GetVotesAsync(dto.Order, dto.Desc, position, dto.PerPage,
-            e => e.ChartId == id);
+            predicateExpr);
         var list = mapper.Map<List<VoteDto>>(votes);
         var total = await voteRepository.CountVotesAsync(e => e.ChartId == id);
 
