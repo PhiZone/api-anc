@@ -843,7 +843,7 @@ public class SongController(ISongRepository songRepository, IOptions<DataSetting
 
         if (chapter.OwnerId != currentUser.Id && chapter.Accessibility == Accessibility.RequireReview)
             await notificationService.Notify((await userManager.FindByIdAsync(chapter.OwnerId.ToString()))!,
-                currentUser, NotificationType.Requests, "song-admission",
+                currentUser, NotificationType.Requests, "chapter-admission",
                 new Dictionary<string, string>
                 {
                     { "User", resourceService.GetRichText<User>(currentUser.Id.ToString(), currentUser.UserName!) },
@@ -853,8 +853,8 @@ public class SongController(ISongRepository songRepository, IOptions<DataSetting
                     },
                     {
                         "Admission",
-                        resourceService.GetComplexRichText("ChapterAdmission", admission.AdmitteeId.ToString(),
-                            admission.AdmitterId.ToString(),
+                        resourceService.GetComplexRichText("ChapterAdmission", admission.AdmitterId.ToString(),
+                            admission.AdmitteeId.ToString(),
                             templateService.GetMessage("more-info", admission.Requestee.Language)!)
                     }
                 });

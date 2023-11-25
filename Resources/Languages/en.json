@@ -70,12 +70,16 @@
       "Content": "{User} has declined your collaboration invite. {Collaboration}"
     },
     {
-      "Key": "song-admission",
+      "Key": "chapter-admission",
       "Content": "{User} wants the song {Song} admitted to the chapter {Chapter}. {Admission}"
     },
     {
-      "Key": "chart-admission",
+      "Key": "song-admission",
       "Content": "{User} wants the chart {Chart} admitted to the song {Song}. {Admission}"
+    },
+    {
+      "Key": "song-submission-admission",
+      "Content": "{User} wants the chart {Chart} admitted to the song submission {Song}. {Admission}"
     },
     {
       "Key": "admission-approval",
