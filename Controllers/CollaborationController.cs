@@ -200,7 +200,7 @@ public class CollaborationController(ICollaborationRepository collaborationRepos
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> ReviewCollaboration([FromRoute] Guid id, bool approve)
+    public async Task<IActionResult> ReviewCollaboration([FromRoute] Guid id, [FromBody] RequestReviewDto dto)
     {
         if (!await collaborationRepository.CollaborationExistsAsync(id))
             return NotFound(new ResponseDto<object>
@@ -224,7 +224,7 @@ public class CollaborationController(ICollaborationRepository collaborationRepos
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
         string key;
-        if (approve)
+        if (dto.Approve)
         {
             collaboration.Status = RequestStatus.Approved;
             key = "collab-approval";

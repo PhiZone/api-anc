@@ -468,7 +468,7 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> ReviewChapterAdmission([FromRoute] Guid chapterId, [FromRoute] Guid songId,
-        bool approve)
+        [FromBody] RequestReviewDto dto)
     {
         if (!await chapterRepository.ChapterExistsAsync(chapterId))
             return NotFound(new ResponseDto<object>
@@ -506,7 +506,7 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
         string key;
-        if (approve)
+        if (dto.Approve)
         {
             admission.Status = RequestStatus.Approved;
             key = "admission-approval";
@@ -521,18 +521,19 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
-        await notificationService.Notify(admission.Requester, admission.Requestee, NotificationType.Requests, key,
+        var requester = (await userManager.FindByIdAsync(admission.RequesterId.ToString()))!;
+        var requestee = (await userManager.FindByIdAsync(admission.RequesteeId.ToString()))!;
+        await notificationService.Notify(requester, requestee, NotificationType.Requests, key,
             new Dictionary<string, string>
             {
                 {
-                    "User",
-                    resourceService.GetRichText<User>(admission.RequesteeId.ToString(), admission.Requestee.UserName!)
+                    "User", resourceService.GetRichText<User>(admission.RequesteeId.ToString(), requestee.UserName!)
                 },
                 {
                     "Admission",
                     resourceService.GetComplexRichText("ChapterAdmission", admission.AdmitteeId.ToString(),
                         admission.AdmitterId.ToString(),
-                        templateService.GetMessage("more-info", admission.Requestee.Language)!)
+                        templateService.GetMessage("more-info", requester.Language)!)
                 }
             });
 
@@ -561,7 +562,7 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> ReviewSongAdmission([FromRoute] Guid songId, [FromRoute] Guid chartId,
-        bool approve)
+        [FromBody] RequestReviewDto dto)
     {
         if (!await songRepository.SongExistsAsync(songId))
             return NotFound(new ResponseDto<object>
@@ -600,7 +601,7 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
                 });
         var chart = await chartSubmissionRepository.GetChartSubmissionAsync(chartId);
         string key;
-        if (approve)
+        if (dto.Approve)
         {
             admission.Status = RequestStatus.Approved;
             key = "admission-approval";
@@ -621,18 +622,20 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
-        await notificationService.Notify(admission.Requester, admission.Requestee, NotificationType.Requests, key,
+        var requester = (await userManager.FindByIdAsync(admission.RequesterId.ToString()))!;
+        var requestee = (await userManager.FindByIdAsync(admission.RequesteeId.ToString()))!;
+        await notificationService.Notify(requester, requestee, NotificationType.Requests, key,
             new Dictionary<string, string>
             {
                 {
                     "User",
-                    resourceService.GetRichText<User>(admission.RequesteeId.ToString(), admission.Requestee.UserName!)
+                    resourceService.GetRichText<User>(admission.RequesteeId.ToString(), requestee.UserName!)
                 },
                 {
                     "Admission",
                     resourceService.GetComplexRichText("SongAdmission", admission.AdmitteeId.ToString(),
                         admission.AdmitterId.ToString(),
-                        templateService.GetMessage("more-info", admission.Requestee.Language)!)
+                        templateService.GetMessage("more-info", requester.Language)!)
                 }
             });
 
@@ -661,7 +664,7 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> ReviewSongSubmissionAdmission([FromRoute] Guid songSubmissionId,
-        [FromRoute] Guid chartId, bool approve)
+        [FromRoute] Guid chartId, [FromBody] RequestReviewDto dto)
     {
         if (!await songSubmissionRepository.SongSubmissionExistsAsync(songSubmissionId))
             return NotFound(new ResponseDto<object>
@@ -700,7 +703,7 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
                 });
         var chart = await chartSubmissionRepository.GetChartSubmissionAsync(chartId);
         string key;
-        if (approve)
+        if (dto.Approve)
         {
             admission.Status = RequestStatus.Approved;
             key = "admission-approval";
@@ -721,18 +724,20 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
-        await notificationService.Notify(admission.Requester, admission.Requestee, NotificationType.Requests, key,
+        var requester = (await userManager.FindByIdAsync(admission.RequesterId.ToString()))!;
+        var requestee = (await userManager.FindByIdAsync(admission.RequesteeId.ToString()))!;
+        await notificationService.Notify(requester, requestee, NotificationType.Requests, key,
             new Dictionary<string, string>
             {
                 {
                     "User",
-                    resourceService.GetRichText<User>(admission.RequesteeId.ToString(), admission.Requestee.UserName!)
+                    resourceService.GetRichText<User>(admission.RequesteeId.ToString(), requestee.UserName!)
                 },
                 {
                     "Admission",
                     resourceService.GetComplexRichText("SongSubmissionAdmission", admission.AdmitteeId.ToString(),
                         admission.AdmitterId.ToString(),
-                        templateService.GetMessage("more-info", admission.Requestee.Language)!)
+                        templateService.GetMessage("more-info", requester.Language)!)
                 }
             });
 
