@@ -85,20 +85,20 @@ public class AdmissionRepository(ApplicationDbContext context) : IAdmissionRepos
     public async Task<int> CountAdmittersAsync(Guid admitteeId, Expression<Func<Admission, bool>>? predicate = null)
     {
         if (predicate != null)
-            return await context.Admissions.Where(admission => admission.Admittee.Id == admitteeId)
+            return await context.Admissions.Where(admission => admission.AdmitteeId == admitteeId)
                 .Where(predicate)
                 .CountAsync();
 
-        return await context.Admissions.Where(admission => admission.Admittee.Id == admitteeId).CountAsync();
+        return await context.Admissions.Where(admission => admission.AdmitteeId == admitteeId).CountAsync();
     }
 
     public async Task<int> CountAdmitteesAsync(Guid admitterId, Expression<Func<Admission, bool>>? predicate = null)
     {
         if (predicate != null)
-            return await context.Admissions.Where(admission => admission.Admitter.Id == admitterId)
+            return await context.Admissions.Where(admission => admission.AdmitterId == admitterId)
                 .Where(predicate)
                 .CountAsync();
 
-        return await context.Admissions.Where(admission => admission.Admitter.Id == admitterId).CountAsync();
+        return await context.Admissions.Where(admission => admission.AdmitterId == admitterId).CountAsync();
     }
 }

@@ -1,7 +1,9 @@
-﻿using PhiZoneApi.Enums;
+﻿using Microsoft.EntityFrameworkCore;
+using PhiZoneApi.Enums;
 
 namespace PhiZoneApi.Models;
 
+[PrimaryKey(nameof(AdmitterId), nameof(AdmitteeId))]
 public class Admission
 {
     public Guid AdmitterId { get; set; }
