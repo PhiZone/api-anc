@@ -280,7 +280,8 @@ public class ChartSubmissionController(IChartSubmissionRepository chartSubmissio
                 DateCreated = DateTimeOffset.UtcNow
             };
             await admissionRepository.CreateAdmissionAsync(admission);
-            await notificationService.Notify(song.Owner, currentUser, NotificationType.Requests, "chart-admission",
+            await notificationService.Notify((await userManager.FindByIdAsync(song.OwnerId.ToString()))!, currentUser,
+                NotificationType.Requests, "chart-admission",
                 new Dictionary<string, string>
                 {
                     { "User", resourceService.GetRichText<User>(currentUser.Id.ToString(), currentUser.UserName!) },
@@ -311,7 +312,8 @@ public class ChartSubmissionController(IChartSubmissionRepository chartSubmissio
                 DateCreated = DateTimeOffset.UtcNow
             };
             await admissionRepository.CreateAdmissionAsync(admission);
-            await notificationService.Notify(songSubmission.Owner, currentUser, NotificationType.Requests,
+            await notificationService.Notify((await userManager.FindByIdAsync(songSubmission.OwnerId.ToString()))!,
+                currentUser, NotificationType.Requests,
                 "chart-admission",
                 new Dictionary<string, string>
                 {

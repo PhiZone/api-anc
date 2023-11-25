@@ -16,7 +16,7 @@ public class SongSubmissionReviewDto
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     public bool IsHidden { get; set; }
-    
+
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     public bool IsLocked { get; set; }
 
