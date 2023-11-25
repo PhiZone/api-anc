@@ -10,7 +10,8 @@ namespace PhiZoneApi.Services;
 public class DtoMapper(IUserRelationRepository userRelationRepository, IRegionRepository regionRepository,
     ILikeRepository likeRepository, UserManager<User> userManager, IMapper mapper, ICommentRepository commentRepository,
     IReplyRepository replyRepository, IRecordRepository recordRepository, IChapterRepository chapterRepository,
-    ISongRepository songRepository, IChartRepository chartRepository, ISongSubmissionRepository songSubmissionRepository, 
+    ISongRepository songRepository, IChartRepository chartRepository,
+    ISongSubmissionRepository songSubmissionRepository,
     IChartSubmissionRepository chartSubmissionRepository, IVolunteerVoteRepository volunteerVoteRepository,
     IPetQuestionRepository petQuestionRepository) : IDtoMapper
 {
@@ -96,7 +97,8 @@ public class DtoMapper(IUserRelationRepository userRelationRepository, IRegionRe
     {
         var dto = new AdmissionDto<TAdmitter, TAdmittee>
         {
-            Admitter = mapper.Map<TAdmitter>(await songSubmissionRepository.GetSongSubmissionAsync(admission.AdmitterId)),
+            Admitter = mapper.Map<TAdmitter>(
+                await songSubmissionRepository.GetSongSubmissionAsync(admission.AdmitterId)),
             Admittee =
                 await MapChartSubmissionAsync<TAdmittee>(
                     await chartSubmissionRepository.GetChartSubmissionAsync(admission.AdmitteeId), currentUser),
