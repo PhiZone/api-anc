@@ -277,7 +277,8 @@ public class ChartSubmissionController(IChartSubmissionRepository chartSubmissio
                 Status = RequestStatus.Waiting,
                 RequesterId = currentUser.Id,
                 RequesteeId = song.OwnerId,
-                DateCreated = DateTimeOffset.UtcNow
+                DateCreated = DateTimeOffset.UtcNow,
+                AdmitterType = AdmitterType.Song
             };
             await admissionRepository.CreateAdmissionAsync(admission);
             await notificationService.Notify((await userManager.FindByIdAsync(song.OwnerId.ToString()))!, currentUser,
@@ -309,7 +310,8 @@ public class ChartSubmissionController(IChartSubmissionRepository chartSubmissio
                 Status = RequestStatus.Waiting,
                 RequesterId = currentUser.Id,
                 RequesteeId = songSubmission.OwnerId,
-                DateCreated = DateTimeOffset.UtcNow
+                DateCreated = DateTimeOffset.UtcNow,
+                AdmitterType = AdmitterType.SongSubmission
             };
             await admissionRepository.CreateAdmissionAsync(admission);
             await notificationService.Notify((await userManager.FindByIdAsync(songSubmission.OwnerId.ToString()))!,

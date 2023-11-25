@@ -833,7 +833,8 @@ public class SongController(ISongRepository songRepository, IOptions<DataSetting
             Label = dto.Label,
             RequesterId = currentUser.Id,
             RequesteeId = chapter.OwnerId,
-            DateCreated = DateTimeOffset.UtcNow
+            DateCreated = DateTimeOffset.UtcNow,
+            AdmitterType = AdmitterType.Chapter
         };
 
         if (!await admissionRepository.CreateAdmissionAsync(admission))
