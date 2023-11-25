@@ -164,10 +164,7 @@ public class SubmissionService(ISongRepository songRepository, INotificationServ
                    (await songSubmissionRepository.GetSongSubmissionAsync(chartSubmission.SongSubmissionId!.Value))
                    .RepresentationId;
 
-        if (songId == null)
-        {
-            return;
-        }
+        if (songId == null) return;
 
         Chart chart;
         var owner = (await userManager.FindByIdAsync(chartSubmission.OwnerId.ToString()))!;

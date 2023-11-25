@@ -705,10 +705,7 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
             admission.Status = RequestStatus.Approved;
             key = "admission-approval";
             chart.AdmissionStatus = RequestStatus.Approved;
-            if (chart.VolunteerStatus == RequestStatus.Approved)
-            {
-                await submissionService.ApproveChart(chart);
-            }
+            if (chart.VolunteerStatus == RequestStatus.Approved) await submissionService.ApproveChart(chart);
         }
         else
         {

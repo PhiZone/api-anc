@@ -841,7 +841,8 @@ public class SongController(ISongRepository songRepository, IOptions<DataSetting
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
         if (chapter.OwnerId != currentUser.Id && chapter.Accessibility == Accessibility.RequireReview)
-            await notificationService.Notify(chapter.Owner, currentUser, NotificationType.Requests, "song-admission",
+            await notificationService.Notify((await userManager.FindByIdAsync(chapter.OwnerId.ToString()))!,
+                currentUser, NotificationType.Requests, "song-admission",
                 new Dictionary<string, string>
                 {
                     { "User", resourceService.GetRichText<User>(currentUser.Id.ToString(), currentUser.UserName!) },

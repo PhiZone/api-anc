@@ -146,6 +146,7 @@ public class ResourceRecordController(IResourceRecordRepository resourceRecordRe
 
         return StatusCode(StatusCodes.Status201Created);
     }
+
     /// <summary>
     ///     Creates new resource records.
     /// </summary>
