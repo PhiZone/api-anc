@@ -194,7 +194,7 @@ public class ChartSubmissionController(IChartSubmissionRepository chartSubmissio
                 });
 
             songSubmission = await songSubmissionRepository.GetSongSubmissionAsync(dto.SongSubmissionId.Value);
-            if (songSubmission.OwnerId != currentUser.Id)
+            if (songSubmission.OwnerId != currentUser.Id && songSubmission.Accessibility == Accessibility.RefuseAny)
                 return BadRequest(new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentIsPrivate
