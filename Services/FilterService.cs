@@ -50,11 +50,11 @@ public class FilterService : IFilterService
 
             if (name.StartsWith(Actions.Min))
                 expression = Expression.AndAlso(expression,
-                    Expression.GreaterThanOrEqual(Property<T>(entity, property, Actions.Min), condition));
+                    Expression.GreaterThanOrEqual(GetValue(Property<T>(entity, property, Actions.Min)), condition));
 
             if (name.StartsWith(Actions.Max))
                 expression = Expression.AndAlso(expression,
-                    Expression.LessThanOrEqual(Property<T>(entity, property, Actions.Max), condition));
+                    Expression.LessThanOrEqual(GetValue(Property<T>(entity, property, Actions.Max)), condition));
 
             if (name.StartsWith(Actions.Range))
                 expression = Expression.AndAlso(expression,
