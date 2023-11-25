@@ -282,7 +282,7 @@ public class ChartSubmissionController(IChartSubmissionRepository chartSubmissio
             };
             await admissionRepository.CreateAdmissionAsync(admission);
             await notificationService.Notify((await userManager.FindByIdAsync(song.OwnerId.ToString()))!, currentUser,
-                NotificationType.Requests, "chart-admission",
+                NotificationType.Requests, "song-admission",
                 new Dictionary<string, string>
                 {
                     { "User", resourceService.GetRichText<User>(currentUser.Id.ToString(), currentUser.UserName!) },
@@ -294,8 +294,8 @@ public class ChartSubmissionController(IChartSubmissionRepository chartSubmissio
                     { "Song", resourceService.GetRichText<Song>(song.Id.ToString(), song.GetDisplay()) },
                     {
                         "Admission",
-                        resourceService.GetComplexRichText("SongAdmission", admission.AdmitteeId.ToString(),
-                            admission.AdmitterId.ToString(),
+                        resourceService.GetComplexRichText("SongAdmission", admission.AdmitterId.ToString(),
+                            admission.AdmitteeId.ToString(),
                             templateService.GetMessage("more-info", admission.Requestee.Language)!)
                     }
                 });
@@ -316,7 +316,7 @@ public class ChartSubmissionController(IChartSubmissionRepository chartSubmissio
             await admissionRepository.CreateAdmissionAsync(admission);
             await notificationService.Notify((await userManager.FindByIdAsync(songSubmission.OwnerId.ToString()))!,
                 currentUser, NotificationType.Requests,
-                "chart-admission",
+                "song-submission-admission",
                 new Dictionary<string, string>
                 {
                     { "User", resourceService.GetRichText<User>(currentUser.Id.ToString(), currentUser.UserName!) },
@@ -333,7 +333,7 @@ public class ChartSubmissionController(IChartSubmissionRepository chartSubmissio
                     {
                         "Admission",
                         resourceService.GetComplexRichText("SongSubmissionAdmission",
-                            admission.AdmitteeId.ToString(), admission.AdmitterId.ToString(),
+                            admission.AdmitterId.ToString(), admission.AdmitteeId.ToString(),
                             templateService.GetMessage("more-info", admission.Requestee.Language)!)
                     }
                 });

@@ -70,12 +70,16 @@
       "Content": "{User} 拒绝了你的合作邀请。{Collaboration}"
     },
     {
-      "Key": "song-admission",
+      "Key": "chapter-admission",
       "Content": "{User} 申请将曲目 {Song} 收录于章节 {Chapter}。{Admission}"
     },
     {
-      "Key": "chart-admission",
+      "Key": "song-admission",
       "Content": "{User} 申请将谱面 {Chart} 收录于曲目 {Song}。{Admission}"
+    },
+    {
+      "Key": "song-submission-admission",
+      "Content": "{User} 申请将谱面 {Chart} 收录于曲目稿件 {Song}。{Admission}"
     },
     {
       "Key": "admission-approval",
