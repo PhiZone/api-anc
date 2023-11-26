@@ -24,10 +24,12 @@ public class ApplicationUpdateDto
 
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
+    [Url(ErrorMessage = ResponseCodes.InvalidUrl)]
     [MaxLength(2000, ErrorMessage = ResponseCodes.ValueTooLong)]
     [UserInputValidator(ErrorMessage = ResponseCodes.ContentProhibited)]
     public string Homepage { get; set; } = null!;
 
+    [Url(ErrorMessage = ResponseCodes.InvalidUrl)]
     [MaxLength(2000, ErrorMessage = ResponseCodes.ValueTooLong)]
     [UserInputValidator(ErrorMessage = ResponseCodes.ContentProhibited)]
     public string? ApiEndpoint { get; set; }

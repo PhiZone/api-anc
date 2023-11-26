@@ -119,7 +119,7 @@ public class ResourceRecordController(IResourceRecordRepository resourceRecordRe
     public async Task<IActionResult> CreateResourceRecord([FromBody] ResourceRecordRequestDto dto)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await resourceService.HasPermission(currentUser, Roles.Administrator))
+        if (!await resourceService.HasPermission(currentUser, Roles.Moderator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -168,7 +168,7 @@ public class ResourceRecordController(IResourceRecordRepository resourceRecordRe
     public async Task<IActionResult> CreateResourceRecords([FromBody] List<ResourceRecordRequestDto> dtos)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await resourceService.HasPermission(currentUser, Roles.Administrator))
+        if (!await resourceService.HasPermission(currentUser, Roles.Moderator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -230,7 +230,7 @@ public class ResourceRecordController(IResourceRecordRepository resourceRecordRe
         var resourceRecord = await resourceRecordRepository.GetResourceRecordAsync(id);
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await resourceService.HasPermission(currentUser, Roles.Administrator))
+        if (!await resourceService.HasPermission(currentUser, Roles.Moderator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {

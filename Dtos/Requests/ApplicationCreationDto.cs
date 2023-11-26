@@ -28,10 +28,12 @@ public class ApplicationCreationDto
 
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
+    [Url(ErrorMessage = ResponseCodes.InvalidUrl)]
     [MaxLength(2000, ErrorMessage = ResponseCodes.ValueTooLong)]
     [UserInputValidator(ErrorMessage = ResponseCodes.ContentProhibited)]
     public string Homepage { get; set; } = string.Empty;
 
+    [Url(ErrorMessage = ResponseCodes.InvalidUrl)]
     [MaxLength(2000, ErrorMessage = ResponseCodes.ValueTooLong)]
     [UserInputValidator(ErrorMessage = ResponseCodes.ContentProhibited)]
     public string? ApiEndpoint { get; set; }
