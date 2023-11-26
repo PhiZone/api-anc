@@ -12,7 +12,7 @@ public class ReplyCreationDto
     public string Content { get; set; } = string.Empty;
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
-    [RegularExpression(@"^[a-z]{2}(?:-[A-Z]{2})?$", ErrorMessage = ResponseCodes.InvalidLanguageCode)]
+    [RegularExpression("^[a-z]{2}(?:-[A-Z]{2})?$", ErrorMessage = ResponseCodes.InvalidLanguageCode)]
     [LanguageValidator(ErrorMessage = ResponseCodes.UnsupportedLanguage)]
     public string Language { get; set; } = string.Empty;
 }
