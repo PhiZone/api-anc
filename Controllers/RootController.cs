@@ -73,10 +73,12 @@ public class RootController(IUserRepository userRepository, IChapterRepository c
     /// </summary>
     /// <returns>Studio's Headline.</returns>
     /// <response code="200">Returns studio's headline.</response>
+    /// <response code="401">When the user is not authorized.</response>
     [HttpGet("studio/headline")]
     [Produces("application/json")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<HeadlineDto>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
     public async Task<IActionResult> GetStudioHeadline()
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
