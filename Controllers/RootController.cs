@@ -1,8 +1,13 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using OpenIddict.Abstractions;
+using OpenIddict.Validation.AspNetCore;
 using PhiZoneApi.Constants;
 using PhiZoneApi.Dtos.Responses;
 using PhiZoneApi.Enums;
 using PhiZoneApi.Interfaces;
+using PhiZoneApi.Models;
 using StackExchange.Redis;
 
 namespace PhiZoneApi.Controllers;
@@ -13,7 +18,7 @@ namespace PhiZoneApi.Controllers;
 public class RootController(IUserRepository userRepository, IChapterRepository chapterRepository,
         ISongRepository songRepository, IChartRepository chartRepository, ICommentRepository commentRepository,
         ILikeRepository likeRepository, IRecordRepository recordRepository, IReplyRepository replyRepository,
-        IConnectionMultiplexer redis)
+        IConnectionMultiplexer redis, UserManager<User> userManager, IResourceService resourceService)
     : Controller
 {
     /// <summary>
@@ -70,9 +75,18 @@ public class RootController(IUserRepository userRepository, IChapterRepository c
     /// <response code="200">Returns studio's headline.</response>
     [HttpGet("studio/headline")]
     [Produces("application/json")]
+    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<HeadlineDto>))]
     public async Task<IActionResult> GetStudioHeadline()
     {
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!await resourceService.HasPermission(currentUser, Roles.Qualified))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+
         var db = redis.GetDatabase();
         return Ok(new ResponseDto<HeadlineDto>
         {
