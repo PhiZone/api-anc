@@ -9,7 +9,7 @@ public class MappingProfiles : Profile
 {
     public MappingProfiles()
     {
-        CreateMap<User, UserDto>();
+        CreateMap<User, UserDto>().ForMember(x => x.Role, opt => opt.Ignore());
         CreateMap<User, UserDetailedDto>();
         CreateMap<User, UserUpdateDto>();
         CreateMap<UserRegistrationDto, User>();

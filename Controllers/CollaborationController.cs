@@ -46,8 +46,8 @@ public class CollaborationController(ICollaborationRepository collaborationRepos
         [FromQuery] CollaborationFilterDto? filterDto = null, [FromQuery] bool all = false)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        var isVolunteer = await resourceService.HasPermission(currentUser, Roles.Volunteer);
-        if (!await resourceService.HasPermission(currentUser, Roles.Qualified))
+        var isVolunteer = resourceService.HasPermission(currentUser, UserRole.Volunteer);
+        if (!resourceService.HasPermission(currentUser, UserRole.Qualified))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -105,9 +105,9 @@ public class CollaborationController(ICollaborationRepository collaborationRepos
         var collaboration = await collaborationRepository.GetCollaborationAsync(id);
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if (((collaboration.InviterId == currentUser.Id || collaboration.InviteeId == currentUser.Id) &&
-             !await resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+             !resourceService.HasPermission(currentUser, UserRole.Qualified)) ||
             (collaboration.InviterId != currentUser.Id && collaboration.InviteeId != currentUser.Id &&
-             !await resourceService.HasPermission(currentUser, Roles.Volunteer)))
+             !resourceService.HasPermission(currentUser, UserRole.Volunteer)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -151,9 +151,9 @@ public class CollaborationController(ICollaborationRepository collaborationRepos
         var collaboration = await collaborationRepository.GetCollaborationAsync(id);
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if ((collaboration.InviterId == currentUser.Id &&
-             !await resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+             !resourceService.HasPermission(currentUser, UserRole.Qualified)) ||
             (collaboration.InviterId != currentUser.Id &&
-             !await resourceService.HasPermission(currentUser, Roles.Administrator)))
+             !resourceService.HasPermission(currentUser, UserRole.Administrator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -215,9 +215,9 @@ public class CollaborationController(ICollaborationRepository collaborationRepos
             });
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if ((collaboration.InviteeId == currentUser.Id &&
-             !await resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+             !resourceService.HasPermission(currentUser, UserRole.Qualified)) ||
             (collaboration.InviteeId != currentUser.Id &&
-             !await resourceService.HasPermission(currentUser, Roles.Administrator)))
+             !resourceService.HasPermission(currentUser, UserRole.Administrator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -321,9 +321,9 @@ public class CollaborationController(ICollaborationRepository collaborationRepos
         var collaboration = await collaborationRepository.GetCollaborationAsync(id);
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if ((collaboration.InviterId == currentUser.Id &&
-             !await resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+             !resourceService.HasPermission(currentUser, UserRole.Qualified)) ||
             (collaboration.InviterId != currentUser.Id &&
-             !await resourceService.HasPermission(currentUser, Roles.Administrator)))
+             !resourceService.HasPermission(currentUser, UserRole.Administrator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {

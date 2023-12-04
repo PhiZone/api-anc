@@ -128,9 +128,9 @@ public class ReplyController(IReplyRepository replyRepository, IOptions<DataSett
             });
 
         var reply = await replyRepository.GetReplyAsync(id);
-        if ((currentUser.Id == reply.OwnerId && !await resourceService.HasPermission(currentUser, Roles.Member)) ||
+        if ((currentUser.Id == reply.OwnerId && !resourceService.HasPermission(currentUser, UserRole.Member)) ||
             (currentUser.Id != reply.OwnerId &&
-             !await resourceService.HasPermission(currentUser, Roles.Moderator)))
+             !resourceService.HasPermission(currentUser, UserRole.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {

@@ -3,23 +3,17 @@ using PhiZoneApi.Interfaces;
 
 namespace PhiZoneApi.Services;
 
-public class ChartMigrationService : IHostedService
+public class ChartMigrationService(IServiceProvider serviceProvider) : IHostedService
 {
-    private readonly IServiceProvider _serviceProvider;
     private IChartRepository _chartRepository = null!;
     private ILogger<ChartMigrationService> _logger = null!;
     private IRecordRepository _recordRepository = null!;
     private IRecordService _recordService = null!;
     private IVoteService _voteService = null!;
 
-    public ChartMigrationService(IServiceProvider serviceProvider)
-    {
-        _serviceProvider = serviceProvider;
-    }
-
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        await using var scope = _serviceProvider.CreateAsyncScope();
+        await using var scope = serviceProvider.CreateAsyncScope();
 
         _logger = scope.ServiceProvider.GetRequiredService<ILogger<ChartMigrationService>>();
         _chartRepository = scope.ServiceProvider.GetRequiredService<IChartRepository>();

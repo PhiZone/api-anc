@@ -12,47 +12,25 @@ namespace PhiZoneApi.Repositories;
 public class UserRepository(ApplicationDbContext context) : IUserRepository
 {
     public async Task<ICollection<User>> GetUsersAsync(List<string> order, List<bool> desc, int position, int take,
-        string? search = null, Expression<Func<User, bool>>? predicate = null)
+        Expression<Func<User, bool>>? predicate = null)
     {
         var result = context.Users.OrderBy(order, desc);
-
         if (predicate != null) result = result.Where(predicate);
-
-        if (search != null)
-        {
-            search = $"%{search.Trim().ToUpper()}%";
-            result = result.Where(user =>
-                (user.NormalizedUserName != null && EF.Functions.Like(user.NormalizedUserName, search)) ||
-                (user.Tag != null && EF.Functions.Like(user.Tag.ToUpper(), search)) ||
-                (user.Biography != null && EF.Functions.Like(user.Biography.ToUpper(), search)) ||
-                EF.Functions.Like(user.Language.ToUpper(), search));
-        }
-
         result = result.Skip(position);
         return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
 
-    public async Task<User?> GetUserByTapUnionId(string unionId)
+    public async Task<User?> GetUserByTapUnionId(Guid applicationId, string unionId)
     {
-        return await context.Users.FirstOrDefaultAsync(user => user.TapUnionId == unionId);
+        return await context.Users.FirstOrDefaultAsync(user =>
+            user.TapUserRelations.Any(relation =>
+                relation.ApplicationId == applicationId && relation.UnionId == unionId));
     }
 
-    public async Task<int> CountUsersAsync(string? search = null, Expression<Func<User, bool>>? predicate = null)
+    public async Task<int> CountUsersAsync(Expression<Func<User, bool>>? predicate = null)
     {
         var result = context.Users.AsQueryable();
-
         if (predicate != null) result = result.Where(predicate);
-
-        if (search != null)
-        {
-            search = $"%{search.Trim().ToUpper()}%";
-            result = result.Where(user =>
-                (user.NormalizedUserName != null && EF.Functions.Like(user.NormalizedUserName, search)) ||
-                (user.Tag != null && EF.Functions.Like(user.Tag.ToUpper(), search)) ||
-                (user.Biography != null && EF.Functions.Like(user.Biography.ToUpper(), search)) ||
-                EF.Functions.Like(user.Language.ToUpper(), search));
-        }
-
         return await result.CountAsync();
     }
 }

@@ -9,20 +9,15 @@ using PhiZoneApi.Utils;
 
 namespace PhiZoneApi.Repositories;
 
-public class PetChoiceRepository(ApplicationDbContext context) : IPetChoiceRepository
+public class PetChoiceRepository
+    (ApplicationDbContext context, IMeilisearchService meilisearchService) : IPetChoiceRepository
 {
     public async Task<ICollection<PetChoice>> GetPetChoicesAsync(List<string> order, List<bool> desc, int position,
         int take,
-        string? search = null, Expression<Func<PetChoice, bool>>? predicate = null)
+        Expression<Func<PetChoice, bool>>? predicate = null)
     {
         var result = context.PetChoices.OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
-        if (search != null)
-        {
-            search = $"%{search.Trim().ToUpper()}%";
-            result = result.Where(petChoice => EF.Functions.Like(petChoice.Content.ToUpper(), search));
-        }
-
         result = result.Skip(position);
         return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
@@ -40,12 +35,14 @@ public class PetChoiceRepository(ApplicationDbContext context) : IPetChoiceRepos
     public async Task<bool> CreatePetChoiceAsync(PetChoice petChoice)
     {
         await context.PetChoices.AddAsync(petChoice);
+        await meilisearchService.AddAsync(petChoice);
         return await SaveAsync();
     }
 
     public async Task<bool> UpdatePetChoiceAsync(PetChoice petChoice)
     {
         context.PetChoices.Update(petChoice);
+        await meilisearchService.UpdateAsync(petChoice);
         return await SaveAsync();
     }
 
@@ -53,6 +50,7 @@ public class PetChoiceRepository(ApplicationDbContext context) : IPetChoiceRepos
     {
         context.PetChoices.Remove(
             (await context.PetChoices.FirstOrDefaultAsync(petChoice => petChoice.Id == id))!);
+        await meilisearchService.DeleteAsync<PetChoice>(id);
         return await SaveAsync();
     }
 
@@ -62,18 +60,11 @@ public class PetChoiceRepository(ApplicationDbContext context) : IPetChoiceRepos
         return saved > 0;
     }
 
-    public async Task<int> CountPetChoicesAsync(string? search = null,
+    public async Task<int> CountPetChoicesAsync(
         Expression<Func<PetChoice, bool>>? predicate = null)
     {
         var result = context.PetChoices.AsQueryable();
-
         if (predicate != null) result = result.Where(predicate);
-        if (search != null)
-        {
-            search = $"%{search.Trim().ToUpper()}%";
-            result = result.Where(petChoice => EF.Functions.Like(petChoice.Content.ToUpper(), search));
-        }
-
         return await result.CountAsync();
     }
 }

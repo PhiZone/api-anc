@@ -11,6 +11,8 @@ public class User : IdentityUser<int>, IEquatable<User>
 
     public string? Biography { get; set; }
 
+    public UserRole Role { get; set; }
+
     public int Experience { get; set; }
 
     public string? Tag { get; set; }
@@ -25,8 +27,6 @@ public class User : IdentityUser<int>, IEquatable<User>
 
     public DateTimeOffset DateJoined { get; set; }
 
-    public string? TapUnionId { get; set; }
-
     public DateTimeOffset? DateOfBirth { get; set; }
 
     public int RegionId { get; set; }
@@ -40,6 +40,10 @@ public class User : IdentityUser<int>, IEquatable<User>
     public IEnumerable<User> Followees { get; } = new List<User>();
 
     public IEnumerable<UserRelation> FolloweeRelations { get; } = new List<UserRelation>();
+
+    public IEnumerable<Application> TapApplications { get; } = new List<Application>();
+
+    public IEnumerable<TapUserRelation> TapUserRelations { get; } = new List<TapUserRelation>();
 
     public bool Equals(User? other)
     {

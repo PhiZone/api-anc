@@ -18,9 +18,15 @@ public class Application : LikeableResource
 
     public ApplicationType Type { get; set; }
 
+    public string? TapClientId { get; set; }
+
     public string? Secret { get; set; }
 
     public DateTimeOffset DateUpdated { get; set; }
+
+    public IEnumerable<User> TapUsers { get; } = new List<User>();
+
+    public IEnumerable<TapUserRelation> TapUserRelations { get; } = new List<TapUserRelation>();
 
     public override string GetDisplay()
     {

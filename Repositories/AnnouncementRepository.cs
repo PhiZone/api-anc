@@ -9,21 +9,14 @@ using PhiZoneApi.Utils;
 
 namespace PhiZoneApi.Repositories;
 
-public class AnnouncementRepository(ApplicationDbContext context) : IAnnouncementRepository
+public class AnnouncementRepository
+    (ApplicationDbContext context, IMeilisearchService meilisearchService) : IAnnouncementRepository
 {
     public async Task<ICollection<Announcement>> GetAnnouncementsAsync(List<string> order, List<bool> desc,
-        int position, int take,
-        string? search = null, Expression<Func<Announcement, bool>>? predicate = null)
+        int position, int take, Expression<Func<Announcement, bool>>? predicate = null)
     {
         var result = context.Announcements.OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
-        if (search != null)
-        {
-            search = $"%{search.Trim().ToUpper()}%";
-            result = result.Where(announcement => EF.Functions.Like(announcement.Title.ToUpper(), search) ||
-                                                  EF.Functions.Like(announcement.Content.ToUpper(), search));
-        }
-
         result = result.Skip(position);
         return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
@@ -41,12 +34,14 @@ public class AnnouncementRepository(ApplicationDbContext context) : IAnnouncemen
     public async Task<bool> CreateAnnouncementAsync(Announcement announcement)
     {
         await context.Announcements.AddAsync(announcement);
+        await meilisearchService.AddAsync(announcement);
         return await SaveAsync();
     }
 
     public async Task<bool> UpdateAnnouncementAsync(Announcement announcement)
     {
         context.Announcements.Update(announcement);
+        await meilisearchService.UpdateAsync(announcement);
         return await SaveAsync();
     }
 
@@ -54,6 +49,7 @@ public class AnnouncementRepository(ApplicationDbContext context) : IAnnouncemen
     {
         context.Announcements.Remove(
             (await context.Announcements.FirstOrDefaultAsync(announcement => announcement.Id == id))!);
+        await meilisearchService.DeleteAsync<Announcement>(id);
         return await SaveAsync();
     }
 
@@ -63,19 +59,10 @@ public class AnnouncementRepository(ApplicationDbContext context) : IAnnouncemen
         return saved > 0;
     }
 
-    public async Task<int> CountAnnouncementsAsync(string? search = null,
-        Expression<Func<Announcement, bool>>? predicate = null)
+    public async Task<int> CountAnnouncementsAsync(Expression<Func<Announcement, bool>>? predicate = null)
     {
         var result = context.Announcements.AsQueryable();
-
         if (predicate != null) result = result.Where(predicate);
-        if (search != null)
-        {
-            search = $"%{search.Trim().ToUpper()}%";
-            result = result.Where(announcement => EF.Functions.Like(announcement.Title.ToUpper(), search) ||
-                                                  EF.Functions.Like(announcement.Content.ToUpper(), search));
-        }
-
         return await result.CountAsync();
     }
 }

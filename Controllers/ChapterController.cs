@@ -29,11 +29,10 @@ namespace PhiZoneApi.Controllers;
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme,
     Policy = "AllowAnonymous")]
 public class ChapterController(IChapterRepository chapterRepository, IOptions<DataSettings> dataSettings,
-        UserManager<User> userManager, IFilterService filterService, IFileStorageService fileStorageService,
-        IDtoMapper dtoMapper, IMapper mapper, ILikeRepository likeRepository, ILikeService likeService,
-        ICommentRepository commentRepository, IResourceService resourceService,
-        INotificationService notificationService)
-    : Controller
+    UserManager<User> userManager, IFilterService filterService, IFileStorageService fileStorageService,
+    IDtoMapper dtoMapper, IMapper mapper, ILikeRepository likeRepository, ILikeService likeService,
+    ICommentRepository commentRepository, IResourceService resourceService, INotificationService notificationService,
+    IMeilisearchService meilisearchService) : Controller
 {
     /// <summary>
     ///     Retrieves chapters.
@@ -54,9 +53,22 @@ public class ChapterController(IChapterRepository chapterRepository, IOptions<Da
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser);
-        var chapters = await chapterRepository.GetChaptersAsync(dto.Order, dto.Desc, position,
-            dto.PerPage, dto.Search, predicateExpr);
-        var total = await chapterRepository.CountChaptersAsync(dto.Search, predicateExpr);
+        IEnumerable<Chapter> chapters;
+        int total;
+        if (dto.Search != null)
+        {
+            var result = await meilisearchService.SearchAsync<Chapter>(dto.Search, dto.PerPage, dto.Page,
+                showHidden: currentUser is { Role: UserRole.Administrator });
+            chapters = result.Hits;
+            total = result.TotalHits;
+        }
+        else
+        {
+            chapters = await chapterRepository.GetChaptersAsync(dto.Order, dto.Desc, position, dto.PerPage,
+                predicateExpr);
+            total = await chapterRepository.CountChaptersAsync(predicateExpr);
+        }
+
         var list = new List<ChapterDto>();
 
         foreach (var chapter in chapters) list.Add(await dtoMapper.MapChapterAsync<ChapterDto>(chapter, currentUser));
@@ -126,7 +138,7 @@ public class ChapterController(IChapterRepository chapterRepository, IOptions<Da
     public async Task<IActionResult> CreateChapter([FromForm] ChapterCreationDto dto)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await resourceService.HasPermission(currentUser, Roles.Administrator))
+        if (!resourceService.HasPermission(currentUser, UserRole.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -189,7 +201,7 @@ public class ChapterController(IChapterRepository chapterRepository, IOptions<Da
         var chapter = await chapterRepository.GetChapterAsync(id);
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await resourceService.HasPermission(currentUser, Roles.Administrator))
+        if (!resourceService.HasPermission(currentUser, UserRole.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -245,8 +257,7 @@ public class ChapterController(IChapterRepository chapterRepository, IOptions<Da
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> UpdateChapterIllustration([FromRoute] Guid id,
-        [FromForm] FileDto dto)
+    public async Task<IActionResult> UpdateChapterIllustration([FromRoute] Guid id, [FromForm] FileDto dto)
     {
         if (!await chapterRepository.ChapterExistsAsync(id))
             return NotFound(new ResponseDto<object>
@@ -257,7 +268,7 @@ public class ChapterController(IChapterRepository chapterRepository, IOptions<Da
         var chapter = await chapterRepository.GetChapterAsync(id);
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await resourceService.HasPermission(currentUser, Roles.Administrator))
+        if (!resourceService.HasPermission(currentUser, UserRole.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -305,7 +316,7 @@ public class ChapterController(IChapterRepository chapterRepository, IOptions<Da
             });
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await resourceService.HasPermission(currentUser, Roles.Administrator))
+        if (!resourceService.HasPermission(currentUser, UserRole.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -348,9 +359,9 @@ public class ChapterController(IChapterRepository chapterRepository, IOptions<Da
             });
 
         var admissions = await chapterRepository.GetChapterSongsAsync(id, dto.Order, dto.Desc, position, dto.PerPage,
-            dto.Search, predicateExpr);
+            predicateExpr);
         var list = new List<SongAdmitteeDto>();
-        var total = await chapterRepository.CountChapterSongsAsync(id, dto.Search, predicateExpr);
+        var total = await chapterRepository.CountChapterSongsAsync(id, predicateExpr);
 
         foreach (var admission in admissions)
             list.Add(await dtoMapper.MapChapterSongAsync<SongAdmitteeDto>(admission, currentUser));
@@ -396,7 +407,7 @@ public class ChapterController(IChapterRepository chapterRepository, IOptions<Da
         var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         var chapter = await chapterRepository.GetChapterAsync(id);
 
-        if ((currentUser == null || !await resourceService.HasPermission(currentUser, Roles.Administrator)) &&
+        if ((currentUser == null || !resourceService.HasPermission(currentUser, UserRole.Administrator)) &&
             chapter.IsLocked)
             return BadRequest(new ResponseDto<object>
             {
@@ -532,7 +543,7 @@ public class ChapterController(IChapterRepository chapterRepository, IOptions<Da
 
         var chapter = await chapterRepository.GetChapterAsync(id);
 
-        if ((currentUser == null || !await resourceService.HasPermission(currentUser, Roles.Administrator)) &&
+        if ((currentUser == null || !resourceService.HasPermission(currentUser, UserRole.Administrator)) &&
             chapter.IsLocked)
             return BadRequest(new ResponseDto<object>
             {
@@ -581,7 +592,7 @@ public class ChapterController(IChapterRepository chapterRepository, IOptions<Da
     public async Task<IActionResult> CreateComment([FromRoute] Guid id, [FromBody] CommentCreationDto dto)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await resourceService.HasPermission(currentUser, Roles.Member))
+        if (!resourceService.HasPermission(currentUser, UserRole.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {

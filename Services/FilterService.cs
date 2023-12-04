@@ -2,27 +2,20 @@
 using System.Reflection;
 using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
-using PhiZoneApi.Constants;
 using PhiZoneApi.Dtos.Filters;
+using PhiZoneApi.Enums;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 using Actions = PhiZoneApi.Constants.FilterActions;
 
 namespace PhiZoneApi.Services;
 
-public class FilterService : IFilterService
+public class FilterService(IResourceService resourceService) : IFilterService
 {
-    private readonly IResourceService _resourceService;
-
-    public FilterService(IResourceService resourceService)
-    {
-        _resourceService = resourceService;
-    }
-
     public async Task<Expression<Func<T, bool>>?> Parse<T>(FilterDto<T>? dto, string? predicate = null,
         User? currentUser = null, Expression<Func<T, bool>>? requirement = null)
     {
-        var isAdmin = currentUser != null && await _resourceService.HasPermission(currentUser, Roles.Administrator);
+        var isAdmin = currentUser != null && resourceService.HasPermission(currentUser, UserRole.Administrator);
 
         if (isAdmin && predicate != null)
             return await CSharpScript.EvaluateAsync<Expression<Func<T, bool>>>(predicate,

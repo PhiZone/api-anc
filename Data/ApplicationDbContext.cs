@@ -15,6 +15,7 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, int>
     public DbSet<UserRelation> UserRelations { get; set; } = null!;
     public DbSet<Region> Regions { get; set; } = null!;
     public DbSet<Chapter> Chapters { get; set; } = null!;
+    public DbSet<Collection> Collections { get; set; } = null!;
     public DbSet<Song> Songs { get; set; } = null!;
     public DbSet<Admission> Admissions { get; set; } = null!;
     public DbSet<Chart> Charts { get; set; } = null!;
@@ -39,6 +40,7 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, int>
     public DbSet<PetChoice> PetChoices { get; set; } = null!;
     public DbSet<PetAnswer> PetAnswers { get; set; } = null!;
     public DbSet<ResourceRecord> ResourceRecords { get; set; } = null!;
+    public DbSet<TapUserRelation> TapUserRelations { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -49,6 +51,13 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, int>
             .WithMany(e => e.Followees)
             .UsingEntity<UserRelation>(l => l.HasOne<User>(e => e.Follower).WithMany(e => e.FolloweeRelations),
                 r => r.HasOne<User>(e => e.Followee).WithMany(e => e.FollowerRelations));
+
+        builder.Entity<User>()
+            .HasMany(e => e.TapApplications)
+            .WithMany(e => e.TapUsers)
+            .UsingEntity<TapUserRelation>(
+                l => l.HasOne<Application>(e => e.Application).WithMany(e => e.TapUserRelations),
+                r => r.HasOne<User>(e => e.User).WithMany(e => e.TapUserRelations));
 
         // builder.Entity<Chapter>()
         //     .HasMany(e => e.Songs)

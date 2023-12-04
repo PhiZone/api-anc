@@ -46,8 +46,8 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
         [FromQuery] AdmissionFilterDto? filterDto = null, [FromQuery] bool all = false)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        var isModerator = await resourceService.HasPermission(currentUser, Roles.Moderator);
-        if (!await resourceService.HasPermission(currentUser, Roles.Qualified))
+        var isModerator = resourceService.HasPermission(currentUser, UserRole.Moderator);
+        if (!resourceService.HasPermission(currentUser, UserRole.Qualified))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -98,8 +98,8 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
         [FromQuery] AdmissionFilterDto? filterDto = null, [FromQuery] bool all = false)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        var isModerator = await resourceService.HasPermission(currentUser, Roles.Moderator);
-        if (!await resourceService.HasPermission(currentUser, Roles.Qualified))
+        var isModerator = resourceService.HasPermission(currentUser, UserRole.Moderator);
+        if (!resourceService.HasPermission(currentUser, UserRole.Qualified))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -150,8 +150,8 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
         [FromQuery] AdmissionFilterDto? filterDto = null, [FromQuery] bool all = false)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        var isModerator = await resourceService.HasPermission(currentUser, Roles.Moderator);
-        if (!await resourceService.HasPermission(currentUser, Roles.Qualified))
+        var isModerator = resourceService.HasPermission(currentUser, UserRole.Moderator);
+        if (!resourceService.HasPermission(currentUser, UserRole.Qualified))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -231,9 +231,9 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
         var chapter = await chapterRepository.GetChapterAsync(chapterId);
         var admission = await admissionRepository.GetAdmissionAsync(chapterId, songId);
         if ((((song.OwnerId == currentUser.Id || chapter.OwnerId == currentUser.Id) &&
-              !await resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+              !resourceService.HasPermission(currentUser, UserRole.Qualified)) ||
              (song.OwnerId != currentUser.Id && chapter.OwnerId != currentUser.Id &&
-              !await resourceService.HasPermission(currentUser, Roles.Moderator))) &&
+              !resourceService.HasPermission(currentUser, UserRole.Moderator))) &&
             admission.Status != RequestStatus.Approved)
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
@@ -296,9 +296,9 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
         var song = await songRepository.GetSongAsync(songId);
         var admission = await admissionRepository.GetAdmissionAsync(songId, chartSubmissionId);
         if ((((chart.OwnerId == currentUser.Id || song.OwnerId == currentUser.Id) &&
-              !await resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+              !resourceService.HasPermission(currentUser, UserRole.Qualified)) ||
              (chart.OwnerId != currentUser.Id && song.OwnerId != currentUser.Id &&
-              !await resourceService.HasPermission(currentUser, Roles.Moderator))) &&
+              !resourceService.HasPermission(currentUser, UserRole.Moderator))) &&
             admission.Status != RequestStatus.Approved)
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
@@ -362,9 +362,9 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
         var songSubmission = await songSubmissionRepository.GetSongSubmissionAsync(songSubmissionId);
         var admission = await admissionRepository.GetAdmissionAsync(songSubmissionId, chartSubmissionId);
         if ((((chart.OwnerId == currentUser.Id || songSubmission.OwnerId == currentUser.Id) &&
-              !await resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+              !resourceService.HasPermission(currentUser, UserRole.Qualified)) ||
              (chart.OwnerId != currentUser.Id && songSubmission.OwnerId != currentUser.Id &&
-              !await resourceService.HasPermission(currentUser, Roles.Moderator))) &&
+              !resourceService.HasPermission(currentUser, UserRole.Moderator))) &&
             admission.Status != RequestStatus.Approved)
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
@@ -424,9 +424,9 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
         var admission = await admissionRepository.GetAdmissionAsync(chapterId, songId);
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if ((admission.RequesterId == currentUser.Id &&
-             !await resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+             !resourceService.HasPermission(currentUser, UserRole.Qualified)) ||
             (admission.RequesterId != currentUser.Id &&
-             !await resourceService.HasPermission(currentUser, Roles.Administrator)))
+             !resourceService.HasPermission(currentUser, UserRole.Administrator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -497,9 +497,9 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if ((admission.RequesteeId == currentUser.Id &&
-             !await resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+             !resourceService.HasPermission(currentUser, UserRole.Qualified)) ||
             (admission.RequesteeId != currentUser.Id &&
-             !await resourceService.HasPermission(currentUser, Roles.Moderator)))
+             !resourceService.HasPermission(currentUser, UserRole.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -591,9 +591,9 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if ((admission.RequesteeId == currentUser.Id &&
-             !await resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+             !resourceService.HasPermission(currentUser, UserRole.Qualified)) ||
             (admission.RequesteeId != currentUser.Id &&
-             !await resourceService.HasPermission(currentUser, Roles.Administrator)))
+             !resourceService.HasPermission(currentUser, UserRole.Administrator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -693,9 +693,9 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if ((admission.RequesteeId == currentUser.Id &&
-             !await resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+             !resourceService.HasPermission(currentUser, UserRole.Qualified)) ||
             (admission.RequesteeId != currentUser.Id &&
-             !await resourceService.HasPermission(currentUser, Roles.Moderator)))
+             !resourceService.HasPermission(currentUser, UserRole.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {

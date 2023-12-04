@@ -10,25 +10,15 @@ using PhiZoneApi.Utils;
 
 namespace PhiZoneApi.Repositories;
 
-public class ChapterRepository(ApplicationDbContext context) : IChapterRepository
+public class ChapterRepository
+    (ApplicationDbContext context, IMeilisearchService meilisearchService) : IChapterRepository
 {
     public async Task<ICollection<Chapter>> GetChaptersAsync(List<string> order, List<bool> desc, int position,
         int take,
-        string? search = null, Expression<Func<Chapter, bool>>? predicate = null)
+        Expression<Func<Chapter, bool>>? predicate = null)
     {
         var result = context.Chapters.OrderBy(order, desc);
-
         if (predicate != null) result = result.Where(predicate);
-
-        if (search != null)
-        {
-            search = $"%{search.Trim().ToUpper()}%";
-            result = result.Where(chapter =>
-                EF.Functions.Like(chapter.Title.ToUpper(), search) ||
-                EF.Functions.Like(chapter.Subtitle.ToUpper(), search) ||
-                (chapter.Description != null && EF.Functions.Like(chapter.Description.ToUpper(), search)));
-        }
-
         result = result.Skip(position);
         return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
@@ -40,21 +30,12 @@ public class ChapterRepository(ApplicationDbContext context) : IChapterRepositor
 
     public async Task<ICollection<Admission>> GetChapterSongsAsync(Guid id, List<string> order, List<bool> desc,
         int position,
-        int take, string? search = null, Expression<Func<Admission, bool>>? predicate = null)
+        int take, Expression<Func<Admission, bool>>? predicate = null)
     {
         var result = context.Admissions
             .Where(admission => admission.AdmitterId == id && admission.Status == RequestStatus.Approved)
             .OrderBy(order, desc);
-
         if (predicate != null) result = result.Where(predicate);
-
-        if (search != null)
-        {
-            search = $"%{search.Trim().ToUpper()}%";
-            result = result.Where(admission =>
-                admission.Label != null && EF.Functions.Like(admission.Label.ToUpper(), search));
-        }
-
         result = result.Skip(position);
         return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
@@ -67,18 +48,21 @@ public class ChapterRepository(ApplicationDbContext context) : IChapterRepositor
     public async Task<bool> CreateChapterAsync(Chapter chapter)
     {
         await context.Chapters.AddAsync(chapter);
+        await meilisearchService.AddAsync(chapter);
         return await SaveAsync();
     }
 
     public async Task<bool> UpdateChapterAsync(Chapter chapter)
     {
         context.Chapters.Update(chapter);
+        await meilisearchService.UpdateAsync(chapter);
         return await SaveAsync();
     }
 
     public async Task<bool> RemoveChapterAsync(Guid id)
     {
         context.Chapters.Remove((await context.Chapters.FirstOrDefaultAsync(chapter => chapter.Id == id))!);
+        await meilisearchService.DeleteAsync<Chapter>(id);
         return await SaveAsync();
     }
 
@@ -88,39 +72,19 @@ public class ChapterRepository(ApplicationDbContext context) : IChapterRepositor
         return saved > 0;
     }
 
-    public async Task<int> CountChaptersAsync(string? search = null, Expression<Func<Chapter, bool>>? predicate = null)
+    public async Task<int> CountChaptersAsync(Expression<Func<Chapter, bool>>? predicate = null)
     {
         var result = context.Chapters.AsQueryable();
-
         if (predicate != null) result = result.Where(predicate);
-
-        if (search != null)
-        {
-            search = $"%{search.Trim().ToUpper()}%";
-            result = result.Where(chapter =>
-                EF.Functions.Like(chapter.Title.ToUpper(), search) ||
-                EF.Functions.Like(chapter.Subtitle.ToUpper(), search) ||
-                (chapter.Description != null && EF.Functions.Like(chapter.Description.ToUpper(), search)));
-        }
-
         return await result.CountAsync();
     }
 
-    public async Task<int> CountChapterSongsAsync(Guid id, string? search = null,
+    public async Task<int> CountChapterSongsAsync(Guid id,
         Expression<Func<Admission, bool>>? predicate = null)
     {
         var result = context.Admissions.Where(admission =>
             admission.AdmitterId == id && admission.Status == RequestStatus.Approved);
-
         if (predicate != null) result = result.Where(predicate);
-
-        if (search != null)
-        {
-            search = $"%{search.Trim().ToUpper()}%";
-            result = result.Where(admission =>
-                admission.Label != null && EF.Functions.Like(admission.Label.ToUpper(), search));
-        }
-
         return await result.CountAsync();
     }
 }

@@ -75,7 +75,7 @@ public class SubmissionService(ISongRepository songRepository, INotificationServ
 
             foreach (var chartSubmission in await chartSubmissionRepository.GetChartSubmissionsAsync(
                          new List<string> { "DateCreated" }, new List<bool> { false }, 0, -1,
-                         predicate: e => e.SongSubmissionId == songSubmission.Id && e.Status == RequestStatus.Approved))
+                         e => e.SongSubmissionId == songSubmission.Id && e.Status == RequestStatus.Approved))
                 await ApproveChart(chartSubmission, song.Id);
         }
         else

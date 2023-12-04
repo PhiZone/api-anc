@@ -1,10 +1,8 @@
 ﻿using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Identity;
-using PhiZoneApi.Constants;
 using PhiZoneApi.Enums;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
-using Role = PhiZoneApi.Constants.Role;
 
 namespace PhiZoneApi.Services;
 
@@ -70,24 +68,9 @@ public class ResourceService(UserManager<User> userManager, ISongRepository song
         return (await userRelationRepository.GetRelationAsync(user2, user1)).Type == UserRelationType.Blacklisted;
     }
 
-    public async Task<bool> HasPermission(User user, Role targetRole)
+    public bool HasPermission(User user, UserRole role)
     {
-        var currentRole = await GetRole(user);
-        return currentRole != null && currentRole.Priority >= targetRole.Priority;
-    }
-
-    public async Task<bool> HasPermission(User user, int priority)
-    {
-        var currentRole = await GetRole(user);
-        return currentRole!.Priority >= priority;
-    }
-
-    public async Task<Role?> GetRole(User user)
-    {
-        var roles = await userManager.GetRolesAsync(user);
-        if (roles.Count < 1) return null;
-        var roleName = roles.First();
-        return Roles.List.FirstOrDefault(role => role.Name == roleName);
+        return GetPriority(user.Role) >= GetPriority(role);
     }
 
     public async Task<(string, List<User>)> ParseUserContent(string content)
@@ -104,5 +87,19 @@ public class ResourceService(UserManager<User> userManager, ISongRepository song
         }
 
         return (result, users);
+    }
+
+    private static int GetPriority(UserRole role)
+    {
+        return role switch
+        {
+            UserRole.Administrator => 6,
+            UserRole.Moderator => 5,
+            UserRole.Volunteer => 4,
+            UserRole.Qualified => 3,
+            UserRole.Sponsor => 2,
+            UserRole.Member => 1,
+            _ => 0
+        };
     }
 }

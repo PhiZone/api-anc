@@ -8,15 +8,14 @@ namespace PhiZoneApi.Interfaces;
 public interface ISongRepository
 {
     Task<ICollection<Song>> GetSongsAsync(List<string> order, List<bool> desc, int position, int take,
-        string? search = null,
         Expression<Func<Song, bool>>? predicate = null);
 
     Task<Song> GetSongAsync(Guid id);
 
-    Task<Song?> GetRandomSongAsync(string? search = null, Expression<Func<Song, bool>>? predicate = null);
+    Task<Song?> GetRandomSongAsync(Expression<Func<Song, bool>>? predicate = null);
 
     Task<ICollection<Chart>> GetSongChartsAsync(Guid id, List<string> order, List<bool> desc, int position, int take,
-        string? search = null, Expression<Func<Chart, bool>>? predicate = null);
+        Expression<Func<Chart, bool>>? predicate = null);
 
     Task<bool> SongExistsAsync(Guid id);
 
@@ -30,7 +29,7 @@ public interface ISongRepository
 
     Task<bool> SaveAsync();
 
-    Task<int> CountSongsAsync(string? search = null, Expression<Func<Song, bool>>? predicate = null);
+    Task<int> CountSongsAsync(Expression<Func<Song, bool>>? predicate = null);
 
-    Task<int> CountSongChartsAsync(Guid id, string? search = null, Expression<Func<Chart, bool>>? predicate = null);
+    Task<int> CountSongChartsAsync(Guid id, Expression<Func<Chart, bool>>? predicate = null);
 }

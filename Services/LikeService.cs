@@ -4,11 +4,10 @@ using PhiZoneApi.Models;
 namespace PhiZoneApi.Services;
 
 public class LikeService(ILikeRepository likeRepository, IChapterRepository chapterRepository,
-        ISongRepository songRepository, IChartRepository chartRepository, IRecordRepository recordRepository,
-        ICommentRepository commentRepository, IReplyRepository replyRepository,
-        IApplicationRepository applicationRepository, IAnnouncementRepository announcementRepository,
-        IResourceService resourceService, INotificationService notificationService)
-    : ILikeService
+    ICollectionRepository collectionRepository, ISongRepository songRepository, IChartRepository chartRepository,
+    IRecordRepository recordRepository, ICommentRepository commentRepository, IReplyRepository replyRepository,
+    IApplicationRepository applicationRepository, IAnnouncementRepository announcementRepository,
+    IResourceService resourceService, INotificationService notificationService) : ILikeService
 {
     public async Task<bool> CreateLikeAsync(Chapter chapter, int userId, DateTimeOffset? dateCreated = null)
     {
@@ -21,6 +20,19 @@ public class LikeService(ILikeRepository likeRepository, IChapterRepository chap
         await notificationService.NotifyLike(chapter, userId, chapter.GetDisplay());
         chapter.LikeCount = await likeRepository.CountLikesAsync(e => e.ResourceId == chapter.Id);
         return result && await chapterRepository.UpdateChapterAsync(chapter);
+    }
+
+    public async Task<bool> CreateLikeAsync(Collection collection, int userId, DateTimeOffset? dateCreated = null)
+    {
+        if (await likeRepository.LikeExistsAsync(collection.Id, userId)) return false;
+        var like = new Like
+        {
+            ResourceId = collection.Id, OwnerId = userId, DateCreated = dateCreated ?? DateTimeOffset.UtcNow
+        };
+        var result = await likeRepository.CreateLikeAsync(like);
+        await notificationService.NotifyLike(collection, userId, collection.GetDisplay());
+        collection.LikeCount = await likeRepository.CountLikesAsync(e => e.ResourceId == collection.Id);
+        return result && await collectionRepository.UpdateCollectionAsync(collection);
     }
 
     public async Task<bool> CreateLikeAsync(Song song, int userId, DateTimeOffset? dateCreated = null)
@@ -115,6 +127,15 @@ public class LikeService(ILikeRepository likeRepository, IChapterRepository chap
         var result = await likeRepository.RemoveLikeAsync(like.Id);
         chapter.LikeCount = await likeRepository.CountLikesAsync(e => e.ResourceId == chapter.Id);
         return result && await chapterRepository.UpdateChapterAsync(chapter);
+    }
+
+    public async Task<bool> RemoveLikeAsync(Collection collection, int userId)
+    {
+        if (!await likeRepository.LikeExistsAsync(collection.Id, userId)) return false;
+        var like = await likeRepository.GetLikeAsync(collection.Id, userId);
+        var result = await likeRepository.RemoveLikeAsync(like.Id);
+        collection.LikeCount = await likeRepository.CountLikesAsync(e => e.ResourceId == collection.Id);
+        return result && await collectionRepository.UpdateCollectionAsync(collection);
     }
 
     public async Task<bool> RemoveLikeAsync(Song song, int userId)

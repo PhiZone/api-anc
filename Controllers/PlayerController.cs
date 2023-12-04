@@ -51,7 +51,7 @@ public class PlayerController(IPlayConfigurationRepository configurationReposito
         [FromQuery] PlayConfigurationFilterDto? filterDto = null)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (filterDto != null && !await resourceService.HasPermission(currentUser, Roles.Administrator))
+        if (filterDto != null && !resourceService.HasPermission(currentUser, UserRole.Administrator))
             filterDto.RangeOwnerId = new List<int> { currentUser.Id };
 
         dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
@@ -61,8 +61,8 @@ public class PlayerController(IPlayConfigurationRepository configurationReposito
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser);
         var list = mapper.Map<List<PlayConfigurationResponseDto>>(
             await configurationRepository.GetPlayConfigurationsAsync(dto.Order, dto.Desc, position, dto.PerPage,
-                dto.Search, predicateExpr));
-        var total = await configurationRepository.CountPlayConfigurationsAsync(dto.Search, predicateExpr);
+                predicateExpr));
+        var total = await configurationRepository.CountPlayConfigurationsAsync(predicateExpr);
 
         return Ok(new ResponseDto<IEnumerable<PlayConfigurationResponseDto>>
         {
@@ -131,7 +131,7 @@ public class PlayerController(IPlayConfigurationRepository configurationReposito
     public async Task<IActionResult> CreatePlayConfiguration([FromBody] PlayConfigurationRequestDto dto)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await resourceService.HasPermission(currentUser, Roles.Member))
+        if (!resourceService.HasPermission(currentUser, UserRole.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -201,9 +201,9 @@ public class PlayerController(IPlayConfigurationRepository configurationReposito
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if ((currentUser.Id == configuration.OwnerId &&
-             !await resourceService.HasPermission(currentUser, Roles.Member)) ||
+             !resourceService.HasPermission(currentUser, UserRole.Member)) ||
             (currentUser.Id != configuration.OwnerId &&
-             !await resourceService.HasPermission(currentUser, Roles.Administrator)))
+             !resourceService.HasPermission(currentUser, UserRole.Administrator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -264,9 +264,9 @@ public class PlayerController(IPlayConfigurationRepository configurationReposito
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if ((currentUser.Id == configuration.OwnerId &&
-             !await resourceService.HasPermission(currentUser, Roles.Member)) ||
+             !resourceService.HasPermission(currentUser, UserRole.Member)) ||
             (currentUser.Id != configuration.OwnerId &&
-             !await resourceService.HasPermission(currentUser, Roles.Administrator)))
+             !resourceService.HasPermission(currentUser, UserRole.Administrator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -300,7 +300,7 @@ public class PlayerController(IPlayConfigurationRepository configurationReposito
     public async Task<IActionResult> Play([FromQuery] Guid chartId, Guid configurationId, Guid applicationId)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await resourceService.HasPermission(currentUser, Roles.Member))
+        if (!resourceService.HasPermission(currentUser, UserRole.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {

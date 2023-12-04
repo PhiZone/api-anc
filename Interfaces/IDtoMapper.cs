@@ -16,6 +16,9 @@ public interface IDtoMapper
     Task<AdmissionDto<TAdmitter, TAdmittee>> MapChapterAdmissionAsync<TAdmitter, TAdmittee>(Admission admission,
         User? currentUser = null) where TAdmitter : ChapterDto where TAdmittee : SongDto;
 
+    Task<AdmissionDto<TAdmitter, TAdmittee>> MapCollectionAdmissionAsync<TAdmitter, TAdmittee>(Admission admission,
+        User? currentUser = null) where TAdmitter : CollectionDto where TAdmittee : ChartDto;
+
     Task<AdmissionDto<TAdmitter, TAdmittee>> MapSongAdmissionAsync<TAdmitter, TAdmittee>(Admission admission,
         User? currentUser = null) where TAdmitter : SongDto where TAdmittee : ChartSubmissionDto;
 
@@ -24,6 +27,8 @@ public interface IDtoMapper
 
     Task<T> MapChapterAsync<T>(Chapter chapter, User? currentUser = null) where T : ChapterDto;
 
+    Task<T> MapCollectionAsync<T>(Collection collection, User? currentUser = null) where T : CollectionDto;
+
     Task<T> MapSongAsync<T>(Song song, User? currentUser = null) where T : SongDto;
 
     Task<T> MapSongChapterAsync<T>(Admission admission, User? currentUser = null) where T : ChapterAdmitterDto;
@@ -31,6 +36,10 @@ public interface IDtoMapper
     Task<T> MapChapterSongAsync<T>(Admission admission, User? currentUser = null) where T : SongAdmitteeDto;
 
     Task<T> MapChartAsync<T>(Chart chart, User? currentUser = null) where T : ChartDto;
+
+    Task<T> MapChartCollectionAsync<T>(Admission admission, User? currentUser = null) where T : CollectionAdmitterDto;
+
+    Task<T> MapCollectionChartAsync<T>(Admission admission, User? currentUser = null) where T : ChartAdmitteeDto;
 
     Task<T> MapChartSubmissionAsync<T>(ChartSubmission chart, User? currentUser = null) where T : ChartSubmissionDto;
 

@@ -7,12 +7,13 @@ using PhiZoneApi.Utils;
 
 namespace PhiZoneApi.Repositories;
 
-public class PlayConfigurationRepository(ApplicationDbContext context) : IPlayConfigurationRepository
+public class PlayConfigurationRepository
+    (ApplicationDbContext context) : IPlayConfigurationRepository
 {
     public async Task<ICollection<PlayConfiguration>> GetPlayConfigurationsAsync(List<string> order, List<bool> desc,
         int position,
         int take,
-        string? search = null, Expression<Func<PlayConfiguration, bool>>? predicate = null)
+        Expression<Func<PlayConfiguration, bool>>? predicate = null)
     {
         var result = context.PlayConfigurations.OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
@@ -55,7 +56,7 @@ public class PlayConfigurationRepository(ApplicationDbContext context) : IPlayCo
         return saved > 0;
     }
 
-    public async Task<int> CountPlayConfigurationsAsync(string? search = null,
+    public async Task<int> CountPlayConfigurationsAsync(
         Expression<Func<PlayConfiguration, bool>>? predicate = null)
     {
         var result = context.PlayConfigurations.AsQueryable();

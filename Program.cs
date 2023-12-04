@@ -97,6 +97,7 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserRelationRepository, UserRelationRepository>();
 builder.Services.AddScoped<IRegionRepository, RegionRepository>();
 builder.Services.AddScoped<IChapterRepository, ChapterRepository>();
+builder.Services.AddScoped<ICollectionRepository, CollectionRepository>();
 builder.Services.AddScoped<ISongRepository, SongRepository>();
 builder.Services.AddScoped<IChartRepository, ChartRepository>();
 builder.Services.AddScoped<IChartAssetRepository, ChartAssetRepository>();
@@ -121,6 +122,7 @@ builder.Services.AddScoped<IResourceRecordRepository, ResourceRecordRepository>(
 builder.Services.AddScoped<IPetQuestionRepository, PetQuestionRepository>();
 builder.Services.AddScoped<IPetChoiceRepository, PetChoiceRepository>();
 builder.Services.AddScoped<IPetAnswerRepository, PetAnswerRepository>();
+builder.Services.AddScoped<ITapUserRelationRepository, TapUserRelationRepository>();
 builder.Services.AddScoped<IFilterService, FilterService>();
 builder.Services.AddScoped<ILikeService, LikeService>();
 builder.Services.AddScoped<IVoteService, VoteService>();
@@ -140,6 +142,7 @@ builder.Services.AddScoped<ITemplateService, TemplateService>();
 builder.Services.AddSingleton<IFileStorageService, FileStorageService>();
 builder.Services.AddSingleton<IRabbitMqService, RabbitMqService>();
 builder.Services.AddSingleton<IFeishuService, FeishuService>();
+builder.Services.AddSingleton<IMeilisearchService, MeilisearchService>();
 builder.Services.AddSingleton<IConnectionMultiplexer>(
     ConnectionMultiplexer.Connect(builder.Configuration.GetValue<string>("RedisConnection") ?? "localhost"));
 builder.Services.AddSingleton<IHostedService>(provider => new MailSenderService(
@@ -162,8 +165,8 @@ if (args.Length >= 1)
     if (string.Equals(args[0], "fileMigrate", StringComparison.InvariantCultureIgnoreCase))
         builder.Services.AddSingleton<IHostedService>(provider =>
             new FileMigrationService(provider, args.Length >= 2 ? int.Parse(args[1]) : 0));
-    if (string.Equals(args[0], "qualificationMigrate", StringComparison.InvariantCultureIgnoreCase))
-        builder.Services.AddHostedService<QualificationMigrationService>();
+    if (string.Equals(args[0], "roleMigrate", StringComparison.InvariantCultureIgnoreCase))
+        builder.Services.AddHostedService<RoleMigrationService>();
 }
 
 builder.Services.Configure<ApiBehaviorOptions>(options => { options.SuppressModelStateInvalidFilter = true; });
@@ -173,6 +176,7 @@ builder.Services.Configure<TapTapSettings>(builder.Configuration.GetSection("Tap
 builder.Services.Configure<FeishuSettings>(builder.Configuration.GetSection("FeishuSettings"));
 builder.Services.Configure<LanguageSettings>(builder.Configuration.GetSection("LanguageSettings"));
 builder.Services.Configure<RabbitMqSettings>(builder.Configuration.GetSection("RabbitMQSettings"));
+builder.Services.Configure<MeilisearchSettings>(builder.Configuration.GetSection("MeilisearchSettings"));
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;

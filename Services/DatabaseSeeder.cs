@@ -10,21 +10,13 @@ using Role = PhiZoneApi.Models.Role;
 
 namespace PhiZoneApi.Services;
 
-public class DatabaseSeeder : IHostedService
+public class DatabaseSeeder(IServiceProvider serviceProvider) : IHostedService
 {
-    private readonly IServiceProvider _serviceProvider;
-
-    public DatabaseSeeder(IServiceProvider serviceProvider)
-    {
-        _serviceProvider = serviceProvider;
-    }
-
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        await using var scope = _serviceProvider.CreateAsyncScope();
+        await using var scope = serviceProvider.CreateAsyncScope();
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         await context.Database.EnsureCreatedAsync(cancellationToken);
-        await PopulateRoles(scope);
         await PopulateRegions(scope, cancellationToken);
         await PopulateScopes(scope, cancellationToken);
         await PopulateInternalApps(scope, cancellationToken);
@@ -33,15 +25,6 @@ public class DatabaseSeeder : IHostedService
     public Task StopAsync(CancellationToken cancellationToken)
     {
         return Task.CompletedTask;
-    }
-
-    private static async Task PopulateRoles(IServiceScope scope)
-    {
-        var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<Role>>();
-        var roles = Roles.List.Select(role => role.Name);
-        foreach (var role in roles)
-            if (!await roleManager.RoleExistsAsync(role))
-                await roleManager.CreateAsync(new Role { Name = role });
     }
 
     private static async Task PopulateScopes(IServiceScope scope, CancellationToken cancellationToken)

@@ -9,22 +9,13 @@ using PhiZoneApi.Utils;
 
 namespace PhiZoneApi.Repositories;
 
-public class RegionRepository(ApplicationDbContext context) : IRegionRepository
+public class RegionRepository(ApplicationDbContext context, IMeilisearchService meilisearchService) : IRegionRepository
 {
     public async Task<ICollection<Region>> GetRegionsAsync(List<string> order, List<bool> desc, int position, int take,
-        string? search = null, Expression<Func<Region, bool>>? predicate = null)
+        Expression<Func<Region, bool>>? predicate = null)
     {
         var result = context.Regions.OrderBy(order, desc);
-
         if (predicate != null) result = result.Where(predicate);
-
-        if (search != null)
-        {
-            search = $"%{search.Trim().ToUpper()}%";
-            result = result.Where(region =>
-                EF.Functions.Like(region.Code.ToUpper(), search) || EF.Functions.Like(region.Name.ToUpper(), search));
-        }
-
         result = result.Skip(position);
         return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
@@ -40,47 +31,23 @@ public class RegionRepository(ApplicationDbContext context) : IRegionRepository
     }
 
     public async Task<ICollection<User>> GetRegionUsersAsync(int id, List<string> order, List<bool> desc, int position,
-        int take, string? search = null, Expression<Func<User, bool>>? predicate = null)
+        int take, Expression<Func<User, bool>>? predicate = null)
     {
         var region = (await context.Regions.FirstOrDefaultAsync(region => region.Id == id))!;
         var result = context.Users.Where(user => user.Region == region).OrderBy(order, desc);
-
         if (predicate != null) result = result.Where(predicate);
-
-        if (search != null)
-        {
-            search = $"%{search.Trim().ToUpper()}%";
-            result = result.Where(user =>
-                (user.NormalizedUserName != null && EF.Functions.Like(user.NormalizedUserName, search)) ||
-                (user.Tag != null && EF.Functions.Like(user.Tag.ToUpper(), search)) ||
-                (user.Biography != null && EF.Functions.Like(user.Biography.ToUpper(), search)) ||
-                EF.Functions.Like(user.Language.ToUpper(), search));
-        }
-
         result = result.Skip(position);
         return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
 
     public async Task<ICollection<User>> GetRegionUsersAsync(string code, List<string> order, List<bool> desc,
         int position,
-        int take, string? search = null, Expression<Func<User, bool>>? predicate = null)
+        int take, Expression<Func<User, bool>>? predicate = null)
     {
         var region = (await context.Regions.FirstOrDefaultAsync(region =>
             string.Equals(region.Code, code.ToUpper())))!;
         var result = context.Users.Where(user => user.Region == region).OrderBy(order, desc);
-
         if (predicate != null) result = result.Where(predicate);
-
-        if (search != null)
-        {
-            search = $"%{search.Trim().ToUpper()}%";
-            result = result.Where(user =>
-                (user.NormalizedUserName != null && EF.Functions.Like(user.NormalizedUserName, search)) ||
-                (user.Tag != null && EF.Functions.Like(user.Tag.ToUpper(), search)) ||
-                (user.Biography != null && EF.Functions.Like(user.Biography.ToUpper(), search)) ||
-                EF.Functions.Like(user.Language.ToUpper(), search));
-        }
-
         result = result.Skip(position);
         return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
@@ -103,24 +70,29 @@ public class RegionRepository(ApplicationDbContext context) : IRegionRepository
     public async Task<bool> CreateRegionAsync(Region region)
     {
         await context.Regions.AddAsync(region);
+        await meilisearchService.AddAsync(region);
         return await SaveAsync();
     }
 
     public async Task<bool> UpdateRegionAsync(Region region)
     {
         context.Regions.Update(region);
+        await meilisearchService.UpdateAsync(region);
         return await SaveAsync();
     }
 
     public async Task<bool> RemoveRegionAsync(string code)
     {
-        context.Regions.Remove((await context.Regions.FirstOrDefaultAsync(region => region.Code == code.ToUpper()))!);
+        var region = (await context.Regions.FirstOrDefaultAsync(region => region.Code == code.ToUpper()))!;
+        await meilisearchService.DeleteAsync<Region>(region.Id);
+        context.Regions.Remove(region);
         return await SaveAsync();
     }
 
     public async Task<bool> RemoveRegionAsync(int id)
     {
         context.Regions.Remove((await context.Regions.FirstOrDefaultAsync(region => region.Id == id))!);
+        await meilisearchService.DeleteAsync<Region>(id);
         return await SaveAsync();
     }
 
@@ -130,62 +102,29 @@ public class RegionRepository(ApplicationDbContext context) : IRegionRepository
         return saved > 0;
     }
 
-    public async Task<int> CountRegionsAsync(string? search = null, Expression<Func<Region, bool>>? predicate = null)
+    public async Task<int> CountRegionsAsync(Expression<Func<Region, bool>>? predicate = null)
     {
         var result = context.Regions.AsQueryable();
-
         if (predicate != null) result = result.Where(predicate);
-
-        if (search != null)
-        {
-            search = $"%{search.Trim().ToUpper()}%";
-            result = result.Where(region =>
-                EF.Functions.Like(region.Code.ToUpper(), search) || EF.Functions.Like(region.Name.ToUpper(), search));
-        }
-
         return await result.CountAsync();
     }
 
-    public async Task<int> CountRegionUsersAsync(string code, string? search = null,
+    public async Task<int> CountRegionUsersAsync(string code,
         Expression<Func<User, bool>>? predicate = null)
     {
         var region = (await context.Regions.FirstOrDefaultAsync(region =>
             string.Equals(region.Code, code.ToUpper())))!;
         var result = context.Users.Where(user => user.Region == region);
-
         if (predicate != null) result = result.Where(predicate);
-
-        if (search != null)
-        {
-            search = $"%{search.Trim().ToUpper()}%";
-            result = result.Where(user =>
-                (user.NormalizedUserName != null && EF.Functions.Like(user.NormalizedUserName, search)) ||
-                (user.Tag != null && EF.Functions.Like(user.Tag.ToUpper(), search)) ||
-                (user.Biography != null && EF.Functions.Like(user.Biography.ToUpper(), search)) ||
-                EF.Functions.Like(user.Language.ToUpper(), search));
-        }
-
         return await result.CountAsync();
     }
 
-    public async Task<int> CountRegionUsersAsync(int id, string? search = null,
+    public async Task<int> CountRegionUsersAsync(int id,
         Expression<Func<User, bool>>? predicate = null)
     {
         var region = (await context.Regions.FirstOrDefaultAsync(region => region.Id == id))!;
         var result = context.Users.Where(user => user.Region == region);
-
         if (predicate != null) result = result.Where(predicate);
-
-        if (search != null)
-        {
-            search = $"%{search.Trim().ToUpper()}%";
-            result = result.Where(user =>
-                (user.NormalizedUserName != null && EF.Functions.Like(user.NormalizedUserName, search)) ||
-                (user.Tag != null && EF.Functions.Like(user.Tag.ToUpper(), search)) ||
-                (user.Biography != null && EF.Functions.Like(user.Biography.ToUpper(), search)) ||
-                EF.Functions.Like(user.Language.ToUpper(), search));
-        }
-
         return await result.CountAsync();
     }
 }

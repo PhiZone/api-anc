@@ -9,23 +9,15 @@ using PhiZoneApi.Utils;
 
 namespace PhiZoneApi.Repositories;
 
-public class PetAnswerRepository(ApplicationDbContext context) : IPetAnswerRepository
+public class PetAnswerRepository
+    (ApplicationDbContext context, IMeilisearchService meilisearchService) : IPetAnswerRepository
 {
     public async Task<ICollection<PetAnswer>> GetPetAnswersAsync(List<string> order, List<bool> desc, int position,
         int take,
-        string? search = null, Expression<Func<PetAnswer, bool>>? predicate = null)
+        Expression<Func<PetAnswer, bool>>? predicate = null)
     {
         var result = context.PetAnswers.OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
-        if (search != null)
-        {
-            search = $"%{search.Trim().ToUpper()}%";
-            result = result.Where(petAnswer =>
-                EF.Functions.Like(petAnswer.Answer1.ToUpper(), search) ||
-                EF.Functions.Like(petAnswer.Answer2.ToUpper(), search) ||
-                EF.Functions.Like(petAnswer.Answer3.ToUpper(), search));
-        }
-
         result = result.Skip(position);
         return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
@@ -43,18 +35,21 @@ public class PetAnswerRepository(ApplicationDbContext context) : IPetAnswerRepos
     public async Task<bool> CreatePetAnswerAsync(PetAnswer petAnswer)
     {
         await context.PetAnswers.AddAsync(petAnswer);
+        await meilisearchService.AddAsync(petAnswer);
         return await SaveAsync();
     }
 
     public async Task<bool> UpdatePetAnswerAsync(PetAnswer petAnswer)
     {
         context.PetAnswers.Update(petAnswer);
+        await meilisearchService.UpdateAsync(petAnswer);
         return await SaveAsync();
     }
 
     public async Task<bool> RemovePetAnswerAsync(Guid id)
     {
         context.PetAnswers.Remove((await context.PetAnswers.FirstOrDefaultAsync(petAnswer => petAnswer.Id == id))!);
+        await meilisearchService.DeleteAsync<PetAnswer>(id);
         return await SaveAsync();
     }
 
@@ -64,21 +59,11 @@ public class PetAnswerRepository(ApplicationDbContext context) : IPetAnswerRepos
         return saved > 0;
     }
 
-    public async Task<int> CountPetAnswersAsync(string? search = null,
+    public async Task<int> CountPetAnswersAsync(
         Expression<Func<PetAnswer, bool>>? predicate = null)
     {
         var result = context.PetAnswers.AsQueryable();
-
         if (predicate != null) result = result.Where(predicate);
-        if (search != null)
-        {
-            search = $"%{search.Trim().ToUpper()}%";
-            result = result.Where(petAnswer =>
-                EF.Functions.Like(petAnswer.Answer1.ToUpper(), search) ||
-                EF.Functions.Like(petAnswer.Answer2.ToUpper(), search) ||
-                EF.Functions.Like(petAnswer.Answer3.ToUpper(), search));
-        }
-
         return await result.CountAsync();
     }
 }

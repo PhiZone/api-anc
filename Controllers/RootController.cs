@@ -39,9 +39,9 @@ public class RootController(IUserRepository userRepository, IChapterRepository c
             {
                 UserCount = await userRepository.CountUsersAsync(),
                 RecordCount = await recordRepository.CountRecordsAsync(),
-                ChartCount = await chartRepository.CountChartsAsync(predicate: e => !e.IsHidden),
-                SongCount = await songRepository.CountSongsAsync(predicate: e => !e.IsHidden),
-                ChapterCount = await chapterRepository.CountChaptersAsync(predicate: e => !e.IsHidden),
+                ChartCount = await chartRepository.CountChartsAsync(e => !e.IsHidden),
+                SongCount = await songRepository.CountSongsAsync(e => !e.IsHidden),
+                ChapterCount = await chapterRepository.CountChaptersAsync(e => !e.IsHidden),
                 LikeCount = await likeRepository.CountLikesAsync(),
                 CommentCount = await commentRepository.CountCommentsAsync(),
                 ReplyCount = await replyRepository.CountRepliesAsync()
@@ -82,7 +82,7 @@ public class RootController(IUserRepository userRepository, IChapterRepository c
     public async Task<IActionResult> GetStudioHeadline()
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await resourceService.HasPermission(currentUser, Roles.Qualified))
+        if (!resourceService.HasPermission(currentUser, UserRole.Qualified))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {

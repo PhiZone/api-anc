@@ -22,8 +22,8 @@ namespace PhiZoneApi.Controllers;
 [ApiController]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
 public class UserInfoController(UserManager<User> userManager, IDtoMapper mapper, IResourceService resourceService,
-        IUserRepository userRepository, ITapTapService tapTapService, INotificationRepository notificationRepository)
-    : Controller
+    IUserRepository userRepository, ITapTapService tapTapService, IApplicationRepository applicationRepository,
+    INotificationRepository notificationRepository, ITapUserRelationRepository tapUserRelationRepository) : Controller
 {
     /// <summary>
     ///     Retrieves user's information.
@@ -46,7 +46,7 @@ public class UserInfoController(UserManager<User> userManager, IDtoMapper mapper
     {
         var user = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         if (user == null) return Unauthorized();
-        if (!await resourceService.HasPermission(user, Roles.Member))
+        if (!resourceService.HasPermission(user, UserRole.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -55,7 +55,7 @@ public class UserInfoController(UserManager<User> userManager, IDtoMapper mapper
 
         var dto = await mapper.MapUserAsync<UserDetailedDto>(user);
         dto.Notifications =
-            await notificationRepository.CountNotificationsAsync(predicate: e =>
+            await notificationRepository.CountNotificationsAsync(e =>
                 e.OwnerId == user.Id && e.DateRead == null);
         return Ok(new ResponseDto<UserDetailedDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
     }
@@ -83,12 +83,24 @@ public class UserInfoController(UserManager<User> userManager, IDtoMapper mapper
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
 
-        if (!await resourceService.HasPermission(currentUser, Roles.Member))
+        if (!resourceService.HasPermission(currentUser, UserRole.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
+
+        if (!await applicationRepository.ApplicationExistsAsync(dto.ApplicationId))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ApplicationNotFound
+            });
+
+        if ((await applicationRepository.GetApplicationAsync(dto.ApplicationId)).TapClientId == null)
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
+            });
 
         var unionId = dto.UnionId;
         if (unionId == null)
@@ -109,7 +121,7 @@ public class UserInfoController(UserManager<User> userManager, IDtoMapper mapper
             unionId = responseDto.Data.Unionid;
         }
 
-        var targetUser = await userRepository.GetUserByTapUnionId(unionId);
+        var targetUser = await userRepository.GetUserByTapUnionId(dto.ApplicationId, unionId);
         if (targetUser != null)
             return BadRequest(new ResponseDto<object>
             {
@@ -117,8 +129,15 @@ public class UserInfoController(UserManager<User> userManager, IDtoMapper mapper
                 Code = targetUser.Id == currentUser.Id ? ResponseCodes.AlreadyDone : ResponseCodes.BindingOccupied
             });
 
-        currentUser.TapUnionId = unionId;
-        await userManager.UpdateAsync(currentUser);
+        var tapUserRelation = new TapUserRelation
+        {
+            ApplicationId = dto.ApplicationId, UserId = currentUser.Id, UnionId = unionId
+        };
+
+        if (!await tapUserRelationRepository.CreateRelationAsync(tapUserRelation))
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+
         return NoContent();
     }
 
@@ -140,25 +159,33 @@ public class UserInfoController(UserManager<User> userManager, IDtoMapper mapper
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> UnbindTapTap()
+    public async Task<IActionResult> UnbindTapTap([FromQuery] Guid applicationId)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
 
-        if (!await resourceService.HasPermission(currentUser, Roles.Member))
+        if (!resourceService.HasPermission(currentUser, UserRole.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
-        if (currentUser.TapUnionId == null)
+        if (!await applicationRepository.ApplicationExistsAsync(applicationId))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ApplicationNotFound
+            });
+
+
+        if (!await tapUserRelationRepository.RelationExistsAsync(applicationId, currentUser.Id))
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
             });
 
-        currentUser.TapUnionId = null;
-        await userManager.UpdateAsync(currentUser);
+        if (!await tapUserRelationRepository.RemoveRelationAsync(applicationId, currentUser.Id))
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
         return NoContent();
     }
 }

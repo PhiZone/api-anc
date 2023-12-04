@@ -9,7 +9,6 @@ public interface ISongSubmissionRepository
 {
     Task<ICollection<SongSubmission>> GetSongSubmissionsAsync(List<string> order, List<bool> desc, int position,
         int take,
-        string? search = null,
         Expression<Func<SongSubmission, bool>>? predicate = null);
 
     Task<SongSubmission> GetSongSubmissionAsync(Guid id);
@@ -17,7 +16,7 @@ public interface ISongSubmissionRepository
     Task<ICollection<SongSubmission>> GetUserSongSubmissionsAsync(int userId, List<string> order, List<bool> desc,
         int position,
         int take,
-        string? search = null, Expression<Func<SongSubmission, bool>>? predicate = null);
+        Expression<Func<SongSubmission, bool>>? predicate = null);
 
     Task<bool> SongSubmissionExistsAsync(Guid id);
 
@@ -29,9 +28,9 @@ public interface ISongSubmissionRepository
 
     Task<bool> SaveAsync();
 
-    Task<int> CountSongSubmissionsAsync(string? search = null,
+    Task<int> CountSongSubmissionsAsync(
         Expression<Func<SongSubmission, bool>>? predicate = null);
 
-    Task<int> CountUserSongSubmissionsAsync(int userId, string? search = null,
+    Task<int> CountUserSongSubmissionsAsync(int userId,
         Expression<Func<SongSubmission, bool>>? predicate = null);
 }

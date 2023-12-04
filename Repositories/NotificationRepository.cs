@@ -9,21 +9,15 @@ using PhiZoneApi.Utils;
 
 namespace PhiZoneApi.Repositories;
 
-public class NotificationRepository(ApplicationDbContext context) : INotificationRepository
+public class NotificationRepository
+    (ApplicationDbContext context, IMeilisearchService meilisearchService) : INotificationRepository
 {
     public async Task<ICollection<Notification>> GetNotificationsAsync(List<string> order, List<bool> desc,
         int position, int take,
-        string? search = null, Expression<Func<Notification, bool>>? predicate = null)
+        Expression<Func<Notification, bool>>? predicate = null)
     {
         var result = context.Notifications.OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
-
-        if (search != null)
-        {
-            search = $"%{search.Trim().ToUpper()}%";
-            result = result.Where(notification => EF.Functions.Like(notification.Content.ToUpper(), search));
-        }
-
         result = result.Skip(position);
         return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
@@ -41,18 +35,22 @@ public class NotificationRepository(ApplicationDbContext context) : INotificatio
     public async Task<bool> CreateNotificationAsync(Notification notification)
     {
         await context.Notifications.AddAsync(notification);
+        await meilisearchService.AddAsync(notification);
         return await SaveAsync();
     }
 
     public async Task<bool> UpdateNotificationAsync(Notification notification)
     {
         context.Notifications.Update(notification);
+        await meilisearchService.UpdateAsync(notification);
         return await SaveAsync();
     }
 
     public async Task<bool> UpdateNotificationsAsync(IEnumerable<Notification> notifications)
     {
-        context.Notifications.UpdateRange(notifications);
+        var enumerable = notifications.ToList();
+        context.Notifications.UpdateRange(enumerable);
+        await meilisearchService.UpdateAsync(enumerable);
         return await SaveAsync();
     }
 
@@ -60,6 +58,7 @@ public class NotificationRepository(ApplicationDbContext context) : INotificatio
     {
         context.Notifications.Remove(
             (await context.Notifications.FirstOrDefaultAsync(notification => notification.Id == id))!);
+        await meilisearchService.DeleteAsync<Notification>(id);
         return await SaveAsync();
     }
 
@@ -69,19 +68,11 @@ public class NotificationRepository(ApplicationDbContext context) : INotificatio
         return saved > 0;
     }
 
-    public async Task<int> CountNotificationsAsync(string? search = null,
+    public async Task<int> CountNotificationsAsync(
         Expression<Func<Notification, bool>>? predicate = null)
     {
         var result = context.Notifications.AsQueryable();
-
         if (predicate != null) result = result.Where(predicate);
-
-        if (search != null)
-        {
-            search = $"%{search.Trim().ToUpper()}%";
-            result = result.Where(notification => EF.Functions.Like(notification.Content.ToUpper(), search));
-        }
-
         return await result.CountAsync();
     }
 }

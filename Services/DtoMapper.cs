@@ -10,15 +10,14 @@ namespace PhiZoneApi.Services;
 public class DtoMapper(IUserRelationRepository userRelationRepository, IRegionRepository regionRepository,
     ILikeRepository likeRepository, UserManager<User> userManager, IMapper mapper, ICommentRepository commentRepository,
     IReplyRepository replyRepository, IRecordRepository recordRepository, IChapterRepository chapterRepository,
-    ISongRepository songRepository, IChartRepository chartRepository,
-    ISongSubmissionRepository songSubmissionRepository,
-    IChartSubmissionRepository chartSubmissionRepository, IVolunteerVoteRepository volunteerVoteRepository,
-    IPetQuestionRepository petQuestionRepository) : IDtoMapper
+    ICollectionRepository collectionRepository, ISongRepository songRepository, IChartRepository chartRepository,
+    ISongSubmissionRepository songSubmissionRepository, IChartSubmissionRepository chartSubmissionRepository,
+    IVolunteerVoteRepository volunteerVoteRepository, IPetQuestionRepository petQuestionRepository) : IDtoMapper
 {
     public async Task<T> MapUserAsync<T>(User user, User? currentUser = null) where T : UserDto
     {
         var dto = mapper.Map<T>(user);
-        dto.Role = (await userManager.GetRolesAsync(user)).FirstOrDefault() ?? "";
+        dto.Role = user.Role.ToString();
         dto.FollowerCount = await userRelationRepository.CountFollowersAsync(user.Id);
         dto.FolloweeCount = await userRelationRepository.CountFolloweesAsync(user.Id);
         dto.Region = (await regionRepository.GetRegionAsync(user.RegionId)).Code;
@@ -72,6 +71,25 @@ public class DtoMapper(IUserRelationRepository userRelationRepository, IRegionRe
         return dto;
     }
 
+    public async Task<AdmissionDto<TAdmitter, TAdmittee>> MapCollectionAdmissionAsync<TAdmitter, TAdmittee>(
+        Admission admission, User? currentUser = null) where TAdmitter : CollectionDto where TAdmittee : ChartDto
+    {
+        var dto = new AdmissionDto<TAdmitter, TAdmittee>
+        {
+            Admitter =
+                await MapCollectionAsync<TAdmitter>(
+                    await collectionRepository.GetCollectionAsync(admission.AdmitterId), currentUser),
+            Admittee =
+                await MapChartAsync<TAdmittee>(await chartRepository.GetChartAsync(admission.AdmitteeId), currentUser),
+            Status = admission.Status,
+            Label = admission.Label,
+            RequesterId = admission.RequesterId,
+            RequesteeId = admission.RequesteeId,
+            DateCreated = admission.DateCreated
+        };
+        return dto;
+    }
+
     public async Task<AdmissionDto<TAdmitter, TAdmittee>> MapSongAdmissionAsync<TAdmitter, TAdmittee>(
         Admission admission, User? currentUser = null) where TAdmitter : SongDto where TAdmittee : ChartSubmissionDto
     {
@@ -97,8 +115,8 @@ public class DtoMapper(IUserRelationRepository userRelationRepository, IRegionRe
     {
         var dto = new AdmissionDto<TAdmitter, TAdmittee>
         {
-            Admitter = mapper.Map<TAdmitter>(
-                await songSubmissionRepository.GetSongSubmissionAsync(admission.AdmitterId)),
+            Admitter =
+                mapper.Map<TAdmitter>(await songSubmissionRepository.GetSongSubmissionAsync(admission.AdmitterId)),
             Admittee =
                 await MapChartSubmissionAsync<TAdmittee>(
                     await chartSubmissionRepository.GetChartSubmissionAsync(admission.AdmitteeId), currentUser),
@@ -121,6 +139,16 @@ public class DtoMapper(IUserRelationRepository userRelationRepository, IRegionRe
         return dto;
     }
 
+    public async Task<T> MapCollectionAsync<T>(Collection collection, User? currentUser = null) where T : CollectionDto
+    {
+        var dto = mapper.Map<T>(collection);
+        dto.CommentCount = await commentRepository.CountCommentsAsync(comment => comment.ResourceId == collection.Id);
+        dto.DateLiked = currentUser != null && await likeRepository.LikeExistsAsync(collection.Id, currentUser.Id)
+            ? (await likeRepository.GetLikeAsync(collection.Id, currentUser.Id)).DateCreated
+            : null;
+        return dto;
+    }
+
     public async Task<T> MapSongAsync<T>(Song song, User? currentUser = null) where T : SongDto
     {
         var dto = mapper.Map<T>(song);
@@ -129,7 +157,7 @@ public class DtoMapper(IUserRelationRepository userRelationRepository, IRegionRe
             dto.ChartLevels.Add(new ChartLevelDto
             {
                 LevelType = levelType,
-                Count = await chartRepository.CountChartsAsync(predicate: chart =>
+                Count = await chartRepository.CountChartsAsync(chart =>
                     chart.SongId == song.Id && chart.LevelType == levelType)
             });
 
@@ -162,6 +190,21 @@ public class DtoMapper(IUserRelationRepository userRelationRepository, IRegionRe
         dto.DateLiked = currentUser != null && await likeRepository.LikeExistsAsync(chart.Id, currentUser.Id)
             ? (await likeRepository.GetLikeAsync(chart.Id, currentUser.Id)).DateCreated
             : null;
+        return dto;
+    }
+
+    public async Task<T> MapChartCollectionAsync<T>(Admission admission, User? currentUser = null)
+        where T : CollectionAdmitterDto
+    {
+        var dto = await MapCollectionAsync<T>(await collectionRepository.GetCollectionAsync(admission.AdmitterId), currentUser);
+        dto.Label = admission.Label;
+        return dto;
+    }
+
+    public async Task<T> MapCollectionChartAsync<T>(Admission admission, User? currentUser = null) where T : ChartAdmitteeDto
+    {
+        var dto = await MapChartAsync<T>(await chartRepository.GetChartAsync(admission.AdmitteeId), currentUser);
+        dto.Label = admission.Label;
         return dto;
     }
 
