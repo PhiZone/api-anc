@@ -9,20 +9,15 @@ using PhiZoneApi.Utils;
 
 namespace PhiZoneApi.Repositories;
 
-public class PetQuestionRepository(ApplicationDbContext context) : IPetQuestionRepository
+public class PetQuestionRepository
+    (ApplicationDbContext context, IMeilisearchService meilisearchService) : IPetQuestionRepository
 {
     public async Task<ICollection<PetQuestion>> GetPetQuestionsAsync(List<string> order, List<bool> desc, int position,
         int take,
-        string? search = null, Expression<Func<PetQuestion, bool>>? predicate = null)
+        Expression<Func<PetQuestion, bool>>? predicate = null)
     {
         var result = context.PetQuestions.OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
-        if (search != null)
-        {
-            search = $"%{search.Trim().ToUpper()}%";
-            result = result.Where(petQuestion => EF.Functions.Like(petQuestion.Content.ToUpper(), search));
-        }
-
         result = result.Skip(position);
         return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
@@ -48,12 +43,14 @@ public class PetQuestionRepository(ApplicationDbContext context) : IPetQuestionR
     public async Task<bool> CreatePetQuestionAsync(PetQuestion petQuestion)
     {
         await context.PetQuestions.AddAsync(petQuestion);
+        await meilisearchService.AddAsync(petQuestion);
         return await SaveAsync();
     }
 
     public async Task<bool> UpdatePetQuestionAsync(PetQuestion petQuestion)
     {
         context.PetQuestions.Update(petQuestion);
+        await meilisearchService.UpdateAsync(petQuestion);
         return await SaveAsync();
     }
 
@@ -61,6 +58,7 @@ public class PetQuestionRepository(ApplicationDbContext context) : IPetQuestionR
     {
         context.PetQuestions.Remove(
             (await context.PetQuestions.FirstOrDefaultAsync(petQuestion => petQuestion.Id == id))!);
+        await meilisearchService.DeleteAsync<PetQuestion>(id);
         return await SaveAsync();
     }
 
@@ -70,18 +68,11 @@ public class PetQuestionRepository(ApplicationDbContext context) : IPetQuestionR
         return saved > 0;
     }
 
-    public async Task<int> CountPetQuestionsAsync(string? search = null,
+    public async Task<int> CountPetQuestionsAsync(
         Expression<Func<PetQuestion, bool>>? predicate = null)
     {
         var result = context.PetQuestions.AsQueryable();
-
         if (predicate != null) result = result.Where(predicate);
-        if (search != null)
-        {
-            search = $"%{search.Trim().ToUpper()}%";
-            result = result.Where(petQuestion => EF.Functions.Like(petQuestion.Content.ToUpper(), search));
-        }
-
         return await result.CountAsync();
     }
 

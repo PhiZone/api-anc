@@ -16,7 +16,6 @@ using PhiZoneApi.Filters;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 using StackExchange.Redis;
-using Role = PhiZoneApi.Constants.Role;
 
 namespace PhiZoneApi.Controllers;
 
@@ -31,20 +30,20 @@ public class PetController : Controller
     private readonly IFeishuService _feishuService;
     private readonly IFilterService _filterService;
     private readonly INotificationService _notificationService;
-    private readonly IPetAnswerRepository _petAnswerRepository;
-    private readonly IPetQuestionRepository _petQuestionRepository;
     private readonly IConnectionMultiplexer _redis;
     private readonly IResourceService _resourceService;
-    private readonly Dictionary<Role, int> _scores;
+    private readonly Dictionary<UserRole, int> _scores;
     private readonly UserManager<User> _userManager;
+    private readonly IMeilisearchService _meilisearchService;
+    private readonly IPetAnswerRepository _petAnswerRepository;
+    private readonly IPetQuestionRepository _petQuestionRepository;
 
     public PetController(IConnectionMultiplexer redis, IPetQuestionRepository petQuestionRepository,
         IPetAnswerRepository petAnswerRepository, UserManager<User> userManager, IResourceService resourceService,
         IConfiguration config, IOptions<DataSettings> dataSettings, IDtoMapper dtoMapper, IFilterService filterService,
-        INotificationService notificationService, IFeishuService feishuService)
+        INotificationService notificationService, IFeishuService feishuService, IMeilisearchService meilisearchService)
     {
         _redis = redis;
-        _petQuestionRepository = petQuestionRepository;
         _userManager = userManager;
         _resourceService = resourceService;
         _dataSettings = dataSettings;
@@ -52,11 +51,13 @@ public class PetController : Controller
         _filterService = filterService;
         _notificationService = notificationService;
         _feishuService = feishuService;
+        _meilisearchService = meilisearchService;
+        _petQuestionRepository = petQuestionRepository;
         _petAnswerRepository = petAnswerRepository;
-        _scores = new Dictionary<Role, int>
+        _scores = new Dictionary<UserRole, int>
             {
-                { Roles.Qualified, config.GetSection("PrivilegeEscalationTest").GetValue<int>(Roles.Qualified.Name) },
-                { Roles.Volunteer, config.GetSection("PrivilegeEscalationTest").GetValue<int>(Roles.Volunteer.Name) }
+                { UserRole.Qualified, config.GetSection("PrivilegeEscalationTest").GetValue<int>(UserRole.Qualified.ToString()) },
+                { UserRole.Volunteer, config.GetSection("PrivilegeEscalationTest").GetValue<int>(UserRole.Volunteer.ToString()) }
             }.OrderByDescending(e => e.Value)
             .ToDictionary(pair => pair.Key, pair => pair.Value);
     }
@@ -78,20 +79,20 @@ public class PetController : Controller
     public async Task<IActionResult> GetObjectiveQuestions()
     {
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _resourceService.HasPermission(currentUser, Roles.Member))
+        if (!_resourceService.HasPermission(currentUser, UserRole.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
-        if (await _resourceService.HasPermission(currentUser, Roles.Volunteer))
+        if (_resourceService.HasPermission(currentUser, UserRole.Volunteer))
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
             });
-        if (await _petAnswerRepository.CountPetAnswersAsync(null,
-                answer => answer.OwnerId == currentUser.Id && answer.SubjectiveScore == null) > 0)
+        if (await _petAnswerRepository.CountPetAnswersAsync(answer =>
+                answer.OwnerId == currentUser.Id && answer.SubjectiveScore == null) > 0)
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
@@ -153,14 +154,14 @@ public class PetController : Controller
     public async Task<IActionResult> GetSubjectiveQuestions([FromBody] List<PetObjectiveAnswerDto> dtos)
     {
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _resourceService.HasPermission(currentUser, Roles.Member))
+        if (!_resourceService.HasPermission(currentUser, UserRole.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
-        if (await _resourceService.HasPermission(currentUser, Roles.Volunteer))
+        if (_resourceService.HasPermission(currentUser, UserRole.Volunteer))
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
@@ -247,14 +248,14 @@ public class PetController : Controller
     public async Task<IActionResult> SubmitSubjectiveAnswer([FromBody] PetSubjectiveAnswerDto dto)
     {
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _resourceService.HasPermission(currentUser, Roles.Member))
+        if (!_resourceService.HasPermission(currentUser, UserRole.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
-        if (await _resourceService.HasPermission(currentUser, Roles.Volunteer))
+        if (_resourceService.HasPermission(currentUser, UserRole.Volunteer))
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
@@ -307,16 +308,29 @@ public class PetController : Controller
         [FromQuery] PetAnswerFilterDto? filterDto = null)
     {
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        var isModerator = await _resourceService.HasPermission(currentUser, Roles.Moderator);
+        var isModerator = _resourceService.HasPermission(currentUser, UserRole.Moderator);
         dto.PerPage = dto.PerPage > 0 && dto.PerPage < _dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
             dto.PerPage == 0 ? _dataSettings.Value.PaginationPerPage : _dataSettings.Value.PaginationMaxPerPage;
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await _filterService.Parse(filterDto, dto.Predicate, currentUser,
             e => isModerator || e.OwnerId == currentUser.Id);
-        var answers = await _petAnswerRepository.GetPetAnswersAsync(dto.Order, dto.Desc, position, dto.PerPage,
-            dto.Search, predicateExpr);
-        var total = await _petAnswerRepository.CountPetAnswersAsync(dto.Search, predicateExpr);
+        IEnumerable<PetAnswer> answers;
+        int total;
+        if (dto.Search != null)
+        {
+            var result = await _meilisearchService.SearchAsync<PetAnswer>(dto.Search, dto.PerPage, dto.Page,
+                !isModerator ? currentUser.Id : null);
+            answers = result.Hits;
+            total = result.TotalHits;
+        }
+        else
+        {
+            answers = await _petAnswerRepository.GetPetAnswersAsync(dto.Order, dto.Desc, position, dto.PerPage,
+                predicateExpr);
+            total = await _petAnswerRepository.CountPetAnswersAsync(predicateExpr);
+        }
+
         var list = new List<PetAnswerDto>();
 
         foreach (var answer in answers) list.Add(await _dtoMapper.MapPetAnswerAsync<PetAnswerDto>(answer));
@@ -360,7 +374,7 @@ public class PetController : Controller
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
         var answer = await _petAnswerRepository.GetPetAnswerAsync(id);
-        if (answer.OwnerId != currentUser.Id && !await _resourceService.HasPermission(currentUser, Roles.Moderator))
+        if (answer.OwnerId != currentUser.Id && !_resourceService.HasPermission(currentUser, UserRole.Moderator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -402,7 +416,7 @@ public class PetController : Controller
         var petAnswer = await _petAnswerRepository.GetPetAnswerAsync(id);
 
         var currentUser = (await _userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await _resourceService.HasPermission(currentUser, Roles.Moderator))
+        if (!_resourceService.HasPermission(currentUser, UserRole.Moderator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -415,16 +429,15 @@ public class PetController : Controller
         petAnswer.DateUpdated = DateTimeOffset.UtcNow;
 
         var user = (await _userManager.FindByIdAsync(petAnswer.OwnerId.ToString()))!;
-        var role = await _resourceService.GetRole(user);
 
         // ReSharper disable once ReplaceWithFirstOrDefault.1
-        KeyValuePair<Role, int>? pair = _scores.Any(e => petAnswer.TotalScore >= e.Value)
+        KeyValuePair<UserRole, int>? pair = _scores.Any(e => petAnswer.TotalScore >= e.Value)
             ? _scores.First(e => petAnswer.TotalScore >= e.Value)
             : null;
         if (pair != null)
         {
-            if (role != null) await _userManager.RemoveFromRoleAsync(user, role.Name);
-            await _userManager.AddToRoleAsync(user, pair.Value.Key.Name);
+            user.Role = pair.Value.Key;
+            await _userManager.UpdateAsync(user);
         }
 
         if (!await _petAnswerRepository.UpdatePetAnswerAsync(petAnswer))
@@ -432,7 +445,7 @@ public class PetController : Controller
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
         await _notificationService.Notify(user, null, NotificationType.System,
-            pair == null ? "pet-failed" : pair.Value.Key == Roles.Volunteer ? "pet-volunteer" : "pet-qualified",
+            pair == null ? "pet-failed" : pair.Value.Key == UserRole.Volunteer ? "pet-volunteer" : "pet-qualified",
             new Dictionary<string, string> { { "Score", petAnswer.TotalScore.ToString()! } });
 
         return NoContent();

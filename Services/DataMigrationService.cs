@@ -191,11 +191,10 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
                     DateLastModifiedUserName = await reader.GetTime("username_last_modified")
                 };
                 await _userManager.CreateAsync(user);
-
                 user.EmailConfirmed = true;
                 user.LockoutEnabled = false;
+                user.Role = UserRole.Member;
                 await _userManager.UpdateAsync(user);
-                await _userManager.AddToRoleAsync(user, Roles.Member.Name);
                 _userDictionary.Add(index, user.Id);
 
                 var configuration = new PlayConfiguration
@@ -292,13 +291,13 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
                 index = reader.GetInt32("id");
                 var title = reader.GetString("title");
                 var subtitle = reader.GetString("subtitle");
-                if (await _chapterRepository.CountChaptersAsync(predicate: e =>
+                if (await _chapterRepository.CountChaptersAsync(e =>
                         e.Title == title && e.Subtitle == subtitle) > 0)
                 {
                     _chapterDictionary.Add(index,
                         (await _chapterRepository.GetChaptersAsync(new List<string> { "DateCreated" },
-                            new List<bool> { false }, 0, -1, null,
-                            e => e.Title == title && e.Subtitle == subtitle)).FirstOrDefault()!.Id);
+                            new List<bool> { false }, 0, -1, e => e.Title == title && e.Subtitle == subtitle))
+                        .FirstOrDefault()!.Id);
                     continue;
                 }
 
@@ -360,12 +359,12 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
                 var edition = reader.GetString("edition");
                 var authorName = reader.GetString("composer");
                 if (await _songRepository.CountSongsAsync(
-                        predicate: e => e.Title == title && e.AuthorName == authorName) > 0)
+                        e => e.Title == title && e.AuthorName == authorName) > 0)
                 {
                     _songDictionary.Add(index,
                         (await _songRepository.GetSongsAsync(new List<string> { "DateCreated" },
-                            new List<bool> { false }, 0, -1, null,
-                            e => e.Title == title && e.AuthorName == authorName)).FirstOrDefault()!.Id);
+                            new List<bool> { false }, 0, -1, e => e.Title == title && e.AuthorName == authorName))
+                        .FirstOrDefault()!.Id);
                     continue;
                 }
 
@@ -377,8 +376,7 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
                 var illustration = (await _fileStorageService.UploadImage<Song>(title,
                     await File.ReadAllBytesAsync(illustrationPath, cancellationToken), (16, 9))).Item1;
                 var date = reader.GetDateTimeOffset("time");
-                var bpm = NonDigitRegex
-                    .Split(reader.GetString("bpm"))
+                var bpm = NonDigitRegex.Split(reader.GetString("bpm"))
                     .Where(s => !s.IsNullOrEmpty())
                     .Select(double.Parse)
                     .ToArray();
@@ -511,13 +509,13 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
                 var levelType = (ChartLevel)reader.GetInt32("level_type");
                 var level = reader.GetString("level");
                 var difficulty = reader.GetDouble("difficulty");
-                if (await _chartRepository.CountChartsAsync(predicate: e =>
+                if (await _chartRepository.CountChartsAsync(e =>
                         e.SongId == song.Id && e.LevelType == levelType && e.Level == level &&
                         e.OwnerId == _userDictionary[reader.GetInt32("owner_id")]) > 0)
                 {
                     _chartDictionary.Add(index,
                         (await _chartRepository.GetChartsAsync(new List<string> { "DateCreated" },
-                            new List<bool> { false }, 0, -1, null,
+                            new List<bool> { false }, 0, -1,
                             e => e.SongId == song.Id && e.LevelType == levelType && e.Level == level &&
                                  e.OwnerId == _userDictionary[reader.GetInt32("owner_id")])).FirstOrDefault()!.Id);
                     continue;
@@ -974,12 +972,12 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
                 index = reader.GetInt32("id");
                 var title = reader.GetString("name");
 
-                if (await _songSubmissionRepository.CountSongSubmissionsAsync(predicate: e =>
+                if (await _songSubmissionRepository.CountSongSubmissionsAsync(e =>
                         e.Title == title && e.AuthorName == reader.GetString("composer")) > 0)
                 {
                     _songSubmissionDictionary.Add(index,
                         (await _songSubmissionRepository.GetSongSubmissionsAsync(new List<string> { "DateCreated" },
-                            new List<bool> { false }, 0, -1, null,
+                            new List<bool> { false }, 0, -1,
                             e => e.Title == title && e.AuthorName == reader.GetString("composer"))).FirstOrDefault()!
                         .Id);
                     continue;
@@ -995,8 +993,7 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
                     await File.ReadAllBytesAsync(illustrationPath, cancellationToken), (16, 9))).Item1;
                 var date = reader.GetDateTimeOffset("time");
                 var edition = reader.GetString("edition");
-                var bpm = NonDigitRegex
-                    .Split(reader.GetString("bpm"))
+                var bpm = NonDigitRegex.Split(reader.GetString("bpm"))
                     .Where(s => !s.IsNullOrEmpty())
                     .Select(double.Parse)
                     .ToArray();
@@ -1093,7 +1090,7 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
                 var levelType = (ChartLevel)reader.GetInt32("level_type");
                 var level = reader.GetString("level");
                 var difficulty = reader.GetDouble("difficulty");
-                if (await _chartSubmissionRepository.CountChartSubmissionsAsync(predicate: e =>
+                if (await _chartSubmissionRepository.CountChartSubmissionsAsync(e =>
                         e.SongId == (song != null ? song.Id : null) &&
                         e.SongSubmissionId == (songSubmission != null ? songSubmission.Id : null) &&
                         e.LevelType == levelType && e.Level == level &&
@@ -1101,12 +1098,11 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
                 {
                     _chartSubmissionDictionary.Add(index,
                         (await _chartSubmissionRepository.GetChartSubmissionsAsync(new List<string> { "DateCreated" },
-                            new List<bool> { false }, 0, -1, null,
-                            e =>
-                                e.SongId == (song != null ? song.Id : null) &&
-                                e.SongSubmissionId == (songSubmission != null ? songSubmission.Id : null) &&
-                                e.LevelType == levelType && e.Level == level &&
-                                e.OwnerId == _userDictionary[reader.GetInt32("uploader_id")])).FirstOrDefault()!.Id);
+                            new List<bool> { false }, 0, -1,
+                            e => e.SongId == (song != null ? song.Id : null) &&
+                                 e.SongSubmissionId == (songSubmission != null ? songSubmission.Id : null) &&
+                                 e.LevelType == levelType && e.Level == level &&
+                                 e.OwnerId == _userDictionary[reader.GetInt32("uploader_id")])).FirstOrDefault()!.Id);
                     continue;
                 }
 

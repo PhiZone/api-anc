@@ -28,9 +28,9 @@ namespace PhiZoneApi.Controllers;
 [Route("auth")]
 [Produces("application/json")]
 public class AuthenticationController(UserManager<User> userManager, IConnectionMultiplexer redis,
-        IMailService mailService, IResourceService resourceService, ITapTapService tapTapService,
-        IUserRepository userRepository, IDtoMapper dtoMapper, ILogger<AuthenticationController> logger)
-    : Controller
+    IMailService mailService, IResourceService resourceService, ITapTapService tapTapService,
+    IUserRepository userRepository, IApplicationRepository applicationRepository, IDtoMapper dtoMapper,
+    ILogger<AuthenticationController> logger) : Controller
 {
     /// <summary>
     ///     Retrieves authentication credentials.
@@ -66,17 +66,28 @@ public class AuthenticationController(UserManager<User> userManager, IConnection
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(OpenIddictErrorDto))]
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(OpenIddictErrorDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(OpenIddictErrorDto))]
-    // ReSharper disable once UnusedParameter.Global
     public async Task<IActionResult> Exchange([FromForm] OpenIddictTokenRequestDto dto,
-        [FromQuery] LoginMode mode = LoginMode.Direct)
+        [FromQuery] Guid? tapApplicationId = null)
     {
         var request = HttpContext.GetOpenIddictServerRequest()!;
 
-        if (mode == LoginMode.TapTap)
+        if (tapApplicationId != null)
         {
+            if (!await applicationRepository.ApplicationExistsAsync(tapApplicationId.Value))
+                return NotFound(new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ApplicationNotFound
+                });
+
+            if ((await applicationRepository.GetApplicationAsync(tapApplicationId.Value)).TapClientId == null)
+                return BadRequest(new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
+                });
+
             var response = await tapTapService.Login(new TapTapRequestDto
             {
-                MacKey = dto.username!, AccessToken = dto.password!
+                MacKey = dto.username!, AccessToken = dto.password!, ApplicationId = tapApplicationId.Value
             });
 
             if (response == null)
@@ -95,7 +106,7 @@ public class AuthenticationController(UserManager<User> userManager, IConnection
 
             var responseDto =
                 JsonConvert.DeserializeObject<TapTapDelivererDto>(await response.Content.ReadAsStringAsync())!;
-            var user = await userRepository.GetUserByTapUnionId(responseDto.Data.Unionid);
+            var user = await userRepository.GetUserByTapUnionId(tapApplicationId.Value, responseDto.Data.Unionid);
             if (user == null)
                 return NotFound(new AuthenticationProperties(new Dictionary<string, string>
                 {
@@ -136,7 +147,7 @@ public class AuthenticationController(UserManager<User> userManager, IConnection
                     [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
                         "Unable to find a user with provided credentials."
                 }!));
-            if (!await resourceService.HasPermission(user, Roles.Member))
+            if (!resourceService.HasPermission(user, UserRole.Member))
                 return Forbid(
                     new AuthenticationProperties(new Dictionary<string, string>
                     {
@@ -259,7 +270,7 @@ public class AuthenticationController(UserManager<User> userManager, IConnection
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(OpenIddictErrorDto))]
     [ProducesResponseType(StatusCodes.Status401Unauthorized, Type = typeof(OpenIddictErrorDto))]
-    // ReSharper disable once UnusedParameter.Global
+// ReSharper disable once UnusedParameter.Global
     public IActionResult Revoke([FromForm] OpenIddictRevocationRequestDto dto)
     {
         return Ok();
@@ -296,7 +307,7 @@ public class AuthenticationController(UserManager<User> userManager, IConnection
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNotFound
                 });
-            if (!await resourceService.HasPermission(user, Roles.Member))
+            if (!resourceService.HasPermission(user, UserRole.Member))
                 return StatusCode(StatusCodes.Status403Forbidden,
                     new ResponseDto<object>
                     {
@@ -417,6 +428,18 @@ public class AuthenticationController(UserManager<User> userManager, IConnection
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> RetrieveTapTapInfo([FromBody] TapTapRequestDto dto)
     {
+        if (!await applicationRepository.ApplicationExistsAsync(dto.ApplicationId))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ApplicationNotFound
+            });
+
+        if ((await applicationRepository.GetApplicationAsync(dto.ApplicationId)).TapClientId == null)
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
+            });
+
         var response = await tapTapService.Login(dto);
 
         if (response == null)
@@ -435,7 +458,7 @@ public class AuthenticationController(UserManager<User> userManager, IConnection
 
         var responseDto =
             JsonConvert.DeserializeObject<TapTapDelivererDto>(await response.Content.ReadAsStringAsync())!;
-        var user = await userRepository.GetUserByTapUnionId(responseDto.Data.Unionid);
+        var user = await userRepository.GetUserByTapUnionId(dto.ApplicationId, responseDto.Data.Unionid);
 
         return Ok(new ResponseDto<TapTapResponseDto>
         {

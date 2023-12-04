@@ -131,9 +131,9 @@ public class CommentController(ICommentRepository commentRepository, IOptions<Da
             });
 
         var comment = await commentRepository.GetCommentAsync(id);
-        if ((currentUser.Id == comment.OwnerId && !await resourceService.HasPermission(currentUser, Roles.Member)) ||
+        if ((currentUser.Id == comment.OwnerId && !resourceService.HasPermission(currentUser, UserRole.Member)) ||
             (currentUser.Id != comment.OwnerId &&
-             !await resourceService.HasPermission(currentUser, Roles.Moderator)))
+             !resourceService.HasPermission(currentUser, UserRole.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -215,7 +215,7 @@ public class CommentController(ICommentRepository commentRepository, IOptions<Da
     public async Task<IActionResult> CreateReply([FromRoute] Guid id, [FromBody] ReplyCreationDto dto)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await resourceService.HasPermission(currentUser, Roles.Member))
+        if (!resourceService.HasPermission(currentUser, UserRole.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -322,7 +322,7 @@ public class CommentController(ICommentRepository commentRepository, IOptions<Da
     public async Task<IActionResult> CreateLike([FromRoute] Guid id)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await resourceService.HasPermission(currentUser, Roles.Member))
+        if (!resourceService.HasPermission(currentUser, UserRole.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -367,7 +367,7 @@ public class CommentController(ICommentRepository commentRepository, IOptions<Da
     public async Task<IActionResult> RemoveLike([FromRoute] Guid id)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await resourceService.HasPermission(currentUser, Roles.Member))
+        if (!resourceService.HasPermission(currentUser, UserRole.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {

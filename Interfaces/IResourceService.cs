@@ -1,5 +1,5 @@
-﻿using PhiZoneApi.Models;
-using Role = PhiZoneApi.Constants.Role;
+﻿using PhiZoneApi.Enums;
+using PhiZoneApi.Models;
 
 namespace PhiZoneApi.Interfaces;
 
@@ -19,11 +19,7 @@ public interface IResourceService
 
     Task<bool> IsBlacklisted(int user1, int user2);
 
-    Task<bool> HasPermission(User user, Role targetRole);
-
-    Task<bool> HasPermission(User user, int priority);
-
-    Task<Role?> GetRole(User user);
+    bool HasPermission(User user, UserRole role);
 
     Task<(string, List<User>)> ParseUserContent(string content);
 }

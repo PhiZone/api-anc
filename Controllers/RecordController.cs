@@ -347,7 +347,7 @@ public class RecordController(IRecordRepository recordRepository, IOptions<DataS
             });
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await resourceService.HasPermission(currentUser, Roles.Administrator))
+        if (!resourceService.HasPermission(currentUser, UserRole.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -421,7 +421,7 @@ public class RecordController(IRecordRepository recordRepository, IOptions<DataS
     public async Task<IActionResult> CreateLike([FromRoute] Guid id)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await resourceService.HasPermission(currentUser, Roles.Member))
+        if (!resourceService.HasPermission(currentUser, UserRole.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -466,7 +466,7 @@ public class RecordController(IRecordRepository recordRepository, IOptions<DataS
     public async Task<IActionResult> RemoveLike([FromRoute] Guid id)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await resourceService.HasPermission(currentUser, Roles.Member))
+        if (!resourceService.HasPermission(currentUser, UserRole.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -554,7 +554,7 @@ public class RecordController(IRecordRepository recordRepository, IOptions<DataS
     public async Task<IActionResult> CreateComment([FromRoute] Guid id, [FromBody] CommentCreationDto dto)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await resourceService.HasPermission(currentUser, Roles.Member))
+        if (!resourceService.HasPermission(currentUser, UserRole.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {

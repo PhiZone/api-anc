@@ -9,24 +9,14 @@ using PhiZoneApi.Utils;
 
 namespace PhiZoneApi.Repositories;
 
-public class ResourceRecordRepository(ApplicationDbContext context) : IResourceRecordRepository
+public class ResourceRecordRepository
+    (ApplicationDbContext context, IMeilisearchService meilisearchService) : IResourceRecordRepository
 {
     public async Task<ICollection<ResourceRecord>> GetResourceRecordsAsync(List<string> order, List<bool> desc,
-        int position, int take, string? search = null, Expression<Func<ResourceRecord, bool>>? predicate = null)
+        int position, int take, Expression<Func<ResourceRecord, bool>>? predicate = null)
     {
         var result = context.ResourceRecords.OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
-        if (search != null)
-        {
-            search = $"%{search.Trim().ToUpper()}%";
-            result = result.Where(resourceRecord => EF.Functions.Like(resourceRecord.Title.ToUpper(), search) ||
-                                                    EF.Functions.Like(resourceRecord.AuthorName.ToUpper(), search) ||
-                                                    (resourceRecord.Description != null &&
-                                                     EF.Functions.Like(resourceRecord.Description.ToUpper(), search)) ||
-                                                    EF.Functions.Like(resourceRecord.Source.ToUpper(), search) ||
-                                                    EF.Functions.Like(resourceRecord.CopyrightOwner.ToUpper(), search));
-        }
-
         result = result.Skip(position);
         return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
@@ -44,18 +34,22 @@ public class ResourceRecordRepository(ApplicationDbContext context) : IResourceR
     public async Task<bool> CreateResourceRecordAsync(ResourceRecord resourceRecord)
     {
         await context.ResourceRecords.AddAsync(resourceRecord);
+        await meilisearchService.AddAsync(resourceRecord);
         return await SaveAsync();
     }
 
     public async Task<bool> CreateResourceRecordsAsync(IEnumerable<ResourceRecord> resourceRecords)
     {
-        await context.ResourceRecords.AddRangeAsync(resourceRecords);
+        var enumerable = resourceRecords.ToList();
+        await context.ResourceRecords.AddRangeAsync(enumerable);
+        await meilisearchService.AddAsync(enumerable);
         return await SaveAsync();
     }
 
     public async Task<bool> UpdateResourceRecordAsync(ResourceRecord resourceRecord)
     {
         context.ResourceRecords.Update(resourceRecord);
+        await meilisearchService.UpdateAsync(resourceRecord);
         return await SaveAsync();
     }
 
@@ -63,6 +57,7 @@ public class ResourceRecordRepository(ApplicationDbContext context) : IResourceR
     {
         context.ResourceRecords.Remove(
             (await context.ResourceRecords.FirstOrDefaultAsync(resourceRecord => resourceRecord.Id == id))!);
+        await meilisearchService.DeleteAsync<ResourceRecord>(id);
         return await SaveAsync();
     }
 
@@ -72,23 +67,11 @@ public class ResourceRecordRepository(ApplicationDbContext context) : IResourceR
         return saved > 0;
     }
 
-    public async Task<int> CountResourceRecordsAsync(string? search = null,
+    public async Task<int> CountResourceRecordsAsync(
         Expression<Func<ResourceRecord, bool>>? predicate = null)
     {
         var result = context.ResourceRecords.AsQueryable();
-
         if (predicate != null) result = result.Where(predicate);
-        if (search != null)
-        {
-            search = $"%{search.Trim().ToUpper()}%";
-            result = result.Where(resourceRecord => EF.Functions.Like(resourceRecord.Title.ToUpper(), search) ||
-                                                    EF.Functions.Like(resourceRecord.AuthorName.ToUpper(), search) ||
-                                                    (resourceRecord.Description != null &&
-                                                     EF.Functions.Like(resourceRecord.Description.ToUpper(), search)) ||
-                                                    EF.Functions.Like(resourceRecord.Source.ToUpper(), search) ||
-                                                    EF.Functions.Like(resourceRecord.CopyrightOwner.ToUpper(), search));
-        }
-
         return await result.CountAsync();
     }
 }

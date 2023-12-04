@@ -27,10 +27,9 @@ namespace PhiZoneApi.Controllers;
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme,
     Policy = "AllowAnonymous")]
 public class AnnouncementController(IAnnouncementRepository announcementRepository, IOptions<DataSettings> dataSettings,
-        IDtoMapper dtoMapper, IFilterService filterService, UserManager<User> userManager,
-        ILikeRepository likeRepository, ILikeService likeService, IMapper mapper, ICommentRepository commentRepository,
-        IResourceService resourceService, INotificationService notificationService)
-    : Controller
+    IDtoMapper dtoMapper, IFilterService filterService, UserManager<User> userManager, ILikeRepository likeRepository,
+    ILikeService likeService, IMapper mapper, ICommentRepository commentRepository, IResourceService resourceService,
+    INotificationService notificationService, IMeilisearchService meilisearchService) : Controller
 {
     /// <summary>
     ///     Retrieves announcements.
@@ -51,9 +50,21 @@ public class AnnouncementController(IAnnouncementRepository announcementReposito
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser);
-        var announcements = await announcementRepository.GetAnnouncementsAsync(dto.Order, dto.Desc, position,
-            dto.PerPage, dto.Search, predicateExpr);
-        var total = await announcementRepository.CountAnnouncementsAsync(dto.Search, predicateExpr);
+        IEnumerable<Announcement> announcements;
+        int total;
+        if (dto.Search != null)
+        {
+            var result = await meilisearchService.SearchAsync<Announcement>(dto.Search, dto.PerPage, dto.Page);
+            announcements = result.Hits;
+            total = result.TotalHits;
+        }
+        else
+        {
+            announcements = await announcementRepository.GetAnnouncementsAsync(dto.Order, dto.Desc, position,
+                dto.PerPage, predicateExpr);
+            total = await announcementRepository.CountAnnouncementsAsync(predicateExpr);
+        }
+
         var list = new List<AnnouncementDto>();
 
         foreach (var announcement in announcements)
@@ -124,7 +135,7 @@ public class AnnouncementController(IAnnouncementRepository announcementReposito
     public async Task<IActionResult> CreateAnnouncement([FromBody] AnnouncementRequestDto dto)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await resourceService.HasPermission(currentUser, Roles.Administrator))
+        if (!resourceService.HasPermission(currentUser, UserRole.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -180,7 +191,7 @@ public class AnnouncementController(IAnnouncementRepository announcementReposito
         var announcement = await announcementRepository.GetAnnouncementAsync(id);
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await resourceService.HasPermission(currentUser, Roles.Administrator))
+        if (!resourceService.HasPermission(currentUser, UserRole.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -239,7 +250,7 @@ public class AnnouncementController(IAnnouncementRepository announcementReposito
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        if (!await resourceService.HasPermission(currentUser, Roles.Moderator))
+        if (!resourceService.HasPermission(currentUser, UserRole.Moderator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -380,8 +391,7 @@ public class AnnouncementController(IAnnouncementRepository announcementReposito
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<CommentDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetAnnouncementComments([FromRoute] Guid id,
-        [FromQuery] ArrayRequestDto dto)
+    public async Task<IActionResult> GetAnnouncementComments([FromRoute] Guid id, [FromQuery] ArrayRequestDto dto)
     {
         var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
@@ -435,7 +445,7 @@ public class AnnouncementController(IAnnouncementRepository announcementReposito
     public async Task<IActionResult> CreateComment([FromRoute] Guid id, [FromBody] CommentCreationDto dto)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await resourceService.HasPermission(currentUser, Roles.Member))
+        if (!resourceService.HasPermission(currentUser, UserRole.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {

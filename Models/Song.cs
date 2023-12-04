@@ -40,6 +40,8 @@ public class Song : PublicResource
 
     public TimeSpan PreviewEnd { get; set; }
 
+    public int PlayCount { get; set; }
+
     public IEnumerable<Chapter> Chapters { get; } = new List<Chapter>();
 
     public IEnumerable<Admission> ChapterAdmitters { get; } = new List<Admission>();

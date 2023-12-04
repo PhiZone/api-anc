@@ -28,7 +28,7 @@ namespace PhiZoneApi.Controllers;
     Policy = "AllowAnonymous")]
 public class ResourceRecordController(IResourceRecordRepository resourceRecordRepository,
     IOptions<DataSettings> dataSettings, IMapper mapper, IFilterService filterService, UserManager<User> userManager,
-    IResourceService resourceService) : Controller
+    IResourceService resourceService, IMeilisearchService meilisearchService) : Controller
 {
     /// <summary>
     ///     Retrieves resource records.
@@ -49,9 +49,21 @@ public class ResourceRecordController(IResourceRecordRepository resourceRecordRe
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser);
-        var resourceRecords = await resourceRecordRepository.GetResourceRecordsAsync(dto.Order, dto.Desc, position,
-            dto.PerPage, dto.Search, predicateExpr);
-        var total = await resourceRecordRepository.CountResourceRecordsAsync(dto.Search, predicateExpr);
+        IEnumerable<ResourceRecord> resourceRecords;
+        int total;
+        if (dto.Search != null)
+        {
+            var result = await meilisearchService.SearchAsync<ResourceRecord>(dto.Search, dto.PerPage, dto.Page);
+            resourceRecords = result.Hits;
+            total = result.TotalHits;
+        }
+        else
+        {
+            resourceRecords = await resourceRecordRepository.GetResourceRecordsAsync(dto.Order, dto.Desc, position,
+                dto.PerPage, predicateExpr);
+            total = await resourceRecordRepository.CountResourceRecordsAsync(predicateExpr);
+        }
+
         var list = mapper.Map<List<ResourceRecordDto>>(resourceRecords);
 
         return Ok(new ResponseDto<IEnumerable<ResourceRecordDto>>
@@ -119,7 +131,7 @@ public class ResourceRecordController(IResourceRecordRepository resourceRecordRe
     public async Task<IActionResult> CreateResourceRecord([FromBody] ResourceRecordRequestDto dto)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await resourceService.HasPermission(currentUser, Roles.Moderator))
+        if (!resourceService.HasPermission(currentUser, UserRole.Moderator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -168,7 +180,7 @@ public class ResourceRecordController(IResourceRecordRepository resourceRecordRe
     public async Task<IActionResult> CreateResourceRecords([FromBody] List<ResourceRecordRequestDto> dtos)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await resourceService.HasPermission(currentUser, Roles.Moderator))
+        if (!resourceService.HasPermission(currentUser, UserRole.Moderator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -230,7 +242,7 @@ public class ResourceRecordController(IResourceRecordRepository resourceRecordRe
         var resourceRecord = await resourceRecordRepository.GetResourceRecordAsync(id);
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await resourceService.HasPermission(currentUser, Roles.Moderator))
+        if (!resourceService.HasPermission(currentUser, UserRole.Moderator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -296,7 +308,7 @@ public class ResourceRecordController(IResourceRecordRepository resourceRecordRe
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        if (!await resourceService.HasPermission(currentUser, Roles.Moderator))
+        if (!resourceService.HasPermission(currentUser, UserRole.Moderator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {

@@ -7,7 +7,7 @@ public interface IPlayConfigurationRepository
 {
     Task<ICollection<PlayConfiguration>> GetPlayConfigurationsAsync(List<string> order, List<bool> desc, int position,
         int take,
-        string? search = null, Expression<Func<PlayConfiguration, bool>>? predicate = null);
+        Expression<Func<PlayConfiguration, bool>>? predicate = null);
 
     Task<PlayConfiguration> GetPlayConfigurationAsync(Guid id);
 
@@ -21,6 +21,6 @@ public interface IPlayConfigurationRepository
 
     Task<bool> SaveAsync();
 
-    Task<int> CountPlayConfigurationsAsync(string? search = null,
+    Task<int> CountPlayConfigurationsAsync(
         Expression<Func<PlayConfiguration, bool>>? predicate = null);
 }

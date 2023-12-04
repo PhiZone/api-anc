@@ -29,13 +29,15 @@ namespace PhiZoneApi.Controllers;
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme,
     Policy = "AllowAnonymous")]
 public class ChartController(IChartRepository chartRepository, IOptions<DataSettings> dataSettings,
-        UserManager<User> userManager, IFilterService filterService, IFileStorageService fileStorageService,
-        IDtoMapper dtoMapper, IMapper mapper, IChartService chartService, ISongRepository songRepository,
-        ILikeRepository likeRepository, ILikeService likeService, ICommentRepository commentRepository,
-        IVoteRepository voteRepository, IVoteService voteService, IAuthorshipRepository authorshipRepository,
-        IResourceService resourceService, IChartAssetRepository chartAssetRepository,
-        INotificationService notificationService, IRecordRepository recordRepository, ILogger<ChartController> logger)
-    : Controller
+    UserManager<User> userManager, IFilterService filterService, IFileStorageService fileStorageService,
+    IDtoMapper dtoMapper, IMapper mapper, IChartService chartService, ISongRepository songRepository,
+    ILikeRepository likeRepository, ILikeService likeService, ICommentRepository commentRepository,
+    IVoteRepository voteRepository, IVoteService voteService, IAuthorshipRepository authorshipRepository,
+    IResourceService resourceService, IChartAssetRepository chartAssetRepository,
+    INotificationService notificationService, IRecordRepository recordRepository,
+    ICollectionRepository collectionRepository, IAdmissionRepository admissionRepository,
+    ITemplateService templateService, ILogger<ChartController> logger,
+    IMeilisearchService meilisearchService) : Controller
 {
     /// <summary>
     ///     Retrieves charts.
@@ -56,9 +58,21 @@ public class ChartController(IChartRepository chartRepository, IOptions<DataSett
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser);
-        var charts = await chartRepository.GetChartsAsync(dto.Order, dto.Desc, position,
-            dto.PerPage, dto.Search, predicateExpr);
-        var total = await chartRepository.CountChartsAsync(dto.Search, predicateExpr);
+        IEnumerable<Chart> charts;
+        int total;
+        if (dto.Search != null)
+        {
+            var result = await meilisearchService.SearchAsync<Chart>(dto.Search, dto.PerPage, dto.Page,
+                showHidden: currentUser is { Role: UserRole.Administrator });
+            charts = result.Hits;
+            total = result.TotalHits;
+        }
+        else
+        {
+            charts = await chartRepository.GetChartsAsync(dto.Order, dto.Desc, position, dto.PerPage, predicateExpr);
+            total = await chartRepository.CountChartsAsync(predicateExpr);
+        }
+
         var list = new List<ChartDto>();
 
         foreach (var chart in charts) list.Add(await dtoMapper.MapChartAsync<ChartDto>(chart, currentUser));
@@ -143,7 +157,7 @@ public class ChartController(IChartRepository chartRepository, IOptions<DataSett
     {
         var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser, e => !e.IsHidden);
-        var chart = await chartRepository.GetRandomChartAsync(dto.Search, predicateExpr);
+        var chart = await chartRepository.GetRandomChartAsync(predicateExpr);
 
         if (chart == null)
             return NotFound(new ResponseDto<object>
@@ -180,7 +194,7 @@ public class ChartController(IChartRepository chartRepository, IOptions<DataSett
     public async Task<IActionResult> CreateChart([FromForm] ChartCreationDto dto)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await resourceService.HasPermission(currentUser, Roles.Administrator))
+        if (!resourceService.HasPermission(currentUser, UserRole.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -234,8 +248,8 @@ public class ChartController(IChartRepository chartRepository, IOptions<DataSett
         if (!await chartRepository.CreateChartAsync(chart))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
-        logger.LogInformation(LogEvents.ChartInfo, "New chart: {Title} [{Level} {Difficulty}]",
-            dto.Title ?? song.Title, dto.Level, Math.Floor(dto.Difficulty));
+        logger.LogInformation(LogEvents.ChartInfo, "New chart: {Title} [{Level} {Difficulty}]", dto.Title ?? song.Title,
+            dto.Level, Math.Floor(dto.Difficulty));
 
         return StatusCode(StatusCodes.Status201Created);
     }
@@ -274,7 +288,7 @@ public class ChartController(IChartRepository chartRepository, IOptions<DataSett
         var chart = await chartRepository.GetChartAsync(id);
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await resourceService.HasPermission(currentUser, Roles.Administrator))
+        if (!resourceService.HasPermission(currentUser, UserRole.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -346,7 +360,7 @@ public class ChartController(IChartRepository chartRepository, IOptions<DataSett
         var chart = await chartRepository.GetChartAsync(id);
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await resourceService.HasPermission(currentUser, Roles.Administrator))
+        if (!resourceService.HasPermission(currentUser, UserRole.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -410,7 +424,7 @@ public class ChartController(IChartRepository chartRepository, IOptions<DataSett
         var chart = await chartRepository.GetChartAsync(id);
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await resourceService.HasPermission(currentUser, Roles.Administrator))
+        if (!resourceService.HasPermission(currentUser, UserRole.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -460,7 +474,7 @@ public class ChartController(IChartRepository chartRepository, IOptions<DataSett
         var chart = await chartRepository.GetChartAsync(id);
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await resourceService.HasPermission(currentUser, Roles.Administrator))
+        if (!resourceService.HasPermission(currentUser, UserRole.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -514,7 +528,7 @@ public class ChartController(IChartRepository chartRepository, IOptions<DataSett
         var chart = await chartRepository.GetChartAsync(id);
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await resourceService.HasPermission(currentUser, Roles.Administrator))
+        if (!resourceService.HasPermission(currentUser, UserRole.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -560,7 +574,7 @@ public class ChartController(IChartRepository chartRepository, IOptions<DataSett
             });
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await resourceService.HasPermission(currentUser, Roles.Administrator))
+        if (!resourceService.HasPermission(currentUser, UserRole.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -697,7 +711,7 @@ public class ChartController(IChartRepository chartRepository, IOptions<DataSett
         var chart = await chartRepository.GetChartAsync(id);
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await resourceService.HasPermission(currentUser, Roles.Administrator))
+        if (!resourceService.HasPermission(currentUser, UserRole.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -758,7 +772,7 @@ public class ChartController(IChartRepository chartRepository, IOptions<DataSett
         var chart = await chartRepository.GetChartAsync(id);
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await resourceService.HasPermission(currentUser, Roles.Administrator))
+        if (!resourceService.HasPermission(currentUser, UserRole.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -831,7 +845,7 @@ public class ChartController(IChartRepository chartRepository, IOptions<DataSett
         var chart = await chartRepository.GetChartAsync(id);
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await resourceService.HasPermission(currentUser, Roles.Administrator))
+        if (!resourceService.HasPermission(currentUser, UserRole.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -894,7 +908,7 @@ public class ChartController(IChartRepository chartRepository, IOptions<DataSett
         var chart = await chartRepository.GetChartAsync(id);
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await resourceService.HasPermission(currentUser, Roles.Administrator))
+        if (!resourceService.HasPermission(currentUser, UserRole.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -945,7 +959,7 @@ public class ChartController(IChartRepository chartRepository, IOptions<DataSett
             });
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await resourceService.HasPermission(currentUser, Roles.Administrator))
+        if (!resourceService.HasPermission(currentUser, UserRole.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -974,6 +988,289 @@ public class ChartController(IChartRepository chartRepository, IOptions<DataSett
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
         return StatusCode(StatusCodes.Status201Created);
+    }
+
+    /// <summary>
+    ///     Retrieves admissions received by collections.
+    /// </summary>
+    /// <param name="id">A chart's ID.</param>
+    /// <returns>An array of collection admitters.</returns>
+    /// <response code="200">Returns an array of collection admitters.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="404">When the specified chart is not found.</response>
+    [HttpGet("{id:guid}/collections")]
+    [Consumes("application/json")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<CollectionAdmitterDto>>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> GetAdmissions([FromRoute] Guid id, [FromQuery] ArrayRequestDto dto,
+        [FromQuery] AdmissionFilterDto? filterDto = null)
+    {
+        if (!await chartRepository.ChartExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+
+        var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
+            dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
+        dto.Page = dto.Page > 1 ? dto.Page : 1;
+        var position = dto.PerPage * (dto.Page - 1);
+        var chart = await chartRepository.GetChartAsync(id);
+        var hasPermission = currentUser != null && (chart.OwnerId == currentUser.Id ||
+                                                    resourceService.HasPermission(currentUser, UserRole.Moderator));
+        var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser,
+            e => (hasPermission || e.Status == RequestStatus.Approved ||
+                  (currentUser != null && e.Admitter.OwnerId == currentUser.Id)) && e.AdmitteeId == id);
+
+        var admissions = await admissionRepository.GetAdmissionsAsync(dto.Order, dto.Desc, position,
+            dto.PerPage, predicateExpr);
+        var total = await admissionRepository.CountAdmissionsAsync(predicateExpr);
+        var list = new List<CollectionAdmitterDto>();
+
+        foreach (var admission in admissions)
+            list.Add(await dtoMapper.MapChartCollectionAsync<CollectionAdmitterDto>(admission, currentUser));
+
+        return Ok(new ResponseDto<IEnumerable<CollectionAdmitterDto>>
+        {
+            Status = ResponseStatus.Ok,
+            Code = ResponseCodes.Ok,
+            Total = total,
+            PerPage = dto.PerPage,
+            HasPrevious = position > 0,
+            HasNext = dto.PerPage > 0 && dto.PerPage * dto.Page < total,
+            Data = list
+        });
+    }
+
+    /// <summary>
+    ///     Retrieves an admission received by a collection.
+    /// </summary>
+    /// <param name="id">A chart's ID.</param>
+    /// <param name="collectionId">A collection's ID.</param>
+    /// <returns>An admission.</returns>
+    /// <response code="200">Returns an admission.</response>
+    /// <response code="304">
+    ///     When the resource has not been updated since last retrieval. Requires <c>If-None-Match</c>.
+    /// </response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="404">When the specified chart, collection, or admission is not found.</response>
+    [HttpGet("{id:guid}/collections/{collectionId:guid}")]
+    [ServiceFilter(typeof(ETagFilter))]
+    [Consumes("application/json")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<AdmissionDto<CollectionDto, ChartDto>>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> GetAdmission([FromRoute] Guid id, [FromRoute] Guid collectionId)
+    {
+        if (!await chartRepository.ChartExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+
+        if (!await collectionRepository.CollectionExistsAsync(collectionId))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
+            });
+
+        if (!await admissionRepository.AdmissionExistsAsync(collectionId, id))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.RelationNotFound
+            });
+
+        var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        var chart = await chartRepository.GetChartAsync(id);
+        var collection = await collectionRepository.GetCollectionAsync(collectionId);
+        var admission = await admissionRepository.GetAdmissionAsync(collectionId, id);
+        if (((currentUser != null && (chart.OwnerId == currentUser.Id || collection.OwnerId == currentUser.Id) &&
+              !resourceService.HasPermission(currentUser, UserRole.Qualified)) ||
+             (currentUser != null && chart.OwnerId != currentUser.Id && collection.OwnerId != currentUser.Id &&
+              !resourceService.HasPermission(currentUser, UserRole.Moderator))) &&
+            admission.Status != RequestStatus.Approved)
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+        var dto = await dtoMapper.MapCollectionAdmissionAsync<CollectionDto, ChartDto>(admission, currentUser);
+
+        return Ok(new ResponseDto<AdmissionDto<CollectionDto, ChartDto>>
+        {
+            Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto
+        });
+    }
+
+    /// <summary>
+    ///     Makes a request to have a chart admitted by a collection.
+    /// </summary>
+    /// <param name="id">A chart's ID.</param>
+    /// <returns>An empty body.</returns>
+    /// <response code="201">Returns an empty body.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
+    /// <response code="404">When the specified chart or collection is not found.</response>
+    /// <response code="500">When an internal server error has occurred.</response>
+    [HttpPost("{id:guid}/collections")]
+    [Consumes("application/json")]
+    [Produces("application/json")]
+    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
+    [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> CollectChartIntoCollection([FromRoute] Guid id, [FromBody] AdmissionRequestDto dto)
+    {
+        if (!await chartRepository.ChartExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+
+        var chart = await chartRepository.GetChartAsync(id);
+
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if ((currentUser.Id == chart.OwnerId && !resourceService.HasPermission(currentUser, UserRole.Member)) ||
+            (currentUser.Id != chart.OwnerId && !resourceService.HasPermission(currentUser, UserRole.Moderator)))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+
+        if (!await collectionRepository.CollectionExistsAsync(dto.AdmitterId))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
+            });
+
+        if (await admissionRepository.AdmissionExistsAsync(dto.AdmitterId, id))
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
+            });
+
+        var collection = await collectionRepository.GetCollectionAsync(dto.AdmitterId);
+
+        if (collection.OwnerId != currentUser.Id && collection.Accessibility == Accessibility.RefuseAny)
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentIsPrivate
+            });
+
+        var admission = new Admission
+        {
+            AdmitterId = collection.Id,
+            AdmitteeId = id,
+            Status =
+                collection.Accessibility == Accessibility.AllowAny || collection.OwnerId == currentUser.Id
+                    ? RequestStatus.Approved
+                    : RequestStatus.Waiting,
+            Label = dto.Label,
+            RequesterId = currentUser.Id,
+            RequesteeId = collection.OwnerId,
+            DateCreated = DateTimeOffset.UtcNow,
+            AdmitterType = AdmitterType.Collection
+        };
+
+        if (!await admissionRepository.CreateAdmissionAsync(admission))
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+
+        if (collection.OwnerId != currentUser.Id && collection.Accessibility == Accessibility.RequireReview)
+            await notificationService.Notify((await userManager.FindByIdAsync(collection.OwnerId.ToString()))!,
+                currentUser, NotificationType.Requests, "collection-admission",
+                new Dictionary<string, string>
+                {
+                    { "User", resourceService.GetRichText<User>(currentUser.Id.ToString(), currentUser.UserName!) },
+                    { "Chart", resourceService.GetRichText<Chart>(chart.Id.ToString(), chart.GetDisplay()) },
+                    {
+                        "Collection",
+                        resourceService.GetRichText<Collection>(collection.Id.ToString(), collection.GetDisplay())
+                    },
+                    {
+                        "Admission",
+                        resourceService.GetComplexRichText("CollectionAdmission", admission.AdmitterId.ToString(),
+                            admission.AdmitteeId.ToString(),
+                            templateService.GetMessage("more-info", admission.Requestee.Language)!)
+                    }
+                });
+
+        return StatusCode(StatusCodes.Status201Created);
+    }
+
+    /// <summary>
+    ///     Removes a chart from a collection that has admitted the chart.
+    /// </summary>
+    /// <param name="id">A chart's ID.</param>
+    /// <param name="collectionId">A collection's ID.</param>
+    /// <returns>An empty body.</returns>
+    /// <response code="204">Returns an empty body.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
+    /// <response code="404">When the specified chart or collection is not found.</response>
+    /// <response code="500">When an internal server error has occurred.</response>
+    [HttpDelete("{id:guid}/collections/{collectionId:guid}")]
+    [Consumes("application/json")]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> RemoveChartFromCollection([FromRoute] Guid id, [FromRoute] Guid collectionId)
+    {
+        if (!await chartRepository.ChartExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+
+        var chart = await chartRepository.GetChartAsync(id);
+
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if ((currentUser.Id == chart.OwnerId && !resourceService.HasPermission(currentUser, UserRole.Member)) ||
+            (currentUser.Id != chart.OwnerId && !resourceService.HasPermission(currentUser, UserRole.Administrator)))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+
+        if (!await collectionRepository.CollectionExistsAsync(collectionId))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
+            });
+
+        if (!await admissionRepository.AdmissionExistsAsync(collectionId, id))
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
+            });
+
+        var admission = await admissionRepository.GetAdmissionAsync(collectionId, id);
+        if (admission.Status != RequestStatus.Approved)
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
+            });
+
+        if (!await admissionRepository.RemoveAdmissionAsync(collectionId, id))
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+
+        return NoContent();
     }
 
     /// <summary>
@@ -1007,7 +1304,7 @@ public class ChartController(IChartRepository chartRepository, IOptions<DataSett
 
         var chart = await chartRepository.GetChartAsync(id);
 
-        if ((currentUser == null || !await resourceService.HasPermission(currentUser, Roles.Administrator)) &&
+        if ((currentUser == null || !resourceService.HasPermission(currentUser, UserRole.Administrator)) &&
             chart.IsLocked)
             return BadRequest(new ResponseDto<object>
             {
@@ -1060,7 +1357,7 @@ public class ChartController(IChartRepository chartRepository, IOptions<DataSett
 
         var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         var chart = await chartRepository.GetChartAsync(id);
-        if ((currentUser == null || !await resourceService.HasPermission(currentUser, Roles.Administrator)) &&
+        if ((currentUser == null || !resourceService.HasPermission(currentUser, UserRole.Administrator)) &&
             chart.IsLocked)
             return BadRequest(new ResponseDto<object>
             {
@@ -1103,7 +1400,7 @@ public class ChartController(IChartRepository chartRepository, IOptions<DataSett
     public async Task<IActionResult> CreateLike([FromRoute] Guid id)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await resourceService.HasPermission(currentUser, Roles.Member))
+        if (!resourceService.HasPermission(currentUser, UserRole.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -1154,7 +1451,7 @@ public class ChartController(IChartRepository chartRepository, IOptions<DataSett
     public async Task<IActionResult> RemoveLike([FromRoute] Guid id)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await resourceService.HasPermission(currentUser, Roles.Member))
+        if (!resourceService.HasPermission(currentUser, UserRole.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -1210,7 +1507,7 @@ public class ChartController(IChartRepository chartRepository, IOptions<DataSett
 
         var chart = await chartRepository.GetChartAsync(id);
 
-        if ((currentUser == null || !await resourceService.HasPermission(currentUser, Roles.Administrator)) &&
+        if ((currentUser == null || !resourceService.HasPermission(currentUser, UserRole.Administrator)) &&
             chart.IsLocked)
             return BadRequest(new ResponseDto<object>
             {
@@ -1259,7 +1556,7 @@ public class ChartController(IChartRepository chartRepository, IOptions<DataSett
     public async Task<IActionResult> CreateComment([FromRoute] Guid id, [FromBody] CommentCreationDto dto)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await resourceService.HasPermission(currentUser, Roles.Member))
+        if (!resourceService.HasPermission(currentUser, UserRole.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -1326,7 +1623,7 @@ public class ChartController(IChartRepository chartRepository, IOptions<DataSett
             });
         var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         var chart = await chartRepository.GetChartAsync(id);
-        if ((currentUser == null || !await resourceService.HasPermission(currentUser, Roles.Administrator)) &&
+        if ((currentUser == null || !resourceService.HasPermission(currentUser, UserRole.Administrator)) &&
             chart.IsLocked)
             return BadRequest(new ResponseDto<object>
             {
@@ -1338,8 +1635,7 @@ public class ChartController(IChartRepository chartRepository, IOptions<DataSett
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser, e => e.ChartId == id);
-        var votes = await voteRepository.GetVotesAsync(dto.Order, dto.Desc, position, dto.PerPage,
-            predicateExpr);
+        var votes = await voteRepository.GetVotesAsync(dto.Order, dto.Desc, position, dto.PerPage, predicateExpr);
         var list = mapper.Map<List<VoteDto>>(votes);
         var total = await voteRepository.CountVotesAsync(e => e.ChartId == id);
 
@@ -1376,7 +1672,7 @@ public class ChartController(IChartRepository chartRepository, IOptions<DataSett
     public async Task<IActionResult> CreateVote([FromRoute] Guid id, [FromBody] VoteRequestDto dto)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await resourceService.HasPermission(currentUser, Roles.Member))
+        if (!resourceService.HasPermission(currentUser, UserRole.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -1420,7 +1716,7 @@ public class ChartController(IChartRepository chartRepository, IOptions<DataSett
     public async Task<IActionResult> RemoveVote([FromRoute] Guid id)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await resourceService.HasPermission(currentUser, Roles.Member))
+        if (!resourceService.HasPermission(currentUser, UserRole.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {

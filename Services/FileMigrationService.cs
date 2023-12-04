@@ -4,10 +4,8 @@ using PhiZoneApi.Models;
 
 namespace PhiZoneApi.Services;
 
-public class FileMigrationService : IHostedService
+public class FileMigrationService(IServiceProvider serviceProvider, int position = 0) : IHostedService
 {
-    private readonly int _position;
-    private readonly IServiceProvider _serviceProvider;
     private IChartRepository _chartRepository = null!;
     private IChartSubmissionRepository _chartSubmissionRepository = null!;
     private IFileStorageService _fileStorageService = null!;
@@ -15,15 +13,9 @@ public class FileMigrationService : IHostedService
     private ISongRepository _songRepository = null!;
     private ISongSubmissionRepository _songSubmissionRepository = null!;
 
-    public FileMigrationService(IServiceProvider serviceProvider, int position = 0)
-    {
-        _serviceProvider = serviceProvider;
-        _position = position;
-    }
-
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        await using var scope = _serviceProvider.CreateAsyncScope();
+        await using var scope = serviceProvider.CreateAsyncScope();
 
         _logger = scope.ServiceProvider.GetRequiredService<ILogger<FileMigrationService>>();
         _fileStorageService = scope.ServiceProvider.GetRequiredService<IFileStorageService>();
@@ -52,7 +44,7 @@ public class FileMigrationService : IHostedService
     private async Task MigrateFilesAsync(CancellationToken cancellationToken)
     {
         var songs = await _songRepository.GetSongsAsync(new List<string> { "DateCreated" }, new List<bool> { false },
-            _position, -1);
+            position, -1);
         var i = 0;
         foreach (var song in songs)
         {
@@ -65,7 +57,7 @@ public class FileMigrationService : IHostedService
             song.Illustration = (await MigrateFileAsync<Song>(song.Illustration, song.Title, cancellationToken)).Item1;
             foreach (var submission in await _songSubmissionRepository.GetSongSubmissionsAsync(
                          new List<string> { "DateCreated" }, new List<bool> { false }, 0, -1,
-                         predicate: e => e.RepresentationId == song.Id))
+                         e => e.RepresentationId == song.Id))
             {
                 submission.File = song.File;
                 submission.FileChecksum = song.FileChecksum;
@@ -85,7 +77,7 @@ public class FileMigrationService : IHostedService
                     await MigrateFileAsync<Chart>(chart.File, chart.Title ?? song.Title, cancellationToken);
                 foreach (var submission in await _chartSubmissionRepository.GetChartSubmissionsAsync(
                              new List<string> { "DateCreated" }, new List<bool> { false }, 0, -1,
-                             predicate: e => e.RepresentationId == chart.Id))
+                             e => e.RepresentationId == chart.Id))
                 {
                     submission.File = chart.File;
                     submission.FileChecksum = chart.FileChecksum;

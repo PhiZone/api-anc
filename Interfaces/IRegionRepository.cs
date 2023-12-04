@@ -6,7 +6,6 @@ namespace PhiZoneApi.Interfaces;
 public interface IRegionRepository
 {
     Task<ICollection<Region>> GetRegionsAsync(List<string> order, List<bool> desc, int position, int take,
-        string? search = null,
         Expression<Func<Region, bool>>? predicate = null);
 
     Task<Region> GetRegionAsync(int id);
@@ -14,11 +13,11 @@ public interface IRegionRepository
     Task<Region> GetRegionAsync(string code);
 
     Task<ICollection<User>> GetRegionUsersAsync(int id, List<string> order, List<bool> desc, int position, int take,
-        string? search = null, Expression<Func<User, bool>>? predicate = null);
+        Expression<Func<User, bool>>? predicate = null);
 
     Task<ICollection<User>> GetRegionUsersAsync(string code, List<string> order, List<bool> desc, int position,
         int take,
-        string? search = null, Expression<Func<User, bool>>? predicate = null);
+        Expression<Func<User, bool>>? predicate = null);
 
     Task<bool> RegionExistsAsync(int id);
 
@@ -36,9 +35,9 @@ public interface IRegionRepository
 
     Task<bool> SaveAsync();
 
-    Task<int> CountRegionsAsync(string? search = null, Expression<Func<Region, bool>>? predicate = null);
+    Task<int> CountRegionsAsync(Expression<Func<Region, bool>>? predicate = null);
 
-    Task<int> CountRegionUsersAsync(string code, string? search = null, Expression<Func<User, bool>>? predicate = null);
+    Task<int> CountRegionUsersAsync(string code, Expression<Func<User, bool>>? predicate = null);
 
-    Task<int> CountRegionUsersAsync(int id, string? search = null, Expression<Func<User, bool>>? predicate = null);
+    Task<int> CountRegionUsersAsync(int id, Expression<Func<User, bool>>? predicate = null);
 }

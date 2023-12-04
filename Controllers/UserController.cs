@@ -28,12 +28,11 @@ namespace PhiZoneApi.Controllers;
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme,
     Policy = "AllowAnonymous")]
 public class UserController(IUserRepository userRepository, IUserRelationRepository userRelationRepository,
-        UserManager<User> userManager, IFilterService filterService,
-        IFileStorageService fileStorageService, IOptions<DataSettings> dataSettings, IMapper mapper,
-        IDtoMapper dtoMapper, IRegionRepository regionRepository, IRecordRepository recordRepository,
-        IRecordService recordService, IResourceService resourceService, IConnectionMultiplexer redis,
-        ITemplateService templateService, IPlayConfigurationRepository playConfigurationRepository)
-    : Controller
+    UserManager<User> userManager, IFilterService filterService, IFileStorageService fileStorageService,
+    IOptions<DataSettings> dataSettings, IMapper mapper, IDtoMapper dtoMapper, IRegionRepository regionRepository,
+    IRecordRepository recordRepository, IRecordService recordService, IResourceService resourceService,
+    IConnectionMultiplexer redis, ITemplateService templateService,
+    IPlayConfigurationRepository playConfigurationRepository, IMeilisearchService meilisearchService) : Controller
 {
     /// <summary>
     ///     Retrieves users.
@@ -54,9 +53,20 @@ public class UserController(IUserRepository userRepository, IUserRelationReposit
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser);
-        var users = await userRepository.GetUsersAsync(dto.Order, dto.Desc, position, dto.PerPage, dto.Search,
-            predicateExpr);
-        var total = await userRepository.CountUsersAsync(dto.Search, predicateExpr);
+        IEnumerable<User> users;
+        int total;
+        if (dto.Search != null)
+        {
+            var result = await meilisearchService.SearchAsync<User>(dto.Search, dto.PerPage, dto.Page);
+            users = result.Hits;
+            total = result.TotalHits;
+        }
+        else
+        {
+            users = await userRepository.GetUsersAsync(dto.Order, dto.Desc, position, dto.PerPage, predicateExpr);
+            total = await userRepository.CountUsersAsync(predicateExpr);
+        }
+
         var list = new List<UserDto>();
 
         foreach (var user in users) list.Add(await dtoMapper.MapUserAsync<UserDto>(user, currentUser));
@@ -181,8 +191,9 @@ public class UserController(IUserRepository userRepository, IUserRelationReposit
         user.PasswordHash = userManager.PasswordHasher.HashPassword(user, dto.Password);
         user.EmailConfirmed = true;
         user.LockoutEnabled = false;
+        user.Role = UserRole.Member;
         await userManager.UpdateAsync(user);
-        await userManager.AddToRoleAsync(user, Roles.Member.Name);
+        await meilisearchService.AddAsync(user);
         var configuration = new PlayConfiguration
         {
             Name = templateService.GetMessage("default", user.Language),
@@ -277,8 +288,9 @@ public class UserController(IUserRepository userRepository, IUserRelationReposit
         user.PasswordHash = userManager.PasswordHasher.HashPassword(user, dto.Password);
         user.EmailConfirmed = true;
         user.LockoutEnabled = false;
+        user.Role = UserRole.Member;
         await userManager.UpdateAsync(user);
-        await userManager.AddToRoleAsync(user, Roles.Member.Name);
+        await meilisearchService.UpdateAsync(user);
         var configuration = new PlayConfiguration
         {
             Name = templateService.GetMessage("default", user.Language),
@@ -336,8 +348,8 @@ public class UserController(IUserRepository userRepository, IUserRelationReposit
         var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         if (currentUser == null) return Unauthorized();
 
-        if ((currentUser.Id == id && !await resourceService.HasPermission(currentUser, Roles.Member)) ||
-            (currentUser.Id != id && !await resourceService.HasPermission(currentUser, Roles.Administrator)))
+        if ((currentUser.Id == id && !resourceService.HasPermission(currentUser, UserRole.Member)) ||
+            (currentUser.Id != id && !resourceService.HasPermission(currentUser, UserRole.Administrator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -393,7 +405,7 @@ public class UserController(IUserRepository userRepository, IUserRelationReposit
 
         // Save
         await userManager.UpdateAsync(user);
-
+        await meilisearchService.UpdateAsync(user);
         return NoContent();
     }
 
@@ -430,8 +442,8 @@ public class UserController(IUserRepository userRepository, IUserRelationReposit
         var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         if (currentUser == null) return Unauthorized();
 
-        if ((currentUser.Id == id && !await resourceService.HasPermission(currentUser, Roles.Member)) ||
-            (currentUser.Id != id && !await resourceService.HasPermission(currentUser, Roles.Administrator)))
+        if ((currentUser.Id == id && !resourceService.HasPermission(currentUser, UserRole.Member)) ||
+            (currentUser.Id != id && !resourceService.HasPermission(currentUser, UserRole.Administrator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -442,6 +454,7 @@ public class UserController(IUserRepository userRepository, IUserRelationReposit
                 .Item1;
 
         await userManager.UpdateAsync(user);
+        await meilisearchService.UpdateAsync(user);
         return NoContent();
     }
 
@@ -476,8 +489,8 @@ public class UserController(IUserRepository userRepository, IUserRelationReposit
         var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         if (currentUser == null) return Unauthorized();
 
-        if ((currentUser.Id == id && !await resourceService.HasPermission(currentUser, Roles.Member)) ||
-            (currentUser.Id != id && !await resourceService.HasPermission(currentUser, Roles.Administrator)))
+        if ((currentUser.Id == id && !resourceService.HasPermission(currentUser, UserRole.Member)) ||
+            (currentUser.Id != id && !resourceService.HasPermission(currentUser, UserRole.Administrator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -487,6 +500,7 @@ public class UserController(IUserRepository userRepository, IUserRelationReposit
         user.Avatar = null;
 
         await userManager.UpdateAsync(user);
+        await meilisearchService.UpdateAsync(user);
         return NoContent();
     }
 
@@ -715,7 +729,7 @@ public class UserController(IUserRepository userRepository, IUserRelationReposit
     }
 
     /// <summary>
-    ///     Gets a user's best play records.
+    ///     Retrieves a user's best play records.
     /// </summary>
     /// <param name="id">A user's ID.</param>
     /// <returns>Phi1 and Best19.</returns>

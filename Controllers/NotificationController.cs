@@ -23,9 +23,8 @@ namespace PhiZoneApi.Controllers;
 [ApiController]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
 public class NotificationController(IOptions<DataSettings> dataSettings, INotificationRepository notificationRepository,
-        UserManager<User> userManager, IResourceService resourceService, IFilterService filterService,
-        IDtoMapper dtoMapper)
-    : Controller
+    UserManager<User> userManager, IResourceService resourceService, IFilterService filterService, IDtoMapper dtoMapper,
+    IMeilisearchService meilisearchService) : Controller
 {
     /// <summary>
     ///     Retrieves notifications.
@@ -49,9 +48,22 @@ public class NotificationController(IOptions<DataSettings> dataSettings, INotifi
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser,
             e => e.OwnerId == currentUser.Id && (notificationDto.GetRead ? e.DateRead != null : e.DateRead == null));
-        var notifications = await notificationRepository.GetNotificationsAsync(dto.Order, dto.Desc, position,
-            dto.PerPage, dto.Search, predicateExpr);
-        var total = await notificationRepository.CountNotificationsAsync(dto.Search, predicateExpr);
+        IEnumerable<Notification> notifications;
+        int total;
+        if (dto.Search != null)
+        {
+            var result = await meilisearchService.SearchAsync<Notification>(dto.Search, dto.PerPage, dto.Page,
+                currentUser.Id);
+            notifications = result.Hits;
+            total = result.TotalHits;
+        }
+        else
+        {
+            notifications = await notificationRepository.GetNotificationsAsync(dto.Order, dto.Desc, position,
+                dto.PerPage, predicateExpr);
+            total = await notificationRepository.CountNotificationsAsync(predicateExpr);
+        }
+
         var list = new List<NotificationDto>();
         foreach (var notification in notifications)
             list.Add(await dtoMapper.MapNotificationAsync<NotificationDto>(notification, currentUser));
@@ -91,7 +103,7 @@ public class NotificationController(IOptions<DataSettings> dataSettings, INotifi
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser,
             e => e.OwnerId == currentUser.Id && (notificationDto.GetRead ? e.DateRead != null : e.DateRead == null));
         var notifications = await notificationRepository.GetNotificationsAsync(dto.Order, dto.Desc, position,
-            dto.PerPage, dto.Search, predicateExpr);
+            dto.PerPage, predicateExpr);
 
         var now = DateTimeOffset.UtcNow;
         foreach (var notification in notifications) notification.DateRead = now;
@@ -133,7 +145,7 @@ public class NotificationController(IOptions<DataSettings> dataSettings, INotifi
         var notification = await notificationRepository.GetNotificationAsync(id);
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if (notification.OwnerId != currentUser.Id &&
-            !await resourceService.HasPermission(currentUser, Roles.Administrator))
+            !resourceService.HasPermission(currentUser, UserRole.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -172,7 +184,7 @@ public class NotificationController(IOptions<DataSettings> dataSettings, INotifi
         var notification = await notificationRepository.GetNotificationAsync(id);
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if (notification.OwnerId != currentUser.Id &&
-            !await resourceService.HasPermission(currentUser, Roles.Administrator))
+            !resourceService.HasPermission(currentUser, UserRole.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -214,7 +226,7 @@ public class NotificationController(IOptions<DataSettings> dataSettings, INotifi
         var notification = await notificationRepository.GetNotificationAsync(id);
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if (notification.OwnerId != currentUser.Id &&
-            !await resourceService.HasPermission(currentUser, Roles.Administrator))
+            !resourceService.HasPermission(currentUser, UserRole.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {

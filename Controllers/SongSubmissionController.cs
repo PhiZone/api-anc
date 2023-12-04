@@ -28,13 +28,12 @@ namespace PhiZoneApi.Controllers;
 [ApiController]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
 public class SongSubmissionController(ISongSubmissionRepository songSubmissionRepository,
-        IOptions<DataSettings> dataSettings, UserManager<User> userManager, IFilterService filterService,
-        IFileStorageService fileStorageService, IMapper mapper, ISongService songService,
-        IAuthorshipRepository authorshipRepository, ISubmissionService submissionService,
-        IResourceService resourceService, ICollaborationRepository collaborationRepository,
-        INotificationService notificationService, ITemplateService templateService, IFeishuService feishuService,
-        ILogger<SongSubmissionController> logger)
-    : Controller
+    IOptions<DataSettings> dataSettings, UserManager<User> userManager, IFilterService filterService,
+    IFileStorageService fileStorageService, IMapper mapper, ISongService songService,
+    IAuthorshipRepository authorshipRepository, ISubmissionService submissionService, IResourceService resourceService,
+    ICollaborationRepository collaborationRepository, INotificationService notificationService,
+    ITemplateService templateService, IFeishuService feishuService, ILogger<SongSubmissionController> logger,
+    IMeilisearchService meilisearchService) : Controller
 {
     /// <summary>
     ///     Retrieves song submissions.
@@ -54,8 +53,8 @@ public class SongSubmissionController(ISongSubmissionRepository songSubmissionRe
         [FromQuery] SongSubmissionFilterDto? filterDto = null)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        var isVolunteer = await resourceService.HasPermission(currentUser, Roles.Volunteer);
-        if (!await resourceService.HasPermission(currentUser, Roles.Qualified))
+        var isVolunteer = resourceService.HasPermission(currentUser, UserRole.Volunteer);
+        if (!resourceService.HasPermission(currentUser, UserRole.Qualified))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -67,10 +66,23 @@ public class SongSubmissionController(ISongSubmissionRepository songSubmissionRe
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser,
             submission => isVolunteer || submission.OwnerId == currentUser.Id);
-        var songSubmissions = await songSubmissionRepository.GetSongSubmissionsAsync(dto.Order, dto.Desc, position,
-            dto.PerPage, dto.Search, predicateExpr);
+        IEnumerable<SongSubmission> songSubmissions;
+        int total;
+        if (dto.Search != null)
+        {
+            var result = await meilisearchService.SearchAsync<SongSubmission>(dto.Search, dto.PerPage, dto.Page,
+                !isVolunteer ? currentUser.Id : null);
+            songSubmissions = result.Hits;
+            total = result.TotalHits;
+        }
+        else
+        {
+            songSubmissions = await songSubmissionRepository.GetSongSubmissionsAsync(dto.Order, dto.Desc, position,
+                dto.PerPage, predicateExpr);
+            total = await songSubmissionRepository.CountSongSubmissionsAsync(predicateExpr);
+        }
+
         var list = mapper.Map<List<SongSubmissionDto>>(songSubmissions);
-        var total = await songSubmissionRepository.CountSongSubmissionsAsync(dto.Search, predicateExpr);
 
         return Ok(new ResponseDto<IEnumerable<SongSubmissionDto>>
         {
@@ -109,7 +121,7 @@ public class SongSubmissionController(ISongSubmissionRepository songSubmissionRe
     public async Task<IActionResult> GetSongSubmission([FromRoute] Guid id)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await resourceService.HasPermission(currentUser, Roles.Qualified))
+        if (!resourceService.HasPermission(currentUser, UserRole.Qualified))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -148,7 +160,7 @@ public class SongSubmissionController(ISongSubmissionRepository songSubmissionRe
         [FromQuery] bool wait = false)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await resourceService.HasPermission(currentUser, Roles.Qualified))
+        if (!resourceService.HasPermission(currentUser, UserRole.Qualified))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -193,8 +205,7 @@ public class SongSubmissionController(ISongSubmissionRepository songSubmissionRe
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidAuthorInfo
                 });
-            originalityProof = (await fileStorageService.Upload<SongSubmission>(dto.Title, dto.OriginalityProof))
-                .Item1;
+            originalityProof = (await fileStorageService.Upload<SongSubmission>(dto.Title, dto.OriginalityProof)).Item1;
         }
 
         var songSubmission = new SongSubmission
@@ -283,9 +294,9 @@ public class SongSubmissionController(ISongSubmissionRepository songSubmissionRe
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if ((songSubmission.OwnerId == currentUser.Id &&
-             !await resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+             !resourceService.HasPermission(currentUser, UserRole.Qualified)) ||
             (songSubmission.OwnerId != currentUser.Id &&
-             !await resourceService.HasPermission(currentUser, Roles.Moderator)))
+             !resourceService.HasPermission(currentUser, UserRole.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -378,9 +389,9 @@ public class SongSubmissionController(ISongSubmissionRepository songSubmissionRe
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if ((songSubmission.OwnerId == currentUser.Id &&
-             !await resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+             !resourceService.HasPermission(currentUser, UserRole.Qualified)) ||
             (songSubmission.OwnerId != currentUser.Id &&
-             !await resourceService.HasPermission(currentUser, Roles.Moderator)))
+             !resourceService.HasPermission(currentUser, UserRole.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -458,9 +469,9 @@ public class SongSubmissionController(ISongSubmissionRepository songSubmissionRe
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if ((songSubmission.OwnerId == currentUser.Id &&
-             !await resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+             !resourceService.HasPermission(currentUser, UserRole.Qualified)) ||
             (songSubmission.OwnerId != currentUser.Id &&
-             !await resourceService.HasPermission(currentUser, Roles.Moderator)))
+             !resourceService.HasPermission(currentUser, UserRole.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -515,9 +526,9 @@ public class SongSubmissionController(ISongSubmissionRepository songSubmissionRe
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if ((songSubmission.OwnerId == currentUser.Id &&
-             !await resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+             !resourceService.HasPermission(currentUser, UserRole.Qualified)) ||
             (songSubmission.OwnerId != currentUser.Id &&
-             !await resourceService.HasPermission(currentUser, Roles.Moderator)))
+             !resourceService.HasPermission(currentUser, UserRole.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -568,9 +579,9 @@ public class SongSubmissionController(ISongSubmissionRepository songSubmissionRe
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if ((songSubmission.OwnerId == currentUser.Id &&
-             !await resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+             !resourceService.HasPermission(currentUser, UserRole.Qualified)) ||
             (songSubmission.OwnerId != currentUser.Id &&
-             !await resourceService.HasPermission(currentUser, Roles.Moderator)))
+             !resourceService.HasPermission(currentUser, UserRole.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -622,9 +633,9 @@ public class SongSubmissionController(ISongSubmissionRepository songSubmissionRe
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if ((songSubmission.OwnerId == currentUser.Id &&
-             !await resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+             !resourceService.HasPermission(currentUser, UserRole.Qualified)) ||
             (songSubmission.OwnerId != currentUser.Id &&
-             !await resourceService.HasPermission(currentUser, Roles.Moderator)))
+             !resourceService.HasPermission(currentUser, UserRole.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -676,9 +687,9 @@ public class SongSubmissionController(ISongSubmissionRepository songSubmissionRe
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if ((songSubmission.OwnerId == currentUser.Id &&
-             !await resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+             !resourceService.HasPermission(currentUser, UserRole.Qualified)) ||
             (songSubmission.OwnerId != currentUser.Id &&
-             !await resourceService.HasPermission(currentUser, Roles.Moderator)))
+             !resourceService.HasPermission(currentUser, UserRole.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -726,9 +737,9 @@ public class SongSubmissionController(ISongSubmissionRepository songSubmissionRe
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if ((songSubmission.OwnerId == currentUser.Id &&
-             !await resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+             !resourceService.HasPermission(currentUser, UserRole.Qualified)) ||
             (songSubmission.OwnerId != currentUser.Id &&
-             !await resourceService.HasPermission(currentUser, Roles.Moderator)))
+             !resourceService.HasPermission(currentUser, UserRole.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -778,9 +789,9 @@ public class SongSubmissionController(ISongSubmissionRepository songSubmissionRe
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if ((songSubmission.OwnerId == currentUser.Id &&
-             !await resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+             !resourceService.HasPermission(currentUser, UserRole.Qualified)) ||
             (songSubmission.OwnerId != currentUser.Id &&
-             !await resourceService.HasPermission(currentUser, Roles.Moderator)))
+             !resourceService.HasPermission(currentUser, UserRole.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -858,7 +869,7 @@ public class SongSubmissionController(ISongSubmissionRepository songSubmissionRe
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await resourceService.HasPermission(currentUser, Roles.Volunteer))
+        if (!resourceService.HasPermission(currentUser, UserRole.Volunteer))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {

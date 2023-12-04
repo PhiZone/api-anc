@@ -34,7 +34,7 @@ public class SongController(ISongRepository songRepository, IOptions<DataSetting
     ILikeService likeService, ICommentRepository commentRepository, IChapterRepository chapterRepository,
     IAdmissionRepository admissionRepository, IAuthorshipRepository authorshipRepository,
     IResourceService resourceService, INotificationService notificationService, ITemplateService templateService,
-    ILogger<SongController> logger) : Controller
+    ILogger<SongController> logger, IMeilisearchService meilisearchService) : Controller
 {
     /// <summary>
     ///     Retrieves songs.
@@ -55,9 +55,21 @@ public class SongController(ISongRepository songRepository, IOptions<DataSetting
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser);
-        var songs = await songRepository.GetSongsAsync(dto.Order, dto.Desc, position, dto.PerPage, dto.Search,
-            predicateExpr);
-        var total = await songRepository.CountSongsAsync(dto.Search, predicateExpr);
+        IEnumerable<Song> songs;
+        int total;
+        if (dto.Search != null)
+        {
+            var result = await meilisearchService.SearchAsync<Song>(dto.Search, dto.PerPage, dto.Page,
+                showHidden: currentUser is { Role: UserRole.Administrator });
+            songs = result.Hits;
+            total = result.TotalHits;
+        }
+        else
+        {
+            songs = await songRepository.GetSongsAsync(dto.Order, dto.Desc, position, dto.PerPage, predicateExpr);
+            total = await songRepository.CountSongsAsync(predicateExpr);
+        }
+
         var list = new List<SongDto>();
 
         foreach (var song in songs) list.Add(await dtoMapper.MapSongAsync<SongDto>(song, currentUser));
@@ -122,7 +134,7 @@ public class SongController(ISongRepository songRepository, IOptions<DataSetting
     {
         var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser, e => !e.IsHidden);
-        var song = await songRepository.GetRandomSongAsync(dto.Search, predicateExpr);
+        var song = await songRepository.GetRandomSongAsync(predicateExpr);
 
         if (song == null)
             return NotFound(new ResponseDto<object>
@@ -156,7 +168,7 @@ public class SongController(ISongRepository songRepository, IOptions<DataSetting
     public async Task<IActionResult> CreateSong([FromForm] SongCreationDto dto, [FromQuery] bool wait = false)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await resourceService.HasPermission(currentUser, Roles.Administrator))
+        if (!resourceService.HasPermission(currentUser, UserRole.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -270,7 +282,7 @@ public class SongController(ISongRepository songRepository, IOptions<DataSetting
         var song = await songRepository.GetSongAsync(id);
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await resourceService.HasPermission(currentUser, Roles.Administrator))
+        if (!resourceService.HasPermission(currentUser, UserRole.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -355,7 +367,7 @@ public class SongController(ISongRepository songRepository, IOptions<DataSetting
         var song = await songRepository.GetSongAsync(id);
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await resourceService.HasPermission(currentUser, Roles.Administrator))
+        if (!resourceService.HasPermission(currentUser, UserRole.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -428,7 +440,7 @@ public class SongController(ISongRepository songRepository, IOptions<DataSetting
         var song = await songRepository.GetSongAsync(id);
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await resourceService.HasPermission(currentUser, Roles.Administrator))
+        if (!resourceService.HasPermission(currentUser, UserRole.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -481,7 +493,7 @@ public class SongController(ISongRepository songRepository, IOptions<DataSetting
         var song = await songRepository.GetSongAsync(id);
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await resourceService.HasPermission(currentUser, Roles.Administrator))
+        if (!resourceService.HasPermission(currentUser, UserRole.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -530,7 +542,7 @@ public class SongController(ISongRepository songRepository, IOptions<DataSetting
         var song = await songRepository.GetSongAsync(id);
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await resourceService.HasPermission(currentUser, Roles.Administrator))
+        if (!resourceService.HasPermission(currentUser, UserRole.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -573,7 +585,7 @@ public class SongController(ISongRepository songRepository, IOptions<DataSetting
             });
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await resourceService.HasPermission(currentUser, Roles.Administrator))
+        if (!resourceService.HasPermission(currentUser, UserRole.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -615,7 +627,7 @@ public class SongController(ISongRepository songRepository, IOptions<DataSetting
             });
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await resourceService.HasPermission(currentUser, Roles.Administrator))
+        if (!resourceService.HasPermission(currentUser, UserRole.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -676,7 +688,7 @@ public class SongController(ISongRepository songRepository, IOptions<DataSetting
         var position = dto.PerPage * (dto.Page - 1);
         var song = await songRepository.GetSongAsync(id);
         var hasPermission = currentUser != null && (song.OwnerId == currentUser.Id ||
-                                                    await resourceService.HasPermission(currentUser, Roles.Moderator));
+                                                    resourceService.HasPermission(currentUser, UserRole.Moderator));
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser,
             e => (hasPermission || e.Status == RequestStatus.Approved ||
                   (currentUser != null && e.Admitter.OwnerId == currentUser.Id)) && e.AdmitteeId == id);
@@ -745,9 +757,9 @@ public class SongController(ISongRepository songRepository, IOptions<DataSetting
         var chapter = await chapterRepository.GetChapterAsync(chapterId);
         var admission = await admissionRepository.GetAdmissionAsync(chapterId, id);
         if (((currentUser != null && (song.OwnerId == currentUser.Id || chapter.OwnerId == currentUser.Id) &&
-              !await resourceService.HasPermission(currentUser, Roles.Qualified)) ||
+              !resourceService.HasPermission(currentUser, UserRole.Qualified)) ||
              (currentUser != null && song.OwnerId != currentUser.Id && chapter.OwnerId != currentUser.Id &&
-              !await resourceService.HasPermission(currentUser, Roles.Moderator))) &&
+              !resourceService.HasPermission(currentUser, UserRole.Moderator))) &&
             admission.Status != RequestStatus.Approved)
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
@@ -794,8 +806,8 @@ public class SongController(ISongRepository songRepository, IOptions<DataSetting
         var song = await songRepository.GetSongAsync(id);
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if ((currentUser.Id == song.OwnerId && !await resourceService.HasPermission(currentUser, Roles.Member)) ||
-            (currentUser.Id != song.OwnerId && !await resourceService.HasPermission(currentUser, Roles.Moderator)))
+        if ((currentUser.Id == song.OwnerId && !resourceService.HasPermission(currentUser, UserRole.Member)) ||
+            (currentUser.Id != song.OwnerId && !resourceService.HasPermission(currentUser, UserRole.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -894,8 +906,8 @@ public class SongController(ISongRepository songRepository, IOptions<DataSetting
         var song = await songRepository.GetSongAsync(id);
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if ((currentUser.Id == song.OwnerId && !await resourceService.HasPermission(currentUser, Roles.Member)) ||
-            (currentUser.Id != song.OwnerId && !await resourceService.HasPermission(currentUser, Roles.Administrator)))
+        if ((currentUser.Id == song.OwnerId && !resourceService.HasPermission(currentUser, UserRole.Member)) ||
+            (currentUser.Id != song.OwnerId && !resourceService.HasPermission(currentUser, UserRole.Administrator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -956,10 +968,10 @@ public class SongController(ISongRepository songRepository, IOptions<DataSetting
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        var charts = await songRepository.GetSongChartsAsync(id, dto.Order, dto.Desc, position, dto.PerPage, dto.Search,
+        var charts = await songRepository.GetSongChartsAsync(id, dto.Order, dto.Desc, position, dto.PerPage,
             predicateExpr);
         var list = new List<ChartDto>();
-        var total = await songRepository.CountSongChartsAsync(id, dto.Search, predicateExpr);
+        var total = await songRepository.CountSongChartsAsync(id, predicateExpr);
 
         foreach (var chart in charts) list.Add(await dtoMapper.MapChartAsync<ChartDto>(chart, currentUser));
 
@@ -1002,7 +1014,7 @@ public class SongController(ISongRepository songRepository, IOptions<DataSetting
 
         var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         var song = await songRepository.GetSongAsync(id);
-        if ((currentUser == null || !await resourceService.HasPermission(currentUser, Roles.Administrator)) &&
+        if ((currentUser == null || !resourceService.HasPermission(currentUser, UserRole.Administrator)) &&
             song.IsLocked)
             return BadRequest(new ResponseDto<object>
             {
@@ -1138,7 +1150,7 @@ public class SongController(ISongRepository songRepository, IOptions<DataSetting
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
         var song = await songRepository.GetSongAsync(id);
-        if ((currentUser == null || !await resourceService.HasPermission(currentUser, Roles.Administrator)) &&
+        if ((currentUser == null || !resourceService.HasPermission(currentUser, UserRole.Administrator)) &&
             song.IsLocked)
             return BadRequest(new ResponseDto<object>
             {
@@ -1187,7 +1199,7 @@ public class SongController(ISongRepository songRepository, IOptions<DataSetting
     public async Task<IActionResult> CreateComment([FromRoute] Guid id, [FromBody] CommentCreationDto dto)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await resourceService.HasPermission(currentUser, Roles.Member))
+        if (!resourceService.HasPermission(currentUser, UserRole.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {

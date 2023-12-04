@@ -23,8 +23,8 @@ namespace PhiZoneApi.Controllers;
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme,
     Policy = "AllowAnonymous")]
 public class RegionController(IRegionRepository regionRepository, IOptions<DataSettings> dataSettings,
-        UserManager<User> userManager, IFilterService filterService, IMapper mapper, IDtoMapper dtoMapper)
-    : Controller
+    UserManager<User> userManager, IFilterService filterService, IMapper mapper, IDtoMapper dtoMapper,
+    IMeilisearchService meilisearchService) : Controller
 {
     /// <summary>
     ///     Retrieves regions.
@@ -45,9 +45,21 @@ public class RegionController(IRegionRepository regionRepository, IOptions<DataS
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser);
-        var list = mapper.Map<List<RegionDto>>(await regionRepository.GetRegionsAsync(dto.Order, dto.Desc, position,
-            dto.PerPage, dto.Search, predicateExpr));
-        var total = await regionRepository.CountRegionsAsync(dto.Search, predicateExpr);
+        IEnumerable<Region> regions;
+        int total;
+        if (dto.Search != null)
+        {
+            var result = await meilisearchService.SearchAsync<Region>(dto.Search, dto.PerPage, dto.Page);
+            regions = result.Hits;
+            total = result.TotalHits;
+        }
+        else
+        {
+            regions = await regionRepository.GetRegionsAsync(dto.Order, dto.Desc, position, dto.PerPage, predicateExpr);
+            total = await regionRepository.CountRegionsAsync(predicateExpr);
+        }
+
+        var list = mapper.Map<List<RegionDto>>(regions);
 
         return Ok(new ResponseDto<IEnumerable<RegionDto>>
         {
@@ -83,7 +95,9 @@ public class RegionController(IRegionRepository regionRepository, IOptions<DataS
     {
         if (!await regionRepository.RegionExistsAsync(code))
             return NotFound(new ResponseDto<object>
-                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
         var region = await regionRepository.GetRegionAsync(code);
         var dto = mapper.Map<RegionDto>(region);
 
@@ -112,7 +126,9 @@ public class RegionController(IRegionRepository regionRepository, IOptions<DataS
     {
         if (!await regionRepository.RegionExistsAsync(id))
             return NotFound(new ResponseDto<object>
-                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
         var region = await regionRepository.GetRegionAsync(id);
         var dto = mapper.Map<RegionDto>(region);
 
@@ -142,11 +158,13 @@ public class RegionController(IRegionRepository regionRepository, IOptions<DataS
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser);
         if (!await regionRepository.RegionExistsAsync(code))
             return NotFound(new ResponseDto<object>
-                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
         var users = await regionRepository.GetRegionUsersAsync(code, dto.Order, dto.Desc, position, dto.PerPage,
-            dto.Search, predicateExpr);
+            predicateExpr);
         var list = new List<UserDto>();
-        var total = await regionRepository.CountRegionUsersAsync(code, dto.Search, predicateExpr);
+        var total = await regionRepository.CountRegionUsersAsync(code, predicateExpr);
 
         foreach (var user in users) list.Add(await dtoMapper.MapUserAsync<UserDto>(user, currentUser));
 
@@ -186,11 +204,13 @@ public class RegionController(IRegionRepository regionRepository, IOptions<DataS
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser);
         if (!await regionRepository.RegionExistsAsync(id))
             return NotFound(new ResponseDto<object>
-                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
         var users = await regionRepository.GetRegionUsersAsync(id, dto.Order, dto.Desc, position, dto.PerPage,
-            dto.Search, predicateExpr);
+            predicateExpr);
         var list = new List<UserDto>();
-        var total = await regionRepository.CountRegionUsersAsync(id, dto.Search, predicateExpr);
+        var total = await regionRepository.CountRegionUsersAsync(id, predicateExpr);
 
         foreach (var user in users) list.Add(await dtoMapper.MapUserAsync<UserDto>(user, currentUser));
 

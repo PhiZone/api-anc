@@ -7,7 +7,8 @@ using PhiZoneApi.Interfaces;
 
 namespace PhiZoneApi.Services;
 
-public class TapTapService(IOptions<TapTapSettings> tapTapSettings) : ITapTapService
+public class TapTapService
+    (IOptions<TapTapSettings> tapTapSettings, IApplicationRepository applicationRepository) : ITapTapService
 {
     private readonly HttpClient _client = new() { BaseAddress = new Uri(tapTapSettings.Value.TapApiUrl) };
 
@@ -20,7 +21,8 @@ public class TapTapService(IOptions<TapTapSettings> tapTapSettings) : ITapTapSer
         var nonce = Convert.ToBase64String(nonceBytes);
         var timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString();
         var parts = tapTapSettings.Value.TapApiUrl.Split("://");
-        var path = $"/account/profile/v1?client_id={tapTapSettings.Value.ClientId}";
+        var path =
+            $"/account/profile/v1?client_id={(await applicationRepository.GetApplicationAsync(dto.ApplicationId)).TapClientId}";
         var signArray = new List<string>
         {
             timestamp,

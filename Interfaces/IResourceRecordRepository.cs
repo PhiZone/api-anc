@@ -7,7 +7,7 @@ public interface IResourceRecordRepository
 {
     Task<ICollection<ResourceRecord>> GetResourceRecordsAsync(List<string> order, List<bool> desc, int position,
         int take,
-        string? search = null, Expression<Func<ResourceRecord, bool>>? predicate = null);
+        Expression<Func<ResourceRecord, bool>>? predicate = null);
 
     Task<ResourceRecord> GetResourceRecordAsync(Guid id);
 
@@ -22,6 +22,6 @@ public interface IResourceRecordRepository
 
     Task<bool> SaveAsync();
 
-    Task<int> CountResourceRecordsAsync(string? search = null,
+    Task<int> CountResourceRecordsAsync(
         Expression<Func<ResourceRecord, bool>>? predicate = null);
 }
