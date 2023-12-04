@@ -165,8 +165,6 @@ if (args.Length >= 1)
     if (string.Equals(args[0], "fileMigrate", StringComparison.InvariantCultureIgnoreCase))
         builder.Services.AddSingleton<IHostedService>(provider =>
             new FileMigrationService(provider, args.Length >= 2 ? int.Parse(args[1]) : 0));
-    if (string.Equals(args[0], "roleMigrate", StringComparison.InvariantCultureIgnoreCase))
-        builder.Services.AddHostedService<RoleMigrationService>();
 }
 
 builder.Services.Configure<ApiBehaviorOptions>(options => { options.SuppressModelStateInvalidFilter = true; });
