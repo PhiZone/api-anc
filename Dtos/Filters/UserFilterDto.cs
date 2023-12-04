@@ -17,6 +17,8 @@ public class UserFilterDto : FilterDto<User>
 
     public List<Gender>? RangeGender { get; set; }
 
+    public List<UserRole>? RangeRole { get; set; }
+
     public int? MinExperience { get; set; }
 
     public int? MaxExperience { get; set; }
