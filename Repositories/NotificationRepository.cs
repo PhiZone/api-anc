@@ -50,7 +50,7 @@ public class NotificationRepository
     {
         var enumerable = notifications.ToList();
         context.Notifications.UpdateRange(enumerable);
-        await meilisearchService.UpdateAsync(enumerable);
+        await meilisearchService.UpdateBatchAsync(enumerable);
         return await SaveAsync();
     }
 

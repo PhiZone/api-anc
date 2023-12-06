@@ -66,7 +66,7 @@ public class SongRepository(ApplicationDbContext context, IMeilisearchService me
     {
         var enumerable = songs.ToList();
         context.Songs.UpdateRange(enumerable);
-        await meilisearchService.UpdateAsync(enumerable);
+        await meilisearchService.UpdateBatchAsync(enumerable);
         return await SaveAsync();
     }
 
