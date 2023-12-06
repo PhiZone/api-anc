@@ -44,7 +44,7 @@ public class MeilisearchService : IMeilisearchService
         await _client.Index(typeof(T).Name).AddDocumentsAsync(new[] { document });
     }
 
-    public async Task AddAsync<T>(IEnumerable<T> documents)
+    public async Task AddBatchAsync<T>(IEnumerable<T> documents)
     {
         await _client.Index(typeof(T).Name).AddDocumentsAsync(documents);
     }
@@ -54,7 +54,7 @@ public class MeilisearchService : IMeilisearchService
         await _client.Index(typeof(T).Name).UpdateDocumentsAsync(new[] { document });
     }
 
-    public async Task UpdateAsync<T>(IEnumerable<T> documents)
+    public async Task UpdateBatchAsync<T>(IEnumerable<T> documents)
     {
         await _client.Index(typeof(T).Name).UpdateDocumentsAsync(documents);
     }
@@ -64,7 +64,7 @@ public class MeilisearchService : IMeilisearchService
         await _client.Index(typeof(T).Name).DeleteOneDocumentAsync(document.Id.ToString());
     }
 
-    public async Task DeleteAsync<T>(IEnumerable<T> documents) where T : Resource
+    public async Task DeleteBatchAsync<T>(IEnumerable<T> documents) where T : Resource
     {
         await _client.Index(typeof(T).Name).DeleteDocumentsAsync(documents.Select(document => document.Id.ToString()));
     }
@@ -74,7 +74,7 @@ public class MeilisearchService : IMeilisearchService
         await _client.Index(typeof(T).Name).DeleteOneDocumentAsync(id.ToString());
     }
 
-    public async Task DeleteAsync<T>(IEnumerable<Guid> idList)
+    public async Task DeleteBatchAsync<T>(IEnumerable<Guid> idList)
     {
         await _client.Index(typeof(T).Name).DeleteDocumentsAsync(idList.Select(id => id.ToString()));
     }
@@ -84,7 +84,7 @@ public class MeilisearchService : IMeilisearchService
         await _client.Index(typeof(T).Name).DeleteOneDocumentAsync(id);
     }
 
-    public async Task DeleteAsync<T>(IEnumerable<int> idList)
+    public async Task DeleteBatchAsync<T>(IEnumerable<int> idList)
     {
         await _client.Index(typeof(T).Name).DeleteDocumentsAsync(idList);
     }

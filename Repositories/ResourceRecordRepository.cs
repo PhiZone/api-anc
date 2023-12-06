@@ -42,7 +42,7 @@ public class ResourceRecordRepository
     {
         var enumerable = resourceRecords.ToList();
         await context.ResourceRecords.AddRangeAsync(enumerable);
-        await meilisearchService.AddAsync(enumerable);
+        await meilisearchService.AddBatchAsync(enumerable);
         return await SaveAsync();
     }
 

@@ -12,23 +12,23 @@ public interface IMeilisearchService
 
     Task AddAsync<T>(T document);
 
-    Task AddAsync<T>(IEnumerable<T> documents);
+    Task AddBatchAsync<T>(IEnumerable<T> documents);
 
     Task UpdateAsync<T>(T document);
 
-    Task UpdateAsync<T>(IEnumerable<T> documents);
+    Task UpdateBatchAsync<T>(IEnumerable<T> documents);
 
     Task DeleteAsync<T>(T document) where T : Resource;
 
-    Task DeleteAsync<T>(IEnumerable<T> documents) where T : Resource;
+    Task DeleteBatchAsync<T>(IEnumerable<T> documents) where T : Resource;
 
     Task DeleteAsync<T>(Guid id);
 
-    Task DeleteAsync<T>(IEnumerable<Guid> idList);
+    Task DeleteBatchAsync<T>(IEnumerable<Guid> idList);
 
     Task DeleteAsync<T>(int id);
 
-    Task DeleteAsync<T>(IEnumerable<int> idList);
+    Task DeleteBatchAsync<T>(IEnumerable<int> idList);
 
     Index GetIndex<T>();
 }

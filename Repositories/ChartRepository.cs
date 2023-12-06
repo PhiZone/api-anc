@@ -67,7 +67,7 @@ public class ChartRepository(ApplicationDbContext context, IMeilisearchService m
     {
         var enumerable = charts.ToList();
         context.Charts.UpdateRange(enumerable);
-        await meilisearchService.UpdateAsync(enumerable);
+        await meilisearchService.UpdateBatchAsync(enumerable);
         return await SaveAsync();
     }
 
