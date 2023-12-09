@@ -74,6 +74,10 @@
       "Content": "{User} wants the song {Song} admitted to the chapter {Chapter}. {Admission}"
     },
     {
+      "Key": "collection-admission",
+      "Content": "{User} wants the chart {Chart} admitted to the collection {Collection}. {Admission}"
+    },
+    {
       "Key": "song-admission",
       "Content": "{User} wants the chart {Chart} admitted to the song {Song}. {Admission}"
     },

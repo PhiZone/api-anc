@@ -74,6 +74,10 @@
       "Content": "{User} 申请将曲目 {Song} 收录于章节 {Chapter}。{Admission}"
     },
     {
+      "Key": "collection-admission",
+      "Content": "{User} 申请将谱面 {Chart} 收录于合集 {Collection}。{Admission}"
+    },
+    {
       "Key": "song-admission",
       "Content": "{User} 申请将谱面 {Chart} 收录于曲目 {Song}。{Admission}"
     },
