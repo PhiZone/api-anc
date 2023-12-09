@@ -1,4 +1,4 @@
-﻿using System.Runtime.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace PhiZoneApi.Models;
 
@@ -8,7 +8,7 @@ public abstract class Resource
 
     public int OwnerId { get; set; }
 
-    [IgnoreDataMember]
+    [JsonIgnore]
     public User Owner { get; set; } = null!;
 
     public DateTimeOffset DateCreated { get; set; }
