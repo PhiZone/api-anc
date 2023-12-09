@@ -18,11 +18,15 @@ public class MappingProfiles : Profile
         CreateMap<Chapter, ChapterDto>();
         CreateMap<Chapter, ChapterAdmitterDto>();
         CreateMap<Chapter, ChapterUpdateDto>();
+        CreateMap<Collection, CollectionDto>();
+        CreateMap<Collection, CollectionAdmitterDto>();
+        CreateMap<Collection, CollectionUpdateDto>();
         CreateMap<Song, SongDto>();
         CreateMap<Song, SongAdmitteeDto>();
         CreateMap<Song, SongUpdateDto>();
         CreateMap<Chart, ChartDto>();
         CreateMap<Chart, ChartDetailedDto>();
+        CreateMap<Chart, ChartAdmitteeDto>();
         CreateMap<Chart, ChartUpdateDto>();
         CreateMap<Record, RecordDto>();
         CreateMap<Like, LikeDto>();
