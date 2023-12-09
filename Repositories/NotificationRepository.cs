@@ -13,8 +13,7 @@ public class NotificationRepository
     (ApplicationDbContext context, IMeilisearchService meilisearchService) : INotificationRepository
 {
     public async Task<ICollection<Notification>> GetNotificationsAsync(List<string> order, List<bool> desc,
-        int position, int take,
-        Expression<Func<Notification, bool>>? predicate = null)
+        int position, int take, Expression<Func<Notification, bool>>? predicate = null)
     {
         var result = context.Notifications.OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
@@ -35,14 +34,32 @@ public class NotificationRepository
     public async Task<bool> CreateNotificationAsync(Notification notification)
     {
         await context.Notifications.AddAsync(notification);
-        await meilisearchService.AddAsync(notification);
+        await meilisearchService.AddAsync(new Notification
+        {
+            Id = notification.Id,
+            Type = notification.Type,
+            Content = notification.Content,
+            OperatorId = notification.OperatorId,
+            OwnerId = notification.OwnerId,
+            DateCreated = notification.DateCreated,
+            DateRead = notification.DateRead
+        });
         return await SaveAsync();
     }
 
     public async Task<bool> UpdateNotificationAsync(Notification notification)
     {
         context.Notifications.Update(notification);
-        await meilisearchService.UpdateAsync(notification);
+        await meilisearchService.UpdateAsync(new Notification
+        {
+            Id = notification.Id,
+            Type = notification.Type,
+            Content = notification.Content,
+            OperatorId = notification.OperatorId,
+            OwnerId = notification.OwnerId,
+            DateCreated = notification.DateCreated,
+            DateRead = notification.DateRead
+        });
         return await SaveAsync();
     }
 
@@ -50,7 +67,16 @@ public class NotificationRepository
     {
         var enumerable = notifications.ToList();
         context.Notifications.UpdateRange(enumerable);
-        await meilisearchService.UpdateBatchAsync(enumerable);
+        await meilisearchService.UpdateBatchAsync(enumerable.Select(notification => new Notification
+        {
+            Id = notification.Id,
+            Type = notification.Type,
+            Content = notification.Content,
+            OperatorId = notification.OperatorId,
+            OwnerId = notification.OwnerId,
+            DateCreated = notification.DateCreated,
+            DateRead = notification.DateRead
+        }));
         return await SaveAsync();
     }
 
@@ -68,8 +94,7 @@ public class NotificationRepository
         return saved > 0;
     }
 
-    public async Task<int> CountNotificationsAsync(
-        Expression<Func<Notification, bool>>? predicate = null)
+    public async Task<int> CountNotificationsAsync(Expression<Func<Notification, bool>>? predicate = null)
     {
         var result = context.Notifications.AsQueryable();
         if (predicate != null) result = result.Where(predicate);
