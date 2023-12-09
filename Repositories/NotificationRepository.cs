@@ -40,7 +40,9 @@ public class NotificationRepository
             Type = notification.Type,
             Content = notification.Content,
             OperatorId = notification.OperatorId,
+            Operator = null,
             OwnerId = notification.OwnerId,
+            Owner = null!,
             DateCreated = notification.DateCreated,
             DateRead = notification.DateRead
         });
@@ -56,7 +58,9 @@ public class NotificationRepository
             Type = notification.Type,
             Content = notification.Content,
             OperatorId = notification.OperatorId,
+            Operator = null,
             OwnerId = notification.OwnerId,
+            Owner = null!,
             DateCreated = notification.DateCreated,
             DateRead = notification.DateRead
         });
@@ -73,7 +77,9 @@ public class NotificationRepository
             Type = notification.Type,
             Content = notification.Content,
             OperatorId = notification.OperatorId,
+            Operator = null,
             OwnerId = notification.OwnerId,
+            Owner = null!,
             DateCreated = notification.DateCreated,
             DateRead = notification.DateRead
         }));
