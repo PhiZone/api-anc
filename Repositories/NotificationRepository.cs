@@ -34,36 +34,14 @@ public class NotificationRepository
     public async Task<bool> CreateNotificationAsync(Notification notification)
     {
         await context.Notifications.AddAsync(notification);
-        await meilisearchService.AddAsync(new Notification
-        {
-            Id = notification.Id,
-            Type = notification.Type,
-            Content = notification.Content,
-            OperatorId = notification.OperatorId,
-            Operator = null,
-            OwnerId = notification.OwnerId,
-            Owner = null!,
-            DateCreated = notification.DateCreated,
-            DateRead = notification.DateRead
-        });
+        await meilisearchService.AddAsync(notification);
         return await SaveAsync();
     }
 
     public async Task<bool> UpdateNotificationAsync(Notification notification)
     {
         context.Notifications.Update(notification);
-        await meilisearchService.UpdateAsync(new Notification
-        {
-            Id = notification.Id,
-            Type = notification.Type,
-            Content = notification.Content,
-            OperatorId = notification.OperatorId,
-            Operator = null,
-            OwnerId = notification.OwnerId,
-            Owner = null!,
-            DateCreated = notification.DateCreated,
-            DateRead = notification.DateRead
-        });
+        await meilisearchService.UpdateAsync(notification);
         return await SaveAsync();
     }
 
@@ -71,18 +49,7 @@ public class NotificationRepository
     {
         var enumerable = notifications.ToList();
         context.Notifications.UpdateRange(enumerable);
-        await meilisearchService.UpdateBatchAsync(enumerable.Select(notification => new Notification
-        {
-            Id = notification.Id,
-            Type = notification.Type,
-            Content = notification.Content,
-            OperatorId = notification.OperatorId,
-            Operator = null,
-            OwnerId = notification.OwnerId,
-            Owner = null!,
-            DateCreated = notification.DateCreated,
-            DateRead = notification.DateRead
-        }));
+        await meilisearchService.UpdateBatchAsync(enumerable);
         return await SaveAsync();
     }
 

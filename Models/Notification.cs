@@ -1,4 +1,5 @@
-﻿using PhiZoneApi.Enums;
+﻿using System.Runtime.Serialization;
+using PhiZoneApi.Enums;
 
 namespace PhiZoneApi.Models;
 
@@ -9,7 +10,8 @@ public class Notification : Resource
     public string Content { get; set; } = null!;
 
     public int? OperatorId { get; set; }
-
+    
+    [IgnoreDataMember]
     public User? Operator { get; set; }
 
     public DateTimeOffset? DateRead { get; set; }
