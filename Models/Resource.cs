@@ -1,4 +1,6 @@
-﻿namespace PhiZoneApi.Models;
+﻿using System.Runtime.Serialization;
+
+namespace PhiZoneApi.Models;
 
 public abstract class Resource
 {
@@ -6,6 +8,7 @@ public abstract class Resource
 
     public int OwnerId { get; set; }
 
+    [IgnoreDataMember]
     public User Owner { get; set; } = null!;
 
     public DateTimeOffset DateCreated { get; set; }
