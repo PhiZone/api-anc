@@ -34,7 +34,7 @@ public class MeilisearchService : IMeilisearchService
                         "isHidden = false"
                         : (typeof(Submission).IsAssignableFrom(typeof(T)) || typeof(T) == typeof(Notification) ||
                            typeof(T) == typeof(PetAnswer)) && showOwnerId != null
-                            ? $"ownerId = ${showOwnerId}"
+                            ? $"ownerId = {showOwnerId}"
                             : ""
                 });
     }
