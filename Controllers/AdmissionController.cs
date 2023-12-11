@@ -714,8 +714,8 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
                 },
                 {
                     "Admission",
-                    resourceService.GetComplexRichText("ChapterAdmission", admission.AdmitteeId.ToString(),
-                        admission.AdmitterId.ToString(), templateService.GetMessage("more-info", requester.Language)!)
+                    resourceService.GetComplexRichText("ChapterAdmission", admission.AdmitterId.ToString(),
+                        admission.AdmitteeId.ToString(), templateService.GetMessage("more-info", requester.Language)!)
                 }
             });
 
@@ -807,8 +807,8 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
                 },
                 {
                     "Admission",
-                    resourceService.GetComplexRichText("CollectionAdmission", admission.AdmitteeId.ToString(),
-                        admission.AdmitterId.ToString(), templateService.GetMessage("more-info", requester.Language)!)
+                    resourceService.GetComplexRichText("CollectionAdmission", admission.AdmitterId.ToString(),
+                        admission.AdmitteeId.ToString(), templateService.GetMessage("more-info", requester.Language)!)
                 }
             });
 
@@ -907,8 +907,8 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
                 },
                 {
                     "Admission",
-                    resourceService.GetComplexRichText("SongAdmission", admission.AdmitteeId.ToString(),
-                        admission.AdmitterId.ToString(), templateService.GetMessage("more-info", requester.Language)!)
+                    resourceService.GetComplexRichText("SongAdmission", admission.AdmitterId.ToString(),
+                        admission.AdmitteeId.ToString(), templateService.GetMessage("more-info", requester.Language)!)
                 }
             });
 
@@ -1007,8 +1007,8 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
                 },
                 {
                     "Admission",
-                    resourceService.GetComplexRichText("SongSubmissionAdmission", admission.AdmitteeId.ToString(),
-                        admission.AdmitterId.ToString(), templateService.GetMessage("more-info", requester.Language)!)
+                    resourceService.GetComplexRichText("SongSubmissionAdmission", admission.AdmitterId.ToString(),
+                        admission.AdmitteeId.ToString(), templateService.GetMessage("more-info", requester.Language)!)
                 }
             });
 
