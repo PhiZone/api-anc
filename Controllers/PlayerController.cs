@@ -243,7 +243,7 @@ public class PlayerController(IPlayConfigurationRepository configurationReposito
     /// <response code="403">When the user does not have sufficient permission.</response>
     /// <response code="404">When the specified configuration is not found.</response>
     /// <response code="500">When an internal server error has occurred.</response>
-    [HttpDelete("{id:guid}")]
+    [HttpDelete("configurations/{id:guid}")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
