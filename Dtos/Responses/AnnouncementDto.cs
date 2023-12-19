@@ -1,4 +1,6 @@
-﻿namespace PhiZoneApi.Dtos.Responses;
+﻿using PhiZoneApi.Enums;
+
+namespace PhiZoneApi.Dtos.Responses;
 
 public class AnnouncementDto
 {
@@ -17,6 +19,10 @@ public class AnnouncementDto
     public int CommentCount { get; set; }
 
     public int LikeCount { get; set; }
+    
+    public Guid? ResourceId { get; set; }
+    
+    public PublicResourceType ResourceType { get; set; }
 
     public DateTimeOffset? DateLiked { get; set; }
 }

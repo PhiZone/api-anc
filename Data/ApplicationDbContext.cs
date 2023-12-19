@@ -41,6 +41,11 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, int>
     public DbSet<PetAnswer> PetAnswers { get; set; } = null!;
     public DbSet<ResourceRecord> ResourceRecords { get; set; } = null!;
     public DbSet<TapUserRelation> TapUserRelations { get; set; } = null!;
+    public DbSet<Event> Events { get; set; } = null!;
+    public DbSet<EventDivision> EventDivisions { get; set; } = null!;
+    public DbSet<EventTask> EventTasks { get; set; } = null!;
+    public DbSet<EventTeam> EventTeams { get; set; } = null!;
+    public DbSet<Participation> Participations { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -58,12 +63,13 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, int>
             .UsingEntity<TapUserRelation>(
                 l => l.HasOne<Application>(e => e.Application).WithMany(e => e.TapUserRelations),
                 r => r.HasOne<User>(e => e.User).WithMany(e => e.TapUserRelations));
-
-        // builder.Entity<Chapter>()
-        //     .HasMany(e => e.Songs)
-        //     .WithMany(e => e.Chapters)
-        //     .UsingEntity<Admission>(l => l.HasOne<Song>(e => (Song)e.Admittee).WithMany(e => e.ChapterAdmitters),
-        //         r => r.HasOne<Chapter>(e => (Chapter)e.Admitter).WithMany(e => e.SongAdmittees));
+        
+        builder.Entity<EventTeam>()
+            .HasMany(e => e.Participants)
+            .WithMany(e => e.EventTeams)
+            .UsingEntity<Participation>(
+                l => l.HasOne<User>(e => e.Participant).WithMany(e => e.Participations),
+                r => r.HasOne<EventTeam>(e => e.EventTeam).WithMany(e => e.Participations));
 
         builder.Entity<Resource>().UseTpcMappingStrategy();
 

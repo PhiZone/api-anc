@@ -420,6 +420,7 @@ public class ChartSubmissionController(IChartSubmissionRepository chartSubmissio
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidAuthorInfo
             });
+        var notify = chartSubmission.VolunteerStatus != RequestStatus.Waiting;
 
         chartSubmission.Title = dto.Title;
         chartSubmission.LevelType = dto.LevelType;
@@ -438,7 +439,7 @@ public class ChartSubmissionController(IChartSubmissionRepository chartSubmissio
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
-        await feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
+        if (notify) await feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
         return NoContent();
     }
 
@@ -483,6 +484,7 @@ public class ChartSubmissionController(IChartSubmissionRepository chartSubmissio
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
+        var notify = chartSubmission.VolunteerStatus != RequestStatus.Waiting;
 
         if (dto.File != null)
         {
@@ -510,7 +512,7 @@ public class ChartSubmissionController(IChartSubmissionRepository chartSubmissio
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
-        await feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
+        if (notify) await feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
         return NoContent();
     }
 
@@ -555,6 +557,7 @@ public class ChartSubmissionController(IChartSubmissionRepository chartSubmissio
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
+        var notify = chartSubmission.VolunteerStatus != RequestStatus.Waiting;
 
         if (dto.File != null)
         {
@@ -572,7 +575,7 @@ public class ChartSubmissionController(IChartSubmissionRepository chartSubmissio
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
-        await feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
+        if (notify) await feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
         return NoContent();
     }
 
@@ -616,6 +619,7 @@ public class ChartSubmissionController(IChartSubmissionRepository chartSubmissio
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
+        var notify = chartSubmission.VolunteerStatus != RequestStatus.Waiting;
 
         chartSubmission.Illustration = null;
         chartSubmission.Status = RequestStatus.Waiting;
@@ -626,7 +630,7 @@ public class ChartSubmissionController(IChartSubmissionRepository chartSubmissio
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
-        await feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
+        if (notify) await feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
         return NoContent();
     }
 
@@ -700,13 +704,8 @@ public class ChartSubmissionController(IChartSubmissionRepository chartSubmissio
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
             });
 
-        var chartSubmission = await chartSubmissionRepository.GetChartSubmissionAsync(id);
-
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if ((chartSubmission.OwnerId == currentUser.Id &&
-             !resourceService.HasPermission(currentUser, UserRole.Qualified)) ||
-            (chartSubmission.OwnerId != currentUser.Id &&
-             !resourceService.HasPermission(currentUser, UserRole.Moderator)))
+        if (!resourceService.HasPermission(currentUser, UserRole.Qualified))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -767,13 +766,8 @@ public class ChartSubmissionController(IChartSubmissionRepository chartSubmissio
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
             });
 
-        var chartSubmission = await chartSubmissionRepository.GetChartSubmissionAsync(id);
-
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if ((chartSubmission.OwnerId == currentUser.Id &&
-             !resourceService.HasPermission(currentUser, UserRole.Qualified)) ||
-            (chartSubmission.OwnerId != currentUser.Id &&
-             !resourceService.HasPermission(currentUser, UserRole.Moderator)))
+        if (!resourceService.HasPermission(currentUser, UserRole.Qualified))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -930,6 +924,7 @@ public class ChartSubmissionController(IChartSubmissionRepository chartSubmissio
                 Code = ResponseCodes.InvalidData,
                 Errors = ModelErrorTranslator.Translate(ModelState)
             });
+        var notify = chartSubmission.VolunteerStatus != RequestStatus.Waiting;
 
         chartAsset.Type = dto.Type;
         chartAsset.Name = dto.Name;
@@ -943,7 +938,7 @@ public class ChartSubmissionController(IChartSubmissionRepository chartSubmissio
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
-        await feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
+        if (notify) await feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
         return NoContent();
     }
 
@@ -998,6 +993,7 @@ public class ChartSubmissionController(IChartSubmissionRepository chartSubmissio
             });
 
         var chartAsset = await chartAssetSubmissionRepository.GetChartAssetSubmissionAsync(assetId);
+        var notify = chartSubmission.VolunteerStatus != RequestStatus.Waiting;
 
         if (dto.File != null)
         {
@@ -1017,7 +1013,7 @@ public class ChartSubmissionController(IChartSubmissionRepository chartSubmissio
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
-        await feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
+        if (notify) await feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
         return NoContent();
     }
 
@@ -1068,6 +1064,7 @@ public class ChartSubmissionController(IChartSubmissionRepository chartSubmissio
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
+        var notify = chartSubmission.VolunteerStatus != RequestStatus.Waiting;
 
         chartSubmission.Status = RequestStatus.Waiting;
         chartSubmission.VolunteerStatus = RequestStatus.Waiting;
@@ -1078,7 +1075,7 @@ public class ChartSubmissionController(IChartSubmissionRepository chartSubmissio
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
-        await feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
+        if (notify) await feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
         return NoContent();
     }
 

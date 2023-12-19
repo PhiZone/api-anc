@@ -113,6 +113,14 @@ public class MeilisearchService : IMeilisearchService
             });
         await _client.Index("Collection")
             .UpdateSearchableAttributesAsync(new[] { "title", "subtitle", "illustrator", "description" });
+        await _client.Index("Event")
+            .UpdateSearchableAttributesAsync(new[] { "title", "subtitle", "illustrator", "description" });
+        await _client.Index("EventDivision")
+            .UpdateSearchableAttributesAsync(new[] { "title", "subtitle", "illustrator", "description" });
+        await _client.Index("EventTask")
+            .UpdateSearchableAttributesAsync(new[] { "name", "code", "description" });
+        await _client.Index("EventTeam")
+            .UpdateSearchableAttributesAsync(new[] { "name" });
         await _client.Index("Notification").UpdateSearchableAttributesAsync(new[] { "content" });
         await _client.Index("PetAnswer").UpdateSearchableAttributesAsync(new[] { "answer1", "answer2", "answer3" });
         await _client.Index("PetChoice").UpdateSearchableAttributesAsync(new[] { "content", "language" });
@@ -137,6 +145,8 @@ public class MeilisearchService : IMeilisearchService
         await _client.Index("Chapter").UpdateFilterableAttributesAsync(new[] { "isHidden" });
         await _client.Index("Chart").UpdateFilterableAttributesAsync(new[] { "isHidden" });
         await _client.Index("Collection").UpdateFilterableAttributesAsync(new[] { "isHidden" });
+        await _client.Index("Event").UpdateFilterableAttributesAsync(new[] { "isHidden" });
+        await _client.Index("EventDivision").UpdateFilterableAttributesAsync(new[] { "isHidden" });
         await _client.Index("Song").UpdateFilterableAttributesAsync(new[] { "isHidden" });
 
         await _client.Index("ChartSubmission").UpdateFilterableAttributesAsync(new[] { "ownerId" });
@@ -152,6 +162,10 @@ public class MeilisearchService : IMeilisearchService
         await _client.Index("Chart").AddDocumentsAsync(context.Charts, "id");
         await _client.Index("ChartSubmission").AddDocumentsAsync(context.ChartSubmissions, "id");
         await _client.Index("Collection").AddDocumentsAsync(context.Collections, "id");
+        await _client.Index("Event").AddDocumentsAsync(context.Events, "id");
+        await _client.Index("EventDivision").AddDocumentsAsync(context.EventDivisions, "id");
+        await _client.Index("EventTask").AddDocumentsAsync(context.EventTasks, "id");
+        await _client.Index("EventTeam").AddDocumentsAsync(context.EventTeams, "id");
         await _client.Index("Notification").AddDocumentsAsync(context.Notifications, "id");
         await _client.Index("PetAnswer").AddDocumentsAsync(context.PetAnswers, "id");
         await _client.Index("PetChoice").AddDocumentsAsync(context.PetChoices, "id");

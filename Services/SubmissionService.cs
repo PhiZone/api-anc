@@ -121,22 +121,35 @@ public class SubmissionService(ISongRepository songRepository, INotificationServ
                         songSubmission.GetDisplay())
                 }
             });
-
-        foreach (var collaboration in await collaborationRepository.GetCollaborationsAsync(
-                     new List<string> { "DateCreated" }, new List<bool> { false }, 0, -1,
-                     e => e.SubmissionId == songSubmission.Id && e.Status == RequestStatus.Approved))
+        
+        if (isOriginal)
         {
-            if (await authorshipRepository.AuthorshipExistsAsync(song.Id, collaboration.InviteeId)) continue;
-            var authorship = new Authorship
+            if (!await authorshipRepository.AuthorshipExistsAsync(song.Id, song.OwnerId))
             {
-                ResourceId = song.Id,
-                AuthorId = collaboration.InviteeId,
-                Position = collaboration.Position,
-                DateCreated = DateTimeOffset.UtcNow
-            };
-            await authorshipRepository.CreateAuthorshipAsync(authorship);
+                var authorship = new Authorship
+                {
+                    ResourceId = song.Id,
+                    AuthorId = song.OwnerId,
+                    DateCreated = DateTimeOffset.UtcNow
+                };
+                await authorshipRepository.CreateAuthorshipAsync(authorship);
+            }
+            foreach (var collaboration in await collaborationRepository.GetCollaborationsAsync(
+                         new List<string> { "DateCreated" }, new List<bool> { false }, 0, -1,
+                         e => e.SubmissionId == songSubmission.Id && e.Status == RequestStatus.Approved))
+            {
+                if (await authorshipRepository.AuthorshipExistsAsync(song.Id, collaboration.InviteeId)) continue;
+                var authorship = new Authorship
+                {
+                    ResourceId = song.Id,
+                    AuthorId = collaboration.InviteeId,
+                    Position = collaboration.Position,
+                    DateCreated = DateTimeOffset.UtcNow
+                };
+                await authorshipRepository.CreateAuthorshipAsync(authorship);
+            }
         }
-
+        
         if (description != null && mentions != null)
             await notificationService.NotifyMentions(mentions, owner,
                 resourceService.GetRichText<Song>(song.Id.ToString(), songSubmission.Description!));
@@ -254,11 +267,23 @@ public class SubmissionService(ISongRepository songRepository, INotificationServ
             await chartRepository.UpdateChartAsync(chart);
         }
 
-        foreach (var submission in await chartAssetSubmissionRepository.GetChartAssetSubmissionsAsync(
-                     new List<string> { "DateCreated" }, new List<bool> { false }, 0, -1,
-                     e => e.ChartSubmissionId == chartSubmission.Id))
+        var assetSubmissions = await chartAssetSubmissionRepository.GetChartAssetSubmissionsAsync(
+            new List<string> { "DateCreated" }, new List<bool> { false }, 0, -1,
+            e => e.ChartSubmissionId == chartSubmission.Id);
+
+        var assetsToDelete =
+            (await chartAssetRepository.GetChartAssetsAsync(new List<string> { "DateCreated" },
+                new List<bool> { false }, 0, -1, e => e.ChartId == chart.Id)).Where(asset =>
+                assetSubmissions.Count(assetSubmission => assetSubmission.RepresentationId == asset.Id) == 0);
+
+        foreach (var submission in assetSubmissions)
         {
             await ApproveChartAsset(submission, chart.Id);
+        }
+
+        foreach (var asset in assetsToDelete)
+        {
+            await chartAssetRepository.RemoveChartAssetAsync(asset.Id);
         }
 
         await notificationService.Notify(owner, null, NotificationType.System, "chart-submission-approval",
@@ -271,6 +296,16 @@ public class SubmissionService(ISongRepository songRepository, INotificationServ
                 }
             });
 
+        if (!await authorshipRepository.AuthorshipExistsAsync(chart.Id, chart.OwnerId))
+        {
+            var authorship = new Authorship
+            {
+                ResourceId = chart.Id,
+                AuthorId = chart.OwnerId,
+                DateCreated = DateTimeOffset.UtcNow
+            };
+            await authorshipRepository.CreateAuthorshipAsync(authorship);
+        }
         foreach (var collaboration in await collaborationRepository.GetCollaborationsAsync(
                      new List<string> { "DateCreated" }, new List<bool> { false }, 0, -1,
                      e => e.SubmissionId == chartSubmission.Id && e.Status == RequestStatus.Approved))
