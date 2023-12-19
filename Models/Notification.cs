@@ -1,5 +1,4 @@
-﻿using System.Text.Json.Serialization;
-using PhiZoneApi.Enums;
+﻿using PhiZoneApi.Enums;
 
 namespace PhiZoneApi.Models;
 
@@ -11,7 +10,6 @@ public class Notification : Resource
 
     public int? OperatorId { get; set; }
     
-    [JsonIgnore]
     public User? Operator { get; set; }
 
     public DateTimeOffset? DateRead { get; set; }

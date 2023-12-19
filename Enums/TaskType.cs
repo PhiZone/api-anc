@@ -1,6 +1,6 @@
 namespace PhiZoneApi.Enums;
 
-public enum ScheduleType
+public enum TaskType
 {
-    Timed
+    Scheduled, OnParticipation, OnSubmission
 }

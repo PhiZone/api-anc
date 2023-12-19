@@ -1,6 +1,17 @@
 namespace PhiZoneApi.Models;
 
-public class Event
+public class Event : PublicResource
 {
+    public string Title { get; set; } = null!;
+
+    public string? Subtitle { get; set; }
+
+    public string Illustration { get; set; } = null!;
+
+    public string Illustrator { get; set; } = null!;
     
+    public override string GetDisplay()
+    {
+        return Subtitle != null ? $"{Title} - {Subtitle}" : Title;
+    }
 }

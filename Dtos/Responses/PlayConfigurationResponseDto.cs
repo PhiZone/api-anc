@@ -12,11 +12,11 @@ public class PlayConfigurationResponseDto
 
     public int GoodJudgment { get; set; }
 
-    public List<int>? AspectRatio { get; set; } = new(2);
+    public ChartMirroringMode ChartMirroring { get; set; }
+
+    public List<int>? AspectRatio { get; set; }
 
     public double NoteSize { get; set; }
-
-    public ChartMirroringMode ChartMirroring { get; set; }
 
     public double BackgroundLuminance { get; set; }
 

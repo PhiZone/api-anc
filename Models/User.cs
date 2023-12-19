@@ -1,9 +1,10 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using PhiZoneApi.Enums;
+using System.Text.Json.Serialization;
 
 namespace PhiZoneApi.Models;
 
-public class User : IdentityUser<int>, IEquatable<User>
+public class User : IdentityUser<int>
 {
     public string? Avatar { get; set; }
 
@@ -32,23 +33,22 @@ public class User : IdentityUser<int>, IEquatable<User>
     public int RegionId { get; set; }
 
     public Region Region { get; set; } = null!;
-
+    
+    [JsonIgnore]
     public IEnumerable<User> Followers { get; } = new List<User>();
 
+    [JsonIgnore]
     public IEnumerable<UserRelation> FollowerRelations { get; } = new List<UserRelation>();
 
+    [JsonIgnore]
     public IEnumerable<User> Followees { get; } = new List<User>();
 
+    [JsonIgnore]
     public IEnumerable<UserRelation> FolloweeRelations { get; } = new List<UserRelation>();
 
+    [JsonIgnore]
     public IEnumerable<Application> TapApplications { get; } = new List<Application>();
 
+    [JsonIgnore]
     public IEnumerable<TapUserRelation> TapUserRelations { get; } = new List<TapUserRelation>();
-
-    public bool Equals(User? other)
-    {
-        if (ReferenceEquals(null, other)) return false;
-        if (ReferenceEquals(this, other)) return true;
-        return Id == other.Id;
-    }
 }

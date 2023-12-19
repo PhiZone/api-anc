@@ -14,5 +14,9 @@ public class ChartAssetSubmission : Resource
 
     public string File { get; set; } = null!;
 
+    public Guid? RepresentationId { get; set; }
+
+    public ChartAsset? Representation { get; set; }
+
     public DateTimeOffset DateUpdated { get; set; }
 }

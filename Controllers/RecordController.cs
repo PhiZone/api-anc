@@ -165,6 +165,11 @@ public class RecordController(IRecordRepository recordRepository, IOptions<DataS
             });
 
         var chart = await chartRepository.GetChartAsync(info.ChartId);
+        if (chart.Accessibility == Accessibility.RefuseAny)
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentIsPrivate
+            });
         if (chart.FileChecksum != null && !chart.FileChecksum.Equals(dto.Checksum))
             return BadRequest(new ResponseDto<object>
             {
