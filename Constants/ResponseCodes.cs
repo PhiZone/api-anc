@@ -252,7 +252,12 @@ public static class ResponseCodes
     public const string BindingOccupied = "BindingOccupied";
 
     /// <summary>
-    ///     There exists prohibited content in the user's input text.
+    ///     A resource with this name already exists.
+    /// </summary>
+    public const string NameOccupied = "NameOccupied";
+
+    /// <summary>
+    ///     There exists prohibited content in user's input text.
     /// </summary>
     public const string ContentProhibited = "ContentProhibited";
 }

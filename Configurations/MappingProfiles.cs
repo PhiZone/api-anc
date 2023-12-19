@@ -38,6 +38,7 @@ public class MappingProfiles : Profile
         CreateMap<Announcement, AnnouncementRequestDto>();
         CreateMap<PlayConfiguration, PlayConfigurationResponseDto>();
         CreateMap<PlayConfigurationRequestDto, PlayConfiguration>();
+        CreateMap<PlayConfiguration, PlayConfigurationRequestDto>();
         CreateMap<Vote, VoteDto>();
         CreateMap<VolunteerVote, VolunteerVoteDto>();
         CreateMap<SongSubmission, SongSubmissionDto>();

@@ -16,14 +16,14 @@ public class PlayConfigurationRequestDto
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     public int GoodJudgment { get; set; } = 160;
 
+    [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
+    public ChartMirroringMode ChartMirroring { get; set; } = ChartMirroringMode.Off;
+
     public List<int>? AspectRatio { get; set; }
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     [Range(0.4, 2, ErrorMessage = ResponseCodes.ValueOutOfRange)]
     public double NoteSize { get; set; } = 1;
-
-    [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
-    public ChartMirroringMode ChartMirroring { get; set; } = ChartMirroringMode.Off;
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     [Range(0, 1, ErrorMessage = ResponseCodes.ValueOutOfRange)]

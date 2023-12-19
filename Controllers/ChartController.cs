@@ -718,6 +718,14 @@ public class ChartController(IChartRepository chartRepository, IOptions<DataSett
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
+        if (await chartAssetRepository.CountChartAssetsAsync(e => e.Name == dto.Name && e.ChartId == id) > 0)
+        {
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.NameOccupied
+            });
+        }
+
         var chartAsset = new ChartAsset
         {
             ChartId = id,

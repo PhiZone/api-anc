@@ -30,10 +30,9 @@ namespace PhiZoneApi.Controllers;
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme,
     Policy = "AllowAnonymous")]
 public class PlayerController(IPlayConfigurationRepository configurationRepository, IOptions<DataSettings> dataSettings,
-        UserManager<User> userManager, IFilterService filterService, IMapper mapper, IChartRepository chartRepository,
-        IApplicationRepository applicationRepository, IConnectionMultiplexer redis, ISongRepository songRepository,
-        IResourceService resourceService)
-    : Controller
+    UserManager<User> userManager, IFilterService filterService, IMapper mapper, IChartRepository chartRepository,
+    IApplicationRepository applicationRepository, IConnectionMultiplexer redis, ISongRepository songRepository,
+    IResourceService resourceService) : Controller
 {
     /// <summary>
     ///     Retrieves configurations.
@@ -98,7 +97,9 @@ public class PlayerController(IPlayConfigurationRepository configurationReposito
     {
         if (!await configurationRepository.PlayConfigurationExistsAsync(id))
             return NotFound(new ResponseDto<object>
-                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
         var configuration = await configurationRepository.GetPlayConfigurationAsync(id);
         var dto = mapper.Map<PlayConfigurationResponseDto>(configuration);
 
@@ -144,7 +145,7 @@ public class PlayerController(IPlayConfigurationRepository configurationReposito
             Name = dto.Name,
             PerfectJudgment = dto.PerfectJudgment,
             GoodJudgment = dto.GoodJudgment,
-            AspectRatio = dto.AspectRatio,
+            AspectRatio = ReduceFraction(dto.AspectRatio),
             NoteSize = dto.NoteSize,
             ChartMirroring = dto.ChartMirroring,
             BackgroundLuminance = dto.BackgroundLuminance,
@@ -200,8 +201,7 @@ public class PlayerController(IPlayConfigurationRepository configurationReposito
         var configuration = await configurationRepository.GetPlayConfigurationAsync(id);
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if ((currentUser.Id == configuration.OwnerId &&
-             !resourceService.HasPermission(currentUser, UserRole.Member)) ||
+        if ((currentUser.Id == configuration.OwnerId && !resourceService.HasPermission(currentUser, UserRole.Member)) ||
             (currentUser.Id != configuration.OwnerId &&
              !resourceService.HasPermission(currentUser, UserRole.Administrator)))
             return StatusCode(StatusCodes.Status403Forbidden,
@@ -222,7 +222,7 @@ public class PlayerController(IPlayConfigurationRepository configurationReposito
             });
 
         if (dto.PerfectJudgment > dto.GoodJudgment) return StatusCode(StatusCodes.Status418ImATeapot);
-
+        dto.AspectRatio = ReduceFraction(dto.AspectRatio);
         configuration = mapper.Map<PlayConfiguration>(dto);
 
         if (!await configurationRepository.UpdatePlayConfigurationAsync(configuration))
@@ -263,8 +263,7 @@ public class PlayerController(IPlayConfigurationRepository configurationReposito
         var configuration = await configurationRepository.GetPlayConfigurationAsync(id);
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if ((currentUser.Id == configuration.OwnerId &&
-             !resourceService.HasPermission(currentUser, UserRole.Member)) ||
+        if ((currentUser.Id == configuration.OwnerId && !resourceService.HasPermission(currentUser, UserRole.Member)) ||
             (currentUser.Id != configuration.OwnerId &&
              !resourceService.HasPermission(currentUser, UserRole.Administrator)))
             return StatusCode(StatusCodes.Status403Forbidden,
@@ -360,5 +359,24 @@ public class PlayerController(IPlayConfigurationRepository configurationReposito
         {
             Status = ResponseStatus.Ok, Data = new PlayResponseDto { Token = token, Timestamp = timestamp }
         });
+    }
+
+    private static List<int>? ReduceFraction(IReadOnlyList<int>? fraction)
+    {
+        if (fraction == null || fraction[0] <= 0 || fraction[1] <= 0) return null;
+        var gcd = CalculateGcd(fraction[0], fraction[1]);
+        return new List<int> { fraction[0] / gcd, fraction[1] / gcd };
+    }
+
+    private static int CalculateGcd(int a, int b)
+    {
+        while (b != 0)
+        {
+            var temp = b;
+            b = a % b;
+            a = temp;
+        }
+
+        return a;
     }
 }

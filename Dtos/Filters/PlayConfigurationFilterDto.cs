@@ -24,11 +24,11 @@ public class PlayConfigurationFilterDto : FilterDto<PlayConfiguration>
 
     public List<int>? RangeGoodJudgment { get; set; }
 
+    public List<ChartMirroringMode>? RangeChartMirroring { get; set; }
+
     public double? MaxNoteSize { get; set; }
 
     public double? MinNoteSize { get; set; }
-
-    public List<ChartMirroringMode>? RangeChartMirroring { get; set; }
 
     public double? MinBackgroundLuminance { get; set; }
 

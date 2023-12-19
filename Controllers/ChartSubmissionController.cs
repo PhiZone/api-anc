@@ -836,6 +836,15 @@ public class ChartSubmissionController(IChartSubmissionRepository chartSubmissio
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
+        if (await chartAssetSubmissionRepository.CountChartAssetSubmissionsAsync(e =>
+                e.Name == dto.Name && e.ChartSubmissionId == id) > 0)
+        {
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.NameOccupied
+            });
+        }
+
         var chartAsset = new ChartAssetSubmission
         {
             ChartSubmissionId = id,

@@ -6,8 +6,9 @@ using PhiZoneApi.Models;
 namespace PhiZoneApi.Services;
 
 public class SubmissionService(ISongRepository songRepository, INotificationService notificationService,
-    IResourceService resourceService, IChartRepository chartRepository,
-    IChartSubmissionRepository chartSubmissionRepository, ISongSubmissionRepository songSubmissionRepository,
+    IResourceService resourceService, IChartRepository chartRepository, IChartAssetRepository chartAssetRepository,
+    IChartSubmissionRepository chartSubmissionRepository,
+    IChartAssetSubmissionRepository chartAssetSubmissionRepository, ISongSubmissionRepository songSubmissionRepository,
     ICollaborationRepository collaborationRepository, IAuthorshipRepository authorshipRepository,
     UserManager<User> userManager, IUserRelationRepository userRelationRepository) : ISubmissionService
 {
@@ -167,6 +168,7 @@ public class SubmissionService(ISongRepository songRepository, INotificationServ
         if (songId == null) return;
 
         Chart chart;
+        var song = await songRepository.GetSongAsync(songId.Value);
         var owner = (await userManager.FindByIdAsync(chartSubmission.OwnerId.ToString()))!;
         var description = chartSubmission.Description;
         List<User>? mentions = null;
@@ -195,7 +197,7 @@ public class SubmissionService(ISongRepository songRepository, INotificationServ
                 Description = chartSubmission.Description,
                 Accessibility = chartSubmission.Accessibility,
                 IsRanked = chartSubmission.IsRanked,
-                IsHidden = false,
+                IsHidden = song.IsHidden,
                 IsLocked = false,
                 NoteCount = chartSubmission.NoteCount,
                 SongId = songId.Value,
@@ -207,7 +209,7 @@ public class SubmissionService(ISongRepository songRepository, INotificationServ
             chartSubmission.RepresentationId = chart.Id;
             await chartSubmissionRepository.UpdateChartSubmissionAsync(chartSubmission);
 
-            if (!(await songRepository.GetSongAsync(chartSubmission.SongId!.Value)).IsHidden)
+            if (!song.IsHidden)
                 foreach (var relation in await userRelationRepository.GetRelationsAsync(
                              new List<string> { "DateCreated" }, new List<bool> { false }, 0, -1,
                              e => e.FolloweeId == chartSubmission.OwnerId && e.Type != UserRelationType.Blacklisted))
@@ -243,13 +245,20 @@ public class SubmissionService(ISongRepository songRepository, INotificationServ
             chart.Description = chartSubmission.Description;
             chart.Accessibility = chartSubmission.Accessibility;
             chart.IsRanked = chartSubmission.IsRanked;
-            chart.IsHidden = false;
+            chart.IsHidden = song.IsHidden;
             chart.IsLocked = false;
             chart.NoteCount = chartSubmission.NoteCount;
             chart.SongId = songId.Value;
             chart.OwnerId = chartSubmission.OwnerId;
             chart.DateUpdated = DateTimeOffset.UtcNow;
             await chartRepository.UpdateChartAsync(chart);
+        }
+
+        foreach (var submission in await chartAssetSubmissionRepository.GetChartAssetSubmissionsAsync(
+                     new List<string> { "DateCreated" }, new List<bool> { false }, 0, -1,
+                     e => e.ChartSubmissionId == chartSubmission.Id))
+        {
+            await ApproveChartAsset(submission, chart.Id);
         }
 
         await notificationService.Notify(owner, null, NotificationType.System, "chart-submission-approval",
@@ -280,6 +289,42 @@ public class SubmissionService(ISongRepository songRepository, INotificationServ
         if (description != null && mentions != null)
             await notificationService.NotifyMentions(mentions, owner,
                 resourceService.GetRichText<Chart>(chart.Id.ToString(), chartSubmission.Description!));
+    }
+
+    private async Task ApproveChartAsset(ChartAssetSubmission submission, Guid chartId)
+    {
+        ChartAsset chartAsset;
+        if (submission.RepresentationId == null &&
+            await chartAssetRepository.CountChartAssetsAsync(e => e.Name == submission.Name && e.ChartId == chartId) ==
+            0)
+        {
+            chartAsset = new ChartAsset
+            {
+                ChartId = chartId,
+                Type = submission.Type,
+                Name = submission.Name,
+                File = submission.File,
+                OwnerId = submission.OwnerId,
+                DateCreated = DateTimeOffset.UtcNow,
+                DateUpdated = DateTimeOffset.UtcNow
+            };
+            await chartAssetRepository.CreateChartAssetAsync(chartAsset);
+            submission.RepresentationId = chartAsset.Id;
+            await chartAssetSubmissionRepository.UpdateChartAssetSubmissionAsync(submission);
+            return;
+        }
+
+        chartAsset = submission.RepresentationId != null
+            ? await chartAssetRepository.GetChartAssetAsync(submission.RepresentationId.Value)
+            : (await chartAssetRepository.GetChartAssetsAsync(new List<string>(), new List<bool>(), 0, 1,
+                e => e.Name == submission.Name && e.ChartId == chartId)).First();
+        chartAsset.ChartId = chartId;
+        chartAsset.Type = submission.Type;
+        chartAsset.Name = submission.Name;
+        chartAsset.File = submission.File;
+        chartAsset.OwnerId = submission.OwnerId;
+        chartAsset.DateUpdated = DateTimeOffset.UtcNow;
+        await chartAssetRepository.UpdateChartAssetAsync(chartAsset);
     }
 
     public async Task RejectChart(ChartSubmission chartSubmission)

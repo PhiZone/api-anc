@@ -210,8 +210,8 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
                     SimultaneousNoteHint = true,
                     FcApIndicator = true,
                     ChartOffset = 0,
-                    HitSoundVolume = 0,
-                    MusicVolume = 0,
+                    HitSoundVolume = 1,
+                    MusicVolume = 1,
                     OwnerId = user.Id,
                     DateCreated = DateTimeOffset.UtcNow
                 };
@@ -601,9 +601,9 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
                 {
                     PerfectJudgment = reader.GetInt32("perfect_judgment"),
                     GoodJudgment = reader.GetInt32("good_judgment"),
+                    ChartMirroring = (ChartMirroringMode)reader.GetInt32("chart_mirroring"),
                     AspectRatio = reader.GetString("aspect_ratio").Split(":").Select(int.Parse).ToList(),
                     NoteSize = reader.GetDouble("note_size"),
-                    ChartMirroring = (ChartMirroringMode)reader.GetInt32("chart_mirroring"),
                     BackgroundLuminance = reader.GetDouble("background_luminance"),
                     BackgroundBlur = reader.GetDouble("background_blur"),
                     SimultaneousNoteHint = reader.GetBoolean("simul_note_highlight"),
