@@ -222,8 +222,19 @@ public class PlayerController(IPlayConfigurationRepository configurationReposito
             });
 
         if (dto.PerfectJudgment > dto.GoodJudgment) return StatusCode(StatusCodes.Status418ImATeapot);
-        dto.AspectRatio = ReduceFraction(dto.AspectRatio);
-        configuration = mapper.Map<PlayConfiguration>(dto);
+
+        configuration.Name = dto.Name;
+        configuration.PerfectJudgment = dto.PerfectJudgment;
+        configuration.GoodJudgment = dto.GoodJudgment;
+        configuration.AspectRatio = ReduceFraction(dto.AspectRatio);
+        configuration.NoteSize = dto.NoteSize;
+        configuration.BackgroundLuminance = dto.BackgroundLuminance;
+        configuration.BackgroundBlur = dto.BackgroundBlur;
+        configuration.SimultaneousNoteHint = dto.SimultaneousNoteHint;
+        configuration.FcApIndicator = dto.FcApIndicator;
+        configuration.ChartOffset = dto.ChartOffset;
+        configuration.HitSoundVolume = dto.HitSoundVolume;
+        configuration.MusicVolume = dto.MusicVolume;
 
         if (!await configurationRepository.UpdatePlayConfigurationAsync(configuration))
             return StatusCode(StatusCodes.Status500InternalServerError,
@@ -363,7 +374,7 @@ public class PlayerController(IPlayConfigurationRepository configurationReposito
 
     private static List<int>? ReduceFraction(IReadOnlyList<int>? fraction)
     {
-        if (fraction == null || fraction[0] <= 0 || fraction[1] <= 0) return null;
+        if (fraction == null || fraction.Count < 2 || fraction[0] <= 0 || fraction[1] <= 0) return null;
         var gcd = CalculateGcd(fraction[0], fraction[1]);
         return new List<int> { fraction[0] / gcd, fraction[1] / gcd };
     }
