@@ -328,6 +328,7 @@ public class SongSubmissionController(ISongSubmissionRepository songSubmissionRe
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidAuthorInfo
                 });
+        var notify = songSubmission.Status != RequestStatus.Waiting;
 
         songSubmission.Title = dto.Title;
         songSubmission.EditionType = dto.EditionType;
@@ -351,7 +352,7 @@ public class SongSubmissionController(ISongSubmissionRepository songSubmissionRe
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
-        await feishuService.Notify(songSubmission, FeishuResources.ContentReviewalChat);
+        if (notify) await feishuService.Notify(songSubmission, FeishuResources.ContentReviewalChat);
         return NoContent();
     }
 
@@ -397,6 +398,7 @@ public class SongSubmissionController(ISongSubmissionRepository songSubmissionRe
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
+        var notify = songSubmission.Status != RequestStatus.Waiting;
 
         if (dto.File != null)
         {
@@ -432,7 +434,7 @@ public class SongSubmissionController(ISongSubmissionRepository songSubmissionRe
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
-        if (wait) await feishuService.Notify(songSubmission, FeishuResources.ContentReviewalChat);
+        if (wait && notify) await feishuService.Notify(songSubmission, FeishuResources.ContentReviewalChat);
         return NoContent();
     }
 
@@ -477,6 +479,8 @@ public class SongSubmissionController(ISongSubmissionRepository songSubmissionRe
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
+        var notify = songSubmission.Status != RequestStatus.Waiting;
+        
         if (dto.File != null)
         {
             songSubmission.Illustration =
@@ -489,7 +493,7 @@ public class SongSubmissionController(ISongSubmissionRepository songSubmissionRe
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
-        await feishuService.Notify(songSubmission, FeishuResources.ContentReviewalChat);
+        if (notify) await feishuService.Notify(songSubmission, FeishuResources.ContentReviewalChat);
         return NoContent();
     }
 
@@ -534,6 +538,7 @@ public class SongSubmissionController(ISongSubmissionRepository songSubmissionRe
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
+        var notify = songSubmission.Status != RequestStatus.Waiting;
 
         if (dto.File != null)
         {
@@ -546,7 +551,7 @@ public class SongSubmissionController(ISongSubmissionRepository songSubmissionRe
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
-        await feishuService.Notify(songSubmission, FeishuResources.ContentReviewalChat);
+        if (notify) await feishuService.Notify(songSubmission, FeishuResources.ContentReviewalChat);
         return NoContent();
     }
 
@@ -587,6 +592,7 @@ public class SongSubmissionController(ISongSubmissionRepository songSubmissionRe
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
+        var notify = songSubmission.Status != RequestStatus.Waiting;
 
         songSubmission.License = null;
         songSubmission.DateUpdated = DateTimeOffset.UtcNow;
@@ -596,7 +602,7 @@ public class SongSubmissionController(ISongSubmissionRepository songSubmissionRe
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
-        await feishuService.Notify(songSubmission, FeishuResources.ContentReviewalChat);
+        if (notify) await feishuService.Notify(songSubmission, FeishuResources.ContentReviewalChat);
         return NoContent();
     }
 
@@ -641,6 +647,7 @@ public class SongSubmissionController(ISongSubmissionRepository songSubmissionRe
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
+        var notify = songSubmission.Status != RequestStatus.Waiting;
 
         if (dto.File != null)
         {
@@ -654,7 +661,7 @@ public class SongSubmissionController(ISongSubmissionRepository songSubmissionRe
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
-        await feishuService.Notify(songSubmission, FeishuResources.ContentReviewalChat);
+        if (notify) await feishuService.Notify(songSubmission, FeishuResources.ContentReviewalChat);
         return NoContent();
     }
 
@@ -695,6 +702,7 @@ public class SongSubmissionController(ISongSubmissionRepository songSubmissionRe
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
+        var notify = songSubmission.Status != RequestStatus.Waiting;
 
         songSubmission.OriginalityProof = null;
         songSubmission.DateUpdated = DateTimeOffset.UtcNow;
@@ -704,7 +712,7 @@ public class SongSubmissionController(ISongSubmissionRepository songSubmissionRe
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
-        await feishuService.Notify(songSubmission, FeishuResources.ContentReviewalChat);
+        if (notify) await feishuService.Notify(songSubmission, FeishuResources.ContentReviewalChat);
         return NoContent();
     }
 

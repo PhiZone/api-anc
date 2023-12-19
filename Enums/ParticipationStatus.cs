@@ -2,5 +2,5 @@ namespace PhiZoneApi.Enums;
 
 public enum ParticipationStatus
 {
-    Prepared, Submitted, 
+    Registered, Prepared, Submitted, Disqualified, Banned
 }

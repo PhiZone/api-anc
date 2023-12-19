@@ -28,7 +28,8 @@ namespace PhiZoneApi.Controllers;
     Policy = "AllowAnonymous")]
 public class AnnouncementController(IAnnouncementRepository announcementRepository, IOptions<DataSettings> dataSettings,
     IDtoMapper dtoMapper, IFilterService filterService, UserManager<User> userManager, ILikeRepository likeRepository,
-    ILikeService likeService, IMapper mapper, ICommentRepository commentRepository, IResourceService resourceService,
+    ILikeService likeService, IMapper mapper, ICommentRepository commentRepository, IEventRepository eventRepository,
+    IEventDivisionRepository eventDivisionRepository, IResourceService resourceService,
     INotificationService notificationService, IMeilisearchService meilisearchService) : Controller
 {
     /// <summary>
@@ -49,7 +50,8 @@ public class AnnouncementController(IAnnouncementRepository announcementReposito
             dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
-        var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser);
+        var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser,
+            filterDto?.RangeResourceId == null ? e => e.ResourceId == null : null);
         IEnumerable<Announcement> announcements;
         int total;
         if (dto.Search != null)
@@ -135,7 +137,12 @@ public class AnnouncementController(IAnnouncementRepository announcementReposito
     public async Task<IActionResult> CreateAnnouncement([FromBody] AnnouncementRequestDto dto)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!resourceService.HasPermission(currentUser, UserRole.Administrator))
+        if (!(resourceService.HasPermission(currentUser, UserRole.Administrator) ||
+              (dto.ResourceType is PublicResourceType.Event or PublicResourceType.EventDivision &&
+               dto.ResourceId != null &&
+               currentUser.Id == (dto.ResourceType == PublicResourceType.Event
+                   ? (await eventRepository.GetEventAsync(dto.ResourceId.Value)).OwnerId
+                   : (await eventDivisionRepository.GetEventDivisionAsync(dto.ResourceId.Value)).OwnerId))))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -191,7 +198,7 @@ public class AnnouncementController(IAnnouncementRepository announcementReposito
         var announcement = await announcementRepository.GetAnnouncementAsync(id);
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!resourceService.HasPermission(currentUser, UserRole.Administrator))
+        if (!(resourceService.HasPermission(currentUser, UserRole.Administrator) || currentUser.Id == announcement.OwnerId))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -249,8 +256,10 @@ public class AnnouncementController(IAnnouncementRepository announcementReposito
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
+        
+        var announcement = await announcementRepository.GetAnnouncementAsync(id);
 
-        if (!resourceService.HasPermission(currentUser, UserRole.Moderator))
+        if (!(resourceService.HasPermission(currentUser, UserRole.Administrator) || currentUser.Id == announcement.OwnerId))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {

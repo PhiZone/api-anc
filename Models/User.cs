@@ -51,4 +51,10 @@ public class User : IdentityUser<int>
 
     [JsonIgnore]
     public IEnumerable<TapUserRelation> TapUserRelations { get; } = new List<TapUserRelation>();
+
+    [JsonIgnore]
+    public IEnumerable<EventTeam> EventTeams { get; } = new List<EventTeam>();
+
+    [JsonIgnore]
+    public IEnumerable<Participation> Participations { get; } = new List<Participation>();
 }

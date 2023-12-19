@@ -29,4 +29,6 @@ public class AnnouncementFilterDto : FilterDto<Announcement>
     public int? MaxLikeCount { get; set; }
 
     public List<int>? RangeLikeCount { get; set; }
+
+    public List<Guid>? RangeResourceId { get; set; }
 }

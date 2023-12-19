@@ -5,5 +5,13 @@ public enum AdmitterType
     Chapter,
     Collection,
     Song,
-    SongSubmission
+    SongSubmission,
+    EventDivisionSong,
+    EventDivisionChart,
+    EventDivisionPlay,
+    EventParticipantSong,
+    EventParticipantSongSubmission,
+    EventParticipantChart,
+    EventParticipantChartSubmission,
+    EventParticipantPlay
 }
