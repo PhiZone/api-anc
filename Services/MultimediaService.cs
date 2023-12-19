@@ -1,6 +1,8 @@
 ﻿using System.Diagnostics;
 using PhiZoneApi.Constants;
 using PhiZoneApi.Interfaces;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Processing;
 
 namespace PhiZoneApi.Services;
 
