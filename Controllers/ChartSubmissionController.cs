@@ -691,7 +691,7 @@ public class ChartSubmissionController(IChartSubmissionRepository chartSubmissio
     /// <response code="403">When the user does not have sufficient permission.</response>
     [HttpGet("{id:guid}/assets")]
     [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<ChartAssetDto>>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<ChartAssetSubmissionDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
@@ -719,10 +719,10 @@ public class ChartSubmissionController(IChartSubmissionRepository chartSubmissio
             e => e.ChartSubmissionId == id);
         var chartAssets = await chartAssetSubmissionRepository.GetChartAssetSubmissionsAsync(dto.Order, dto.Desc,
             position, dto.PerPage, predicateExpr);
-        var list = mapper.Map<List<ChartAssetDto>>(chartAssets);
+        var list = mapper.Map<List<ChartAssetSubmissionDto>>(chartAssets);
         var total = await chartAssetSubmissionRepository.CountChartAssetSubmissionsAsync(predicateExpr);
 
-        return Ok(new ResponseDto<IEnumerable<ChartAssetDto>>
+        return Ok(new ResponseDto<IEnumerable<ChartAssetSubmissionDto>>
         {
             Status = ResponseStatus.Ok,
             Code = ResponseCodes.Ok,
@@ -752,7 +752,7 @@ public class ChartSubmissionController(IChartSubmissionRepository chartSubmissio
     [HttpGet("{id:guid}/assets/{assetId:guid}")]
     [ServiceFilter(typeof(ETagFilter))]
     [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<ChartAssetDto>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<ChartAssetSubmissionDto>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status304NotModified, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -782,9 +782,9 @@ public class ChartSubmissionController(IChartSubmissionRepository chartSubmissio
 
         var chartAsset = await chartAssetSubmissionRepository.GetChartAssetSubmissionAsync(assetId);
 
-        var dto = mapper.Map<ChartAssetDto>(chartAsset);
+        var dto = mapper.Map<ChartAssetSubmissionDto>(chartAsset);
 
-        return Ok(new ResponseDto<ChartAssetDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
+        return Ok(new ResponseDto<ChartAssetSubmissionDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
     }
 
     /// <summary>

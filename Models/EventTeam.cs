@@ -14,6 +14,8 @@ public class EventTeam : Resource
     public int? ClaimedParticipantCount { get; set; }
     
     public int? ClaimedSubmissionCount { get; set; }
+    
+    public double? Score { get; set; }
 
     [JsonIgnore]
     public IEnumerable<User> Participants { get; set; } = new List<User>();
