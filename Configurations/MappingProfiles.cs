@@ -28,6 +28,10 @@ public class MappingProfiles : Profile
         CreateMap<Chart, ChartDetailedDto>();
         CreateMap<Chart, ChartAdmitteeDto>();
         CreateMap<Chart, ChartUpdateDto>();
+        CreateMap<ChartAsset, ChartAssetDto>();
+        CreateMap<ChartAsset, ChartAssetUpdateDto>();
+        CreateMap<ChartAssetSubmission, ChartAssetSubmissionDto>();
+        CreateMap<ChartAssetSubmission, ChartAssetUpdateDto>();
         CreateMap<Record, RecordDto>();
         CreateMap<Like, LikeDto>();
         CreateMap<Comment, CommentDto>();
