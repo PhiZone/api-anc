@@ -799,7 +799,7 @@ public class ChartSubmissionController(IChartSubmissionRepository chartSubmissio
     /// <response code="403">When the user does not have sufficient permission.</response>
     /// <response code="404">When the specified chart submission is not found.</response>
     /// <response code="500">When an internal server error has occurred.</response>
-    [HttpPatch("{id:guid}/assets")]
+    [HttpPost("{id:guid}/assets")]
     [Consumes("multipart/form-data")]
     [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
