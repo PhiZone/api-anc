@@ -8,8 +8,6 @@ public enum ChartAssetType
     Audio,
     Video,
     Config,
-    CG,
-    HLSL,
-    GLSL,
+    Shader,
     Other
 }
