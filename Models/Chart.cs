@@ -34,7 +34,7 @@ public class Chart : PublicResource
 
     public double RatingOnArrangement { get; set; } = 2.5;
 
-    public double RatingOnFeel { get; set; } = 2.5;
+    public double RatingOnGameplay { get; set; } = 2.5;
 
     public double RatingOnVisualEffects { get; set; } = 2.5;
 

@@ -44,12 +44,12 @@ public class VoteService(IVoteRepository voteRepository, IChartRepository chartR
         {
             var vote = await voteRepository.GetVoteAsync(chart.Id, user.Id);
             vote.Arrangement = dto.Arrangement;
-            vote.Feel = dto.Feel;
+            vote.Gameplay = dto.Gameplay;
             vote.VisualEffects = dto.VisualEffects;
             vote.Creativity = dto.Creativity;
             vote.Concord = dto.Concord;
             vote.Impression = dto.Impression;
-            vote.Total = dto.Arrangement + dto.Feel + dto.VisualEffects + dto.Creativity + dto.Concord + dto.Impression;
+            vote.Total = dto.Arrangement + dto.Gameplay + dto.VisualEffects + dto.Creativity + dto.Concord + dto.Impression;
             vote.Multiplier = GetMultiplier(user);
             vote.DateCreated = DateTimeOffset.UtcNow;
             result = await voteRepository.UpdateVoteAsync(vote);
@@ -60,12 +60,12 @@ public class VoteService(IVoteRepository voteRepository, IChartRepository chartR
             {
                 ChartId = chart.Id,
                 Arrangement = dto.Arrangement,
-                Feel = dto.Feel,
+                Gameplay = dto.Gameplay,
                 VisualEffects = dto.VisualEffects,
                 Creativity = dto.Creativity,
                 Concord = dto.Concord,
                 Impression = dto.Impression,
-                Total = dto.Arrangement + dto.Feel + dto.VisualEffects + dto.Creativity + dto.Concord +
+                Total = dto.Arrangement + dto.Gameplay + dto.VisualEffects + dto.Creativity + dto.Concord +
                         dto.Impression,
                 Multiplier = GetMultiplier(user),
                 OwnerId = user.Id,
@@ -94,7 +94,7 @@ public class VoteService(IVoteRepository voteRepository, IChartRepository chartR
         chart.Score = votes.Sum(vote => vote.Total * vote.Multiplier) / 6;
         chart.Rating = GetRating(chart.Score, amount, r);
         chart.RatingOnArrangement = GetRating(votes.Sum(vote => vote.Arrangement * vote.Multiplier), amount, r);
-        chart.RatingOnFeel = GetRating(votes.Sum(vote => vote.Feel * vote.Multiplier), amount, r);
+        chart.RatingOnGameplay = GetRating(votes.Sum(vote => vote.Gameplay * vote.Multiplier), amount, r);
         chart.RatingOnVisualEffects = GetRating(votes.Sum(vote => vote.VisualEffects * vote.Multiplier), amount, r);
         chart.RatingOnCreativity = GetRating(votes.Sum(vote => vote.Creativity * vote.Multiplier), amount, r);
         chart.RatingOnConcord = GetRating(votes.Sum(vote => vote.Concord * vote.Multiplier), amount, r);

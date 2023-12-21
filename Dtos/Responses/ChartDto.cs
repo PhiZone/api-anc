@@ -42,7 +42,7 @@ public class ChartDto
 
     public double RatingOnArrangement { get; set; }
 
-    public double RatingOnFeel { get; set; }
+    public double RatingOnGameplay { get; set; }
 
     public double RatingOnVisualEffects { get; set; }
 
