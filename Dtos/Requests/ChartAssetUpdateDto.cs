@@ -8,7 +8,7 @@ namespace PhiZoneApi.Dtos.Requests;
 public class ChartAssetUpdateDto
 {
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
-    [Range(0, 7, ErrorMessage = ResponseCodes.ValueOutOfRange)]
+    [Range(0, 5, ErrorMessage = ResponseCodes.ValueOutOfRange)]
     public ChartAssetType Type { get; set; }
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
