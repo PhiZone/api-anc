@@ -591,7 +591,6 @@ public class ChartSubmissionController(IChartSubmissionRepository chartSubmissio
     /// <response code="404">When the specified chartSubmission is not found.</response>
     /// <response code="500">When an internal server error has occurred.</response>
     [HttpDelete("{id:guid}/illustration")]
-    [Consumes("multipart/form-data")]
     [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
@@ -1041,7 +1040,6 @@ public class ChartSubmissionController(IChartSubmissionRepository chartSubmissio
     /// <response code="404">When the specified chart submission or the asset is not found.</response>
     /// <response code="500">When an internal server error has occurred.</response>
     [HttpDelete("{id:guid}/assets/{assetId:guid}")]
-    [Consumes("multipart/form-data")]
     [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
