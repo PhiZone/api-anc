@@ -404,7 +404,6 @@ public class ChartController(IChartRepository chartRepository, IOptions<DataSett
     /// <response code="404">When the specified chart is not found.</response>
     /// <response code="500">When an internal server error has occurred.</response>
     [HttpDelete("{id:guid}/file")]
-    [Consumes("multipart/form-data")]
     [Produces("application/json")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
@@ -508,7 +507,6 @@ public class ChartController(IChartRepository chartRepository, IOptions<DataSett
     /// <response code="404">When the specified chart is not found.</response>
     /// <response code="500">When an internal server error has occurred.</response>
     [HttpDelete("{id:guid}/illustration")]
-    [Consumes("multipart/form-data")]
     [Produces("application/json")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
@@ -906,7 +904,6 @@ public class ChartController(IChartRepository chartRepository, IOptions<DataSett
     /// <response code="404">When the specified chart or the asset is not found.</response>
     /// <response code="500">When an internal server error has occurred.</response>
     [HttpDelete("{id:guid}/assets/{assetId:guid}")]
-    [Consumes("multipart/form-data")]
     [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
