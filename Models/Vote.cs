@@ -8,7 +8,7 @@ public class Vote : Resource
 
     public int Arrangement { get; set; }
 
-    public int Feel { get; set; }
+    public int Gameplay { get; set; }
 
     public int VisualEffects { get; set; }
 

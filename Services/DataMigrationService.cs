@@ -848,7 +848,7 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
                 {
                     ChartId = chartId,
                     Arrangement = reader.GetInt32("arrangement"),
-                    Feel = reader.GetInt32("feel"),
+                    Gameplay = reader.GetInt32("feel"),
                     VisualEffects = reader.GetInt32("visual_effects"),
                     Creativity = reader.GetInt32("innovativeness"),
                     Concord = reader.GetInt32("concord"),

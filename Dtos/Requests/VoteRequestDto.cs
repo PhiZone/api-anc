@@ -11,7 +11,7 @@ public class VoteRequestDto
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     [Range(0, 5, ErrorMessage = ResponseCodes.ValueOutOfRange)]
-    public int Feel { get; set; }
+    public int Gameplay { get; set; }
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     [Range(0, 5, ErrorMessage = ResponseCodes.ValueOutOfRange)]

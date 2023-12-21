@@ -49,11 +49,11 @@ public class ChartFilterDto : PublicResourceFilterDto<Chart>
 
     public List<double>? RangeRatingOnArrangement { get; set; }
 
-    public double? MinRatingOnFeel { get; set; }
+    public double? MinRatingOnGameplay { get; set; }
 
-    public double? MaxRatingOnFeel { get; set; }
+    public double? MaxRatingOnGameplay { get; set; }
 
-    public List<double>? RangeRatingOnFeel { get; set; }
+    public List<double>? RangeRatingOnGameplay { get; set; }
 
     public double? MinRatingOnVisualEffects { get; set; }
 

@@ -14,11 +14,11 @@ public class VoteFilterDto : FilterDto<Vote>
 
     public List<int>? RangeArrangement { get; set; }
 
-    public int? MinFeel { get; set; }
+    public int? MinGameplay { get; set; }
 
-    public int? MaxFeel { get; set; }
+    public int? MaxGameplay { get; set; }
 
-    public List<int>? RangeFeel { get; set; }
+    public List<int>? RangeGameplay { get; set; }
 
     public int? MinVisualEffects { get; set; }
 
