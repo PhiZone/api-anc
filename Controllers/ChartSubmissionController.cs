@@ -915,6 +915,7 @@ public class ChartSubmissionController(IChartSubmissionRepository chartSubmissio
         var chartAsset = await chartAssetSubmissionRepository.GetChartAssetSubmissionAsync(assetId);
 
         var dto = mapper.Map<ChartAssetUpdateDto>(chartAsset);
+        
         patchDocument.ApplyTo(dto, ModelState);
 
         if (!TryValidateModel(dto))
@@ -924,6 +925,16 @@ public class ChartSubmissionController(IChartSubmissionRepository chartSubmissio
                 Code = ResponseCodes.InvalidData,
                 Errors = ModelErrorTranslator.Translate(ModelState)
             });
+
+        if (dto.Name != chartAsset.Name && await chartAssetSubmissionRepository.CountChartAssetSubmissionsAsync(e =>
+                e.Name == dto.Name && e.ChartSubmissionId == id) > 0)
+        {
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.NameOccupied
+            });
+        }
+        
         var notify = chartSubmission.VolunteerStatus != RequestStatus.Waiting;
 
         chartAsset.Type = dto.Type;

@@ -806,6 +806,15 @@ public class ChartController(IChartRepository chartRepository, IOptions<DataSett
                 Errors = ModelErrorTranslator.Translate(ModelState)
             });
 
+        if (dto.Name != chartAsset.Name && await chartAssetRepository.CountChartAssetsAsync(e =>
+                e.Name == dto.Name && e.ChartId == id) > 0)
+        {
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.NameOccupied
+            });
+        }
+
         chartAsset.Type = dto.Type;
         chartAsset.Name = dto.Name;
         chartAsset.DateUpdated = DateTimeOffset.UtcNow;
