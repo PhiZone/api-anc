@@ -6,7 +6,7 @@ public class VolunteerVote : Resource
 
     public ChartSubmission Chart { get; set; } = null!;
 
-    public int Score { get; set; }
+    public double Score { get; set; }
 
     public string Message { get; set; } = null!;
 }
