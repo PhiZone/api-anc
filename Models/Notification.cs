@@ -9,7 +9,7 @@ public class Notification : Resource
     public string Content { get; set; } = null!;
 
     public int? OperatorId { get; set; }
-    
+
     public User? Operator { get; set; }
 
     public DateTimeOffset? DateRead { get; set; }

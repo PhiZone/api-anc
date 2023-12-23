@@ -17,6 +17,4 @@ public static class LogEvents
     public const int DataMigration = 4000;
     public const int ChartMigration = 4001;
     public const int FileMigration = 4002;
-    public const int QualificationMigration = 4003;
-    public const int RoleMigration = 4004;
 }

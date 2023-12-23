@@ -49,7 +49,8 @@ public class VoteService(IVoteRepository voteRepository, IChartRepository chartR
             vote.Creativity = dto.Creativity;
             vote.Concord = dto.Concord;
             vote.Impression = dto.Impression;
-            vote.Total = dto.Arrangement + dto.Gameplay + dto.VisualEffects + dto.Creativity + dto.Concord + dto.Impression;
+            vote.Total = dto.Arrangement + dto.Gameplay + dto.VisualEffects + dto.Creativity + dto.Concord +
+                         dto.Impression;
             vote.Multiplier = GetMultiplier(user);
             vote.DateCreated = DateTimeOffset.UtcNow;
             result = await voteRepository.UpdateVoteAsync(vote);

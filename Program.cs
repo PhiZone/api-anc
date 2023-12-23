@@ -20,7 +20,7 @@ using PhiZoneApi.Services;
 using StackExchange.Redis;
 using Role = PhiZoneApi.Models.Role;
 
-var newCulture = (CultureInfo)Thread.CurrentThread.CurrentCulture.Clone();
+var newCulture = (CultureInfo)CultureInfo.CurrentCulture.Clone();
 newCulture.NumberFormat.PercentPositivePattern = 1;
 Thread.CurrentThread.CurrentCulture = newCulture;
 

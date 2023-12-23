@@ -63,7 +63,7 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, int>
             .UsingEntity<TapUserRelation>(
                 l => l.HasOne<Application>(e => e.Application).WithMany(e => e.TapUserRelations),
                 r => r.HasOne<User>(e => e.User).WithMany(e => e.TapUserRelations));
-        
+
         builder.Entity<EventTeam>()
             .HasMany(e => e.Participants)
             .WithMany(e => e.EventTeams)

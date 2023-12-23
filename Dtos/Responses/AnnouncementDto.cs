@@ -19,9 +19,9 @@ public class AnnouncementDto
     public int CommentCount { get; set; }
 
     public int LikeCount { get; set; }
-    
+
     public Guid? ResourceId { get; set; }
-    
+
     public PublicResourceType ResourceType { get; set; }
 
     public DateTimeOffset? DateLiked { get; set; }

@@ -480,7 +480,7 @@ public class SongSubmissionController(ISongSubmissionRepository songSubmissionRe
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
         var notify = songSubmission.Status != RequestStatus.Waiting;
-        
+
         if (dto.File != null)
         {
             songSubmission.Illustration =

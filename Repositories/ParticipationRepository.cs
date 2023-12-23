@@ -9,27 +9,32 @@ namespace PhiZoneApi.Repositories;
 
 public class ParticipationRepository(ApplicationDbContext context) : IParticipationRepository
 {
-    public async Task<ICollection<Participation>> GetEventTeamsAsync(int participantId, List<string> order, List<bool> desc,
+    public async Task<ICollection<Participation>> GetEventTeamsAsync(int participantId, List<string> order,
+        List<bool> desc,
         int position,
         int take, Expression<Func<Participation, bool>>? predicate = null)
     {
-        var result = context.Participations.Where(participation => participation.ParticipantId == participantId).OrderBy(order, desc);
+        var result = context.Participations.Where(participation => participation.ParticipantId == participantId)
+            .OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
         result = result.Skip(position);
         return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
 
-    public async Task<ICollection<Participation>> GetParticipantsAsync(Guid eventTeamId, List<string> order, List<bool> desc,
+    public async Task<ICollection<Participation>> GetParticipantsAsync(Guid eventTeamId, List<string> order,
+        List<bool> desc,
         int position,
         int take, Expression<Func<Participation, bool>>? predicate = null)
     {
-        var result = context.Participations.Where(participation => participation.EventTeamId == eventTeamId).OrderBy(order, desc);
+        var result = context.Participations.Where(participation => participation.EventTeamId == eventTeamId)
+            .OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
         result = result.Skip(position);
         return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
 
-    public async Task<ICollection<Participation>> GetParticipationsAsync(List<string> order, List<bool> desc, int position,
+    public async Task<ICollection<Participation>> GetParticipationsAsync(List<string> order, List<bool> desc,
+        int position,
         int take,
         Expression<Func<Participation, bool>>? predicate = null)
     {
@@ -82,23 +87,27 @@ public class ParticipationRepository(ApplicationDbContext context) : IParticipat
             participation.EventTeamId == eventTeamId && participation.ParticipantId == participantId);
     }
 
-    public async Task<int> CountEventTeamsAsync(int participantId, Expression<Func<Participation, bool>>? predicate = null)
+    public async Task<int> CountEventTeamsAsync(int participantId,
+        Expression<Func<Participation, bool>>? predicate = null)
     {
         if (predicate != null)
             return await context.Participations.Where(participation => participation.ParticipantId == participantId)
                 .Where(predicate)
                 .CountAsync();
 
-        return await context.Participations.Where(participation => participation.ParticipantId == participantId).CountAsync();
+        return await context.Participations.Where(participation => participation.ParticipantId == participantId)
+            .CountAsync();
     }
 
-    public async Task<int> CountParticipantsAsync(Guid eventTeamId, Expression<Func<Participation, bool>>? predicate = null)
+    public async Task<int> CountParticipantsAsync(Guid eventTeamId,
+        Expression<Func<Participation, bool>>? predicate = null)
     {
         if (predicate != null)
             return await context.Participations.Where(participation => participation.EventTeamId == eventTeamId)
                 .Where(predicate)
                 .CountAsync();
 
-        return await context.Participations.Where(participation => participation.EventTeamId == eventTeamId).CountAsync();
+        return await context.Participations.Where(participation => participation.EventTeamId == eventTeamId)
+            .CountAsync();
     }
 }

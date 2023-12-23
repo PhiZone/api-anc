@@ -198,7 +198,8 @@ public class AnnouncementController(IAnnouncementRepository announcementReposito
         var announcement = await announcementRepository.GetAnnouncementAsync(id);
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!(resourceService.HasPermission(currentUser, UserRole.Administrator) || currentUser.Id == announcement.OwnerId))
+        if (!(resourceService.HasPermission(currentUser, UserRole.Administrator) ||
+              currentUser.Id == announcement.OwnerId))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -256,10 +257,11 @@ public class AnnouncementController(IAnnouncementRepository announcementReposito
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        
+
         var announcement = await announcementRepository.GetAnnouncementAsync(id);
 
-        if (!(resourceService.HasPermission(currentUser, UserRole.Administrator) || currentUser.Id == announcement.OwnerId))
+        if (!(resourceService.HasPermission(currentUser, UserRole.Administrator) ||
+              currentUser.Id == announcement.OwnerId))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {

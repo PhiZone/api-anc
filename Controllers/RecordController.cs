@@ -241,7 +241,8 @@ public class RecordController(IRecordRepository recordRepository, IOptions<DataS
 
         logger.LogInformation(LogEvents.RecordInfo,
             "New record: {User} - {Chart} {Score} {Accuracy} {Rks} {StdDeviation}ms",
-            player.UserName, await resourceService.GetDisplayName(chart), score, accuracy.ToString("P2"),
+            player.UserName, await resourceService.GetDisplayName(chart), score,
+            accuracy.ToString("P2", Thread.CurrentThread.CurrentCulture),
             rks.ToString("N3"), dto.StdDeviation.ToString("N3"));
 
         var record = new Record

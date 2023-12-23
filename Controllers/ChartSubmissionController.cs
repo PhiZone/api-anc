@@ -265,8 +265,7 @@ public class ChartSubmissionController(IChartSubmissionRepository chartSubmissio
             VolunteerStatus = RequestStatus.Waiting,
             AdmissionStatus =
                 song != null
-                    ?
-                    song.OwnerId == currentUser.Id || song.Accessibility == Accessibility.AllowAny
+                    ? song.OwnerId == currentUser.Id || song.Accessibility == Accessibility.AllowAny
                         ? RequestStatus.Approved
                         : RequestStatus.Waiting
                     : songSubmission!.OwnerId == currentUser.Id ||
@@ -783,7 +782,8 @@ public class ChartSubmissionController(IChartSubmissionRepository chartSubmissio
 
         var dto = mapper.Map<ChartAssetSubmissionDto>(chartAsset);
 
-        return Ok(new ResponseDto<ChartAssetSubmissionDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
+        return Ok(new ResponseDto<ChartAssetSubmissionDto>
+            { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
     }
 
     /// <summary>
@@ -831,12 +831,10 @@ public class ChartSubmissionController(IChartSubmissionRepository chartSubmissio
 
         if (await chartAssetSubmissionRepository.CountChartAssetSubmissionsAsync(e =>
                 e.Name == dto.Name && e.ChartSubmissionId == id) > 0)
-        {
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.NameOccupied
             });
-        }
 
         var chartAsset = new ChartAssetSubmission
         {
@@ -852,7 +850,7 @@ public class ChartSubmissionController(IChartSubmissionRepository chartSubmissio
             DateCreated = DateTimeOffset.UtcNow,
             DateUpdated = DateTimeOffset.UtcNow
         };
-        
+
         var notify = chartSubmission.VolunteerStatus != RequestStatus.Waiting;
 
         chartAsset.Type = dto.Type;
@@ -924,7 +922,7 @@ public class ChartSubmissionController(IChartSubmissionRepository chartSubmissio
         var chartAsset = await chartAssetSubmissionRepository.GetChartAssetSubmissionAsync(assetId);
 
         var dto = mapper.Map<ChartAssetUpdateDto>(chartAsset);
-        
+
         patchDocument.ApplyTo(dto, ModelState);
 
         if (!TryValidateModel(dto))
@@ -937,13 +935,11 @@ public class ChartSubmissionController(IChartSubmissionRepository chartSubmissio
 
         if (dto.Name != chartAsset.Name && await chartAssetSubmissionRepository.CountChartAssetSubmissionsAsync(e =>
                 e.Name == dto.Name && e.ChartSubmissionId == id) > 0)
-        {
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.NameOccupied
             });
-        }
-        
+
         var notify = chartSubmission.VolunteerStatus != RequestStatus.Waiting;
 
         chartAsset.Type = dto.Type;

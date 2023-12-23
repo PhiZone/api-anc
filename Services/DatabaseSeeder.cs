@@ -1,10 +1,7 @@
-﻿using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using OpenIddict.Abstractions;
-using PhiZoneApi.Constants;
 using PhiZoneApi.Data;
 using PhiZoneApi.Models;
-using Role = PhiZoneApi.Models.Role;
 
 // ReSharper disable StringLiteralTypo
 

@@ -9,7 +9,7 @@ public class Event : PublicResource
     public string Illustration { get; set; } = null!;
 
     public string Illustrator { get; set; } = null!;
-    
+
     public override string GetDisplay()
     {
         return Subtitle != null ? $"{Title} - {Subtitle}" : Title;
