@@ -852,12 +852,22 @@ public class ChartSubmissionController(IChartSubmissionRepository chartSubmissio
             DateCreated = DateTimeOffset.UtcNow,
             DateUpdated = DateTimeOffset.UtcNow
         };
+        
+        var notify = chartSubmission.VolunteerStatus != RequestStatus.Waiting;
+
+        chartAsset.Type = dto.Type;
+        chartAsset.Name = dto.Name;
+        chartAsset.DateUpdated = DateTimeOffset.UtcNow;
+        chartSubmission.Status = RequestStatus.Waiting;
+        chartSubmission.VolunteerStatus = RequestStatus.Waiting;
+        chartSubmission.DateUpdated = DateTimeOffset.UtcNow;
 
         if (!await chartAssetSubmissionRepository.CreateChartAssetSubmissionAsync(chartAsset) ||
             !await chartSubmissionRepository.UpdateChartSubmissionAsync(chartSubmission))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
+        if (notify) await feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
         return StatusCode(StatusCodes.Status201Created);
     }
 
@@ -875,7 +885,7 @@ public class ChartSubmissionController(IChartSubmissionRepository chartSubmissio
     /// <response code="404">When the specified chart submission or the asset is not found.</response>
     /// <response code="500">When an internal server error has occurred.</response>
     [HttpPatch("{id:guid}/assets/{assetId:guid}")]
-    [Consumes("multipart/form-data")]
+    [Consumes("application/json")]
     [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
