@@ -563,7 +563,7 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
 
         return NoContent();
     }
-    
+
     /// <summary>
     ///     Removes an admission received by a collection.
     /// </summary>
@@ -721,7 +721,7 @@ public class AdmissionController(IAdmissionRepository admissionRepository, UserM
 
         return NoContent();
     }
-    
+
     /// <summary>
     ///     Reviews an admission received by a collection.
     /// </summary>

@@ -29,14 +29,14 @@ public class PetController : Controller
     private readonly IDtoMapper _dtoMapper;
     private readonly IFeishuService _feishuService;
     private readonly IFilterService _filterService;
+    private readonly IMeilisearchService _meilisearchService;
     private readonly INotificationService _notificationService;
+    private readonly IPetAnswerRepository _petAnswerRepository;
+    private readonly IPetQuestionRepository _petQuestionRepository;
     private readonly IConnectionMultiplexer _redis;
     private readonly IResourceService _resourceService;
     private readonly Dictionary<UserRole, int> _scores;
     private readonly UserManager<User> _userManager;
-    private readonly IMeilisearchService _meilisearchService;
-    private readonly IPetAnswerRepository _petAnswerRepository;
-    private readonly IPetQuestionRepository _petQuestionRepository;
 
     public PetController(IConnectionMultiplexer redis, IPetQuestionRepository petQuestionRepository,
         IPetAnswerRepository petAnswerRepository, UserManager<User> userManager, IResourceService resourceService,
@@ -56,8 +56,14 @@ public class PetController : Controller
         _petAnswerRepository = petAnswerRepository;
         _scores = new Dictionary<UserRole, int>
             {
-                { UserRole.Qualified, config.GetSection("PrivilegeEscalationTest").GetValue<int>(UserRole.Qualified.ToString()) },
-                { UserRole.Volunteer, config.GetSection("PrivilegeEscalationTest").GetValue<int>(UserRole.Volunteer.ToString()) }
+                {
+                    UserRole.Qualified,
+                    config.GetSection("PrivilegeEscalationTest").GetValue<int>(UserRole.Qualified.ToString())
+                },
+                {
+                    UserRole.Volunteer,
+                    config.GetSection("PrivilegeEscalationTest").GetValue<int>(UserRole.Volunteer.ToString())
+                }
             }.OrderByDescending(e => e.Value)
             .ToDictionary(pair => pair.Key, pair => pair.Value);
     }

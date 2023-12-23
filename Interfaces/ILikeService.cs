@@ -5,7 +5,7 @@ namespace PhiZoneApi.Interfaces;
 public interface ILikeService
 {
     Task<bool> CreateLikeAsync(Chapter chapter, int userId, DateTimeOffset? dateCreated = null);
-    
+
     Task<bool> CreateLikeAsync(Collection collection, int userId, DateTimeOffset? dateCreated = null);
 
     Task<bool> CreateLikeAsync(Song song, int userId, DateTimeOffset? dateCreated = null);
@@ -23,7 +23,7 @@ public interface ILikeService
     Task<bool> CreateLikeAsync(Announcement announcement, int userId);
 
     Task<bool> RemoveLikeAsync(Chapter chapter, int userId);
-    
+
     Task<bool> RemoveLikeAsync(Collection collection, int userId);
 
     Task<bool> RemoveLikeAsync(Song song, int userId);

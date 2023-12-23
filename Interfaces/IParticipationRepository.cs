@@ -5,10 +5,12 @@ namespace PhiZoneApi.Interfaces;
 
 public interface IParticipationRepository
 {
-    Task<ICollection<Participation>> GetEventTeamsAsync(int participantId, List<string> order, List<bool> desc, int position,
+    Task<ICollection<Participation>> GetEventTeamsAsync(int participantId, List<string> order, List<bool> desc,
+        int position,
         int take, Expression<Func<Participation, bool>>? predicate = null);
 
-    Task<ICollection<Participation>> GetParticipantsAsync(Guid eventTeamId, List<string> order, List<bool> desc, int position,
+    Task<ICollection<Participation>> GetParticipantsAsync(Guid eventTeamId, List<string> order, List<bool> desc,
+        int position,
         int take, Expression<Func<Participation, bool>>? predicate = null);
 
     Task<ICollection<Participation>> GetParticipationsAsync(List<string> order, List<bool> desc, int position, int take,

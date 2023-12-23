@@ -121,7 +121,7 @@ public class SubmissionService(ISongRepository songRepository, INotificationServ
                         songSubmission.GetDisplay())
                 }
             });
-        
+
         if (isOriginal)
         {
             if (!await authorshipRepository.AuthorshipExistsAsync(song.Id, song.OwnerId))
@@ -134,6 +134,7 @@ public class SubmissionService(ISongRepository songRepository, INotificationServ
                 };
                 await authorshipRepository.CreateAuthorshipAsync(authorship);
             }
+
             foreach (var collaboration in await collaborationRepository.GetCollaborationsAsync(
                          new List<string> { "DateCreated" }, new List<bool> { false }, 0, -1,
                          e => e.SubmissionId == songSubmission.Id && e.Status == RequestStatus.Approved))
@@ -149,7 +150,7 @@ public class SubmissionService(ISongRepository songRepository, INotificationServ
                 await authorshipRepository.CreateAuthorshipAsync(authorship);
             }
         }
-        
+
         if (description != null && mentions != null)
             await notificationService.NotifyMentions(mentions, owner,
                 resourceService.GetRichText<Song>(song.Id.ToString(), songSubmission.Description!));
@@ -276,15 +277,9 @@ public class SubmissionService(ISongRepository songRepository, INotificationServ
                 new List<bool> { false }, 0, -1, e => e.ChartId == chart.Id)).Where(asset =>
                 assetSubmissions.Count(assetSubmission => assetSubmission.RepresentationId == asset.Id) == 0);
 
-        foreach (var submission in assetSubmissions)
-        {
-            await ApproveChartAsset(submission, chart.Id);
-        }
+        foreach (var submission in assetSubmissions) await ApproveChartAsset(submission, chart.Id);
 
-        foreach (var asset in assetsToDelete)
-        {
-            await chartAssetRepository.RemoveChartAssetAsync(asset.Id);
-        }
+        foreach (var asset in assetsToDelete) await chartAssetRepository.RemoveChartAssetAsync(asset.Id);
 
         await notificationService.Notify(owner, null, NotificationType.System, "chart-submission-approval",
             new Dictionary<string, string>
@@ -306,6 +301,7 @@ public class SubmissionService(ISongRepository songRepository, INotificationServ
             };
             await authorshipRepository.CreateAuthorshipAsync(authorship);
         }
+
         foreach (var collaboration in await collaborationRepository.GetCollaborationsAsync(
                      new List<string> { "DateCreated" }, new List<bool> { false }, 0, -1,
                      e => e.SubmissionId == chartSubmission.Id && e.Status == RequestStatus.Approved))
@@ -324,6 +320,20 @@ public class SubmissionService(ISongRepository songRepository, INotificationServ
         if (description != null && mentions != null)
             await notificationService.NotifyMentions(mentions, owner,
                 resourceService.GetRichText<Chart>(chart.Id.ToString(), chartSubmission.Description!));
+    }
+
+    public async Task RejectChart(ChartSubmission chartSubmission)
+    {
+        await notificationService.Notify((await userManager.FindByIdAsync(chartSubmission.OwnerId.ToString()))!, null,
+            NotificationType.System, "chart-submission-rejection",
+            new Dictionary<string, string>
+            {
+                {
+                    "Chart",
+                    resourceService.GetRichText<ChartSubmission>(chartSubmission.Id.ToString(),
+                        await resourceService.GetDisplayName(chartSubmission))
+                }
+            });
     }
 
     private async Task ApproveChartAsset(ChartAssetSubmission submission, Guid chartId)
@@ -360,19 +370,5 @@ public class SubmissionService(ISongRepository songRepository, INotificationServ
         chartAsset.OwnerId = submission.OwnerId;
         chartAsset.DateUpdated = DateTimeOffset.UtcNow;
         await chartAssetRepository.UpdateChartAssetAsync(chartAsset);
-    }
-
-    public async Task RejectChart(ChartSubmission chartSubmission)
-    {
-        await notificationService.Notify((await userManager.FindByIdAsync(chartSubmission.OwnerId.ToString()))!, null,
-            NotificationType.System, "chart-submission-rejection",
-            new Dictionary<string, string>
-            {
-                {
-                    "Chart",
-                    resourceService.GetRichText<ChartSubmission>(chartSubmission.Id.ToString(),
-                        await resourceService.GetDisplayName(chartSubmission))
-                }
-            });
     }
 }

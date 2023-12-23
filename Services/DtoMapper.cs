@@ -196,12 +196,14 @@ public class DtoMapper(IUserRelationRepository userRelationRepository, IRegionRe
     public async Task<T> MapChartCollectionAsync<T>(Admission admission, User? currentUser = null)
         where T : CollectionAdmitterDto
     {
-        var dto = await MapCollectionAsync<T>(await collectionRepository.GetCollectionAsync(admission.AdmitterId), currentUser);
+        var dto = await MapCollectionAsync<T>(await collectionRepository.GetCollectionAsync(admission.AdmitterId),
+            currentUser);
         dto.Label = admission.Label;
         return dto;
     }
 
-    public async Task<T> MapCollectionChartAsync<T>(Admission admission, User? currentUser = null) where T : ChartAdmitteeDto
+    public async Task<T> MapCollectionChartAsync<T>(Admission admission, User? currentUser = null)
+        where T : ChartAdmitteeDto
     {
         var dto = await MapChartAsync<T>(await chartRepository.GetChartAsync(admission.AdmitteeId), currentUser);
         dto.Label = admission.Label;

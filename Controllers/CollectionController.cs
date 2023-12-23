@@ -71,7 +71,8 @@ public class CollectionController(ICollectionRepository collectionRepository, IO
 
         var list = new List<CollectionDto>();
 
-        foreach (var collection in collections) list.Add(await dtoMapper.MapCollectionAsync<CollectionDto>(collection, currentUser));
+        foreach (var collection in collections)
+            list.Add(await dtoMapper.MapCollectionAsync<CollectionDto>(collection, currentUser));
 
         return Ok(new ResponseDto<IEnumerable<CollectionDto>>
         {
@@ -358,7 +359,8 @@ public class CollectionController(ICollectionRepository collectionRepository, IO
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        var admissions = await collectionRepository.GetCollectionChartsAsync(id, dto.Order, dto.Desc, position, dto.PerPage,
+        var admissions = await collectionRepository.GetCollectionChartsAsync(id, dto.Order, dto.Desc, position,
+            dto.PerPage,
             predicateExpr);
         var list = new List<ChartAdmitteeDto>();
         var total = await collectionRepository.CountCollectionChartsAsync(id, predicateExpr);
