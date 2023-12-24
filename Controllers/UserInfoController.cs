@@ -102,6 +102,12 @@ public class UserInfoController(UserManager<User> userManager, IDtoMapper mapper
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
             });
 
+        if (await tapUserRelationRepository.RelationExistsAsync(dto.ApplicationId, currentUser.Id))
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
+            });
+
         var unionId = dto.UnionId;
         if (unionId == null)
         {
@@ -121,12 +127,11 @@ public class UserInfoController(UserManager<User> userManager, IDtoMapper mapper
             unionId = responseDto.Data.Unionid;
         }
 
-        var targetUser = await userRepository.GetUserByTapUnionId(dto.ApplicationId, unionId);
-        if (targetUser != null)
+        if (await userRepository.GetUserByTapUnionId(dto.ApplicationId, unionId) != null)
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief,
-                Code = targetUser.Id == currentUser.Id ? ResponseCodes.AlreadyDone : ResponseCodes.BindingOccupied
+                Code = ResponseCodes.BindingOccupied
             });
 
         var tapUserRelation = new TapUserRelation
@@ -175,7 +180,6 @@ public class UserInfoController(UserManager<User> userManager, IDtoMapper mapper
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ApplicationNotFound
             });
-
 
         if (!await tapUserRelationRepository.RelationExistsAsync(applicationId, currentUser.Id))
             return BadRequest(new ResponseDto<object>
