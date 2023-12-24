@@ -1,4 +1,5 @@
-﻿using System.Security.Cryptography;
+﻿using System.Globalization;
+using System.Security.Cryptography;
 using System.Text;
 using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
@@ -239,10 +240,12 @@ public class RecordController(IRecordRepository recordRepository, IOptions<DataS
                 new List<bool> { true }, 0, 1,
                 record => record.ChartId == info.ChartId && record.OwnerId == player.Id)).FirstOrDefault()!.Accuracy;
 
+        var culture = (CultureInfo)CultureInfo.CurrentCulture.Clone();
+        culture.NumberFormat.PercentPositivePattern = 1;
         logger.LogInformation(LogEvents.RecordInfo,
             "New record: {User} - {Chart} {Score} {Accuracy} {Rks} {StdDeviation}ms",
             player.UserName, await resourceService.GetDisplayName(chart), score,
-            accuracy.ToString("P2", Thread.CurrentThread.CurrentCulture),
+            accuracy.ToString("P2", culture),
             rks.ToString("N3"), dto.StdDeviation.ToString("N3"));
 
         var record = new Record
