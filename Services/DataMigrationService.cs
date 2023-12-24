@@ -1,4 +1,5 @@
 ﻿using System.Data;
+using System.Globalization;
 using System.Net.Sockets;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Identity;
@@ -659,8 +660,10 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
                 var rksFactor = _recordService.CalculateRksFactor(perfectJudgment, goodJudgment);
                 var rks = _recordService.CalculateRks(perfect, goodEarly + goodLate, bad, miss, chart.Difficulty, 40) *
                           rksFactor;
+                var culture = (CultureInfo)CultureInfo.CurrentCulture.Clone();
+                culture.NumberFormat.PercentPositivePattern = 1;
                 _logger.LogInformation(LogEvents.DataMigration, "Migrating Record #{Id} {Score} {Accuracy}", index,
-                    score, accuracy.ToString("P2", Thread.CurrentThread.CurrentCulture));
+                    score, accuracy.ToString("P2", culture));
                 var appId = await reader.GetInt("app_id") ?? 1;
 
                 var record = new Record

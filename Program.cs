@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Reflection;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -19,10 +18,6 @@ using PhiZoneApi.Repositories;
 using PhiZoneApi.Services;
 using StackExchange.Redis;
 using Role = PhiZoneApi.Models.Role;
-
-var newCulture = (CultureInfo)CultureInfo.CurrentCulture.Clone();
-newCulture.NumberFormat.PercentPositivePattern = 1;
-Thread.CurrentThread.CurrentCulture = newCulture;
 
 var builder = WebApplication.CreateBuilder(args);
 
