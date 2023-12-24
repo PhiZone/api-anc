@@ -84,7 +84,7 @@ public class MailService(IOptions<MailSettings> options, ITemplateService templa
             emailMessage.Body = emailBodyBuilder.ToMessageBody();
 
             using var mailClient = new SmtpClient();
-            await mailClient.ConnectAsync(_settings.Server, _settings.Port, SecureSocketOptions.SslOnConnect);
+            await mailClient.ConnectAsync(_settings.Server, _settings.Port, SecureSocketOptions.StartTlsWhenAvailable);
             await mailClient.AuthenticateAsync(_settings.UserName, _settings.Password);
             await mailClient.SendAsync(emailMessage);
             await mailClient.DisconnectAsync(true);
