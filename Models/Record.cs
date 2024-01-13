@@ -1,6 +1,8 @@
-﻿namespace PhiZoneApi.Models;
+﻿using PhiZoneApi.Interfaces;
 
-public class Record : LikeableResource
+namespace PhiZoneApi.Models;
+
+public class Record : LikeableResource, IComparable<Record>
 {
     public Guid ChartId { get; set; }
 
@@ -39,5 +41,18 @@ public class Record : LikeableResource
     public override string GetDisplay()
     {
         return $"{Score} {Accuracy:P2}";
+    }
+
+    public double GetScore()
+    {
+        return Rks;
+    }
+
+    public int CompareTo(Record? other)
+    {
+        if (ReferenceEquals(this, other)) return 0;
+        if (ReferenceEquals(null, other)) return 1;
+        if (Math.Abs(Rks - other.Rks) < 1e-5) return DateCreated.CompareTo(other.DateCreated);
+        return Score > other.Score ? -1 : 1;
     }
 }

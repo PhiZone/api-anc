@@ -3,7 +3,7 @@ using PhiZoneApi.Enums;
 
 namespace PhiZoneApi.Models;
 
-public class EventTeam : Resource
+public class EventTeam : LikeableResource, IComparable<EventTeam>
 {
     public string Name { get; set; } = null!;
 
@@ -21,8 +21,18 @@ public class EventTeam : Resource
 
     [JsonIgnore] public IEnumerable<Participation> Participations { get; set; } = new List<Participation>();
 
-    public string GetDisplay()
+    public override string GetDisplay()
     {
         return Name;
+    }
+
+    public int CompareTo(EventTeam? other)
+    {
+        if (ReferenceEquals(this, other)) return 0;
+        if (ReferenceEquals(null, other)) return 1;
+        if (Score == null) return 1;
+        if (other.Score == null) return -1;
+        if (Math.Abs(Score.Value - other.Score.Value) < 1e-5) return 0;
+        return Score > other.Score ? -1 : 1;
     }
 }

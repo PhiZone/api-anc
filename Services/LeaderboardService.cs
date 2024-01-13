@@ -1,14 +1,20 @@
+
 namespace PhiZoneApi.Services;
 
 public class LeaderboardService
 {
-    public class Leaderboard<T>
+    public class Leaderboard<T> where T : IComparable<T>
     {
-        private readonly SortedSet<T> _set;
+        private readonly SortedSet<T> _set = new();
 
-        public Leaderboard(IComparer<T> comparer)
+        public IEnumerable<T> Range(int skip, int take)
         {
-            _set = new SortedSet<T>(comparer);
+            return _set.Skip(skip).Take(take);
+        }
+
+        public SortedSet<T> GetSet()
+        {
+            return _set;
         }
     }
 }
