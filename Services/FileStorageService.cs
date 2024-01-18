@@ -58,7 +58,7 @@ public class FileStorageService : IFileStorageService
 
     private static string NormalizeFileName(string input)
     {
-        var chars = Path.GetInvalidFileNameChars().Concat(new[] { ' ' });
+        var chars = Path.GetInvalidFileNameChars().Concat([ ' ' ]);
         return HttpUtility.UrlEncode(chars.Aggregate(Romanize(input),
             (current, invalidChar) => current.Replace(invalidChar.ToString(), string.Empty)));
     }
@@ -71,12 +71,12 @@ public class FileStorageService : IFileStorageService
         input = chinese.Process(input);
         var dictionary = new Dictionary<List<char>, char>
         {
-            { new List<char> { 'ā', 'á', 'ǎ', 'à', 'ɑ' }, 'a' },
-            { new List<char> { 'ê', 'ē', 'é', 'ě', 'è' }, 'e' },
-            { new List<char> { 'ī', 'í', 'ǐ', 'ì' }, 'i' },
-            { new List<char> { 'ō', 'ó', 'ǒ', 'ò' }, 'o' },
-            { new List<char> { 'ū', 'ú', 'ǔ', 'ù', 'ǖ', 'ǘ', 'ǚ', 'ǜ', 'ü' }, 'u' },
-            { new List<char> { 'ń', 'ň' }, 'n' }
+            { ['ā', 'á', 'ǎ', 'à', 'ɑ'], 'a' },
+            { ['ê', 'ē', 'é', 'ě', 'è'], 'e' },
+            { ['ī', 'í', 'ǐ', 'ì'], 'i' },
+            { ['ō', 'ó', 'ǒ', 'ò'], 'o' },
+            { ['ū', 'ú', 'ǔ', 'ù', 'ǖ', 'ǘ', 'ǚ', 'ǜ', 'ü'], 'u' },
+            { ['ń', 'ň'], 'n' }
         };
         foreach (var entry in dictionary)
         foreach (var character in entry.Key.Where(character => input.Contains(character)))
