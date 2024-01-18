@@ -17,6 +17,10 @@ public class EventTeam : LikeableResource, IComparable<EventTeam>
 
     public double? Score { get; set; }
 
+    public Guid DivisionId { get; set; }
+
+    public EventDivision Division { get; set; } = null!;
+
     [JsonIgnore] public IEnumerable<User> Participants { get; set; } = new List<User>();
 
     [JsonIgnore] public IEnumerable<Participation> Participations { get; set; } = new List<Participation>();

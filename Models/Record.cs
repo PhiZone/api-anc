@@ -1,6 +1,4 @@
-﻿using PhiZoneApi.Interfaces;
-
-namespace PhiZoneApi.Models;
+﻿namespace PhiZoneApi.Models;
 
 public class Record : LikeableResource, IComparable<Record>
 {
@@ -42,12 +40,6 @@ public class Record : LikeableResource, IComparable<Record>
     {
         return $"{Score} {Accuracy:P2}";
     }
-
-    public double GetScore()
-    {
-        return Rks;
-    }
-
     public int CompareTo(Record? other)
     {
         if (ReferenceEquals(this, other)) return 0;
