@@ -20,15 +20,15 @@
         <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="4.8.0"/>
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.8.0"/>
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.8.0"/>
-        <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.0"/>
+        <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.1"/>
         <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.0"/>
         <PackageReference Include="NVorbis" Version="0.10.5"/>
-        <PackageReference Include="OpenIddict.AspNetCore" Version="4.10.1"/>
-        <PackageReference Include="OpenIddict.EntityFrameworkCore" Version="4.10.1"/>
+        <PackageReference Include="OpenIddict.AspNetCore" Version="5.1.0"/>
+        <PackageReference Include="OpenIddict.EntityFrameworkCore" Version="5.0.1"/>
         <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="7.0.0"/>
         <PackageReference Include="RabbitMQ.Client" Version="6.7.0"/>
         <PackageReference Include="Romanization.NET" Version="0.9.5"/>
-        <PackageReference Include="SixLabors.ImageSharp" Version="3.1.1"/>
+        <PackageReference Include="SixLabors.ImageSharp" Version="3.1.2"/>
         <PackageReference Include="StackExchange.Redis" Version="2.7.10"/>
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0"/>
         <PackageReference Include="Swashbuckle.AspNetCore.Newtonsoft" Version="6.5.0"/>
@@ -36,8 +36,8 @@
         <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.0"/>
         <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="8.0.0"/>
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.0"/>
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.0"/>
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.0"/>
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.1"/>
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.1"/>
         <PackageReference Include="Z.EntityFramework.Plus.EFCore" Version="8.101.2" />
     </ItemGroup>
     <ItemGroup>
