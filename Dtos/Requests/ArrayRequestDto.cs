@@ -8,12 +8,12 @@ public class ArrayRequestDto
     /// <summary>
     ///     The field(s) by which the result is sorted.
     /// </summary>
-    public List<string> Order { get; set; } = new();
+    public List<string> Order { get; set; } = [];
 
     /// <summary>
     ///     Whether or not the result is sorted in descending order on each field.
     /// </summary>
-    public List<bool> Desc { get; set; } = new();
+    public List<bool> Desc { get; set; } = [];
 
     /// <summary>
     ///     The page number. Defaults to 1.

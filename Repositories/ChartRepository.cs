@@ -4,6 +4,7 @@ using PhiZoneApi.Data;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 using PhiZoneApi.Utils;
+using Z.EntityFramework.Plus;
 
 // ReSharper disable InvertIf
 
@@ -12,35 +13,44 @@ namespace PhiZoneApi.Repositories;
 public class ChartRepository(ApplicationDbContext context, IMeilisearchService meilisearchService) : IChartRepository
 {
     public async Task<ICollection<Chart>> GetChartsAsync(List<string> order, List<bool> desc, int position, int take,
-        Expression<Func<Chart, bool>>? predicate = null)
+        Expression<Func<Chart, bool>>? predicate = null, int? currentUserId = null)
     {
-        var result = context.Charts.OrderBy(order, desc);
+        var result = context.Charts.Include(e => e.Song).OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
+        if (currentUserId != null)
+            result = result.IncludeFilter(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
         result = result.Skip(position);
         return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
 
-    public async Task<Chart> GetChartAsync(Guid id)
+    public async Task<Chart> GetChartAsync(Guid id, int? currentUserId = null)
     {
-        return (await context.Charts.FirstOrDefaultAsync(chart => chart.Id == id))!;
+        IQueryable<Chart> result = context.Charts.Include(e => e.Song);
+        if (currentUserId != null)
+            result = result.IncludeFilter(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
+        return (await result.FirstOrDefaultAsync(chart => chart.Id == id))!;
     }
 
     public async Task<Chart?> GetRandomChartAsync(
-        Expression<Func<Chart, bool>>? predicate = null)
+        Expression<Func<Chart, bool>>? predicate = null, int? currentUserId = null)
     {
-        var result = context.Charts.OrderBy(chart => EF.Functions.Random()).AsQueryable();
+        var result = context.Charts.Include(e => e.Song).OrderBy(chart => EF.Functions.Random()).AsQueryable();
         if (predicate != null) result = result.Where(predicate);
+        if (currentUserId != null)
+            result = result.IncludeFilter(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
         return await result.FirstOrDefaultAsync();
     }
 
     public async Task<ICollection<Record>> GetChartRecordsAsync(Guid id, List<string> order, List<bool> desc,
         int position,
-        int take, Expression<Func<Record, bool>>? predicate = null)
+        int take, Expression<Func<Record, bool>>? predicate = null, int? currentUserId = null)
     {
         var chart = (await context.Charts.FirstOrDefaultAsync(chart => chart.Id == id))!;
         var result = context.Records.Where(record => record.Chart.Id == chart.Id).OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
-        result = result.Skip(position);
+        result = result.Skip(position).Include(e => e.Chart).ThenInclude(e => e.Song);
+        if (currentUserId != null)
+            result = result.IncludeFilter(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
         return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
 

@@ -40,11 +40,15 @@ public class Record : LikeableResource, IComparable<Record>
     {
         return $"{Score} {Accuracy:P2}";
     }
+
     public int CompareTo(Record? other)
     {
         if (ReferenceEquals(this, other)) return 0;
         if (ReferenceEquals(null, other)) return 1;
-        if (Math.Abs(Rks - other.Rks) < 1e-5) return DateCreated.CompareTo(other.DateCreated);
-        return Score > other.Score ? -1 : 1;
+        if (Math.Abs(Rks - other.Rks) > 1e-6) return Rks > other.Rks ? -1 : 1;
+        if (Math.Abs(Accuracy - other.Accuracy) > 1e-6) return Accuracy > other.Accuracy ? -1 : 1;
+        if (Score != other.Score) return Score > other.Score ? -1 : 1;
+        return DateCreated.CompareTo(other.DateCreated);
+
     }
 }

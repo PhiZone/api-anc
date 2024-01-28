@@ -6,5 +6,5 @@ namespace PhiZoneApi.Dtos.Requests;
 public class PetObjectiveAnswerDto
 {
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
-    public List<int> Choices { get; set; } = new();
+    public List<int> Choices { get; set; } = [];
 }

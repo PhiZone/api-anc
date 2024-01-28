@@ -13,11 +13,10 @@ public interface IRegionRepository
     Task<Region> GetRegionAsync(string code);
 
     Task<ICollection<User>> GetRegionUsersAsync(int id, List<string> order, List<bool> desc, int position, int take,
-        Expression<Func<User, bool>>? predicate = null);
+        Expression<Func<User, bool>>? predicate = null, int? currentUserId = null);
 
     Task<ICollection<User>> GetRegionUsersAsync(string code, List<string> order, List<bool> desc, int position,
-        int take,
-        Expression<Func<User, bool>>? predicate = null);
+        int take, Expression<Func<User, bool>>? predicate = null, int? currentUserId = null);
 
     Task<bool> RegionExistsAsync(int id);
 

@@ -6,9 +6,9 @@ namespace PhiZoneApi.Interfaces;
 public interface IRecordRepository
 {
     Task<ICollection<Record>> GetRecordsAsync(List<string> order, List<bool> desc, int position, int take,
-        Expression<Func<Record, bool>>? predicate = null);
+        Expression<Func<Record, bool>>? predicate = null, bool queryChart = false, int? currentUserId = null);
 
-    Task<Record> GetRecordAsync(Guid id);
+    Task<Record> GetRecordAsync(Guid id, bool queryChart = false, int? currentUserId = null);
 
     Task<bool> RecordExistsAsync(Guid id);
 
@@ -23,4 +23,6 @@ public interface IRecordRepository
     Task<bool> SaveAsync();
 
     Task<int> CountRecordsAsync(Expression<Func<Record, bool>>? predicate = null);
+
+    Task<ICollection<Record>> GetPersonalBests(int ownerId, int take = 19, bool queryChart = false, int? currentUserId = null);
 }

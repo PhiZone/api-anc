@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using PhiZoneApi.Models;
 
 namespace PhiZoneApi.Data;
@@ -47,6 +48,13 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, int>
     public DbSet<EventTeam> EventTeams { get; set; } = null!;
     public DbSet<Participation> Participations { get; set; } = null!;
 
+    protected override void OnConfiguring(DbContextOptionsBuilder builder)
+    {
+        base.OnConfiguring(builder);
+        builder.ConfigureWarnings(wb => wb
+            .Ignore(CoreEventId.RowLimitingOperationWithoutOrderByWarning));
+    }
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -67,8 +75,7 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, int>
         builder.Entity<EventTeam>()
             .HasMany(e => e.Participants)
             .WithMany(e => e.EventTeams)
-            .UsingEntity<Participation>(
-                l => l.HasOne<User>(e => e.Participant).WithMany(e => e.Participations),
+            .UsingEntity<Participation>(l => l.HasOne<User>(e => e.Participant).WithMany(e => e.Participations),
                 r => r.HasOne<EventTeam>(e => e.EventTeam).WithMany(e => e.Participations));
 
         builder.Entity<Resource>().UseTpcMappingStrategy();

@@ -1,9 +1,8 @@
 ﻿using PhiZoneApi.Interfaces;
-using PhiZoneApi.Models;
 
 namespace PhiZoneApi.Services;
 
-public class RecordService(IRecordRepository recordRepository) : IRecordService
+public class RecordService : IRecordService
 {
     public int CalculateScore(int perfect, int good, int bad, int miss, int maxCombo)
     {
@@ -46,27 +45,5 @@ public class RecordService(IRecordRepository recordRepository) : IRecordService
                 x -= 100;
                 return -x * x * x / 4e6 + 1;
         }
-    }
-
-    public async Task<List<Record>> GetBest19(int userId)
-    {
-        var result = new List<Record>();
-        var charts = new List<Guid>();
-        for (var position = 0; result.Count < 19; position += 30)
-        {
-            var records = await recordRepository.GetRecordsAsync(new List<string> { "Rks" }, new List<bool> { true },
-                position, 30,
-                record => record.OwnerId == userId && record.Chart.IsRanked);
-            if (records.Count == 0) break;
-            foreach (var record in records)
-            {
-                if (charts.Contains(record.ChartId)) continue;
-                result.Add(record);
-                charts.Add(record.ChartId);
-                if (result.Count >= 19) break;
-            }
-        }
-
-        return result;
     }
 }

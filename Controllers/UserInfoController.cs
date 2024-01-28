@@ -44,7 +44,7 @@ public class UserInfoController(UserManager<User> userManager, IDtoMapper mapper
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetUserInfo()
     {
-        var user = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        var user = await userRepository.GetUserByIdAsync(int.Parse(User.GetClaim(OpenIddictConstants.Claims.Subject)!));
         if (user == null) return Unauthorized();
         if (!resourceService.HasPermission(user, UserRole.Member))
             return StatusCode(StatusCodes.Status403Forbidden,
@@ -53,7 +53,7 @@ public class UserInfoController(UserManager<User> userManager, IDtoMapper mapper
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
-        var dto = await mapper.MapUserAsync<UserDetailedDto>(user);
+        var dto = mapper.MapUser<UserDetailedDto>(user);
         dto.Notifications =
             await notificationRepository.CountNotificationsAsync(e =>
                 e.OwnerId == user.Id && e.DateRead == null);
@@ -127,7 +127,7 @@ public class UserInfoController(UserManager<User> userManager, IDtoMapper mapper
             unionId = responseDto.Data.Unionid;
         }
 
-        if (await userRepository.GetUserByTapUnionId(dto.ApplicationId, unionId) != null)
+        if (await userRepository.GetUserByTapUnionIdAsync(dto.ApplicationId, unionId) != null)
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief,

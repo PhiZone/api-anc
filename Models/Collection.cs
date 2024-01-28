@@ -10,10 +10,6 @@ public class Collection : PublicResource
 
     public string Illustrator { get; set; } = null!;
 
-    public IEnumerable<Chart> Charts { get; } = new List<Chart>();
-
-    public IEnumerable<Admission> ChartAdmittees { get; } = new List<Admission>();
-
     public override string GetDisplay()
     {
         return $"{Title} - {Subtitle}";

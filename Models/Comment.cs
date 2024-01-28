@@ -9,6 +9,8 @@ public class Comment : LikeableResource
     public string Content { get; set; } = null!;
 
     public string Language { get; set; } = null!;
+    
+    public int ReplyCount { get; set; }
 
     public override string GetDisplay()
     {

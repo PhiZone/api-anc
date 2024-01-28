@@ -6,13 +6,12 @@ namespace PhiZoneApi.Interfaces;
 public interface ICollectionRepository
 {
     Task<ICollection<Collection>> GetCollectionsAsync(List<string> order, List<bool> desc, int position, int take,
-        Expression<Func<Collection, bool>>? predicate = null);
+        Expression<Func<Collection, bool>>? predicate = null, int? currentUserId = null);
 
-    Task<Collection> GetCollectionAsync(Guid id);
+    Task<Collection> GetCollectionAsync(Guid id, int? currentUserId = null);
 
     Task<ICollection<Admission>> GetCollectionChartsAsync(Guid id, List<string> order, List<bool> desc, int position,
-        int take,
-        Expression<Func<Admission, bool>>? predicate = null);
+        int take, Expression<Func<Admission, bool>>? predicate = null);
 
     Task<bool> CollectionExistsAsync(Guid id);
 
@@ -26,6 +25,5 @@ public interface ICollectionRepository
 
     Task<int> CountCollectionsAsync(Expression<Func<Collection, bool>>? predicate = null);
 
-    Task<int> CountCollectionChartsAsync(Guid id,
-        Expression<Func<Admission, bool>>? predicate = null);
+    Task<int> CountCollectionChartsAsync(Guid id, Expression<Func<Admission, bool>>? predicate = null);
 }

@@ -60,7 +60,7 @@ public class SubmissionService(ISongRepository songRepository, INotificationServ
 
             if (!isHidden)
                 foreach (var relation in await userRelationRepository.GetRelationsAsync(
-                             new List<string> { "DateCreated" }, new List<bool> { false }, 0, -1,
+                             ["DateCreated"], [false], 0, -1,
                              e => e.FolloweeId == songSubmission.OwnerId && e.Type != UserRelationType.Blacklisted))
                     await notificationService.Notify((await userManager.FindByIdAsync(relation.FollowerId.ToString()))!,
                         (await userManager.FindByIdAsync(songSubmission.OwnerId.ToString()))!, NotificationType.Updates,
@@ -75,7 +75,7 @@ public class SubmissionService(ISongRepository songRepository, INotificationServ
                         });
 
             foreach (var chartSubmission in await chartSubmissionRepository.GetChartSubmissionsAsync(
-                         new List<string> { "DateCreated" }, new List<bool> { false }, 0, -1,
+                         ["DateCreated"], [false], 0, -1,
                          e => e.SongSubmissionId == songSubmission.Id && e.Status == RequestStatus.Approved))
                 await ApproveChart(chartSubmission, song.Id);
         }
@@ -136,7 +136,7 @@ public class SubmissionService(ISongRepository songRepository, INotificationServ
             }
 
             foreach (var collaboration in await collaborationRepository.GetCollaborationsAsync(
-                         new List<string> { "DateCreated" }, new List<bool> { false }, 0, -1,
+                         ["DateCreated"], [false], 0, -1,
                          e => e.SubmissionId == songSubmission.Id && e.Status == RequestStatus.Approved))
             {
                 if (await authorshipRepository.AuthorshipExistsAsync(song.Id, collaboration.InviteeId)) continue;
@@ -225,7 +225,7 @@ public class SubmissionService(ISongRepository songRepository, INotificationServ
 
             if (!song.IsHidden)
                 foreach (var relation in await userRelationRepository.GetRelationsAsync(
-                             new List<string> { "DateCreated" }, new List<bool> { false }, 0, -1,
+                             ["DateCreated"], [false], 0, -1,
                              e => e.FolloweeId == chartSubmission.OwnerId && e.Type != UserRelationType.Blacklisted))
                     await notificationService.Notify((await userManager.FindByIdAsync(relation.FollowerId.ToString()))!,
                         (await userManager.FindByIdAsync(chartSubmission.OwnerId.ToString()))!,
@@ -269,12 +269,12 @@ public class SubmissionService(ISongRepository songRepository, INotificationServ
         }
 
         var assetSubmissions = await chartAssetSubmissionRepository.GetChartAssetSubmissionsAsync(
-            new List<string> { "DateCreated" }, new List<bool> { false }, 0, -1,
+            ["DateCreated"], [false], 0, -1,
             e => e.ChartSubmissionId == chartSubmission.Id);
 
         var assetsToDelete =
-            (await chartAssetRepository.GetChartAssetsAsync(new List<string> { "DateCreated" },
-                new List<bool> { false }, 0, -1, e => e.ChartId == chart.Id)).Where(asset =>
+            (await chartAssetRepository.GetChartAssetsAsync(["DateCreated"],
+                [false], 0, -1, e => e.ChartId == chart.Id)).Where(asset =>
                 assetSubmissions.Count(assetSubmission => assetSubmission.RepresentationId == asset.Id) == 0);
 
         foreach (var submission in assetSubmissions) await ApproveChartAsset(submission, chart.Id);
@@ -303,7 +303,7 @@ public class SubmissionService(ISongRepository songRepository, INotificationServ
         }
 
         foreach (var collaboration in await collaborationRepository.GetCollaborationsAsync(
-                     new List<string> { "DateCreated" }, new List<bool> { false }, 0, -1,
+                     ["DateCreated"], [false], 0, -1,
                      e => e.SubmissionId == chartSubmission.Id && e.Status == RequestStatus.Approved))
         {
             if (await authorshipRepository.AuthorshipExistsAsync(chart.Id, collaboration.InviteeId)) continue;
@@ -361,7 +361,7 @@ public class SubmissionService(ISongRepository songRepository, INotificationServ
 
         chartAsset = submission.RepresentationId != null
             ? await chartAssetRepository.GetChartAssetAsync(submission.RepresentationId.Value)
-            : (await chartAssetRepository.GetChartAssetsAsync(new List<string>(), new List<bool>(), 0, 1,
+            : (await chartAssetRepository.GetChartAssetsAsync([], [], 0, 1,
                 e => e.Name == submission.Name && e.ChartId == chartId)).First();
         chartAsset.ChartId = chartId;
         chartAsset.Type = submission.Type;

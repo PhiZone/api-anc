@@ -26,8 +26,6 @@ public class ApplicationDto
 
     public DateTimeOffset DateUpdated { get; set; }
 
-    public int CommentCount { get; set; }
-
     public int LikeCount { get; set; }
 
     public DateTimeOffset? DateLiked { get; set; }

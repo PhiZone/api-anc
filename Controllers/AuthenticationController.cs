@@ -106,7 +106,7 @@ public class AuthenticationController(UserManager<User> userManager, IConnection
 
             var responseDto =
                 JsonConvert.DeserializeObject<TapTapDelivererDto>(await response.Content.ReadAsStringAsync())!;
-            var user = await userRepository.GetUserByTapUnionId(tapApplicationId.Value, responseDto.Data.Unionid);
+            var user = await userRepository.GetUserByTapUnionIdAsync(tapApplicationId.Value, responseDto.Data.Unionid);
             if (user == null)
                 return NotFound(new AuthenticationProperties(new Dictionary<string, string>
                 {
@@ -202,7 +202,7 @@ public class AuthenticationController(UserManager<User> userManager, IConnection
             user.AccessFailedCount = 0;
             await userManager.UpdateAsync(user);
 
-            logger.LogInformation(LogEvents.UserInfo, "New login: #{Id} {UserName}", user.Id, user.UserName);
+            logger.LogInformation(LogEvents.UserInfo, "[{Now}] New login: #{Id} {UserName}", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), user.Id, user.UserName);
 
             return SignIn(claimsPrincipal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
         }
@@ -458,7 +458,7 @@ public class AuthenticationController(UserManager<User> userManager, IConnection
 
         var responseDto =
             JsonConvert.DeserializeObject<TapTapDelivererDto>(await response.Content.ReadAsStringAsync())!;
-        var user = await userRepository.GetUserByTapUnionId(dto.ApplicationId, responseDto.Data.Unionid);
+        var user = await userRepository.GetUserByTapUnionIdAsync(dto.ApplicationId, responseDto.Data.Unionid);
 
         return Ok(new ResponseDto<TapTapResponseDto>
         {
@@ -470,7 +470,7 @@ public class AuthenticationController(UserManager<User> userManager, IConnection
                 Avatar = responseDto.Data.Avatar,
                 OpenId = responseDto.Data.Openid,
                 UnionId = responseDto.Data.Unionid,
-                User = user != null ? await dtoMapper.MapUserAsync<UserDetailedDto>(user) : null
+                User = user != null ? dtoMapper.MapUser<UserDetailedDto>(user) : null
             }
         });
     }

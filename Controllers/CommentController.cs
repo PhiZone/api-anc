@@ -50,11 +50,9 @@ public class CommentController(ICommentRepository commentRepository, IOptions<Da
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser);
         var comments = await commentRepository.GetCommentsAsync(dto.Order, dto.Desc, position,
-            dto.PerPage, predicateExpr);
+            dto.PerPage, predicateExpr, currentUser?.Id);
         var total = await commentRepository.CountCommentsAsync(predicateExpr);
-        var list = new List<CommentDto>();
-
-        foreach (var comment in comments) list.Add(await dtoMapper.MapCommentAsync<CommentDto>(comment, currentUser));
+        var list = comments.Select(dtoMapper.MapComment<CommentDto>).ToList();
 
         return Ok(new ResponseDto<IEnumerable<CommentDto>>
         {
@@ -94,8 +92,8 @@ public class CommentController(ICommentRepository commentRepository, IOptions<Da
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        var comment = await commentRepository.GetCommentAsync(id);
-        var dto = await dtoMapper.MapCommentAsync<CommentDto>(comment, currentUser);
+        var comment = await commentRepository.GetCommentAsync(id, currentUser?.Id);
+        var dto = dtoMapper.MapComment<CommentDto>(comment);
 
         return Ok(new ResponseDto<CommentDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
     }
@@ -176,11 +174,9 @@ public class CommentController(ICommentRepository commentRepository, IOptions<Da
             });
         var replies =
             await commentRepository.GetCommentRepliesAsync(id, dto.Order, dto.Desc, position, dto.PerPage,
-                predicateExpr);
+                predicateExpr, currentUser?.Id);
         var total = await commentRepository.CountCommentRepliesAsync(id, predicateExpr);
-        var list = new List<ReplyDto>();
-
-        foreach (var reply in replies) list.Add(await dtoMapper.MapReplyAsync<ReplyDto>(reply, currentUser));
+        var list = replies.Select(dtoMapper.MapReply<ReplyDto>).ToList();
 
         return Ok(new ResponseDto<IEnumerable<ReplyDto>>
         {

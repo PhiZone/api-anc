@@ -6,9 +6,9 @@ namespace PhiZoneApi.Interfaces;
 public interface IApplicationRepository
 {
     Task<ICollection<Application>> GetApplicationsAsync(List<string> order, List<bool> desc, int position, int take,
-        Expression<Func<Application, bool>>? predicate = null);
+        Expression<Func<Application, bool>>? predicate = null, int? currentUserId = null);
 
-    Task<Application> GetApplicationAsync(Guid id);
+    Task<Application> GetApplicationAsync(Guid id, int? currentUserId = null);
 
     Task<bool> ApplicationExistsAsync(Guid id);
 

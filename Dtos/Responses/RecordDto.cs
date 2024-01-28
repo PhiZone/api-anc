@@ -4,10 +4,6 @@ public class RecordDto
 {
     public Guid Id { get; set; }
 
-    public int OwnerId { get; set; }
-
-    public Guid ChartId { get; set; }
-
     public int Score { get; set; }
 
     public double Accuracy { get; set; }
@@ -30,7 +26,7 @@ public class RecordDto
 
     public double Rks { get; set; }
 
-    public int Position { get; set; }
+    public int? Position { get; set; }
 
     public int PerfectJudgment { get; set; }
 
@@ -41,6 +37,14 @@ public class RecordDto
     public DateTimeOffset DateCreated { get; set; }
 
     public Guid ApplicationId { get; set; }
+
+    public Guid ChartId { get; set; }
+    
+    public ChartDto? Chart { get; set; }
+
+    public int OwnerId { get; set; }
+    
+    public UserDto Owner { get; set; } = null!;
 
     public DateTimeOffset? DateLiked { get; set; }
 }

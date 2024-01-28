@@ -28,15 +28,31 @@ namespace PhiZoneApi.Controllers;
 [ApiController]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme,
     Policy = "AllowAnonymous")]
-public class ChartController(IChartRepository chartRepository, IOptions<DataSettings> dataSettings,
-    UserManager<User> userManager, IFilterService filterService, IFileStorageService fileStorageService,
-    IDtoMapper dtoMapper, IMapper mapper, IChartService chartService, ISongRepository songRepository,
-    ILikeRepository likeRepository, ILikeService likeService, ICommentRepository commentRepository,
-    IVoteRepository voteRepository, IVoteService voteService, IAuthorshipRepository authorshipRepository,
-    IResourceService resourceService, IChartAssetRepository chartAssetRepository,
-    INotificationService notificationService, IRecordRepository recordRepository,
-    ICollectionRepository collectionRepository, IAdmissionRepository admissionRepository,
-    ITemplateService templateService, ILogger<ChartController> logger,
+public class ChartController(
+    IChartRepository chartRepository,
+    IOptions<DataSettings> dataSettings,
+    UserManager<User> userManager,
+    IFilterService filterService,
+    IFileStorageService fileStorageService,
+    IDtoMapper dtoMapper,
+    IMapper mapper,
+    IChartService chartService,
+    ISongRepository songRepository,
+    ILikeRepository likeRepository,
+    ILikeService likeService,
+    ICommentRepository commentRepository,
+    IVoteRepository voteRepository,
+    IVoteService voteService,
+    IAuthorshipRepository authorshipRepository,
+    IResourceService resourceService,
+    IChartAssetRepository chartAssetRepository,
+    INotificationService notificationService,
+    IRecordRepository recordRepository,
+    ICollectionRepository collectionRepository,
+    IAdmissionRepository admissionRepository,
+    ITemplateService templateService,
+    ILeaderboardService leaderboardService,
+    ILogger<ChartController> logger,
     IMeilisearchService meilisearchService) : Controller
 {
     /// <summary>
@@ -64,18 +80,20 @@ public class ChartController(IChartRepository chartRepository, IOptions<DataSett
         {
             var result = await meilisearchService.SearchAsync<Chart>(dto.Search, dto.PerPage, dto.Page,
                 showHidden: currentUser is { Role: UserRole.Administrator });
-            charts = result.Hits;
+            var idList = result.Hits.Select(item => item.Id).ToList();
+            charts = (await chartRepository.GetChartsAsync(["DateCreated"], [false], position, dto.PerPage,
+                e => idList.Contains(e.Id), currentUser?.Id)).OrderBy(e =>
+                idList.IndexOf(e.Id));
             total = result.TotalHits;
         }
         else
         {
-            charts = await chartRepository.GetChartsAsync(dto.Order, dto.Desc, position, dto.PerPage, predicateExpr);
+            charts = await chartRepository.GetChartsAsync(dto.Order, dto.Desc, position, dto.PerPage, predicateExpr,
+                currentUser?.Id);
             total = await chartRepository.CountChartsAsync(predicateExpr);
         }
 
-        var list = new List<ChartDto>();
-
-        foreach (var chart in charts) list.Add(await dtoMapper.MapChartAsync<ChartDto>(chart, currentUser));
+        var list = charts.Select(dtoMapper.MapChart<ChartDto>).ToList();
 
         return Ok(new ResponseDto<IEnumerable<ChartDto>>
         {
@@ -115,24 +133,20 @@ public class ChartController(IChartRepository chartRepository, IOptions<DataSett
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        var chart = await chartRepository.GetChartAsync(id);
-
-        var dto = await dtoMapper.MapChartAsync<ChartDetailedDto>(chart, currentUser);
+        var chart = await chartRepository.GetChartAsync(id, currentUser?.Id);
+        var dto = dtoMapper.MapChart<ChartDetailedDto>(chart);
 
         // ReSharper disable once InvertIf
         if (currentUser != null)
         {
-            dto.PersonalBestScore = (await recordRepository.GetRecordsAsync(new List<string> { "Score" },
-                    new List<bool> { true }, 0, 1, r => r.OwnerId == currentUser.Id && r.ChartId == id))
-                .FirstOrDefault()
+            dto.PersonalBestScore = (await recordRepository.GetRecordsAsync(["Score"],
+                    [true], 0, 1, r => r.OwnerId == currentUser.Id && r.ChartId == id)).FirstOrDefault()
                 ?.Score;
-            dto.PersonalBestAccuracy = (await recordRepository.GetRecordsAsync(new List<string> { "Accuracy" },
-                    new List<bool> { true }, 0, 1, r => r.OwnerId == currentUser.Id && r.ChartId == id))
-                .FirstOrDefault()
+            dto.PersonalBestAccuracy = (await recordRepository.GetRecordsAsync(["Accuracy"],
+                    [true], 0, 1, r => r.OwnerId == currentUser.Id && r.ChartId == id)).FirstOrDefault()
                 ?.Accuracy;
-            dto.PersonalBestRks = (await recordRepository.GetRecordsAsync(new List<string> { "Rks" },
-                    new List<bool> { true }, 0, 1, r => r.OwnerId == currentUser.Id && r.ChartId == id))
-                .FirstOrDefault()
+            dto.PersonalBestRks = (await recordRepository.GetRecordsAsync(["Rks"],
+                    [true], 0, 1, r => r.OwnerId == currentUser.Id && r.ChartId == id)).FirstOrDefault()
                 ?.Rks;
         }
 
@@ -157,15 +171,28 @@ public class ChartController(IChartRepository chartRepository, IOptions<DataSett
     {
         var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser, e => !e.IsHidden);
-        var chart = await chartRepository.GetRandomChartAsync(predicateExpr);
+        var chart = await chartRepository.GetRandomChartAsync(predicateExpr, currentUser?.Id);
 
         if (chart == null)
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
+        var chartDto = dtoMapper.MapChart<ChartDetailedDto>(chart);
 
-        var chartDto = await dtoMapper.MapChartAsync<ChartDetailedDto>(chart, currentUser);
+        // ReSharper disable once InvertIf
+        if (currentUser != null)
+        {
+            chartDto.PersonalBestScore = (await recordRepository.GetRecordsAsync(["Score"], [true], 0, 1,
+                    r => r.OwnerId == currentUser.Id && r.ChartId == chart.Id)).FirstOrDefault()
+                ?.Score;
+            chartDto.PersonalBestAccuracy = (await recordRepository.GetRecordsAsync(["Accuracy"], [true], 0, 1,
+                    r => r.OwnerId == currentUser.Id && r.ChartId == chart.Id)).FirstOrDefault()
+                ?.Accuracy;
+            chartDto.PersonalBestRks = (await recordRepository.GetRecordsAsync(["Rks"],
+                    [true], 0, 1, r => r.OwnerId == currentUser.Id && r.ChartId == chart.Id)).FirstOrDefault()
+                ?.Rks;
+        }
 
         return Ok(new ResponseDto<ChartDetailedDto>
         {
@@ -611,7 +638,7 @@ public class ChartController(IChartRepository chartRepository, IOptions<DataSett
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
-            dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
+            dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage * 100;
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser, e => e.ChartId == id);
@@ -1321,12 +1348,10 @@ public class ChartController(IChartRepository chartRepository, IOptions<DataSett
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Locked
             });
 
-        var records =
-            await chartRepository.GetChartRecordsAsync(id, dto.Order, dto.Desc, position, dto.PerPage, predicateExpr);
+        var records = await chartRepository.GetChartRecordsAsync(id, dto.Order, dto.Desc, position, dto.PerPage,
+            predicateExpr, currentUser?.Id);
         var total = await chartRepository.CountChartRecordsAsync(id, predicateExpr);
-        var list = new List<RecordDto>();
-
-        foreach (var record in records) list.Add(await dtoMapper.MapRecordAsync<RecordDto>(record, currentUser));
+        var list = records.Select(dtoMapper.MapRecord<RecordDto>).ToList();
 
         return Ok(new ResponseDto<IEnumerable<RecordDto>>
         {
@@ -1337,6 +1362,86 @@ public class ChartController(IChartRepository chartRepository, IOptions<DataSett
             HasPrevious = position > 0,
             HasNext = dto.PerPage > 0 && dto.PerPage * dto.Page < total,
             Data = list
+        });
+    }
+
+    /// <summary>
+    ///     Retrieves the leaderboard of a specific chart.
+    /// </summary>
+    /// <param name="id">A chart's ID.</param>
+    /// <returns>The leaderboard (an array of records).</returns>
+    /// <response code="200">Returns an array of records.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="404">When the specified chart is not found.</response>
+    [HttpGet("{id:guid}/leaderboard")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<RecordDto>>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> GetLeaderboard([FromRoute] Guid id, [FromQuery] LeaderboardRequestDto dto)
+    {
+        var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+
+        if (!await chartRepository.ChartExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+
+        var chart = await chartRepository.GetChartAsync(id);
+
+        if ((currentUser == null || !resourceService.HasPermission(currentUser, UserRole.Administrator)) &&
+            chart.IsLocked)
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Locked
+            });
+
+        var leaderboard = leaderboardService.ObtainChartLeaderboard(chart.Id);
+        var rank = currentUser != null
+            ? leaderboard.GetRank((await recordRepository.GetRecordsAsync(["Rks"], [true], 0, 1,
+                e => e.ChartId == id && e.OwnerId == currentUser.Id)).FirstOrDefault())
+            : null;
+        List<RecordDto> list;
+        if (currentUser == null || rank == null || rank <= dto.TopRange + dto.NeighborhoodRange + 1)
+        {
+            var take = rank == null ? dto.TopRange : Math.Max(dto.TopRange, rank.Value + dto.NeighborhoodRange);
+            list = leaderboard.Range(0, take)
+                .Select((e, i) =>
+                {
+                    var r = mapper.Map<RecordDto>(e);
+                    r.Chart = null;
+                    r.Position = i + 1;
+                    return r;
+                })
+                .ToList();
+        }
+        else
+        {
+            list = [];
+            list.AddRange(leaderboard.Range(0, dto.TopRange)
+                .Select((e, i) =>
+                {
+                    var r = mapper.Map<RecordDto>(e);
+                    r.Chart = null;
+                    r.Position = i + 1;
+                    return r;
+                })
+                .ToList());
+            list.AddRange(leaderboard.Range(rank.Value - dto.NeighborhoodRange - 1, dto.NeighborhoodRange * 2 + 1)
+                .Select((e, i) =>
+                {
+                    var r = mapper.Map<RecordDto>(e);
+                    r.Chart = null;
+                    r.Position = i + rank.Value - dto.NeighborhoodRange;
+                    return r;
+                })
+                .ToList());
+        }
+
+        return Ok(new ResponseDto<IEnumerable<RecordDto>>
+        {
+            Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = list
         });
     }
 
@@ -1525,11 +1630,9 @@ public class ChartController(IChartRepository chartRepository, IOptions<DataSett
             });
 
         var comments = await commentRepository.GetCommentsAsync(dto.Order, dto.Desc, position, dto.PerPage,
-            e => e.ResourceId == id);
-        var list = new List<CommentDto>();
+            e => e.ResourceId == id, currentUser?.Id);
         var total = await commentRepository.CountCommentsAsync(e => e.ResourceId == id);
-
-        foreach (var comment in comments) list.Add(await dtoMapper.MapCommentAsync<CommentDto>(comment, currentUser));
+        var list = comments.Select(dtoMapper.MapComment<CommentDto>).ToList();
 
         return Ok(new ResponseDto<IEnumerable<CommentDto>>
         {

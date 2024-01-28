@@ -54,6 +54,8 @@ public class ChartDto
 
     public Guid SongId { get; set; }
 
+    public SongDto Song { get; set; } = null!;
+
     public int OwnerId { get; set; }
 
     public DateTimeOffset DateCreated { get; set; }
@@ -61,8 +63,6 @@ public class ChartDto
     public DateTimeOffset DateUpdated { get; set; }
 
     public int PlayCount { get; set; }
-
-    public int CommentCount { get; set; }
 
     public int LikeCount { get; set; }
 

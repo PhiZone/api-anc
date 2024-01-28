@@ -5,41 +5,41 @@ using PhiZoneApi.Enums;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 using PhiZoneApi.Utils;
+using Z.EntityFramework.Plus;
 
 // ReSharper disable InvertIf
 
 namespace PhiZoneApi.Repositories;
 
-public class CollectionRepository
-    (ApplicationDbContext context, IMeilisearchService meilisearchService) : ICollectionRepository
+public class CollectionRepository(ApplicationDbContext context, IMeilisearchService meilisearchService)
+    : ICollectionRepository
 {
     public async Task<ICollection<Collection>> GetCollectionsAsync(List<string> order, List<bool> desc, int position,
-        int take,
-        Expression<Func<Collection, bool>>? predicate = null)
+        int take, Expression<Func<Collection, bool>>? predicate = null, int? currentUserId = null)
     {
         var result = context.Collections.OrderBy(order, desc);
-
         if (predicate != null) result = result.Where(predicate);
-
+        if (currentUserId != null)
+            result = result.IncludeFilter(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
         result = result.Skip(position);
         return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
 
-    public async Task<Collection> GetCollectionAsync(Guid id)
+    public async Task<Collection> GetCollectionAsync(Guid id, int? currentUserId = null)
     {
-        return (await context.Collections.FirstOrDefaultAsync(collection => collection.Id == id))!;
+        IQueryable<Collection> result = context.Collections;
+        if (currentUserId != null)
+            result = result.IncludeFilter(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
+        return (await result.FirstOrDefaultAsync(collection => collection.Id == id))!;
     }
 
     public async Task<ICollection<Admission>> GetCollectionChartsAsync(Guid id, List<string> order, List<bool> desc,
-        int position,
-        int take, Expression<Func<Admission, bool>>? predicate = null)
+        int position, int take, Expression<Func<Admission, bool>>? predicate = null)
     {
         var result = context.Admissions
             .Where(admission => admission.AdmitterId == id && admission.Status == RequestStatus.Approved)
             .OrderBy(order, desc);
-
         if (predicate != null) result = result.Where(predicate);
-
         result = result.Skip(position);
         return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
@@ -85,14 +85,11 @@ public class CollectionRepository
         return await result.CountAsync();
     }
 
-    public async Task<int> CountCollectionChartsAsync(Guid id,
-        Expression<Func<Admission, bool>>? predicate = null)
+    public async Task<int> CountCollectionChartsAsync(Guid id, Expression<Func<Admission, bool>>? predicate = null)
     {
         var result = context.Admissions.Where(admission =>
             admission.AdmitterId == id && admission.Status == RequestStatus.Approved);
-
         if (predicate != null) result = result.Where(predicate);
-
         return await result.CountAsync();
     }
 }

@@ -2,9 +2,9 @@
 
 public class UserRelationDto
 {
-    public UserDto Follower { get; set; } = null!;
+    public int FollowerId { get; set; }
 
-    public UserDto Followee { get; set; } = null!;
+    public int FolloweeId { get; set; }
 
     public DateTimeOffset DateCreated { get; set; }
 }

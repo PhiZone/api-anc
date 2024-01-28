@@ -16,8 +16,6 @@ public class AnnouncementDto
 
     public DateTimeOffset DateUpdated { get; set; }
 
-    public int CommentCount { get; set; }
-
     public int LikeCount { get; set; }
 
     public Guid? ResourceId { get; set; }

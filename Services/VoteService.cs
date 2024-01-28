@@ -7,8 +7,8 @@ namespace PhiZoneApi.Services;
 public class VoteService(IVoteRepository voteRepository, IChartRepository chartRepository)
     : IVoteService
 {
-    private readonly List<int> _experienceList = new()
-    {
+    private readonly List<int> _experienceList =
+    [
         0,
         50,
         100,
@@ -20,10 +20,10 @@ public class VoteService(IVoteRepository voteRepository, IChartRepository chartR
         30000,
         60000,
         100000
-    };
+    ];
 
-    private readonly List<double> _multiplierList = new()
-    {
+    private readonly List<double> _multiplierList =
+    [
         0.0,
         1.0,
         1.1,
@@ -35,7 +35,7 @@ public class VoteService(IVoteRepository voteRepository, IChartRepository chartR
         1.8,
         2.0,
         3.0
-    };
+    ];
 
     public async Task<bool> CreateVoteAsync(VoteRequestDto dto, Chart chart, User user)
     {
@@ -88,7 +88,7 @@ public class VoteService(IVoteRepository voteRepository, IChartRepository chartR
 
     public async Task<bool> UpdateChartAsync(Chart chart)
     {
-        var votes = await voteRepository.GetVotesAsync(new List<string> { "DateCreated" }, new List<bool> { false }, 0,
+        var votes = await voteRepository.GetVotesAsync(["DateCreated"], [false], 0,
             -1, vote => vote.ChartId == chart.Id);
         var amount = votes.Sum(vote => vote.Multiplier);
         var r = GetReliability(amount);

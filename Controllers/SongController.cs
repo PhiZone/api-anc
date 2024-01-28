@@ -28,13 +28,27 @@ namespace PhiZoneApi.Controllers;
 [ApiController]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme,
     Policy = "AllowAnonymous")]
-public class SongController(ISongRepository songRepository, IOptions<DataSettings> dataSettings,
-    UserManager<User> userManager, IFilterService filterService, IFileStorageService fileStorageService,
-    IDtoMapper dtoMapper, IMapper mapper, ISongService songService, ILikeRepository likeRepository,
-    ILikeService likeService, ICommentRepository commentRepository, IChapterRepository chapterRepository,
-    IAdmissionRepository admissionRepository, IAuthorshipRepository authorshipRepository,
-    IResourceService resourceService, INotificationService notificationService, ITemplateService templateService,
-    ILogger<SongController> logger, IMeilisearchService meilisearchService) : Controller
+public class SongController(
+    ISongRepository songRepository,
+    IChartRepository chartRepository,
+    IOptions<DataSettings> dataSettings,
+    UserManager<User> userManager,
+    IFilterService filterService,
+    IFileStorageService fileStorageService,
+    IDtoMapper dtoMapper,
+    IMapper mapper,
+    ISongService songService,
+    ILikeRepository likeRepository,
+    ILikeService likeService,
+    ICommentRepository commentRepository,
+    IChapterRepository chapterRepository,
+    IAdmissionRepository admissionRepository,
+    IAuthorshipRepository authorshipRepository,
+    IResourceService resourceService,
+    INotificationService notificationService,
+    ITemplateService templateService,
+    ILogger<SongController> logger,
+    IMeilisearchService meilisearchService) : Controller
 {
     /// <summary>
     ///     Retrieves songs.
@@ -61,18 +75,20 @@ public class SongController(ISongRepository songRepository, IOptions<DataSetting
         {
             var result = await meilisearchService.SearchAsync<Song>(dto.Search, dto.PerPage, dto.Page,
                 showHidden: currentUser is { Role: UserRole.Administrator });
-            songs = result.Hits;
+            var idList = result.Hits.Select(item => item.Id).ToList();
+            songs = (await songRepository.GetSongsAsync(["DateCreated"], [false], position, dto.PerPage,
+                e => idList.Contains(e.Id), currentUser?.Id)).OrderBy(e =>
+                idList.IndexOf(e.Id));
             total = result.TotalHits;
         }
         else
         {
-            songs = await songRepository.GetSongsAsync(dto.Order, dto.Desc, position, dto.PerPage, predicateExpr);
+            songs = await songRepository.GetSongsAsync(dto.Order, dto.Desc, position, dto.PerPage, predicateExpr,
+                currentUser?.Id);
             total = await songRepository.CountSongsAsync(predicateExpr);
         }
 
-        var list = new List<SongDto>();
-
-        foreach (var song in songs) list.Add(await dtoMapper.MapSongAsync<SongDto>(song, currentUser));
+        var list = songs.Select(dtoMapper.MapSong<SongDto>).ToList();
 
         return Ok(new ResponseDto<IEnumerable<SongDto>>
         {
@@ -112,9 +128,8 @@ public class SongController(ISongRepository songRepository, IOptions<DataSetting
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        var song = await songRepository.GetSongAsync(id);
-
-        var dto = await dtoMapper.MapSongAsync<SongDto>(song, currentUser);
+        var song = await songRepository.GetSongAsync(id, currentUser?.Id);
+        var dto = dtoMapper.MapSong<SongDto>(song);
 
         return Ok(new ResponseDto<SongDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
     }
@@ -134,15 +149,14 @@ public class SongController(ISongRepository songRepository, IOptions<DataSetting
     {
         var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser, e => !e.IsHidden);
-        var song = await songRepository.GetRandomSongAsync(predicateExpr);
+        var song = await songRepository.GetRandomSongAsync(predicateExpr, currentUser?.Id);
 
         if (song == null)
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-
-        var songDto = await dtoMapper.MapSongAsync<SongDto>(song, currentUser);
+        var songDto = dtoMapper.MapSong<SongDto>(song);
 
         return Ok(new ResponseDto<SongDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = songDto });
     }
@@ -961,19 +975,16 @@ public class SongController(ISongRepository songRepository, IOptions<DataSetting
             dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
-        var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser);
+        var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser, e => e.SongId == id);
         if (!await songRepository.SongExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        var charts = await songRepository.GetSongChartsAsync(id, dto.Order, dto.Desc, position, dto.PerPage,
-            predicateExpr);
-        var list = new List<ChartDto>();
-        var total = await songRepository.CountSongChartsAsync(id, predicateExpr);
-
-        foreach (var chart in charts) list.Add(await dtoMapper.MapChartAsync<ChartDto>(chart, currentUser));
+        var charts = await chartRepository.GetChartsAsync(dto.Order, dto.Desc, position, dto.PerPage, predicateExpr, currentUser?.Id);
+        var total = await chartRepository.CountChartsAsync(predicateExpr);
+        var list = charts.Select(dtoMapper.MapChart<ChartDto>).ToList();
 
         return Ok(new ResponseDto<IEnumerable<ChartDto>>
         {
@@ -1158,11 +1169,9 @@ public class SongController(ISongRepository songRepository, IOptions<DataSetting
             });
 
         var comments = await commentRepository.GetCommentsAsync(dto.Order, dto.Desc, position, dto.PerPage,
-            e => e.ResourceId == id);
-        var list = new List<CommentDto>();
+            e => e.ResourceId == id, currentUser?.Id);
         var total = await commentRepository.CountCommentsAsync(e => e.ResourceId == id);
-
-        foreach (var comment in comments) list.Add(await dtoMapper.MapCommentAsync<CommentDto>(comment, currentUser));
+        var list = comments.Select(dtoMapper.MapComment<CommentDto>).ToList();
 
         return Ok(new ResponseDto<IEnumerable<CommentDto>>
         {

@@ -27,8 +27,8 @@ public class NotificationService(INotificationRepository notificationRepository,
     public async Task NotifyLike<T>(T resource, int userId, string display) where T : LikeableResource
     {
         var sender = (await userManager.FindByIdAsync(userId.ToString()))!;
-        var relations = await userRelationRepository.GetRelationsAsync(new List<string> { "DateCreated" },
-            new List<bool> { false }, 0, -1,
+        var relations = await userRelationRepository.GetRelationsAsync(["DateCreated"],
+            [false], 0, -1,
             e => e.FolloweeId == userId && e.Type == UserRelationType.Special);
         var receivers = new HashSet<User> { (await userManager.FindByIdAsync(resource.OwnerId.ToString()))! };
         foreach (var relation in relations)
@@ -47,8 +47,8 @@ public class NotificationService(INotificationRepository notificationRepository,
         where T : LikeableResource
     {
         var sender = (await userManager.FindByIdAsync(comment.OwnerId.ToString()))!;
-        var relations = await userRelationRepository.GetRelationsAsync(new List<string> { "DateCreated" },
-            new List<bool> { false }, 0, -1,
+        var relations = await userRelationRepository.GetRelationsAsync(["DateCreated"],
+            [false], 0, -1,
             e => e.FolloweeId == comment.OwnerId && e.Type == UserRelationType.Special);
         var receivers = new HashSet<User> { (await userManager.FindByIdAsync(resource.OwnerId.ToString()))! };
         foreach (var relation in relations)

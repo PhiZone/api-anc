@@ -1,4 +1,5 @@
 using System.Collections.Immutable;
+using Microsoft.EntityFrameworkCore;
 using PhiZoneApi.Data;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
@@ -16,8 +17,9 @@ public class LeaderboardService : ILeaderboardService
             return _set.Skip(skip).Take(take);
         }
 
-        public int? GetRank(T item)
+        public int? GetRank(T? item)
         {
+            if (item == null) return null;
             var index = _set.ToImmutableSortedSet().IndexOf(item);
             return index >= 0 ? index + 1 : null;
         }
@@ -27,9 +29,9 @@ public class LeaderboardService : ILeaderboardService
             return _set.Add(item);
         }
 
-        public bool Remove(T item)
+        public bool Remove(T? item)
         {
-            return _set.Remove(item);
+            return item == null || _set.Remove(item);
         }
 
         public T? FirstOrDefault(Func<T, bool> predicate)
@@ -46,19 +48,12 @@ public class LeaderboardService : ILeaderboardService
     private readonly Dictionary<Guid, Leaderboard<Record>> _chartLeaderboards = new();
     private readonly Dictionary<Guid, Leaderboard<EventTeam>> _eventDivisionLeaderboards = new();
 
-    public LeaderboardService(IServiceProvider serviceProvider)
+    public async Task Initialize(ApplicationDbContext context, CancellationToken cancellationToken)
     {
-        Initialize(serviceProvider);
-    }
-
-    private async void Initialize(IServiceProvider serviceProvider)
-    {
-        await using var scope = serviceProvider.CreateAsyncScope();
-        var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        foreach (var chart in context.Charts)
+        foreach (var chart in await context.Charts.ToListAsync(cancellationToken))
         {
             var leaderboard = ObtainChartLeaderboard(chart.Id);
-            foreach (var record in context.Records.Where(e => e.ChartId == chart.Id)
+            foreach (var record in context.Records.Include(e => e.Owner).ThenInclude(e => e.Region).Where(e => e.ChartId == chart.Id)
                          .GroupBy(e => e.OwnerId)
                          .Select(g => g.OrderByDescending(e => e.Rks).ThenBy(e => e.DateCreated).First()))
             {
@@ -66,7 +61,7 @@ public class LeaderboardService : ILeaderboardService
             }
         }
 
-        foreach (var eventDivision in context.EventDivisions)
+        foreach (var eventDivision in await context.EventDivisions.ToListAsync(cancellationToken))
         {
             var leaderboard = ObtainEventDivisionLeaderboard(eventDivision.Id);
             foreach (var eventTeam in context.EventTeams.Where(e => e.DivisionId == eventDivision.Id))

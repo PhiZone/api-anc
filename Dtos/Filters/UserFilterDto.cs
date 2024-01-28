@@ -23,6 +23,8 @@ public class UserFilterDto : FilterDto<User>
 
     public int? MaxExperience { get; set; }
 
+    public List<int>? RangeExperience { get; set; }
+
     public string? ContainsTag { get; set; }
 
     public string? EqualsTag { get; set; }
@@ -38,6 +40,18 @@ public class UserFilterDto : FilterDto<User>
     public double? MinRks { get; set; }
 
     public double? MaxRks { get; set; }
+
+    public int? MinFollowerCount { get; set; }
+
+    public int? MaxFollowerCount { get; set; }
+
+    public List<int>? RangeFollowerCount { get; set; }
+
+    public int? MinFolloweeCount { get; set; }
+
+    public int? MaxFolloweeCount { get; set; }
+
+    public List<int>? RangeFolloweeCount { get; set; }
 
     public List<int>? RangeRegionId { get; set; }
 

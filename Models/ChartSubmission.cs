@@ -1,4 +1,5 @@
-﻿using PhiZoneApi.Enums;
+﻿using System.Text.Json.Serialization;
+using PhiZoneApi.Enums;
 
 namespace PhiZoneApi.Models;
 
@@ -39,4 +40,6 @@ public class ChartSubmission : Submission
     public RequestStatus VolunteerStatus { get; set; }
 
     public RequestStatus AdmissionStatus { get; set; }
+
+    [JsonIgnore] public IEnumerable<VolunteerVote> VolunteerVotes { get; } = new List<VolunteerVote>();
 }

@@ -4,6 +4,7 @@ using PhiZoneApi.Data;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 using PhiZoneApi.Utils;
+using Z.EntityFramework.Plus;
 
 // ReSharper disable InvertIf
 
@@ -13,17 +14,22 @@ public class AnnouncementRepository
     (ApplicationDbContext context, IMeilisearchService meilisearchService) : IAnnouncementRepository
 {
     public async Task<ICollection<Announcement>> GetAnnouncementsAsync(List<string> order, List<bool> desc,
-        int position, int take, Expression<Func<Announcement, bool>>? predicate = null)
+        int position, int take, Expression<Func<Announcement, bool>>? predicate = null, int? currentUserId = null)
     {
         var result = context.Announcements.OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
+        if (currentUserId != null)
+            result = result.IncludeFilter(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
         result = result.Skip(position);
         return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
 
-    public async Task<Announcement> GetAnnouncementAsync(Guid id)
+    public async Task<Announcement> GetAnnouncementAsync(Guid id, int? currentUserId = null)
     {
-        return (await context.Announcements.FirstOrDefaultAsync(announcement => announcement.Id == id))!;
+        IQueryable<Announcement> result = context.Announcements;
+        if (currentUserId != null)
+            result = result.IncludeFilter(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
+        return (await result.FirstOrDefaultAsync(announcement => announcement.Id == id))!;
     }
 
     public async Task<bool> AnnouncementExistsAsync(Guid id)

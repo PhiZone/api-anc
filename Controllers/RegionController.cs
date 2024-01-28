@@ -162,11 +162,9 @@ public class RegionController(IRegionRepository regionRepository, IOptions<DataS
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
         var users = await regionRepository.GetRegionUsersAsync(code, dto.Order, dto.Desc, position, dto.PerPage,
-            predicateExpr);
-        var list = new List<UserDto>();
+            predicateExpr, currentUser?.Id);
         var total = await regionRepository.CountRegionUsersAsync(code, predicateExpr);
-
-        foreach (var user in users) list.Add(await dtoMapper.MapUserAsync<UserDto>(user, currentUser));
+        var list = users.Select(dtoMapper.MapUser<UserDto>).ToList();
 
         return Ok(new ResponseDto<IEnumerable<UserDto>>
         {
@@ -208,11 +206,9 @@ public class RegionController(IRegionRepository regionRepository, IOptions<DataS
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
         var users = await regionRepository.GetRegionUsersAsync(id, dto.Order, dto.Desc, position, dto.PerPage,
-            predicateExpr);
-        var list = new List<UserDto>();
+            predicateExpr, currentUser?.Id);
         var total = await regionRepository.CountRegionUsersAsync(id, predicateExpr);
-
-        foreach (var user in users) list.Add(await dtoMapper.MapUserAsync<UserDto>(user, currentUser));
+        var list = users.Select(dtoMapper.MapUser<UserDto>).ToList();
 
         return Ok(new ResponseDto<IEnumerable<UserDto>>
         {

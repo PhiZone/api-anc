@@ -28,10 +28,19 @@ namespace PhiZoneApi.Controllers;
 [ApiController]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme,
     Policy = "AllowAnonymous")]
-public class ChapterController(IChapterRepository chapterRepository, IOptions<DataSettings> dataSettings,
-    UserManager<User> userManager, IFilterService filterService, IFileStorageService fileStorageService,
-    IDtoMapper dtoMapper, IMapper mapper, ILikeRepository likeRepository, ILikeService likeService,
-    ICommentRepository commentRepository, IResourceService resourceService, INotificationService notificationService,
+public class ChapterController(
+    IChapterRepository chapterRepository,
+    IOptions<DataSettings> dataSettings,
+    UserManager<User> userManager,
+    IFilterService filterService,
+    IFileStorageService fileStorageService,
+    IDtoMapper dtoMapper,
+    IMapper mapper,
+    ILikeRepository likeRepository,
+    ILikeService likeService,
+    ICommentRepository commentRepository,
+    IResourceService resourceService,
+    INotificationService notificationService,
     IMeilisearchService meilisearchService) : Controller
 {
     /// <summary>
@@ -59,19 +68,20 @@ public class ChapterController(IChapterRepository chapterRepository, IOptions<Da
         {
             var result = await meilisearchService.SearchAsync<Chapter>(dto.Search, dto.PerPage, dto.Page,
                 showHidden: currentUser is { Role: UserRole.Administrator });
-            chapters = result.Hits;
+            var idList = result.Hits.Select(item => item.Id).ToList();
+            chapters = (await chapterRepository.GetChaptersAsync(["DateCreated"], [false], position, dto.PerPage,
+                e => idList.Contains(e.Id), currentUser?.Id)).OrderBy(e =>
+                idList.IndexOf(e.Id));
             total = result.TotalHits;
         }
         else
         {
             chapters = await chapterRepository.GetChaptersAsync(dto.Order, dto.Desc, position, dto.PerPage,
-                predicateExpr);
+                predicateExpr, currentUser?.Id);
             total = await chapterRepository.CountChaptersAsync(predicateExpr);
         }
 
-        var list = new List<ChapterDto>();
-
-        foreach (var chapter in chapters) list.Add(await dtoMapper.MapChapterAsync<ChapterDto>(chapter, currentUser));
+        var list = chapters.Select(dtoMapper.MapChapter<ChapterDto>).ToList();
 
         return Ok(new ResponseDto<IEnumerable<ChapterDto>>
         {
@@ -111,8 +121,8 @@ public class ChapterController(IChapterRepository chapterRepository, IOptions<Da
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        var chapter = await chapterRepository.GetChapterAsync(id);
-        var dto = await dtoMapper.MapChapterAsync<ChapterDto>(chapter, currentUser);
+        var chapter = await chapterRepository.GetChapterAsync(id, currentUser?.Id);
+        var dto = dtoMapper.MapChapter<ChapterDto>(chapter);
 
         return Ok(new ResponseDto<ChapterDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
     }
@@ -360,11 +370,12 @@ public class ChapterController(IChapterRepository chapterRepository, IOptions<Da
 
         var admissions = await chapterRepository.GetChapterSongsAsync(id, dto.Order, dto.Desc, position, dto.PerPage,
             predicateExpr);
-        var list = new List<SongAdmitteeDto>();
         var total = await chapterRepository.CountChapterSongsAsync(id, predicateExpr);
-
+        var list = new List<SongAdmitteeDto>();
         foreach (var admission in admissions)
+        {
             list.Add(await dtoMapper.MapChapterSongAsync<SongAdmitteeDto>(admission, currentUser));
+        }
 
         return Ok(new ResponseDto<IEnumerable<SongAdmitteeDto>>
         {
@@ -551,11 +562,9 @@ public class ChapterController(IChapterRepository chapterRepository, IOptions<Da
             });
 
         var comments = await commentRepository.GetCommentsAsync(dto.Order, dto.Desc, position, dto.PerPage,
-            e => e.ResourceId == id);
-        var list = new List<CommentDto>();
+            e => e.ResourceId == id, currentUser?.Id);
         var total = await commentRepository.CountCommentsAsync(e => e.ResourceId == id);
-
-        foreach (var comment in comments) list.Add(await dtoMapper.MapCommentAsync<CommentDto>(comment, currentUser));
+        var list = comments.Select(dtoMapper.MapComment<CommentDto>).ToList();
 
         return Ok(new ResponseDto<IEnumerable<CommentDto>>
         {

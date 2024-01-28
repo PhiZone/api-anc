@@ -56,7 +56,7 @@ public class SongDto
 
     public DateTimeOffset DateUpdated { get; set; }
 
-    public int CommentCount { get; set; }
+    public int PlayCount { get; set; }
 
     public int LikeCount { get; set; }
 

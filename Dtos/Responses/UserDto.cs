@@ -10,7 +10,7 @@ public class UserDto
 
     public int Gender { get; set; }
 
-    public string? Region { get; set; }
+    public RegionDto Region { get; set; } = null!;
 
     public string Language { get; set; } = null!;
 

@@ -1,9 +1,11 @@
 ﻿using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using PhiZoneApi.Data;
+using PhiZoneApi.Enums;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 using PhiZoneApi.Utils;
+using Z.EntityFramework.Plus;
 
 // ReSharper disable InvertIf
 
@@ -31,23 +33,31 @@ public class RegionRepository(ApplicationDbContext context, IMeilisearchService 
     }
 
     public async Task<ICollection<User>> GetRegionUsersAsync(int id, List<string> order, List<bool> desc, int position,
-        int take, Expression<Func<User, bool>>? predicate = null)
+        int take, Expression<Func<User, bool>>? predicate = null, int? currentUserId = null)
     {
         var region = (await context.Regions.FirstOrDefaultAsync(region => region.Id == id))!;
         var result = context.Users.Where(user => user.Region == region).OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
+        if (currentUserId != null)
+            result = result.IncludeFilter(e => e.FollowerRelations.Where(relation =>
+                    relation.FollowerId == currentUserId && relation.Type != UserRelationType.Blacklisted)
+                .Take(1));
         result = result.Skip(position);
         return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
 
     public async Task<ICollection<User>> GetRegionUsersAsync(string code, List<string> order, List<bool> desc,
         int position,
-        int take, Expression<Func<User, bool>>? predicate = null)
+        int take, Expression<Func<User, bool>>? predicate = null, int? currentUserId = null)
     {
         var region = (await context.Regions.FirstOrDefaultAsync(region =>
             string.Equals(region.Code, code.ToUpper())))!;
         var result = context.Users.Where(user => user.Region == region).OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
+        if (currentUserId != null)
+            result = result.IncludeFilter(e => e.FollowerRelations.Where(relation =>
+                    relation.FollowerId == currentUserId && relation.Type != UserRelationType.Blacklisted)
+                .Take(1));
         result = result.Skip(position);
         return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }

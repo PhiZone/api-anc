@@ -4,23 +4,29 @@ using PhiZoneApi.Data;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 using PhiZoneApi.Utils;
+using Z.EntityFramework.Plus;
 
 namespace PhiZoneApi.Repositories;
 
 public class ReplyRepository(ApplicationDbContext context) : IReplyRepository
 {
     public async Task<ICollection<Reply>> GetRepliesAsync(List<string> order, List<bool> desc, int position, int take,
-        Expression<Func<Reply, bool>>? predicate = null)
+        Expression<Func<Reply, bool>>? predicate = null, int? currentUserId = null)
     {
-        var result = context.Replies.OrderBy(order, desc);
+        var result = context.Replies.Include(e => e.Owner).ThenInclude(e => e.Region).OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
+        if (currentUserId != null)
+            result = result.IncludeFilter(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
         result = result.Skip(position);
         return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
 
-    public async Task<Reply> GetReplyAsync(Guid id)
+    public async Task<Reply> GetReplyAsync(Guid id, int? currentUserId = null)
     {
-        return (await context.Replies.FirstOrDefaultAsync(like => like.Id == id))!;
+        IQueryable<Reply> result = context.Replies.Include(e => e.Owner).ThenInclude(e => e.Region);
+        if (currentUserId != null)
+            result = result.IncludeFilter(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
+        return (await result.FirstOrDefaultAsync(like => like.Id == id))!;
     }
 
     public async Task<bool> ReplyExistsAsync(Guid id)
@@ -30,6 +36,9 @@ public class ReplyRepository(ApplicationDbContext context) : IReplyRepository
 
     public async Task<bool> CreateReplyAsync(Reply reply)
     {
+        var comment = await context.Comments.FirstAsync(e => e.Id == reply.CommentId);
+        comment.ReplyCount = await context.Replies.CountAsync(e => e.CommentId == reply.CommentId) + 1;
+        context.Comments.Update(comment);
         await context.Replies.AddAsync(reply);
         return await SaveAsync();
     }
@@ -42,7 +51,10 @@ public class ReplyRepository(ApplicationDbContext context) : IReplyRepository
 
     public async Task<bool> RemoveReplyAsync(Guid id)
     {
-        context.Replies.Remove((await context.Replies.FirstOrDefaultAsync(reply => reply.Id == id))!);
+        var reply = await context.Replies.Include(e => e.Comment).FirstAsync(reply => reply.Id == id);
+        reply.Comment.ReplyCount = await context.Replies.CountAsync(e => e.CommentId == reply.CommentId) - 1;
+        context.Comments.Update(reply.Comment);
+        context.Replies.Remove(reply);
         return await SaveAsync();
     }
 

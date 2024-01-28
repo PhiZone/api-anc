@@ -5,32 +5,36 @@ using PhiZoneApi.Enums;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 using PhiZoneApi.Utils;
+using Z.EntityFramework.Plus;
 
 // ReSharper disable InvertIf
 
 namespace PhiZoneApi.Repositories;
 
-public class ChapterRepository
-    (ApplicationDbContext context, IMeilisearchService meilisearchService) : IChapterRepository
+public class ChapterRepository(ApplicationDbContext context, IMeilisearchService meilisearchService)
+    : IChapterRepository
 {
     public async Task<ICollection<Chapter>> GetChaptersAsync(List<string> order, List<bool> desc, int position,
-        int take,
-        Expression<Func<Chapter, bool>>? predicate = null)
+        int take, Expression<Func<Chapter, bool>>? predicate = null, int? currentUserId = null)
     {
         var result = context.Chapters.OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
+        if (currentUserId != null)
+            result = result.IncludeFilter(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
         result = result.Skip(position);
         return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
 
-    public async Task<Chapter> GetChapterAsync(Guid id)
+    public async Task<Chapter> GetChapterAsync(Guid id, int? currentUserId = null)
     {
-        return (await context.Chapters.FirstOrDefaultAsync(chapter => chapter.Id == id))!;
+        IQueryable<Chapter> result = context.Chapters;
+        if (currentUserId != null)
+            result = result.IncludeFilter(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
+        return (await result.FirstOrDefaultAsync(chapter => chapter.Id == id))!;
     }
 
     public async Task<ICollection<Admission>> GetChapterSongsAsync(Guid id, List<string> order, List<bool> desc,
-        int position,
-        int take, Expression<Func<Admission, bool>>? predicate = null)
+        int position, int take, Expression<Func<Admission, bool>>? predicate = null)
     {
         var result = context.Admissions
             .Where(admission => admission.AdmitterId == id && admission.Status == RequestStatus.Approved)
@@ -79,8 +83,7 @@ public class ChapterRepository
         return await result.CountAsync();
     }
 
-    public async Task<int> CountChapterSongsAsync(Guid id,
-        Expression<Func<Admission, bool>>? predicate = null)
+    public async Task<int> CountChapterSongsAsync(Guid id, Expression<Func<Admission, bool>>? predicate = null)
     {
         var result = context.Admissions.Where(admission =>
             admission.AdmitterId == id && admission.Status == RequestStatus.Approved);
