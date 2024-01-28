@@ -28,10 +28,19 @@ namespace PhiZoneApi.Controllers;
 [ApiController]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme,
     Policy = "AllowAnonymous")]
-public class ApplicationController(IApplicationRepository applicationRepository, IOptions<DataSettings> dataSettings,
-    UserManager<User> userManager, IFilterService filterService, IFileStorageService fileStorageService,
-    IDtoMapper dtoMapper, IMapper mapper, ILikeRepository likeRepository, ILikeService likeService,
-    ICommentRepository commentRepository, IResourceService resourceService, INotificationService notificationService,
+public class ApplicationController(
+    IApplicationRepository applicationRepository,
+    IOptions<DataSettings> dataSettings,
+    UserManager<User> userManager,
+    IFilterService filterService,
+    IFileStorageService fileStorageService,
+    IDtoMapper dtoMapper,
+    IMapper mapper,
+    ILikeRepository likeRepository,
+    ILikeService likeService,
+    ICommentRepository commentRepository,
+    IResourceService resourceService,
+    INotificationService notificationService,
     IMeilisearchService meilisearchService) : Controller
 {
     /// <summary>
@@ -58,20 +67,20 @@ public class ApplicationController(IApplicationRepository applicationRepository,
         if (dto.Search != null)
         {
             var result = await meilisearchService.SearchAsync<Application>(dto.Search, dto.PerPage, dto.Page);
-            applications = result.Hits;
+            var idList = result.Hits.Select(item => item.Id).ToList();
+            applications = (await applicationRepository.GetApplicationsAsync(["DateCreated"], [false], position,
+                dto.PerPage, e => idList.Contains(e.Id), currentUser?.Id)).OrderBy(e =>
+                idList.IndexOf(e.Id));
             total = result.TotalHits;
         }
         else
         {
-            applications = await applicationRepository.GetApplicationsAsync(dto.Order, dto.Desc, position,
-                dto.PerPage, predicateExpr);
+            applications = await applicationRepository.GetApplicationsAsync(dto.Order, dto.Desc, position, dto.PerPage,
+                predicateExpr, currentUser?.Id);
             total = await applicationRepository.CountApplicationsAsync(predicateExpr);
         }
 
-        var list = new List<ApplicationDto>();
-
-        foreach (var application in applications)
-            list.Add(await dtoMapper.MapApplicationAsync<ApplicationDto>(application, currentUser));
+        var list = applications.Select(dtoMapper.MapApplication<ApplicationDto>).ToList();
 
         return Ok(new ResponseDto<IEnumerable<ApplicationDto>>
         {
@@ -111,8 +120,8 @@ public class ApplicationController(IApplicationRepository applicationRepository,
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        var application = await applicationRepository.GetApplicationAsync(id);
-        var dto = await dtoMapper.MapApplicationAsync<ApplicationDto>(application, currentUser);
+        var application = await applicationRepository.GetApplicationAsync(id, currentUser?.Id);
+        var dto = dtoMapper.MapApplication<ApplicationDto>(application);
 
         return Ok(new ResponseDto<ApplicationDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
     }
@@ -471,11 +480,9 @@ public class ApplicationController(IApplicationRepository applicationRepository,
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
         var comments = await commentRepository.GetCommentsAsync(dto.Order, dto.Desc, position, dto.PerPage,
-            e => e.ResourceId == id);
-        var list = new List<CommentDto>();
+            e => e.ResourceId == id, currentUser?.Id);
         var total = await commentRepository.CountCommentsAsync(e => e.ResourceId == id);
-
-        foreach (var comment in comments) list.Add(await dtoMapper.MapCommentAsync<CommentDto>(comment, currentUser));
+        var list = comments.Select(dtoMapper.MapComment<CommentDto>).ToList();
 
         return Ok(new ResponseDto<IEnumerable<CommentDto>>
         {

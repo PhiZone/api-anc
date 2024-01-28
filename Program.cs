@@ -82,10 +82,8 @@ builder.Services.AddAuthentication(options =>
     options.DefaultChallengeScheme = OpenIddictConstants.Schemes.Bearer;
 });
 
-builder.Services.AddAuthorization(options =>
-{
-    options.AddPolicy("AllowAnonymous", policy => { policy.RequireAssertion(_ => true); });
-});
+builder.Services.AddAuthorizationBuilder()
+    .AddPolicy("AllowAnonymous", policy => { policy.RequireAssertion(_ => true); });
 
 builder.Services.AddIdentity<User, Role>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
@@ -148,6 +146,7 @@ builder.Services.AddSingleton<IFileStorageService, FileStorageService>();
 builder.Services.AddSingleton<IRabbitMqService, RabbitMqService>();
 builder.Services.AddSingleton<IFeishuService, FeishuService>();
 builder.Services.AddSingleton<IMeilisearchService, MeilisearchService>();
+builder.Services.AddSingleton<ILeaderboardService, LeaderboardService>();
 builder.Services.AddSingleton<IConnectionMultiplexer>(
     ConnectionMultiplexer.Connect(builder.Configuration.GetValue<string>("RedisConnection") ?? "localhost"));
 builder.Services.AddSingleton<IHostedService>(provider => new MailSenderService(
@@ -160,6 +159,7 @@ builder.Services.AddSingleton<IHostedService>(provider => new SongConverterServi
     provider.GetService<IServiceScopeFactory>()!.CreateScope().ServiceProvider.GetService<ISongSubmissionRepository>()!,
     provider.GetService<IFeishuService>()!, provider.GetService<ILogger<SongConverterService>>()!));
 builder.Services.AddHostedService<DatabaseSeeder>();
+builder.Services.AddHostedService<DataConsistencyMaintainer>();
 
 if (args.Length >= 1)
 {

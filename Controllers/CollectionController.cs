@@ -28,10 +28,19 @@ namespace PhiZoneApi.Controllers;
 [ApiController]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme,
     Policy = "AllowAnonymous")]
-public class CollectionController(ICollectionRepository collectionRepository, IOptions<DataSettings> dataSettings,
-    UserManager<User> userManager, IFilterService filterService, IFileStorageService fileStorageService,
-    IDtoMapper dtoMapper, IMapper mapper, ILikeRepository likeRepository, ILikeService likeService,
-    ICommentRepository commentRepository, IResourceService resourceService, INotificationService notificationService,
+public class CollectionController(
+    ICollectionRepository collectionRepository,
+    IOptions<DataSettings> dataSettings,
+    UserManager<User> userManager,
+    IFilterService filterService,
+    IFileStorageService fileStorageService,
+    IDtoMapper dtoMapper,
+    IMapper mapper,
+    ILikeRepository likeRepository,
+    ILikeService likeService,
+    ICommentRepository commentRepository,
+    IResourceService resourceService,
+    INotificationService notificationService,
     IMeilisearchService meilisearchService) : Controller
 {
     /// <summary>
@@ -59,20 +68,20 @@ public class CollectionController(ICollectionRepository collectionRepository, IO
         {
             var result = await meilisearchService.SearchAsync<Collection>(dto.Search, dto.PerPage, dto.Page,
                 showHidden: currentUser is { Role: UserRole.Administrator });
-            collections = result.Hits;
+            var idList = result.Hits.Select(item => item.Id).ToList();
+            collections = (await collectionRepository.GetCollectionsAsync(["DateCreated"], [false], position,
+                dto.PerPage, e => idList.Contains(e.Id), currentUser?.Id)).OrderBy(e =>
+                idList.IndexOf(e.Id));
             total = result.TotalHits;
         }
         else
         {
             collections = await collectionRepository.GetCollectionsAsync(dto.Order, dto.Desc, position, dto.PerPage,
-                predicateExpr);
+                predicateExpr, currentUser?.Id);
             total = await collectionRepository.CountCollectionsAsync(predicateExpr);
         }
 
-        var list = new List<CollectionDto>();
-
-        foreach (var collection in collections)
-            list.Add(await dtoMapper.MapCollectionAsync<CollectionDto>(collection, currentUser));
+        var list = collections.Select(dtoMapper.MapCollection<CollectionDto>).ToList();
 
         return Ok(new ResponseDto<IEnumerable<CollectionDto>>
         {
@@ -112,8 +121,8 @@ public class CollectionController(ICollectionRepository collectionRepository, IO
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        var collection = await collectionRepository.GetCollectionAsync(id);
-        var dto = await dtoMapper.MapCollectionAsync<CollectionDto>(collection, currentUser);
+        var collection = await collectionRepository.GetCollectionAsync(id, currentUser?.Id);
+        var dto = dtoMapper.MapCollection<CollectionDto>(collection);
 
         return Ok(new ResponseDto<CollectionDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
     }
@@ -360,13 +369,13 @@ public class CollectionController(ICollectionRepository collectionRepository, IO
             });
 
         var admissions = await collectionRepository.GetCollectionChartsAsync(id, dto.Order, dto.Desc, position,
-            dto.PerPage,
-            predicateExpr);
-        var list = new List<ChartAdmitteeDto>();
+            dto.PerPage, predicateExpr);
         var total = await collectionRepository.CountCollectionChartsAsync(id, predicateExpr);
-
+        var list = new List<ChartAdmitteeDto>();
         foreach (var admission in admissions)
+        {
             list.Add(await dtoMapper.MapCollectionChartAsync<ChartAdmitteeDto>(admission, currentUser));
+        }
 
         return Ok(new ResponseDto<IEnumerable<ChartAdmitteeDto>>
         {
@@ -553,11 +562,9 @@ public class CollectionController(ICollectionRepository collectionRepository, IO
             });
 
         var comments = await commentRepository.GetCommentsAsync(dto.Order, dto.Desc, position, dto.PerPage,
-            e => e.ResourceId == id);
-        var list = new List<CommentDto>();
+            e => e.ResourceId == id, currentUser?.Id);
         var total = await commentRepository.CountCommentsAsync(e => e.ResourceId == id);
-
-        foreach (var comment in comments) list.Add(await dtoMapper.MapCommentAsync<CommentDto>(comment, currentUser));
+        var list = comments.Select(dtoMapper.MapComment<CommentDto>).ToList();
 
         return Ok(new ResponseDto<IEnumerable<CommentDto>>
         {

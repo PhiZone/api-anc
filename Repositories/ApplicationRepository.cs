@@ -4,6 +4,7 @@ using PhiZoneApi.Data;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 using PhiZoneApi.Utils;
+using Z.EntityFramework.Plus;
 
 // ReSharper disable InvertIf
 
@@ -14,17 +15,22 @@ public class ApplicationRepository
 {
     public async Task<ICollection<Application>> GetApplicationsAsync(List<string> order, List<bool> desc, int position,
         int take,
-        Expression<Func<Application, bool>>? predicate = null)
+        Expression<Func<Application, bool>>? predicate = null, int? currentUserId = null)
     {
         var result = context.Applications.OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
+        if (currentUserId != null)
+            result = result.IncludeFilter(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
         result = result.Skip(position);
         return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
 
-    public async Task<Application> GetApplicationAsync(Guid id)
+    public async Task<Application> GetApplicationAsync(Guid id, int? currentUserId = null)
     {
-        return (await context.Applications.FirstOrDefaultAsync(application => application.Id == id))!;
+        IQueryable<Application> result = context.Applications;
+        if (currentUserId != null)
+            result = result.IncludeFilter(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
+        return (await result.FirstOrDefaultAsync(application => application.Id == id))!;
     }
 
     public async Task<bool> ApplicationExistsAsync(Guid id)

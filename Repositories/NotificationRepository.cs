@@ -1,9 +1,11 @@
 ﻿using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using PhiZoneApi.Data;
+using PhiZoneApi.Enums;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 using PhiZoneApi.Utils;
+using Z.EntityFramework.Plus;
 
 // ReSharper disable InvertIf
 
@@ -13,17 +15,22 @@ public class NotificationRepository
     (ApplicationDbContext context, IMeilisearchService meilisearchService) : INotificationRepository
 {
     public async Task<ICollection<Notification>> GetNotificationsAsync(List<string> order, List<bool> desc,
-        int position, int take, Expression<Func<Notification, bool>>? predicate = null)
+        int position, int take, Expression<Func<Notification, bool>>? predicate = null, int? currentUserId = null)
     {
         var result = context.Notifications.OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
+        if (currentUserId != null)
+            result = result.Include(e => e.Operator).ThenInclude(e => e!.Region);
         result = result.Skip(position);
         return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
 
-    public async Task<Notification> GetNotificationAsync(Guid id)
+    public async Task<Notification> GetNotificationAsync(Guid id, int? currentUserId = null)
     {
-        return (await context.Notifications.FirstOrDefaultAsync(notification => notification.Id == id))!;
+        IQueryable <Notification> result = context.Notifications;
+        if (currentUserId != null)
+            result = result.Include(e => e.Operator).ThenInclude(e => e!.Region);
+        return (await result.FirstOrDefaultAsync(notification => notification.Id == id))!;
     }
 
     public async Task<bool> NotificationExistsAsync(Guid id)

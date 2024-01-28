@@ -54,19 +54,18 @@ public class NotificationController(IOptions<DataSettings> dataSettings, INotifi
         {
             var result = await meilisearchService.SearchAsync<Notification>(dto.Search, dto.PerPage, dto.Page,
                 currentUser.Id);
-            notifications = result.Hits;
+            var idList = result.Hits.Select(item => item.Id).ToList();
+            notifications = (await notificationRepository.GetNotificationsAsync(["DateCreated"], [false], position,
+                dto.PerPage, e => idList.Contains(e.Id), currentUser.Id)).OrderBy(e => idList.IndexOf(e.Id));
             total = result.TotalHits;
         }
         else
         {
             notifications = await notificationRepository.GetNotificationsAsync(dto.Order, dto.Desc, position,
-                dto.PerPage, predicateExpr);
+                dto.PerPage, predicateExpr, currentUser.Id);
             total = await notificationRepository.CountNotificationsAsync(predicateExpr);
         }
-
-        var list = new List<NotificationDto>();
-        foreach (var notification in notifications)
-            list.Add(await dtoMapper.MapNotificationAsync<NotificationDto>(notification, currentUser));
+        var list = notifications.Select(dtoMapper.MapNotification<NotificationDto>).ToList();
 
         return Ok(new ResponseDto<IEnumerable<NotificationDto>>
         {
@@ -137,13 +136,13 @@ public class NotificationController(IOptions<DataSettings> dataSettings, INotifi
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetNotification([FromRoute] Guid id)
     {
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if (!await notificationRepository.NotificationExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        var notification = await notificationRepository.GetNotificationAsync(id);
-        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        var notification = await notificationRepository.GetNotificationAsync(id, currentUser.Id);
         if (notification.OwnerId != currentUser.Id &&
             !resourceService.HasPermission(currentUser, UserRole.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden,
@@ -151,7 +150,7 @@ public class NotificationController(IOptions<DataSettings> dataSettings, INotifi
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        var dto = await dtoMapper.MapNotificationAsync<NotificationDto>(notification);
+        var dto = dtoMapper.MapNotification<NotificationDto>(notification);
 
         return Ok(new ResponseDto<NotificationDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
     }

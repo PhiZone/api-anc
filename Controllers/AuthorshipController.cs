@@ -23,9 +23,13 @@ namespace PhiZoneApi.Controllers;
 [ApiController]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme,
     Policy = "AllowAnonymous")]
-public class AuthorshipController(IAuthorshipRepository authorshipRepository,
-        IDtoMapper dtoMapper, UserManager<User> userManager, IMapper mapper, IResourceService resourceService)
-    : Controller
+public class AuthorshipController(
+    IAuthorshipRepository authorshipRepository,
+    IDtoMapper dtoMapper,
+    UserManager<User> userManager,
+    IUserRepository userRepository,
+    IMapper mapper,
+    IResourceService resourceService) : Controller
 {
     /// <summary>
     ///     Retrieves a specific authorship.
@@ -50,10 +54,12 @@ public class AuthorshipController(IAuthorshipRepository authorshipRepository,
         var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         if (!await authorshipRepository.AuthorshipExistsAsync(id))
             return NotFound(new ResponseDto<object>
-                { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
         var authorship = await authorshipRepository.GetAuthorshipAsync(id);
-        var dto = await dtoMapper.MapUserAsync<AuthorDto>(
-            (await userManager.FindByIdAsync(authorship.AuthorId.ToString()))!, currentUser);
+        var dto = dtoMapper.MapUser<AuthorDto>(
+            (await userRepository.GetUserByIdAsync(authorship.AuthorId, currentUser?.Id))!);
         dto.Position = authorship.Position;
 
         return Ok(new ResponseDto<AuthorDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });

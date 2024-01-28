@@ -24,15 +24,15 @@ public class FileMigrationService(IServiceProvider serviceProvider, int position
         _songSubmissionRepository = scope.ServiceProvider.GetRequiredService<ISongSubmissionRepository>();
         _chartSubmissionRepository = scope.ServiceProvider.GetRequiredService<IChartSubmissionRepository>();
 
-        _logger.LogInformation(LogEvents.FileMigration, "File migration started");
+        _logger.LogInformation(LogEvents.FileMigration, "[{Now}] File migration started", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
         try
         {
             await MigrateFilesAsync(cancellationToken);
-            _logger.LogInformation(LogEvents.FileMigration, "File migration finished");
+            _logger.LogInformation(LogEvents.FileMigration, "[{Now}] File migration finished", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
         }
         catch (Exception ex)
         {
-            _logger.LogError(LogEvents.FileMigration, ex, "File migration failed");
+            _logger.LogError(LogEvents.FileMigration, ex, "[{Now}] File migration failed", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
         }
     }
 
@@ -43,12 +43,12 @@ public class FileMigrationService(IServiceProvider serviceProvider, int position
 
     private async Task MigrateFilesAsync(CancellationToken cancellationToken)
     {
-        var songs = await _songRepository.GetSongsAsync(new List<string> { "DateCreated" }, new List<bool> { false },
+        var songs = await _songRepository.GetSongsAsync(["DateCreated"], [false],
             position, -1);
         var i = 0;
         foreach (var song in songs)
         {
-            _logger.LogInformation(LogEvents.FileMigration, "Migrating files for Song #{Id} {Current} / {Total}",
+            _logger.LogInformation(LogEvents.FileMigration, "[{Now}] Migrating files for Song #{Id} {Current} / {Total}", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
                 song.Id, ++i, songs.Count);
 
             if (song.File != null)
@@ -56,7 +56,7 @@ public class FileMigrationService(IServiceProvider serviceProvider, int position
 
             song.Illustration = (await MigrateFileAsync<Song>(song.Illustration, song.Title, cancellationToken)).Item1;
             foreach (var submission in await _songSubmissionRepository.GetSongSubmissionsAsync(
-                         new List<string> { "DateCreated" }, new List<bool> { false }, 0, -1,
+                         ["DateCreated"], [false], 0, -1,
                          e => e.RepresentationId == song.Id))
             {
                 submission.File = song.File;
@@ -65,18 +65,18 @@ public class FileMigrationService(IServiceProvider serviceProvider, int position
                 await _songSubmissionRepository.UpdateSongSubmissionAsync(submission);
             }
 
-            var charts = await _songRepository.GetSongChartsAsync(song.Id, new List<string> { "DateCreated" },
-                new List<bool> { false }, 0, -1);
+            var charts = await _chartRepository.GetChartsAsync(["DateCreated"],
+                [false], 0, -1, e => e.SongId == song.Id);
             var j = 0;
             foreach (var chart in charts)
             {
-                _logger.LogInformation(LogEvents.FileMigration, "Migrating files for Chart #{Id} {Current} / {Total}",
+                _logger.LogInformation(LogEvents.FileMigration, "[{Now}] Migrating files for Chart #{Id} {Current} / {Total}", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
                     chart.Id, ++j, charts.Count);
                 if (chart.File == null) continue;
                 (chart.File, chart.FileChecksum) =
                     await MigrateFileAsync<Chart>(chart.File, chart.Title ?? song.Title, cancellationToken);
                 foreach (var submission in await _chartSubmissionRepository.GetChartSubmissionsAsync(
-                             new List<string> { "DateCreated" }, new List<bool> { false }, 0, -1,
+                             ["DateCreated"], [false], 0, -1,
                              e => e.RepresentationId == chart.Id))
                 {
                     submission.File = chart.File;

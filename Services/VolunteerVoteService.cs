@@ -28,6 +28,7 @@ public class VolunteerVoteService(IVolunteerVoteRepository volunteerVoteReposito
             var volunteerVolunteerVote =
                 await volunteerVoteRepository.GetVolunteerVoteAsync(chartSubmission.Id, user.Id);
             volunteerVolunteerVote.Score = dto.Score;
+            volunteerVolunteerVote.SuggestedDifficulty = dto.SuggestedDifficulty;
             volunteerVolunteerVote.Message = dto.Message;
             volunteerVolunteerVote.DateCreated = DateTimeOffset.UtcNow;
             result = await volunteerVoteRepository.UpdateVolunteerVoteAsync(volunteerVolunteerVote);
@@ -38,6 +39,7 @@ public class VolunteerVoteService(IVolunteerVoteRepository volunteerVoteReposito
             {
                 ChartId = chartSubmission.Id,
                 Score = dto.Score,
+                SuggestedDifficulty = dto.SuggestedDifficulty,
                 Message = dto.Message,
                 OwnerId = user.Id,
                 DateCreated = DateTimeOffset.UtcNow
@@ -58,21 +60,23 @@ public class VolunteerVoteService(IVolunteerVoteRepository volunteerVoteReposito
 
     private async Task<bool> UpdateChartSubmissionAsync(ChartSubmission chartSubmission)
     {
-        var votes = await volunteerVoteRepository.GetVolunteerVotesAsync(new List<string> { "DateCreated" },
-            new List<bool> { false }, 0, -1,
+        var votes = await volunteerVoteRepository.GetVolunteerVotesAsync(["DateCreated"],
+            [false], 0, -1,
             vote => vote.ChartId == chartSubmission.Id && vote.DateCreated > chartSubmission.DateUpdated);
+        var score = votes.Average(vote => vote.Score);
+        var suggestedDifficulty = votes.Average(vote => vote.SuggestedDifficulty);
         if (_voteScoreDictionary.TryGetValue(votes.Count, out var scoreRange))
         {
-            var score = votes.Average(vote => vote.Score);
-            if (score < scoreRange.Item1)
+            if (score < scoreRange.Item1 || Math.Abs(chartSubmission.Difficulty - suggestedDifficulty) >= 0.4)
             {
                 chartSubmission.VolunteerStatus = RequestStatus.Rejected;
                 chartSubmission.Status = RequestStatus.Rejected;
                 await submissionService.RejectChart(chartSubmission);
             }
-            else if (score >= scoreRange.Item2)
+            else if (score >= scoreRange.Item2 && (!chartSubmission.IsRanked || votes.Count == _voteScoreDictionary.Last().Key))
             {
                 chartSubmission.IsRanked = chartSubmission.IsRanked && score >= scoreRange.Item3;
+                chartSubmission.Difficulty = Math.Round(suggestedDifficulty * 10, MidpointRounding.AwayFromZero) / 10;
                 chartSubmission.VolunteerStatus = RequestStatus.Approved;
                 if (chartSubmission.AdmissionStatus == RequestStatus.Approved)
                 {

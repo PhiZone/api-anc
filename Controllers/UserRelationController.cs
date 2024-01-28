@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -22,7 +23,7 @@ namespace PhiZoneApi.Controllers;
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme,
     Policy = "AllowAnonymous")]
 public class UserRelationController(IUserRelationRepository userRelationRepository, IFilterService filterService,
-        UserManager<User> userManager, IOptions<DataSettings> dataSettings, IDtoMapper dtoMapper)
+        UserManager<User> userManager, IOptions<DataSettings> dataSettings, IMapper mapper)
     : Controller
 {
     /// <summary>
@@ -47,10 +48,7 @@ public class UserRelationController(IUserRelationRepository userRelationReposito
         var userRelations =
             await userRelationRepository.GetRelationsAsync(dto.Order, dto.Desc, position, dto.PerPage, predicateExpr);
         var total = await userRelationRepository.CountRelationsAsync(predicateExpr);
-        var list = new List<UserRelationDto>();
-
-        foreach (var userRelation in userRelations)
-            list.Add(await dtoMapper.MapUserRelationAsync<UserRelationDto>(userRelation, currentUser));
+        var list = mapper.Map<List<UserRelationDto>>(userRelations);
 
         return Ok(new ResponseDto<IEnumerable<UserRelationDto>>
         {
@@ -89,7 +87,7 @@ public class UserRelationController(IUserRelationRepository userRelationReposito
                 { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
 
         var userRelation = await userRelationRepository.GetRelationAsync(followerId, followeeId);
-        var dto = await dtoMapper.MapUserRelationAsync<UserRelationDto>(userRelation, currentUser);
+        var dto = mapper.Map<UserRelationDto>(userRelation);
 
         return Ok(new ResponseDto<UserRelationDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
     }

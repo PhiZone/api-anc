@@ -6,9 +6,9 @@ namespace PhiZoneApi.Interfaces;
 public interface IReplyRepository
 {
     Task<ICollection<Reply>> GetRepliesAsync(List<string> order, List<bool> desc, int position, int take,
-        Expression<Func<Reply, bool>>? predicate = null);
+        Expression<Func<Reply, bool>>? predicate = null, int? currentUserId = null);
 
-    Task<Reply> GetReplyAsync(Guid id);
+    Task<Reply> GetReplyAsync(Guid id, int? currentUserId = null);
 
     Task<bool> ReplyExistsAsync(Guid id);
 

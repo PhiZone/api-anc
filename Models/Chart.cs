@@ -1,4 +1,5 @@
-﻿using PhiZoneApi.Enums;
+﻿using System.Text.Json.Serialization;
+using PhiZoneApi.Enums;
 
 namespace PhiZoneApi.Models;
 
@@ -52,6 +53,6 @@ public class Chart : PublicResource
 
     public override string GetDisplay()
     {
-        return $"{(Title != null ? $"{Title} " : "")}[{Level} {Math.Floor(Difficulty)}]";
+        return $"{(Title != null ? $"{Title} " : Song.Title)}[{Level} {Math.Floor(Difficulty)}]";
     }
 }

@@ -11,6 +11,8 @@ public class CommentDto
     public string Language { get; set; } = null!;
 
     public int OwnerId { get; set; }
+    
+    public UserDto Owner { get; set; } = null!;
 
     public DateTimeOffset DateCreated { get; set; }
 

@@ -1,4 +1,5 @@
-﻿using PhiZoneApi.Enums;
+﻿using System.Text.Json.Serialization;
+using PhiZoneApi.Enums;
 
 namespace PhiZoneApi.Models;
 
@@ -42,9 +43,7 @@ public class Song : PublicResource
 
     public int PlayCount { get; set; }
 
-    public IEnumerable<Chapter> Chapters { get; } = new List<Chapter>();
-
-    public IEnumerable<Admission> ChapterAdmitters { get; } = new List<Admission>();
+    [JsonIgnore] public IEnumerable<Chart> Charts { get; } = new List<Chart>();
 
     public override string GetDisplay()
     {

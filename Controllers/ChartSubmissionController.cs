@@ -27,15 +27,27 @@ namespace PhiZoneApi.Controllers;
 [ApiVersion("2.0")]
 [ApiController]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
-public class ChartSubmissionController(IChartSubmissionRepository chartSubmissionRepository,
-    IOptions<DataSettings> dataSettings, UserManager<User> userManager, IFilterService filterService,
-    IFileStorageService fileStorageService, IDtoMapper dtoMapper, IMapper mapper, ISongRepository songRepository,
-    IVolunteerVoteService volunteerVoteService, IResourceService resourceService,
-    ISongSubmissionRepository songSubmissionRepository, IChartService chartService,
-    IVolunteerVoteRepository volunteerVoteRepository, IAdmissionRepository admissionRepository,
-    INotificationService notificationService, ITemplateService templateService,
-    ICollaborationRepository collaborationRepository, IChartAssetSubmissionRepository chartAssetSubmissionRepository,
-    ILogger<ChartSubmissionController> logger, IFeishuService feishuService,
+public class ChartSubmissionController(
+    IChartSubmissionRepository chartSubmissionRepository,
+    IOptions<DataSettings> dataSettings,
+    UserManager<User> userManager,
+    IFilterService filterService,
+    IFileStorageService fileStorageService,
+    IDtoMapper dtoMapper,
+    IMapper mapper,
+    ISongRepository songRepository,
+    IVolunteerVoteService volunteerVoteService,
+    IResourceService resourceService,
+    ISongSubmissionRepository songSubmissionRepository,
+    IChartService chartService,
+    IVolunteerVoteRepository volunteerVoteRepository,
+    IAdmissionRepository admissionRepository,
+    INotificationService notificationService,
+    ITemplateService templateService,
+    ICollaborationRepository collaborationRepository,
+    IChartAssetSubmissionRepository chartAssetSubmissionRepository,
+    ILogger<ChartSubmissionController> logger,
+    IFeishuService feishuService,
     IMeilisearchService meilisearchService) : Controller
 {
     /// <summary>
@@ -75,20 +87,21 @@ public class ChartSubmissionController(IChartSubmissionRepository chartSubmissio
         {
             var result = await meilisearchService.SearchAsync<ChartSubmission>(dto.Search, dto.PerPage, dto.Page,
                 !isVolunteer ? currentUser.Id : null);
-            chartSubmissions = result.Hits;
+            var idList = result.Hits.Select(item => item.Id).ToList();
+            chartSubmissions =
+                (await chartSubmissionRepository.GetChartSubmissionsAsync(["DateCreated"], [false], position,
+                    dto.PerPage, e => idList.Contains(e.Id), currentUser.Id)).OrderBy(e =>
+                    idList.IndexOf(e.Id));
             total = result.TotalHits;
         }
         else
         {
             chartSubmissions = await chartSubmissionRepository.GetChartSubmissionsAsync(dto.Order, dto.Desc, position,
-                dto.PerPage, predicateExpr);
+                dto.PerPage, predicateExpr, currentUser.Id);
             total = await chartSubmissionRepository.CountChartSubmissionsAsync(predicateExpr);
         }
 
-        var list = new List<ChartSubmissionDto>();
-
-        foreach (var chartSubmission in chartSubmissions)
-            list.Add(await dtoMapper.MapChartSubmissionAsync<ChartSubmissionDto>(chartSubmission, currentUser));
+        var list = chartSubmissions.Select(dtoMapper.MapChartSubmission<ChartSubmissionDto>).ToList();
 
         return Ok(new ResponseDto<IEnumerable<ChartSubmissionDto>>
         {
@@ -138,9 +151,8 @@ public class ChartSubmissionController(IChartSubmissionRepository chartSubmissio
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        var chartSubmission = await chartSubmissionRepository.GetChartSubmissionAsync(id);
-
-        var dto = await dtoMapper.MapChartSubmissionAsync<ChartSubmissionDto>(chartSubmission);
+        var chartSubmission = await chartSubmissionRepository.GetChartSubmissionAsync(id, currentUser.Id);
+        var dto = dtoMapper.MapChartSubmission<ChartSubmissionDto>(chartSubmission);
 
         return Ok(new ResponseDto<ChartSubmissionDto>
         {
@@ -265,7 +277,8 @@ public class ChartSubmissionController(IChartSubmissionRepository chartSubmissio
             VolunteerStatus = RequestStatus.Waiting,
             AdmissionStatus =
                 song != null
-                    ? song.OwnerId == currentUser.Id || song.Accessibility == Accessibility.AllowAny
+                    ?
+                    song.OwnerId == currentUser.Id || song.Accessibility == Accessibility.AllowAny
                         ? RequestStatus.Approved
                         : RequestStatus.Waiting
                     : songSubmission!.OwnerId == currentUser.Id ||
@@ -710,7 +723,7 @@ public class ChartSubmissionController(IChartSubmissionRepository chartSubmissio
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
         dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
-            dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
+            dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage * 100;
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser,
@@ -783,7 +796,9 @@ public class ChartSubmissionController(IChartSubmissionRepository chartSubmissio
         var dto = mapper.Map<ChartAssetSubmissionDto>(chartAsset);
 
         return Ok(new ResponseDto<ChartAssetSubmissionDto>
-            { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
+        {
+            Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto
+        });
     }
 
     /// <summary>

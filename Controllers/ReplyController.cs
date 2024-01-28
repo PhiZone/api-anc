@@ -49,11 +49,9 @@ public class ReplyController(IReplyRepository replyRepository, IOptions<DataSett
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser);
         var replies = await replyRepository.GetRepliesAsync(dto.Order, dto.Desc, position,
-            dto.PerPage, predicateExpr);
+            dto.PerPage, predicateExpr, currentUser?.Id);
         var total = await replyRepository.CountRepliesAsync(predicateExpr);
-        var list = new List<ReplyDto>();
-
-        foreach (var reply in replies) list.Add(await dtoMapper.MapReplyAsync<ReplyDto>(reply, currentUser));
+        var list = replies.Select(dtoMapper.MapReply<ReplyDto>).ToList();
 
         return Ok(new ResponseDto<IEnumerable<ReplyDto>>
         {
@@ -91,8 +89,8 @@ public class ReplyController(IReplyRepository replyRepository, IOptions<DataSett
         if (!await replyRepository.ReplyExistsAsync(id))
             return NotFound(new ResponseDto<object>
                 { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });
-        var reply = await replyRepository.GetReplyAsync(id);
-        var dto = await dtoMapper.MapReplyAsync<ReplyDto>(reply, currentUser);
+        var reply = await replyRepository.GetReplyAsync(id, currentUser?.Id);
+        var dto = dtoMapper.MapReply<ReplyDto>(reply);
 
         return Ok(new ResponseDto<ReplyDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
     }

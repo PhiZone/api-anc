@@ -32,14 +32,26 @@ namespace PhiZoneApi.Controllers;
 [ApiController]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme,
     Policy = "AllowAnonymous")]
-public class RecordController(IRecordRepository recordRepository, IOptions<DataSettings> dataSettings,
-        UserManager<User> userManager, IFilterService filterService, IDtoMapper dtoMapper, IMapper mapper,
-        IChartRepository chartRepository, ILikeRepository likeRepository,
-        ILikeService likeService, ICommentRepository commentRepository, IConnectionMultiplexer redis,
-        IApplicationRepository applicationRepository, IPlayConfigurationRepository playConfigurationRepository,
-        IRecordService recordService, IResourceService resourceService, ILogger<RecordController> logger,
-        INotificationService notificationService)
-    : Controller
+public class RecordController(
+    IRecordRepository recordRepository,
+    IOptions<DataSettings> dataSettings,
+    UserManager<User> userManager,
+    IUserRepository userRepository,
+    IFilterService filterService,
+    IDtoMapper dtoMapper,
+    IMapper mapper,
+    IChartRepository chartRepository,
+    ILikeRepository likeRepository,
+    ILikeService likeService,
+    ICommentRepository commentRepository,
+    IConnectionMultiplexer redis,
+    IApplicationRepository applicationRepository,
+    IPlayConfigurationRepository playConfigurationRepository,
+    IRecordService recordService,
+    ILeaderboardService leaderboardService,
+    IResourceService resourceService,
+    ILogger<RecordController> logger,
+    INotificationService notificationService) : Controller
 {
     /// <summary>
     ///     Retrieves records.
@@ -61,11 +73,9 @@ public class RecordController(IRecordRepository recordRepository, IOptions<DataS
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser);
         var records = await recordRepository.GetRecordsAsync(dto.Order, dto.Desc, position,
-            dto.PerPage, predicateExpr);
+            dto.PerPage, predicateExpr, true, currentUser?.Id);
         var total = await recordRepository.CountRecordsAsync(predicateExpr);
-        var list = new List<RecordDto>();
-
-        foreach (var record in records) list.Add(await dtoMapper.MapRecordAsync<RecordDto>(record, currentUser));
+        var list = records.Select(dtoMapper.MapRecord<RecordDto>).ToList();
 
         return Ok(new ResponseDto<IEnumerable<RecordDto>>
         {
@@ -105,8 +115,8 @@ public class RecordController(IRecordRepository recordRepository, IOptions<DataS
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        var record = await recordRepository.GetRecordAsync(id);
-        var dto = await dtoMapper.MapRecordAsync<RecordDto>(record, currentUser);
+        var record = await recordRepository.GetRecordAsync(id, true, currentUser?.Id);
+        var dto = dtoMapper.MapRecord<RecordDto>(record);
 
         return Ok(new ResponseDto<RecordDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
     }
@@ -152,7 +162,7 @@ public class RecordController(IRecordRepository recordRepository, IOptions<DataS
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ApplicationNotFound
             });
 
-        var player = await userManager.FindByIdAsync(info.PlayerId.ToString());
+        var player = await userRepository.GetUserByIdAsync(info.PlayerId);
         if (player == null)
             return NotFound(new ResponseDto<object>
             {
@@ -236,17 +246,15 @@ public class RecordController(IRecordRepository recordRepository, IOptions<DataS
         var highestAccuracy = 0d;
         if (await recordRepository.CountRecordsAsync(record =>
                 record.ChartId == info.ChartId && record.OwnerId == player.Id) > 0)
-            highestAccuracy = (await recordRepository.GetRecordsAsync(new List<string> { "Accuracy" },
-                new List<bool> { true }, 0, 1,
+            highestAccuracy = (await recordRepository.GetRecordsAsync(["Accuracy"], [true], 0, 1,
                 record => record.ChartId == info.ChartId && record.OwnerId == player.Id)).FirstOrDefault()!.Accuracy;
 
         var culture = (CultureInfo)CultureInfo.CurrentCulture.Clone();
         culture.NumberFormat.PercentPositivePattern = 1;
         logger.LogInformation(LogEvents.RecordInfo,
-            "New record: {User} - {Chart} {Score} {Accuracy} {Rks} {StdDeviation}ms",
-            player.UserName, await resourceService.GetDisplayName(chart), score,
-            accuracy.ToString("P2", culture),
-            rks.ToString("N3"), dto.StdDeviation.ToString("N3"));
+            "New record: {User} - {Chart} {Score} {Accuracy} {Rks} {StdDeviation}ms", player.UserName,
+            await resourceService.GetDisplayName(chart), score, accuracy.ToString("P2", culture), rks.ToString("N3"),
+            dto.StdDeviation.ToString("N3"));
 
         var record = new Record
         {
@@ -293,11 +301,10 @@ public class RecordController(IRecordRepository recordRepository, IOptions<DataS
             }
         }
 
-        var phiRks =
-            (await recordRepository.GetRecordsAsync(new List<string> { "Rks" }, new List<bool> { true }, 0, 1,
+        var phiRks = (await recordRepository.GetRecordsAsync(["Rks"], [true], 0, 1,
                 r => r.OwnerId == player.Id && r.Score == 1000000 && r.Chart.IsRanked)).FirstOrDefault()
             ?.Rks ?? 0d;
-        var best19Rks = (await recordService.GetBest19(player.Id)).Sum(r => r.Rks);
+        var best19Rks = (await recordRepository.GetPersonalBests(player.Id)).Sum(r => r.Rks);
         var rksAfter = (phiRks + best19Rks) / 20;
 
         if (!chart.IsRanked) experienceDelta = (int)(experienceDelta * 0.1);
@@ -306,8 +313,8 @@ public class RecordController(IRecordRepository recordRepository, IOptions<DataS
         player.Rks = rksAfter;
         await userManager.UpdateAsync(player);
 
-        chart.PlayCount = await chartRepository.CountChartRecordsAsync(chart.Id);
-        await chartRepository.UpdateChartAsync(chart);
+        leaderboardService.Add(record);
+        // leaderboardService.Add(await recordRepository.GetRecordAsync(record.Id));
 
         return StatusCode(StatusCodes.Status201Created,
             new ResponseDto<RecordResponseDto>
@@ -319,7 +326,7 @@ public class RecordController(IRecordRepository recordRepository, IOptions<DataS
                     Score = score,
                     Accuracy = accuracy,
                     IsFullCombo = record.IsFullCombo,
-                    Player = await dtoMapper.MapUserAsync<UserDto>(player),
+                    Player = dtoMapper.MapUser<UserDto>(player),
                     ExperienceDelta = experienceDelta,
                     RksBefore = rksBefore,
                     DateCreated = record.DateCreated
@@ -522,11 +529,9 @@ public class RecordController(IRecordRepository recordRepository, IOptions<DataS
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
         var comments = await commentRepository.GetCommentsAsync(dto.Order, dto.Desc, position, dto.PerPage,
-            e => e.ResourceId == id);
-        var list = new List<CommentDto>();
+            e => e.ResourceId == id, currentUser?.Id);
         var total = await commentRepository.CountCommentsAsync(e => e.ResourceId == id);
-
-        foreach (var comment in comments) list.Add(await dtoMapper.MapCommentAsync<CommentDto>(comment, currentUser));
+        var list = comments.Select(dtoMapper.MapComment<CommentDto>).ToList();
 
         return Ok(new ResponseDto<IEnumerable<CommentDto>>
         {

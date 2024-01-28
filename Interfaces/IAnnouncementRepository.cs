@@ -6,9 +6,9 @@ namespace PhiZoneApi.Interfaces;
 public interface IAnnouncementRepository
 {
     Task<ICollection<Announcement>> GetAnnouncementsAsync(List<string> order, List<bool> desc, int position, int take,
-        Expression<Func<Announcement, bool>>? predicate = null);
+        Expression<Func<Announcement, bool>>? predicate = null, int? currentUserId = null);
 
-    Task<Announcement> GetAnnouncementAsync(Guid id);
+    Task<Announcement> GetAnnouncementAsync(Guid id, int? currentUserId = null);
 
     Task<bool> AnnouncementExistsAsync(Guid id);
 

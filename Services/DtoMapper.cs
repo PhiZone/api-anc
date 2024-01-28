@@ -7,48 +7,21 @@ using PhiZoneApi.Models;
 
 namespace PhiZoneApi.Services;
 
-public class DtoMapper(IUserRelationRepository userRelationRepository, IRegionRepository regionRepository,
-    ILikeRepository likeRepository, UserManager<User> userManager, IMapper mapper, ICommentRepository commentRepository,
-    IReplyRepository replyRepository, IRecordRepository recordRepository, IChapterRepository chapterRepository,
-    ICollectionRepository collectionRepository, ISongRepository songRepository, IChartRepository chartRepository,
-    ISongSubmissionRepository songSubmissionRepository, IChartSubmissionRepository chartSubmissionRepository,
-    IVolunteerVoteRepository volunteerVoteRepository, IPetQuestionRepository petQuestionRepository) : IDtoMapper
+public class DtoMapper(
+    IMapper mapper,
+    IChapterRepository chapterRepository,
+    ICollectionRepository collectionRepository,
+    ISongRepository songRepository,
+    IChartRepository chartRepository,
+    ISongSubmissionRepository songSubmissionRepository,
+    IChartSubmissionRepository chartSubmissionRepository,
+    IPetQuestionRepository petQuestionRepository) : IDtoMapper
 {
-    public async Task<T> MapUserAsync<T>(User user, User? currentUser = null) where T : UserDto
+    public T MapUser<T>(User user) where T : UserDto
     {
         var dto = mapper.Map<T>(user);
         dto.Role = user.Role.ToString();
-        dto.FollowerCount = await userRelationRepository.CountFollowersAsync(user.Id);
-        dto.FolloweeCount = await userRelationRepository.CountFolloweesAsync(user.Id);
-        dto.Region = (await regionRepository.GetRegionAsync(user.RegionId)).Code;
-        // ReSharper disable once InvertIf
-        if (currentUser != null && await userRelationRepository.RelationExistsAsync(currentUser.Id, user.Id))
-        {
-            var relation = await userRelationRepository.GetRelationAsync(currentUser.Id, user.Id);
-            if (relation.Type != UserRelationType.Blacklisted) dto.DateFollowed = relation.DateCreated;
-        }
-
-        return dto;
-    }
-
-    public async Task<T> MapFollowerAsync<T>(UserRelation userRelation, User? currentUser = null) where T : UserDto
-    {
-        var user = await userManager.FindByIdAsync(userRelation.FollowerId.ToString());
-        return await MapUserAsync<T>(user!, currentUser);
-    }
-
-    public async Task<T> MapFolloweeAsync<T>(UserRelation userRelation, User? currentUser = null) where T : UserDto
-    {
-        var user = await userManager.FindByIdAsync(userRelation.FolloweeId.ToString());
-        return await MapUserAsync<T>(user!, currentUser);
-    }
-
-    public async Task<T> MapUserRelationAsync<T>(UserRelation userRelation, User? currentUser = null)
-        where T : UserRelationDto
-    {
-        var dto = mapper.Map<T>(userRelation);
-        dto.Follower = await MapFollowerAsync<UserDto>(userRelation, currentUser);
-        dto.Followee = await MapFolloweeAsync<UserDto>(userRelation, currentUser);
+        dto.DateFollowed = user.FollowerRelations.FirstOrDefault()?.DateCreated;
         return dto;
     }
 
@@ -58,10 +31,9 @@ public class DtoMapper(IUserRelationRepository userRelationRepository, IRegionRe
         var dto = new AdmissionDto<TAdmitter, TAdmittee>
         {
             Admitter =
-                await MapChapterAsync<TAdmitter>(await chapterRepository.GetChapterAsync(admission.AdmitterId),
-                    currentUser),
-            Admittee =
-                await MapSongAsync<TAdmittee>(await songRepository.GetSongAsync(admission.AdmitteeId), currentUser),
+                MapChapter<TAdmitter>(
+                    await chapterRepository.GetChapterAsync(admission.AdmitterId, currentUser?.Id)),
+            Admittee = MapSong<TAdmittee>(await songRepository.GetSongAsync(admission.AdmitteeId, currentUser?.Id)),
             Status = admission.Status,
             Label = admission.Label,
             RequesterId = admission.RequesterId,
@@ -77,10 +49,10 @@ public class DtoMapper(IUserRelationRepository userRelationRepository, IRegionRe
         var dto = new AdmissionDto<TAdmitter, TAdmittee>
         {
             Admitter =
-                await MapCollectionAsync<TAdmitter>(
-                    await collectionRepository.GetCollectionAsync(admission.AdmitterId), currentUser),
+                MapCollection<TAdmitter>(
+                    await collectionRepository.GetCollectionAsync(admission.AdmitterId, currentUser?.Id)),
             Admittee =
-                await MapChartAsync<TAdmittee>(await chartRepository.GetChartAsync(admission.AdmitteeId), currentUser),
+                MapChart<TAdmittee>(await chartRepository.GetChartAsync(admission.AdmitteeId, currentUser?.Id)),
             Status = admission.Status,
             Label = admission.Label,
             RequesterId = admission.RequesterId,
@@ -95,11 +67,10 @@ public class DtoMapper(IUserRelationRepository userRelationRepository, IRegionRe
     {
         var dto = new AdmissionDto<TAdmitter, TAdmittee>
         {
-            Admitter =
-                await MapSongAsync<TAdmitter>(await songRepository.GetSongAsync(admission.AdmitterId), currentUser),
+            Admitter = MapSong<TAdmitter>(await songRepository.GetSongAsync(admission.AdmitterId, currentUser?.Id)),
             Admittee =
-                await MapChartSubmissionAsync<TAdmittee>(
-                    await chartSubmissionRepository.GetChartSubmissionAsync(admission.AdmitteeId), currentUser),
+                MapChartSubmission<TAdmittee>(
+                    await chartSubmissionRepository.GetChartSubmissionAsync(admission.AdmitteeId, currentUser?.Id)),
             Status = admission.Status,
             Label = admission.Label,
             RequesterId = admission.RequesterId,
@@ -118,8 +89,8 @@ public class DtoMapper(IUserRelationRepository userRelationRepository, IRegionRe
             Admitter =
                 mapper.Map<TAdmitter>(await songSubmissionRepository.GetSongSubmissionAsync(admission.AdmitterId)),
             Admittee =
-                await MapChartSubmissionAsync<TAdmittee>(
-                    await chartSubmissionRepository.GetChartSubmissionAsync(admission.AdmitteeId), currentUser),
+                MapChartSubmission<TAdmittee>(
+                    await chartSubmissionRepository.GetChartSubmissionAsync(admission.AdmitteeId, currentUser?.Id)),
             Status = admission.Status,
             Label = admission.Label,
             RequesterId = admission.RequesterId,
@@ -129,159 +100,121 @@ public class DtoMapper(IUserRelationRepository userRelationRepository, IRegionRe
         return dto;
     }
 
-    public async Task<T> MapChapterAsync<T>(Chapter chapter, User? currentUser = null) where T : ChapterDto
+    public T MapChapter<T>(Chapter chapter) where T : ChapterDto
     {
         var dto = mapper.Map<T>(chapter);
-        dto.CommentCount = await commentRepository.CountCommentsAsync(comment => comment.ResourceId == chapter.Id);
-        dto.DateLiked = currentUser != null && await likeRepository.LikeExistsAsync(chapter.Id, currentUser.Id)
-            ? (await likeRepository.GetLikeAsync(chapter.Id, currentUser.Id)).DateCreated
-            : null;
+        dto.DateLiked = chapter.Likes.FirstOrDefault()?.DateCreated;
         return dto;
     }
 
-    public async Task<T> MapCollectionAsync<T>(Collection collection, User? currentUser = null) where T : CollectionDto
+    public T MapCollection<T>(Collection collection) where T : CollectionDto
     {
         var dto = mapper.Map<T>(collection);
-        dto.CommentCount = await commentRepository.CountCommentsAsync(comment => comment.ResourceId == collection.Id);
-        dto.DateLiked = currentUser != null && await likeRepository.LikeExistsAsync(collection.Id, currentUser.Id)
-            ? (await likeRepository.GetLikeAsync(collection.Id, currentUser.Id)).DateCreated
-            : null;
+        dto.DateLiked = collection.Likes.FirstOrDefault()?.DateCreated;
         return dto;
     }
 
-    public async Task<T> MapSongAsync<T>(Song song, User? currentUser = null) where T : SongDto
+    public T MapSong<T>(Song song) where T : SongDto
     {
         var dto = mapper.Map<T>(song);
 
         foreach (var levelType in Enum.GetValues<ChartLevel>())
             dto.ChartLevels.Add(new ChartLevelDto
             {
-                LevelType = levelType,
-                Count = await chartRepository.CountChartsAsync(chart =>
-                    chart.SongId == song.Id && chart.LevelType == levelType)
+                LevelType = levelType, Count = song.Charts.Count(e => e.LevelType == levelType)
             });
-
-        dto.CommentCount = await commentRepository.CountCommentsAsync(comment => comment.ResourceId == song.Id);
-        dto.DateLiked = currentUser != null && await likeRepository.LikeExistsAsync(song.Id, currentUser.Id)
-            ? (await likeRepository.GetLikeAsync(song.Id, currentUser.Id)).DateCreated
-            : null;
+        dto.DateLiked = song.Likes.FirstOrDefault()?.DateCreated;
         return dto;
     }
 
     public async Task<T> MapSongChapterAsync<T>(Admission admission, User? currentUser = null)
         where T : ChapterAdmitterDto
     {
-        var dto = await MapChapterAsync<T>(await chapterRepository.GetChapterAsync(admission.AdmitterId), currentUser);
+        var dto = MapChapter<T>(await chapterRepository.GetChapterAsync(admission.AdmitterId, currentUser?.Id));
         dto.Label = admission.Label;
         return dto;
     }
 
     public async Task<T> MapChapterSongAsync<T>(Admission admission, User? currentUser = null) where T : SongAdmitteeDto
     {
-        var dto = await MapSongAsync<T>(await songRepository.GetSongAsync(admission.AdmitteeId), currentUser);
+        var dto = MapSong<T>(await songRepository.GetSongAsync(admission.AdmitteeId, currentUser?.Id));
         dto.Label = admission.Label;
         return dto;
     }
 
-    public async Task<T> MapChartAsync<T>(Chart chart, User? currentUser = null) where T : ChartDto
+    public T MapChart<T>(Chart chart) where T : ChartDto
     {
         var dto = mapper.Map<T>(chart);
-        dto.CommentCount = await commentRepository.CountCommentsAsync(comment => comment.ResourceId == chart.Id);
-        dto.DateLiked = currentUser != null && await likeRepository.LikeExistsAsync(chart.Id, currentUser.Id)
-            ? (await likeRepository.GetLikeAsync(chart.Id, currentUser.Id)).DateCreated
-            : null;
+        dto.Song = MapSong<SongDto>(chart.Song);
+        dto.DateLiked = chart.Likes.FirstOrDefault()?.DateCreated;
         return dto;
     }
 
     public async Task<T> MapChartCollectionAsync<T>(Admission admission, User? currentUser = null)
         where T : CollectionAdmitterDto
     {
-        var dto = await MapCollectionAsync<T>(await collectionRepository.GetCollectionAsync(admission.AdmitterId),
-            currentUser);
+        var dto = MapCollection<T>(await collectionRepository.GetCollectionAsync(admission.AdmitterId,
+            currentUser?.Id));
         dto.Label = admission.Label;
         return dto;
     }
 
-    public async Task<T> MapCollectionChartAsync<T>(Admission admission, User? currentUser = null)
-        where T : ChartAdmitteeDto
+    public async Task<T> MapCollectionChartAsync<T>(Admission admission, User? currentUser = null) where T : ChartAdmitteeDto
     {
-        var dto = await MapChartAsync<T>(await chartRepository.GetChartAsync(admission.AdmitteeId), currentUser);
+        var dto = MapChart<T>(await chartRepository.GetChartAsync(admission.AdmitteeId, currentUser?.Id));
         dto.Label = admission.Label;
         return dto;
     }
 
-    public async Task<T> MapChartSubmissionAsync<T>(ChartSubmission chart, User? currentUser = null)
+    public T MapChartSubmission<T>(ChartSubmission chart)
         where T : ChartSubmissionDto
     {
         var dto = mapper.Map<T>(chart);
-        dto.DateVoted =
-            currentUser != null && await volunteerVoteRepository.VolunteerVoteExistsAsync(chart.Id, currentUser.Id)
-                ? (await volunteerVoteRepository.GetVolunteerVoteAsync(chart.Id, currentUser.Id)).DateCreated
-                : null;
+        if (chart.Song != null) dto.Song = MapSong<SongDto>(chart.Song);
+        if (chart.SongSubmission != null) dto.SongSubmission = mapper.Map<SongSubmissionDto>(chart.SongSubmission);
+        dto.DateVoted = chart.VolunteerVotes.FirstOrDefault()?.DateCreated;
         return dto;
     }
 
-    public async Task<T> MapRecordAsync<T>(Record record, User? currentUser = null) where T : RecordDto
+    public T MapRecord<T>(Record record) where T : RecordDto
     {
         var dto = mapper.Map<T>(record);
-        dto.Position =
-            await recordRepository.CountRecordsAsync(r => r.ChartId == record.ChartId && r.Rks > record.Rks) + 1;
-        dto.DateLiked = currentUser != null && await likeRepository.LikeExistsAsync(record.Id, currentUser.Id)
-            ? (await likeRepository.GetLikeAsync(record.Id, currentUser.Id)).DateCreated
-            : null;
+        dto.DateLiked = record.Likes.FirstOrDefault()?.DateCreated;
         return dto;
     }
 
-    public async Task<T> MapCommentAsync<T>(Comment comment, User? currentUser = null) where T : CommentDto
+    public T MapComment<T>(Comment comment) where T : CommentDto
     {
         var dto = mapper.Map<T>(comment);
-        dto.ReplyCount = await replyRepository.CountRepliesAsync(reply => reply.CommentId == comment.Id);
-        dto.DateLiked = currentUser != null && await likeRepository.LikeExistsAsync(comment.Id, currentUser.Id)
-            ? (await likeRepository.GetLikeAsync(comment.Id, currentUser.Id)).DateCreated
-            : null;
+        dto.DateLiked = comment.Likes.FirstOrDefault()?.DateCreated;
         return dto;
     }
 
-    public async Task<T> MapReplyAsync<T>(Reply reply, User? currentUser = null) where T : ReplyDto
+    public T MapReply<T>(Reply reply) where T : ReplyDto
     {
         var dto = mapper.Map<T>(reply);
-        dto.DateLiked = currentUser != null && await likeRepository.LikeExistsAsync(reply.Id, currentUser.Id)
-            ? (await likeRepository.GetLikeAsync(reply.Id, currentUser.Id)).DateCreated
-            : null;
+        dto.DateLiked = reply.Likes.FirstOrDefault()?.DateCreated;
         return dto;
     }
 
-    public async Task<T> MapApplicationAsync<T>(Application application, User? currentUser = null)
-        where T : ApplicationDto
+    public T MapApplication<T>(Application application) where T : ApplicationDto
     {
         var dto = mapper.Map<T>(application);
-        dto.CommentCount = await commentRepository.CountCommentsAsync(comment => comment.ResourceId == application.Id);
-        dto.DateLiked = currentUser != null && await likeRepository.LikeExistsAsync(application.Id, currentUser.Id)
-            ? (await likeRepository.GetLikeAsync(application.Id, currentUser.Id)).DateCreated
-            : null;
+        dto.DateLiked = application.Likes.FirstOrDefault()?.DateCreated;
         return dto;
     }
 
-    public async Task<T> MapAnnouncementAsync<T>(Announcement announcement, User? currentUser = null)
-        where T : AnnouncementDto
+    public T MapAnnouncement<T>(Announcement announcement) where T : AnnouncementDto
     {
         var dto = mapper.Map<T>(announcement);
-        dto.CommentCount = await commentRepository.CountCommentsAsync(comment => comment.ResourceId == announcement.Id);
-        dto.DateLiked = currentUser != null && await likeRepository.LikeExistsAsync(announcement.Id, currentUser.Id)
-            ? (await likeRepository.GetLikeAsync(announcement.Id, currentUser.Id)).DateCreated
-            : null;
+        dto.DateLiked = announcement.Likes.FirstOrDefault()?.DateCreated;
         return dto;
     }
 
-    public async Task<T> MapNotificationAsync<T>(Notification notification, User? currentUser = null)
-        where T : NotificationDto
+    public T MapNotification<T>(Notification notification) where T : NotificationDto
     {
         var dto = mapper.Map<T>(notification);
-        if (notification.OperatorId != null)
-            dto.Operator =
-                await MapUserAsync<UserDto>(
-                    (await userManager.FindByIdAsync(notification.OperatorId.Value.ToString()))!, currentUser);
-
+        if (notification.Operator != null) dto.Operator = MapUser<UserDto>(notification.Operator);
         return dto;
     }
 

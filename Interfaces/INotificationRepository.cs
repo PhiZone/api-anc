@@ -6,9 +6,9 @@ namespace PhiZoneApi.Interfaces;
 public interface INotificationRepository
 {
     Task<ICollection<Notification>> GetNotificationsAsync(List<string> order, List<bool> desc, int position, int take,
-        Expression<Func<Notification, bool>>? predicate = null);
+        Expression<Func<Notification, bool>>? predicate = null, int? currentUserId = null);
 
-    Task<Notification> GetNotificationAsync(Guid id);
+    Task<Notification> GetNotificationAsync(Guid id, int? currentUserId = null);
 
     Task<bool> NotificationExistsAsync(Guid id);
 

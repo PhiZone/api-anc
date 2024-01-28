@@ -26,11 +26,21 @@ namespace PhiZoneApi.Controllers;
 [ApiController]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme,
     Policy = "AllowAnonymous")]
-public class AnnouncementController(IAnnouncementRepository announcementRepository, IOptions<DataSettings> dataSettings,
-    IDtoMapper dtoMapper, IFilterService filterService, UserManager<User> userManager, ILikeRepository likeRepository,
-    ILikeService likeService, IMapper mapper, ICommentRepository commentRepository, IEventRepository eventRepository,
-    IEventDivisionRepository eventDivisionRepository, IResourceService resourceService,
-    INotificationService notificationService, IMeilisearchService meilisearchService) : Controller
+public class AnnouncementController(
+    IAnnouncementRepository announcementRepository,
+    IOptions<DataSettings> dataSettings,
+    IDtoMapper dtoMapper,
+    IFilterService filterService,
+    UserManager<User> userManager,
+    ILikeRepository likeRepository,
+    ILikeService likeService,
+    IMapper mapper,
+    ICommentRepository commentRepository,
+    IEventRepository eventRepository,
+    IEventDivisionRepository eventDivisionRepository,
+    IResourceService resourceService,
+    INotificationService notificationService,
+    IMeilisearchService meilisearchService) : Controller
 {
     /// <summary>
     ///     Retrieves announcements.
@@ -57,20 +67,20 @@ public class AnnouncementController(IAnnouncementRepository announcementReposito
         if (dto.Search != null)
         {
             var result = await meilisearchService.SearchAsync<Announcement>(dto.Search, dto.PerPage, dto.Page);
-            announcements = result.Hits;
+            var idList = result.Hits.Select(item => item.Id).ToList();
+            announcements = (await announcementRepository.GetAnnouncementsAsync(["DateCreated"], [false], position,
+                dto.PerPage, e => idList.Contains(e.Id), currentUser?.Id)).OrderBy(e =>
+                idList.IndexOf(e.Id));
             total = result.TotalHits;
         }
         else
         {
             announcements = await announcementRepository.GetAnnouncementsAsync(dto.Order, dto.Desc, position,
-                dto.PerPage, predicateExpr);
+                dto.PerPage, predicateExpr, currentUser?.Id);
             total = await announcementRepository.CountAnnouncementsAsync(predicateExpr);
         }
 
-        var list = new List<AnnouncementDto>();
-
-        foreach (var announcement in announcements)
-            list.Add(await dtoMapper.MapAnnouncementAsync<AnnouncementDto>(announcement, currentUser));
+        var list = announcements.Select(dtoMapper.MapAnnouncement<AnnouncementDto>).ToList();
 
         return Ok(new ResponseDto<IEnumerable<AnnouncementDto>>
         {
@@ -110,8 +120,8 @@ public class AnnouncementController(IAnnouncementRepository announcementReposito
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        var announcement = await announcementRepository.GetAnnouncementAsync(id);
-        var dto = await dtoMapper.MapAnnouncementAsync<AnnouncementDto>(announcement, currentUser);
+        var announcement = await announcementRepository.GetAnnouncementAsync(id, currentUser?.Id);
+        var dto = dtoMapper.MapAnnouncement<AnnouncementDto>(announcement);
 
         return Ok(new ResponseDto<AnnouncementDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
     }
@@ -415,11 +425,9 @@ public class AnnouncementController(IAnnouncementRepository announcementReposito
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
         var comments = await commentRepository.GetCommentsAsync(dto.Order, dto.Desc, position, dto.PerPage,
-            e => e.ResourceId == id);
-        var list = new List<CommentDto>();
+            e => e.ResourceId == id, currentUser?.Id);
         var total = await commentRepository.CountCommentsAsync(e => e.ResourceId == id);
-
-        foreach (var comment in comments) list.Add(await dtoMapper.MapCommentAsync<CommentDto>(comment, currentUser));
+        var list = comments.Select(dtoMapper.MapComment<CommentDto>).ToList();
 
         return Ok(new ResponseDto<IEnumerable<CommentDto>>
         {

@@ -18,6 +18,8 @@ using PhiZoneApi.Models;
 using PhiZoneApi.Utils;
 using StackExchange.Redis;
 
+// ReSharper disable SuggestBaseTypeForParameterInConstructor
+
 // ReSharper disable RouteTemplates.ActionRoutePrefixCanBeExtractedToControllerRoute
 
 namespace PhiZoneApi.Controllers;
@@ -27,12 +29,22 @@ namespace PhiZoneApi.Controllers;
 [ApiController]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme,
     Policy = "AllowAnonymous")]
-public class UserController(IUserRepository userRepository, IUserRelationRepository userRelationRepository,
-    UserManager<User> userManager, IFilterService filterService, IFileStorageService fileStorageService,
-    IOptions<DataSettings> dataSettings, IMapper mapper, IDtoMapper dtoMapper, IRegionRepository regionRepository,
-    IRecordRepository recordRepository, IRecordService recordService, IResourceService resourceService,
-    IConnectionMultiplexer redis, ITemplateService templateService,
-    IPlayConfigurationRepository playConfigurationRepository, IMeilisearchService meilisearchService) : Controller
+public class UserController(
+    IUserRepository userRepository,
+    IUserRelationRepository userRelationRepository,
+    UserManager<User> userManager,
+    IFilterService filterService,
+    IFileStorageService fileStorageService,
+    IOptions<DataSettings> dataSettings,
+    IMapper mapper,
+    IDtoMapper dtoMapper,
+    IRegionRepository regionRepository,
+    IRecordRepository recordRepository,
+    IResourceService resourceService,
+    IConnectionMultiplexer redis,
+    ITemplateService templateService,
+    IPlayConfigurationRepository playConfigurationRepository,
+    IMeilisearchService meilisearchService) : Controller
 {
     /// <summary>
     ///     Retrieves users.
@@ -58,18 +70,19 @@ public class UserController(IUserRepository userRepository, IUserRelationReposit
         if (dto.Search != null)
         {
             var result = await meilisearchService.SearchAsync<User>(dto.Search, dto.PerPage, dto.Page);
-            users = result.Hits;
+            var idList = result.Hits.Select(item => item.Id).ToList();
+            users = (await userRepository.GetUsersAsync(["Id"], [false], position, dto.PerPage,
+                e => idList.Contains(e.Id), currentUser?.Id)).OrderBy(e =>
+                idList.IndexOf(e.Id));
             total = result.TotalHits;
         }
         else
         {
-            users = await userRepository.GetUsersAsync(dto.Order, dto.Desc, position, dto.PerPage, predicateExpr);
+            users = await userRepository.GetUsersAsync(dto.Order, dto.Desc, position, dto.PerPage, predicateExpr, currentUser?.Id);
             total = await userRepository.CountUsersAsync(predicateExpr);
         }
 
-        var list = new List<UserDto>();
-
-        foreach (var user in users) list.Add(await dtoMapper.MapUserAsync<UserDto>(user, currentUser));
+        var list = users.Select(dtoMapper.MapUser<UserDto>).ToList();
 
         return Ok(new ResponseDto<IEnumerable<UserDto>>
         {
@@ -104,13 +117,13 @@ public class UserController(IUserRepository userRepository, IUserRelationReposit
     public async Task<IActionResult> GetUser([FromRoute] int id)
     {
         var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        var user = await userManager.FindByIdAsync(id.ToString());
+        var user = await userRepository.GetUserByIdAsync(id, currentUser?.Id);
         if (user == null)
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNotFound
             });
-        var dto = await dtoMapper.MapUserAsync<UserDto>(user, currentUser);
+        var dto = dtoMapper.MapUser<UserDto>(user);
 
         return Ok(new ResponseDto<UserDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
     }
@@ -534,13 +547,11 @@ public class UserController(IUserRepository userRepository, IUserRelationReposit
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser);
-        var followers =
+        var relations =
             await userRelationRepository.GetFollowersAsync(user.Id, dto.Order, dto.Desc, position, dto.PerPage,
                 predicateExpr);
         var total = await userRelationRepository.CountFollowersAsync(user.Id, predicateExpr);
-        var list = new List<UserDto>();
-
-        foreach (var follower in followers) list.Add(await dtoMapper.MapFollowerAsync<UserDto>(follower, currentUser));
+        var list = relations.Select(relation => dtoMapper.MapUser<UserDto>(relation.Follower)).ToList();
 
         return Ok(new ResponseDto<IEnumerable<UserDto>>
         {
@@ -584,13 +595,11 @@ public class UserController(IUserRepository userRepository, IUserRelationReposit
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser);
-        var followees =
+        var relations =
             await userRelationRepository.GetFolloweesAsync(user.Id, dto.Order, dto.Desc, position, dto.PerPage,
                 predicateExpr);
         var total = await userRelationRepository.CountFolloweesAsync(user.Id, predicateExpr);
-        var list = new List<UserDto>();
-
-        foreach (var followee in followees) list.Add(await dtoMapper.MapFolloweeAsync<UserDto>(followee, currentUser));
+        var list = relations.Select(relation => dtoMapper.MapUser<UserDto>(relation.Followee)).ToList();
 
         return Ok(new ResponseDto<IEnumerable<UserDto>>
         {
@@ -740,12 +749,12 @@ public class UserController(IUserRepository userRepository, IUserRelationReposit
     public async Task<IActionResult> GetBestRecords([FromRoute] int id)
     {
         var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        var phi1 = (await recordRepository.GetRecordsAsync(new List<string> { "Rks" }, new List<bool> { true }, 0, 1,
-            r => r.OwnerId == id && r.Score == 1000000 && r.Chart.IsRanked)).FirstOrDefault();
-        var phi1Dto = phi1 != null ? await dtoMapper.MapRecordAsync<RecordDto>(phi1) : null;
-        var b19 = await recordService.GetBest19(id);
+        var phi1 = (await recordRepository.GetRecordsAsync(["Rks"], [true], 0, 1,
+            r => r.OwnerId == id && r.Score == 1000000 && r.Chart.IsRanked, true, currentUser?.Id)).FirstOrDefault();
+        var phi1Dto = phi1 != null ? dtoMapper.MapRecord<RecordDto>(phi1) : null;
+        var b19 = await recordRepository.GetPersonalBests(id, queryChart: true, currentUserId: currentUser?.Id);
         var b19Dto = new List<RecordDto>();
-        foreach (var record in b19) b19Dto.Add(await dtoMapper.MapRecordAsync<RecordDto>(record, currentUser));
+        foreach (var record in b19) b19Dto.Add(dtoMapper.MapRecord<RecordDto>(record));
         return Ok(new ResponseDto<UserBestRecordsDto>
         {
             Status = ResponseStatus.Ok,

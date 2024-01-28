@@ -30,6 +30,10 @@ public class User : IdentityUser<int>
 
     public DateTimeOffset? DateOfBirth { get; set; }
 
+    public int FollowerCount { get; set; }
+
+    public int FolloweeCount { get; set; }
+
     public int RegionId { get; set; }
 
     public Region Region { get; set; } = null!;

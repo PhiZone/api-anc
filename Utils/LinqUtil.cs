@@ -7,7 +7,7 @@ public static class LinqUtil
 {
     public static IQueryable<T> OrderBy<T>(this IQueryable<T> query, List<string> fields, List<bool> desc)
     {
-        if (fields.Count == 0) fields = new List<string> { "DateCreated" };
+        if (fields.Count == 0) fields = ["DateCreated"];
 
         var sourceType = typeof(T);
         var parameter = Expression.Parameter(sourceType, "x");
@@ -29,7 +29,7 @@ public static class LinqUtil
                     m.Name == $"{(i == 0 ? "Order" : "Then")}{(isDescending ? "ByDescending" : "By")}" &&
                     m.GetParameters().Length == 2)!.MakeGenericMethod(typeof(T), propInfo.PropertyType);
 
-            orderedQuery = (IQueryable<T>)orderByMethod.Invoke(null, new object[] { orderedQuery, lambdaExpr })!;
+            orderedQuery = (IQueryable<T>)orderByMethod.Invoke(null, [orderedQuery, lambdaExpr])!;
         }
 
         return orderedQuery;

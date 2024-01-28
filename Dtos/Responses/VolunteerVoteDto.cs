@@ -7,6 +7,8 @@ public class VolunteerVoteDto
     public Guid ChartId { get; set; }
 
     public double Score { get; set; }
+    
+    public double SuggestedDifficulty { get; set; }
 
     public string Message { get; set; } = null!;
 

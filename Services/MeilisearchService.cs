@@ -1,4 +1,5 @@
 ﻿using Meilisearch;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using PhiZoneApi.Configurations;
 using PhiZoneApi.Data;
@@ -30,7 +31,8 @@ public class MeilisearchService : IMeilisearchService
                     HitsPerPage = perPage,
                     Page = page,
                     Filter = typeof(PublicResource).IsAssignableFrom(typeof(T)) && !showHidden
-                        ? "isHidden = false"
+                        ?
+                        "isHidden = false"
                         : (typeof(Submission).IsAssignableFrom(typeof(T)) || typeof(T) == typeof(Notification) ||
                            typeof(T) == typeof(PetAnswer)) && showOwnerId != null
                             ? $"ownerId = {showOwnerId}"
@@ -40,7 +42,7 @@ public class MeilisearchService : IMeilisearchService
 
     public async Task AddAsync<T>(T document)
     {
-        await _client.Index(typeof(T).Name).AddDocumentsAsync(new[] { document });
+        await _client.Index(typeof(T).Name).AddDocumentsAsync([document]);
     }
 
     public async Task AddBatchAsync<T>(IEnumerable<T> documents)
@@ -50,7 +52,7 @@ public class MeilisearchService : IMeilisearchService
 
     public async Task UpdateAsync<T>(T document)
     {
-        await _client.Index(typeof(T).Name).UpdateDocumentsAsync(new[] { document });
+        await _client.Index(typeof(T).Name).UpdateDocumentsAsync([document]);
     }
 
     public async Task UpdateBatchAsync<T>(IEnumerable<T> documents)
@@ -95,75 +97,82 @@ public class MeilisearchService : IMeilisearchService
 
     private async void CreateIndexes(IServiceProvider provider)
     {
-        await _client.Index("Announcement").UpdateSearchableAttributesAsync(new[] { "title", "content" });
+        await _client.Index("Announcement").UpdateSearchableAttributesAsync(["title", "content"]);
         await _client.Index("Application")
-            .UpdateSearchableAttributesAsync(new[] { "name", "illustrator", "description", "homepage", "type" });
+            .UpdateSearchableAttributesAsync(["name", "illustrator", "description", "homepage", "type"]);
         await _client.Index("Chapter")
-            .UpdateSearchableAttributesAsync(new[] { "title", "subtitle", "illustrator", "description" });
+            .UpdateSearchableAttributesAsync(["title", "subtitle", "illustrator", "description"]);
         await _client.Index("Chart")
-            .UpdateSearchableAttributesAsync(new[]
-            {
-                "title", "level", "difficulty", "authorName", "illustrator", "description", "noteCount"
-            });
+            .UpdateSearchableAttributesAsync([
+                "title", "level", "difficulty", "authorName", "illustrator", "description", "noteCount", "song.title",
+                "song.edition", "song.authorName", "song.illustrator", "song.lyrics", "song.description"
+            ]);
         await _client.Index("ChartSubmission")
-            .UpdateSearchableAttributesAsync(new[]
-            {
-                "title", "level", "difficulty", "authorName", "illustrator", "description", "noteCount"
-            });
+            .UpdateSearchableAttributesAsync([
+                "title", "level", "difficulty", "authorName", "illustrator", "description", "noteCount", "song.title",
+                "song.edition", "song.authorName", "song.illustrator", "song.lyrics", "song.description",
+                "songSubmission.title", "songSubmission.edition", "songSubmission.authorName",
+                "songSubmission.illustrator", "songSubmission.lyrics", "songSubmission.description"
+            ]);
         await _client.Index("Collection")
-            .UpdateSearchableAttributesAsync(new[] { "title", "subtitle", "illustrator", "description" });
+            .UpdateSearchableAttributesAsync(["title", "subtitle", "illustrator", "description"]);
         await _client.Index("Event")
-            .UpdateSearchableAttributesAsync(new[] { "title", "subtitle", "illustrator", "description" });
+            .UpdateSearchableAttributesAsync(["title", "subtitle", "illustrator", "description"]);
         await _client.Index("EventDivision")
-            .UpdateSearchableAttributesAsync(new[] { "title", "subtitle", "illustrator", "description" });
+            .UpdateSearchableAttributesAsync([
+                "title", "subtitle", "illustrator", "description", "event.title", "event.subtitle", "event.illustrator",
+                "event.description"
+            ]);
         await _client.Index("EventTask")
-            .UpdateSearchableAttributesAsync(new[] { "name", "code", "description" });
-        await _client.Index("EventTeam")
-            .UpdateSearchableAttributesAsync(new[] { "name" });
-        await _client.Index("Notification").UpdateSearchableAttributesAsync(new[] { "content" });
-        await _client.Index("PetAnswer").UpdateSearchableAttributesAsync(new[] { "answer1", "answer2", "answer3" });
-        await _client.Index("PetChoice").UpdateSearchableAttributesAsync(new[] { "content", "language" });
-        await _client.Index("PetQuestion").UpdateSearchableAttributesAsync(new[] { "content", "language" });
-        await _client.Index("Region").UpdateSearchableAttributesAsync(new[] { "code", "name" });
+            .UpdateSearchableAttributesAsync([
+                "name", "code", "description", "division.title", "division.subtitle", "division.illustrator",
+                "division.description", "division.event.title", "division.event.subtitle", "division.event.illustrator",
+                "division.event.description"
+            ]);
+        await _client.Index("EventTeam").UpdateSearchableAttributesAsync(["name"]);
+        await _client.Index("Notification").UpdateSearchableAttributesAsync(["content"]);
+        await _client.Index("PetAnswer").UpdateSearchableAttributesAsync(["answer1", "answer2", "answer3"]);
+        await _client.Index("PetChoice").UpdateSearchableAttributesAsync(["content", "language"]);
+        await _client.Index("PetQuestion").UpdateSearchableAttributesAsync(["content", "language"]);
+        await _client.Index("Region").UpdateSearchableAttributesAsync(["code", "name"]);
         await _client.Index("ResourceRecord")
-            .UpdateSearchableAttributesAsync(
-                new[] { "title", "edition", "authorName", "description", "copyrightOwner" });
+            .UpdateSearchableAttributesAsync(["title", "edition", "authorName", "description", "copyrightOwner"]);
         await _client.Index("Song")
-            .UpdateSearchableAttributesAsync(new[]
-            {
+            .UpdateSearchableAttributesAsync([
                 "title", "edition", "authorName", "illustrator", "lyrics", "description"
-            });
+            ]);
         await _client.Index("SongSubmission")
-            .UpdateSearchableAttributesAsync(new[]
-            {
+            .UpdateSearchableAttributesAsync([
                 "title", "edition", "authorName", "illustrator", "lyrics", "description"
-            });
+            ]);
         await _client.Index("User")
-            .UpdateSearchableAttributesAsync(new[] { "userName", "biography", "tag", "language", "rks", "experience" });
+            .UpdateSearchableAttributesAsync(["userName", "biography", "tag", "language", "rks", "experience"]);
 
-        await _client.Index("Chapter").UpdateFilterableAttributesAsync(new[] { "isHidden" });
-        await _client.Index("Chart").UpdateFilterableAttributesAsync(new[] { "isHidden" });
-        await _client.Index("Collection").UpdateFilterableAttributesAsync(new[] { "isHidden" });
-        await _client.Index("Event").UpdateFilterableAttributesAsync(new[] { "isHidden" });
-        await _client.Index("EventDivision").UpdateFilterableAttributesAsync(new[] { "isHidden" });
-        await _client.Index("Song").UpdateFilterableAttributesAsync(new[] { "isHidden" });
+        await _client.Index("Chapter").UpdateFilterableAttributesAsync(["isHidden"]);
+        await _client.Index("Chart").UpdateFilterableAttributesAsync(["isHidden"]);
+        await _client.Index("Collection").UpdateFilterableAttributesAsync(["isHidden"]);
+        await _client.Index("Event").UpdateFilterableAttributesAsync(["isHidden"]);
+        await _client.Index("EventDivision").UpdateFilterableAttributesAsync(["isHidden"]);
+        await _client.Index("Song").UpdateFilterableAttributesAsync(["isHidden"]);
 
-        await _client.Index("ChartSubmission").UpdateFilterableAttributesAsync(new[] { "ownerId" });
-        await _client.Index("Notification").UpdateFilterableAttributesAsync(new[] { "ownerId" });
-        await _client.Index("PetAnswer").UpdateFilterableAttributesAsync(new[] { "ownerId" });
-        await _client.Index("SongSubmission").UpdateFilterableAttributesAsync(new[] { "ownerId" });
+        await _client.Index("ChartSubmission").UpdateFilterableAttributesAsync(["ownerId"]);
+        await _client.Index("Notification").UpdateFilterableAttributesAsync(["ownerId"]);
+        await _client.Index("PetAnswer").UpdateFilterableAttributesAsync(["ownerId"]);
+        await _client.Index("SongSubmission").UpdateFilterableAttributesAsync(["ownerId"]);
 
         await using var scope = provider.CreateAsyncScope();
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         await _client.Index("Announcement").AddDocumentsAsync(context.Announcements, "id");
         await _client.Index("Application").AddDocumentsAsync(context.Applications, "id");
         await _client.Index("Chapter").AddDocumentsAsync(context.Chapters, "id");
-        await _client.Index("Chart").AddDocumentsAsync(context.Charts, "id");
-        await _client.Index("ChartSubmission").AddDocumentsAsync(context.ChartSubmissions, "id");
+        await _client.Index("Chart").AddDocumentsAsync(context.Charts.Include(e => e.Song), "id");
+        await _client.Index("ChartSubmission")
+            .AddDocumentsAsync(context.ChartSubmissions.Include(e => e.Song).Include(e => e.SongSubmission), "id");
         await _client.Index("Collection").AddDocumentsAsync(context.Collections, "id");
         await _client.Index("Event").AddDocumentsAsync(context.Events, "id");
-        await _client.Index("EventDivision").AddDocumentsAsync(context.EventDivisions, "id");
-        await _client.Index("EventTask").AddDocumentsAsync(context.EventTasks, "id");
+        await _client.Index("EventDivision").AddDocumentsAsync(context.EventDivisions.Include(e => e.Event), "id");
+        await _client.Index("EventTask")
+            .AddDocumentsAsync(context.EventTasks.Include(e => e.Division).ThenInclude(e => e.Event), "id");
         await _client.Index("EventTeam").AddDocumentsAsync(context.EventTeams, "id");
         await _client.Index("Notification").AddDocumentsAsync(context.Notifications, "id");
         await _client.Index("PetAnswer").AddDocumentsAsync(context.PetAnswers, "id");

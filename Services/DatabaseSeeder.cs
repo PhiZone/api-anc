@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using OpenIddict.Abstractions;
 using PhiZoneApi.Data;
+using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 
 // ReSharper disable StringLiteralTypo
@@ -17,6 +18,7 @@ public class DatabaseSeeder(IServiceProvider serviceProvider) : IHostedService
         await PopulateRegions(scope, cancellationToken);
         await PopulateScopes(scope, cancellationToken);
         await PopulateInternalApps(scope, cancellationToken);
+        await PopulateLeaderboards(scope, cancellationToken);
     }
 
     public Task StopAsync(CancellationToken cancellationToken)
@@ -64,6 +66,12 @@ public class DatabaseSeeder(IServiceProvider serviceProvider) : IHostedService
             else
                 await appManager.UpdateAsync(client, appDescriptor, cancellationToken);
         }
+    }
+
+    private static async Task PopulateLeaderboards(IServiceScope scope, CancellationToken cancellationToken)
+    {
+        var leaderboardService = scope.ServiceProvider.GetRequiredService<ILeaderboardService>();
+        await leaderboardService.Initialize(scope.ServiceProvider.GetRequiredService<ApplicationDbContext>(), cancellationToken);
     }
 
     private static async Task PopulateRegions(IServiceScope scope, CancellationToken cancellationToken)

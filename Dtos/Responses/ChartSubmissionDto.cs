@@ -44,6 +44,10 @@ public class ChartSubmissionDto
 
     public Guid? SongSubmissionId { get; set; }
 
+    public SongDto? Song { get; set; }
+
+    public SongSubmissionDto? SongSubmission { get; set; }
+
     public int OwnerId { get; set; }
 
     public DateTimeOffset DateCreated { get; set; }

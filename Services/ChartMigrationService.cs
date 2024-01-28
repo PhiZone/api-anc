@@ -21,15 +21,15 @@ public class ChartMigrationService(IServiceProvider serviceProvider) : IHostedSe
         _voteService = scope.ServiceProvider.GetRequiredService<IVoteService>();
         _recordService = scope.ServiceProvider.GetRequiredService<IRecordService>();
 
-        _logger.LogInformation(LogEvents.ChartMigration, "Chart migration started");
+        _logger.LogInformation(LogEvents.ChartMigration, "[{Now}] Chart migration started", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
         try
         {
             await MigrateChartsAsync();
-            _logger.LogInformation(LogEvents.ChartMigration, "Chart migration finished");
+            _logger.LogInformation(LogEvents.ChartMigration, "[{Now}] Chart migration finished", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
         }
         catch (Exception ex)
         {
-            _logger.LogError(LogEvents.ChartMigration, ex, "Chart migration failed");
+            _logger.LogError(LogEvents.ChartMigration, ex, "[{Now}] Chart migration failed", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
         }
     }
 
@@ -41,12 +41,12 @@ public class ChartMigrationService(IServiceProvider serviceProvider) : IHostedSe
     private async Task MigrateChartsAsync()
     {
         var charts =
-            await _chartRepository.GetChartsAsync(new List<string> { "DateCreated" }, new List<bool> { false }, 0, -1);
+            await _chartRepository.GetChartsAsync(["DateCreated"], [false], 0, -1);
         foreach (var chart in charts)
         {
-            _logger.LogInformation(LogEvents.ChartMigration, "Migrating Chart #{Id}", chart.Id);
+            _logger.LogInformation(LogEvents.ChartMigration, "[{Now}] Migrating Chart #{Id}", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), chart.Id);
             var records =
-                await _recordRepository.GetRecordsAsync(new List<string> { "DateCreated" }, new List<bool> { false }, 0,
+                await _recordRepository.GetRecordsAsync(["DateCreated"], [false], 0,
                     -1, e => e.ChartId == chart.Id);
             foreach (var record in records)
             {
