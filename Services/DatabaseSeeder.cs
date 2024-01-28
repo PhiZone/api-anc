@@ -46,7 +46,7 @@ public class DatabaseSeeder(IServiceProvider serviceProvider) : IHostedService
             {
                 ClientId = "regular",
                 ClientSecret = "c29b1587-80f9-475f-b97b-dca1884eb0e3",
-                Type = OpenIddictConstants.ClientTypes.Confidential,
+                ClientType = OpenIddictConstants.ClientTypes.Confidential,
                 Permissions =
                 {
                     OpenIddictConstants.Permissions.Endpoints.Token,
