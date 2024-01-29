@@ -38,7 +38,7 @@
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.0"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.1"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.1"/>
-        <PackageReference Include="Z.EntityFramework.Plus.EFCore" Version="8.101.2" />
+        <PackageReference Include="Z.EntityFramework.Plus.EFCore" Version="8.101.2.1" />
     </ItemGroup>
     <ItemGroup>
         <Reference Include="Common">
