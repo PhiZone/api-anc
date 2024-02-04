@@ -31,8 +31,7 @@ public class MeilisearchService : IMeilisearchService
                     HitsPerPage = perPage,
                     Page = page,
                     Filter = typeof(PublicResource).IsAssignableFrom(typeof(T)) && !showHidden
-                        ?
-                        "isHidden = false"
+                        ? "isHidden = false"
                         : (typeof(Submission).IsAssignableFrom(typeof(T)) || typeof(T) == typeof(Notification) ||
                            typeof(T) == typeof(PetAnswer)) && showOwnerId != null
                             ? $"ownerId = {showOwnerId}"
@@ -105,12 +104,13 @@ public class MeilisearchService : IMeilisearchService
         await _client.Index("Chart")
             .UpdateSearchableAttributesAsync([
                 "title", "level", "difficulty", "authorName", "illustrator", "description", "noteCount", "song.title",
-                "song.edition", "song.authorName", "song.illustrator", "song.lyrics", "song.description"
+                "song.edition", "song.authorName", "song.illustrator", "song.lyrics", "song.description", "tags.name",
+                "tags.normalizedName", "tags.description"
             ]);
         await _client.Index("ChartSubmission")
             .UpdateSearchableAttributesAsync([
-                "title", "level", "difficulty", "authorName", "illustrator", "description", "noteCount", "song.title",
-                "song.edition", "song.authorName", "song.illustrator", "song.lyrics", "song.description",
+                "title", "level", "difficulty", "authorName", "illustrator", "description", "noteCount", "tags",
+                "song.title", "song.edition", "song.authorName", "song.illustrator", "song.lyrics", "song.description",
                 "songSubmission.title", "songSubmission.edition", "songSubmission.authorName",
                 "songSubmission.illustrator", "songSubmission.lyrics", "songSubmission.description"
             ]);
@@ -139,12 +139,14 @@ public class MeilisearchService : IMeilisearchService
             .UpdateSearchableAttributesAsync(["title", "edition", "authorName", "description", "copyrightOwner"]);
         await _client.Index("Song")
             .UpdateSearchableAttributesAsync([
-                "title", "edition", "authorName", "illustrator", "lyrics", "description"
+                "title", "edition", "authorName", "illustrator", "lyrics", "description", "tags.name",
+                "tags.normalizedName", "tags.description"
             ]);
         await _client.Index("SongSubmission")
             .UpdateSearchableAttributesAsync([
-                "title", "edition", "authorName", "illustrator", "lyrics", "description"
+                "title", "edition", "authorName", "illustrator", "lyrics", "description", "tags"
             ]);
+        await _client.Index("Tag").UpdateSearchableAttributesAsync(["name", "normalizedName", "description"]);
         await _client.Index("User")
             .UpdateSearchableAttributesAsync(["userName", "biography", "tag", "language", "rks", "experience"]);
 
@@ -165,7 +167,7 @@ public class MeilisearchService : IMeilisearchService
         await _client.Index("Announcement").AddDocumentsAsync(context.Announcements, "id");
         await _client.Index("Application").AddDocumentsAsync(context.Applications, "id");
         await _client.Index("Chapter").AddDocumentsAsync(context.Chapters, "id");
-        await _client.Index("Chart").AddDocumentsAsync(context.Charts.Include(e => e.Song), "id");
+        await _client.Index("Chart").AddDocumentsAsync(context.Charts.Include(e => e.Tags).Include(e => e.Song), "id");
         await _client.Index("ChartSubmission")
             .AddDocumentsAsync(context.ChartSubmissions.Include(e => e.Song).Include(e => e.SongSubmission), "id");
         await _client.Index("Collection").AddDocumentsAsync(context.Collections, "id");
@@ -180,8 +182,9 @@ public class MeilisearchService : IMeilisearchService
         await _client.Index("PetQuestion").AddDocumentsAsync(context.PetQuestions, "id");
         await _client.Index("Region").AddDocumentsAsync(context.Regions, "id");
         await _client.Index("ResourceRecord").AddDocumentsAsync(context.ResourceRecords, "id");
-        await _client.Index("Song").AddDocumentsAsync(context.Songs, "id");
+        await _client.Index("Song").AddDocumentsAsync(context.Songs.Include(e => e.Tags), "id");
         await _client.Index("SongSubmission").AddDocumentsAsync(context.SongSubmissions, "id");
+        await _client.Index("Tag").AddDocumentsAsync(context.Tags, "id");
         await _client.Index("User").AddDocumentsAsync(context.Users, "id");
     }
 }

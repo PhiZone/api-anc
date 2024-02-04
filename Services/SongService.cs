@@ -4,8 +4,10 @@ using PhiZoneApi.Models;
 
 namespace PhiZoneApi.Services;
 
-public class SongService(IFileStorageService fileStorageService, IRabbitMqService rabbitMqService,
-        IMultimediaService multimediaService)
+public class SongService(
+    IFileStorageService fileStorageService,
+    IRabbitMqService rabbitMqService,
+    IMultimediaService multimediaService)
     : ISongService
 {
     public async Task<(string, string, TimeSpan)?> UploadAsync(string fileName, IFormFile file)

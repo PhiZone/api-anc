@@ -7,8 +7,7 @@ using PhiZoneApi.Utils;
 
 namespace PhiZoneApi.Repositories;
 
-public class PlayConfigurationRepository
-    (ApplicationDbContext context) : IPlayConfigurationRepository
+public class PlayConfigurationRepository(ApplicationDbContext context) : IPlayConfigurationRepository
 {
     public async Task<ICollection<PlayConfiguration>> GetPlayConfigurationsAsync(List<string> order, List<bool> desc,
         int position,

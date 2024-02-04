@@ -11,12 +11,13 @@ public static class LogEvents
     public const int MailFailure = 2001;
     public const int ChartFailure = 2002;
     public const int FeishuFailure = 2003;
+    public const int MessengerFailure = 2004;
 
     public const int RecordDebug = 3000;
 
     public const int DataMigration = 4000;
     public const int ChartMigration = 4001;
     public const int FileMigration = 4002;
-    
+
     public const int DataConsistencyMaintenance = 5000;
 }

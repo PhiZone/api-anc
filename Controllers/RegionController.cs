@@ -22,8 +22,13 @@ namespace PhiZoneApi.Controllers;
 [ApiController]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme,
     Policy = "AllowAnonymous")]
-public class RegionController(IRegionRepository regionRepository, IOptions<DataSettings> dataSettings,
-    UserManager<User> userManager, IFilterService filterService, IMapper mapper, IDtoMapper dtoMapper,
+public class RegionController(
+    IRegionRepository regionRepository,
+    IOptions<DataSettings> dataSettings,
+    UserManager<User> userManager,
+    IFilterService filterService,
+    IMapper mapper,
+    IDtoMapper dtoMapper,
     IMeilisearchService meilisearchService) : Controller
 {
     /// <summary>

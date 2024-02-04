@@ -1,6 +1,4 @@
-﻿using PhiZoneApi.Models;
-
-namespace PhiZoneApi.Interfaces;
+﻿namespace PhiZoneApi.Interfaces;
 
 public interface IRecordService
 {

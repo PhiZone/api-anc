@@ -32,7 +32,8 @@ public class CommentRepository(ApplicationDbContext context) : ICommentRepositor
     public async Task<ICollection<Reply>> GetCommentRepliesAsync(Guid id, List<string> order, List<bool> desc,
         int position, int take, Expression<Func<Reply, bool>>? predicate = null, int? currentUserId = null)
     {
-        var result = context.Replies.Where(reply => reply.Comment.Id == id).Include(e => e.Owner).ThenInclude(e => e.Region).OrderBy(order, desc);
+        var result = context.Replies.Where(reply => reply.Comment.Id == id).Include(e => e.Owner)
+            .ThenInclude(e => e.Region).OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
         if (currentUserId != null)
             result = result.IncludeFilter(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));

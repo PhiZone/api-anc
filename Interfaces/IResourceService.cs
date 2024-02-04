@@ -1,4 +1,5 @@
-﻿using PhiZoneApi.Enums;
+﻿using PhiZoneApi.Dtos.Deliverers;
+using PhiZoneApi.Enums;
 using PhiZoneApi.Models;
 
 namespace PhiZoneApi.Interfaces;
@@ -22,4 +23,8 @@ public interface IResourceService
     bool HasPermission(User user, UserRole role);
 
     Task<(string, List<User>)> ParseUserContent(string content);
+
+    string Normalize(string input);
+
+    ResourceDto GetResources();
 }

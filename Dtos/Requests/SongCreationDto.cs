@@ -80,4 +80,7 @@ public class SongCreationDto
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     public TimeSpan PreviewEnd { get; set; }
+
+    [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
+    public List<string> Tags { get; set; } = [];
 }

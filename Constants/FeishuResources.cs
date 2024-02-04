@@ -1,6 +1,6 @@
 namespace PhiZoneApi.Constants;
 
-public class FeishuResources
+public static class FeishuResources
 {
     public const int SongCard = 0;
     public const int ChartCard = 1;

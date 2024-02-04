@@ -22,11 +22,21 @@ namespace PhiZoneApi.Controllers;
 [ApiVersion("2.0")]
 [ApiController]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
-public class AdmissionController(IAdmissionRepository admissionRepository, UserManager<User> userManager,
-    IResourceService resourceService, ITemplateService templateService, INotificationService notificationService,
-    IChapterRepository chapterRepository, ISongRepository songRepository, ICollectionRepository collectionRepository,
-    IChartRepository chartRepository, ISongSubmissionRepository songSubmissionRepository, IFilterService filterService,
-    IDtoMapper dtoMapper, IChartSubmissionRepository chartSubmissionRepository, ISubmissionService submissionService,
+public class AdmissionController(
+    IAdmissionRepository admissionRepository,
+    UserManager<User> userManager,
+    IResourceService resourceService,
+    ITemplateService templateService,
+    INotificationService notificationService,
+    IChapterRepository chapterRepository,
+    ISongRepository songRepository,
+    ICollectionRepository collectionRepository,
+    IChartRepository chartRepository,
+    ISongSubmissionRepository songSubmissionRepository,
+    IFilterService filterService,
+    IDtoMapper dtoMapper,
+    IChartSubmissionRepository chartSubmissionRepository,
+    ISubmissionService submissionService,
     IOptions<DataSettings> dataSettings) : Controller
 {
     /// <summary>

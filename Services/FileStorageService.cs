@@ -3,7 +3,9 @@ using LeanCloud;
 using LeanCloud.Storage;
 using Microsoft.Extensions.Options;
 using PhiZoneApi.Configurations;
+using PhiZoneApi.Dtos.Deliverers;
 using PhiZoneApi.Interfaces;
+using PhiZoneApi.Models;
 using PhiZoneApi.Utils;
 using Romanization;
 
@@ -56,9 +58,30 @@ public class FileStorageService : IFileStorageService
         return (file.Url, (string)file.MetaData["_checksum"]);
     }
 
+    public async Task SendUserInput(string url, string memberName, HttpRequest request, User user)
+    {
+        await using var scope = _provider.CreateAsyncScope();
+        var messengerService = scope.ServiceProvider.GetService<IMessengerService>()!;
+        await messengerService.SendUserInput(new UserInputDelivererDto
+        {
+            Content = url,
+            IsImage = true,
+            MemberName = memberName,
+            ResourceId = (string?)request.RouteValues["id"],
+            ActionName = (string)request.RouteValues["action"]!,
+            ControllerName = (string)request.RouteValues["controller"]!,
+            RequestMethod = request.Method,
+            RequestPath = request.Path,
+            UserId = user.Id,
+            UserName = user.UserName,
+            UserAvatar = user.Avatar,
+            DateCreated = DateTimeOffset.UtcNow
+        });
+    }
+
     private static string NormalizeFileName(string input)
     {
-        var chars = Path.GetInvalidFileNameChars().Concat([ ' ' ]);
+        var chars = Path.GetInvalidFileNameChars().Concat([' ']);
         return HttpUtility.UrlEncode(chars.Aggregate(Romanize(input),
             (current, invalidChar) => current.Replace(invalidChar.ToString(), string.Empty)));
     }

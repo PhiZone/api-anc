@@ -69,8 +69,7 @@ public class ApplicationController(
             var result = await meilisearchService.SearchAsync<Application>(dto.Search, dto.PerPage, dto.Page);
             var idList = result.Hits.Select(item => item.Id).ToList();
             applications = (await applicationRepository.GetApplicationsAsync(["DateCreated"], [false], position,
-                dto.PerPage, e => idList.Contains(e.Id), currentUser?.Id)).OrderBy(e =>
-                idList.IndexOf(e.Id));
+                dto.PerPage, e => idList.Contains(e.Id), currentUser?.Id)).OrderBy(e => idList.IndexOf(e.Id));
             total = result.TotalHits;
         }
         else
@@ -155,6 +154,7 @@ public class ApplicationController(
                 });
         var illustrationUrl = (await fileStorageService.UploadImage<Application>(dto.Name, dto.Illustration, (16, 9)))
             .Item1;
+        await fileStorageService.SendUserInput(illustrationUrl, "Illustration", Request, currentUser);
         var application = new Application
         {
             Name = dto.Name,
@@ -288,6 +288,7 @@ public class ApplicationController(
         {
             application.Illustration =
                 (await fileStorageService.UploadImage<Application>(application.Name, dto.File, (16, 9))).Item1;
+            await fileStorageService.SendUserInput(application.Illustration, "Illustration", Request, currentUser);
             application.DateUpdated = DateTimeOffset.UtcNow;
         }
 

@@ -1,20 +1,21 @@
 ﻿using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Identity;
+using Newtonsoft.Json;
+using PhiZoneApi.Dtos.Deliverers;
 using PhiZoneApi.Enums;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 
 namespace PhiZoneApi.Services;
 
-public class ResourceService(UserManager<User> userManager, ISongRepository songRepository,
-        ISongSubmissionRepository songSubmissionRepository, IChartRepository chartRepository,
-        IUserRelationRepository userRelationRepository)
+public partial class ResourceService(
+    IServiceProvider serviceProvider,
+    IConfiguration configuration)
     : IResourceService
 {
-    private static readonly Regex UserRegex = new(@"\[PZUser:[0-9]+:");
-
-    private static readonly Regex UserMentionRegex =
-        new(@"@([A-Za-z0-9_\u4e00-\u9fff\u3041-\u309f\u30a0-\u30ff\uac00-\ud7a3]+)");
+    private readonly ResourceDto _resourceDto = JsonConvert.DeserializeObject<ResourceDto>(File.ReadAllText(
+        Path.Combine(Directory.GetCurrentDirectory(),
+            configuration.GetSection("ResourceSettings").GetValue<string>("DirectoryPath")!, "resources.json")))!;
 
     public string GetRichText<T>(string id, string display, string? addition = null)
     {
@@ -28,12 +29,17 @@ public class ResourceService(UserManager<User> userManager, ISongRepository song
 
     public async Task<string> GetDisplayName(Chart chart)
     {
+        await using var scope = serviceProvider.CreateAsyncScope();
+        var songRepository = scope.ServiceProvider.GetRequiredService<ISongRepository>();
         var title = chart.Title ?? (await songRepository.GetSongAsync(chart.SongId)).Title;
         return $"{title} [{chart.Level} {Math.Floor(chart.Difficulty)}]";
     }
 
     public async Task<string> GetDisplayName(ChartSubmission chart)
     {
+        await using var scope = serviceProvider.CreateAsyncScope();
+        var songRepository = scope.ServiceProvider.GetRequiredService<ISongRepository>();
+        var songSubmissionRepository = scope.ServiceProvider.GetRequiredService<ISongSubmissionRepository>();
         var title = chart.Title ?? (chart.SongId != null
             ? (await songRepository.GetSongAsync(chart.SongId.Value)).Title
             : (await songSubmissionRepository.GetSongSubmissionAsync(chart.SongSubmissionId!.Value)).Title);
@@ -42,6 +48,9 @@ public class ResourceService(UserManager<User> userManager, ISongRepository song
 
     public async Task<string> GetDisplayName(Record record)
     {
+        await using var scope = serviceProvider.CreateAsyncScope();
+        var chartRepository = scope.ServiceProvider.GetRequiredService<IChartRepository>();
+        var songRepository = scope.ServiceProvider.GetRequiredService<ISongRepository>();
         var chart = await chartRepository.GetChartAsync(record.ChartId);
         var title = chart.Title ?? (await songRepository.GetSongAsync(chart.SongId)).Title;
         return $"{title} [{chart.Level} {Math.Floor(chart.Difficulty)}] {record.Score} {record.Accuracy:P2}";
@@ -50,7 +59,7 @@ public class ResourceService(UserManager<User> userManager, ISongRepository song
     public List<int> GetAuthorIds(string name)
     {
         var result = new List<int>();
-        foreach (Match match in UserRegex.Matches(name))
+        foreach (Match match in UserRichTextRegex().Matches(name))
         {
             var parts = match.Value.Split(':');
             result.Add(int.Parse(parts[1]));
@@ -61,6 +70,8 @@ public class ResourceService(UserManager<User> userManager, ISongRepository song
 
     public async Task<bool> IsBlacklisted(int user1, int user2)
     {
+        await using var scope = serviceProvider.CreateAsyncScope();
+        var userRelationRepository = scope.ServiceProvider.GetRequiredService<IUserRelationRepository>();
         if (await userRelationRepository.RelationExistsAsync(user1, user2))
             if ((await userRelationRepository.GetRelationAsync(user1, user2)).Type == UserRelationType.Blacklisted)
                 return true;
@@ -75,7 +86,9 @@ public class ResourceService(UserManager<User> userManager, ISongRepository song
 
     public async Task<(string, List<User>)> ParseUserContent(string content)
     {
-        var matches = UserMentionRegex.Matches(content);
+        await using var scope = serviceProvider.CreateAsyncScope();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+        var matches = UserMentionRichTextRegex().Matches(content);
         var result = content;
         var users = new List<User>();
         foreach (var userName in matches.Select(match => match.Groups[1].Value))
@@ -87,6 +100,16 @@ public class ResourceService(UserManager<User> userManager, ISongRepository song
         }
 
         return (result, users);
+    }
+
+    public string Normalize(string input)
+    {
+        return WhitespaceRegex().Replace(input, "").ToUpper();
+    }
+
+    public ResourceDto GetResources()
+    {
+        return _resourceDto;
     }
 
     private static int GetPriority(UserRole role)
@@ -102,4 +125,13 @@ public class ResourceService(UserManager<User> userManager, ISongRepository song
             _ => 0
         };
     }
+
+    [GeneratedRegex(@"\s")]
+    private static partial Regex WhitespaceRegex();
+
+    [GeneratedRegex(@"\[PZUser:[0-9]+:")]
+    private static partial Regex UserRichTextRegex();
+
+    [GeneratedRegex(@"@([A-Za-z0-9_\u4e00-\u9fff\u3041-\u309f\u30a0-\u30ff\uac00-\ud7a3]+)")]
+    private static partial Regex UserMentionRichTextRegex();
 }

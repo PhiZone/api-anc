@@ -9,8 +9,8 @@ using PhiZoneApi.Utils;
 
 namespace PhiZoneApi.Repositories;
 
-public class PetChoiceRepository
-    (ApplicationDbContext context, IMeilisearchService meilisearchService) : IPetChoiceRepository
+public class PetChoiceRepository(ApplicationDbContext context, IMeilisearchService meilisearchService)
+    : IPetChoiceRepository
 {
     public async Task<ICollection<PetChoice>> GetPetChoicesAsync(List<string> order, List<bool> desc, int position,
         int take,

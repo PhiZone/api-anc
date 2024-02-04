@@ -1,5 +1,4 @@
 using System.Globalization;
-using System.Text;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -52,7 +51,7 @@ public class FeishuService : IFeishuService
                     : $"{submission.Bpm} ({submission.MinBpm} ~ {submission.MaxBpm})"
             },
             { "duration", submission.Duration!.Value.ToString(@"mm\:ss") },
-            { "submission_info", $"{_config["WebsiteURL"]}/studio/song-submissions/{submission.Id}" }
+            { "submission_info", $"{_config["WebsiteUrl"]}/studio/song-submissions/{submission.Id}" }
         };
         var content =
             $"{{\"type\":\"template\",\"data\":{{\"template_id\":\"{_feishuSettings.Value.Cards[FeishuResources.SongCard]}\",\"template_variable\":{JsonConvert.SerializeObject(variables)}}}}}";
@@ -64,13 +63,12 @@ public class FeishuService : IFeishuService
                 RequestUri =
                     new Uri($"{_feishuSettings.Value.ApiUrl}/open-apis/im/v1/messages?receive_id_type=chat_id"),
                 Headers = { { "Authorization", $"Bearer {_token}" } },
-                Content = new StringContent(
-                    JsonConvert.SerializeObject(new FeishuMessageDto
-                    {
-                        ReceiveId = _feishuSettings.Value.Chats[chat],
-                        MessageType = "interactive",
-                        Content = content
-                    }), Encoding.UTF8, "application/json")
+                Content = JsonContent.Create(new FeishuMessageDto
+                {
+                    ReceiveId = _feishuSettings.Value.Chats[chat],
+                    MessageType = "interactive",
+                    Content = content
+                })
             };
             var response = await _client.SendAsync(request);
             if (!response.IsSuccessStatusCode)
@@ -107,7 +105,7 @@ public class FeishuService : IFeishuService
             { "difficulty", submission.Difficulty.ToString(CultureInfo.InvariantCulture) },
             { "format", submission.Format.ToString() },
             { "note_count", submission.NoteCount.ToString() },
-            { "submission_info", $"{_config["WebsiteURL"]}/studio/chart-submissions/{submission.Id}" }
+            { "submission_info", $"{_config["WebsiteUrl"]}/studio/chart-submissions/{submission.Id}" }
         };
         var content =
             $"{{\"type\":\"template\",\"data\":{{\"template_id\":\"{_feishuSettings.Value.Cards[FeishuResources.ChartCard]}\",\"template_variable\":{JsonConvert.SerializeObject(variables)}}}}}";
@@ -119,12 +117,12 @@ public class FeishuService : IFeishuService
                 RequestUri =
                     new Uri($"{_feishuSettings.Value.ApiUrl}/open-apis/im/v1/messages?receive_id_type=chat_id"),
                 Headers = { { "Authorization", $"Bearer {_token}" } },
-                Content = new StringContent(JsonConvert.SerializeObject(new FeishuMessageDto
+                Content = JsonContent.Create(new FeishuMessageDto
                 {
                     ReceiveId = _feishuSettings.Value.Chats[chat],
                     MessageType = "interactive",
                     Content = content
-                }), Encoding.UTF8, "application/json")
+                })
             };
             var response = await _client.SendAsync(request);
             if (!response.IsSuccessStatusCode)
@@ -147,7 +145,7 @@ public class FeishuService : IFeishuService
             { "objective_score", answer.ObjectiveScore.ToString() },
             { "time", dateStarted.ToOffset(TimeSpan.FromHours(8)).ToString("yyyy-MM-dd HH:mm:ss") },
             { "duration", duration.ToString(@"mm\:ss") },
-            { "answer_info", $"{_config["WebsiteURL"]}/pet/answers/{answer.Id}" }
+            { "answer_info", $"{_config["WebsiteUrl"]}/pet/answers/{answer.Id}" }
         };
         var content =
             $"{{\"type\":\"template\",\"data\":{{\"template_id\":\"{_feishuSettings.Value.Cards[FeishuResources.PetAnswerCard]}\",\"template_variable\":{JsonConvert.SerializeObject(variables)}}}}}";
@@ -159,12 +157,12 @@ public class FeishuService : IFeishuService
                 RequestUri =
                     new Uri($"{_feishuSettings.Value.ApiUrl}/open-apis/im/v1/messages?receive_id_type=chat_id"),
                 Headers = { { "Authorization", $"Bearer {_token}" } },
-                Content = new StringContent(JsonConvert.SerializeObject(new FeishuMessageDto
+                Content = JsonContent.Create(new FeishuMessageDto
                 {
                     ReceiveId = _feishuSettings.Value.Chats[chat],
                     MessageType = "interactive",
                     Content = content
-                }), Encoding.UTF8, "application/json")
+                })
             };
             var response = await _client.SendAsync(request);
             if (!response.IsSuccessStatusCode)
@@ -177,17 +175,16 @@ public class FeishuService : IFeishuService
     private async Task UpdateToken()
     {
         var now = DateTimeOffset.UtcNow;
-        if (now - _lastTokenUpdate <= TimeSpan.FromMinutes(90)) return;
+        if (now - _lastTokenUpdate <= TimeSpan.FromMinutes(89)) return;
 
         var request = new HttpRequestMessage
         {
             Method = HttpMethod.Post,
             RequestUri = new Uri($"{_feishuSettings.Value.ApiUrl}/open-apis/auth/v3/tenant_access_token/internal"),
-            Content = new StringContent(
-                JsonConvert.SerializeObject(new FeishuTokenDto
-                {
-                    AppId = _feishuSettings.Value.AppId, AppSecret = _feishuSettings.Value.AppSecret
-                }), Encoding.UTF8, "application/json")
+            Content = JsonContent.Create(new FeishuTokenDto
+            {
+                AppId = _feishuSettings.Value.AppId, AppSecret = _feishuSettings.Value.AppSecret
+            })
         };
         var response = await _client.SendAsync(request);
         if (!response.IsSuccessStatusCode)

@@ -7,8 +7,8 @@ using PhiZoneApi.Interfaces;
 
 namespace PhiZoneApi.Services;
 
-public class TapTapService
-    (IOptions<TapTapSettings> tapTapSettings, IApplicationRepository applicationRepository) : ITapTapService
+public class TapTapService(IOptions<TapTapSettings> tapTapSettings, IApplicationRepository applicationRepository)
+    : ITapTapService
 {
     private readonly HttpClient _client = new() { BaseAddress = new Uri(tapTapSettings.Value.TapApiUrl) };
 

@@ -27,12 +27,22 @@ namespace PhiZoneApi.Controllers;
 [ApiVersion("2.0")]
 [ApiController]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
-public class SongSubmissionController(ISongSubmissionRepository songSubmissionRepository,
-    IOptions<DataSettings> dataSettings, UserManager<User> userManager, IFilterService filterService,
-    IFileStorageService fileStorageService, IMapper mapper, ISongService songService,
-    IAuthorshipRepository authorshipRepository, ISubmissionService submissionService, IResourceService resourceService,
-    ICollaborationRepository collaborationRepository, INotificationService notificationService,
-    ITemplateService templateService, IFeishuService feishuService, ILogger<SongSubmissionController> logger,
+public class SongSubmissionController(
+    ISongSubmissionRepository songSubmissionRepository,
+    IOptions<DataSettings> dataSettings,
+    UserManager<User> userManager,
+    IFilterService filterService,
+    IFileStorageService fileStorageService,
+    IMapper mapper,
+    ISongService songService,
+    IAuthorshipRepository authorshipRepository,
+    ISubmissionService submissionService,
+    IResourceService resourceService,
+    ICollaborationRepository collaborationRepository,
+    INotificationService notificationService,
+    ITemplateService templateService,
+    IFeishuService feishuService,
+    ILogger<SongSubmissionController> logger,
     IMeilisearchService meilisearchService) : Controller
 {
     /// <summary>
@@ -194,6 +204,7 @@ public class SongSubmissionController(ISongSubmissionRepository songSubmissionRe
         }
 
         var illustrationUrl = (await fileStorageService.UploadImage<Song>(dto.Title, dto.Illustration, (16, 9))).Item1;
+        await fileStorageService.SendUserInput(illustrationUrl, "Illustration", Request, currentUser);
         string? license = null;
         if (dto.License != null) license = (await fileStorageService.Upload<Song>(dto.Title, dto.License)).Item1;
 
@@ -230,6 +241,7 @@ public class SongSubmissionController(ISongSubmissionRepository songSubmissionRe
             Duration = songSubmissionInfo?.Item3,
             PreviewStart = dto.PreviewStart,
             PreviewEnd = dto.PreviewEnd,
+            Tags = dto.Tags,
             Status = RequestStatus.Waiting,
             OwnerId = currentUser.Id,
             DateCreated = DateTimeOffset.UtcNow,
@@ -345,6 +357,7 @@ public class SongSubmissionController(ISongSubmissionRepository songSubmissionRe
         songSubmission.Offset = dto.Offset;
         songSubmission.PreviewStart = dto.PreviewStart;
         songSubmission.PreviewEnd = dto.PreviewEnd;
+        songSubmission.Tags = dto.Tags;
         songSubmission.DateUpdated = DateTimeOffset.UtcNow;
         songSubmission.Status = RequestStatus.Waiting;
 
@@ -485,6 +498,7 @@ public class SongSubmissionController(ISongSubmissionRepository songSubmissionRe
         {
             songSubmission.Illustration =
                 (await fileStorageService.UploadImage<Song>(songSubmission.Title, dto.File, (16, 9))).Item1;
+            await fileStorageService.SendUserInput(songSubmission.Illustration, "Illustration", Request, currentUser);
             songSubmission.DateUpdated = DateTimeOffset.UtcNow;
             songSubmission.Status = RequestStatus.Waiting;
         }

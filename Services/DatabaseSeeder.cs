@@ -71,7 +71,8 @@ public class DatabaseSeeder(IServiceProvider serviceProvider) : IHostedService
     private static async Task PopulateLeaderboards(IServiceScope scope, CancellationToken cancellationToken)
     {
         var leaderboardService = scope.ServiceProvider.GetRequiredService<ILeaderboardService>();
-        await leaderboardService.Initialize(scope.ServiceProvider.GetRequiredService<ApplicationDbContext>(), cancellationToken);
+        await leaderboardService.Initialize(scope.ServiceProvider.GetRequiredService<ApplicationDbContext>(),
+            cancellationToken);
     }
 
     private static async Task PopulateRegions(IServiceScope scope, CancellationToken cancellationToken)

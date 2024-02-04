@@ -10,8 +10,8 @@ using Z.EntityFramework.Plus;
 
 namespace PhiZoneApi.Repositories;
 
-public class ApplicationRepository
-    (ApplicationDbContext context, IMeilisearchService meilisearchService) : IApplicationRepository
+public class ApplicationRepository(ApplicationDbContext context, IMeilisearchService meilisearchService)
+    : IApplicationRepository
 {
     public async Task<ICollection<Application>> GetApplicationsAsync(List<string> order, List<bool> desc, int position,
         int take,

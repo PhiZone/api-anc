@@ -9,8 +9,8 @@ using PhiZoneApi.Utils;
 
 namespace PhiZoneApi.Repositories;
 
-public class EventDivisionRepository
-    (ApplicationDbContext context, IMeilisearchService meilisearchService) : IEventDivisionRepository
+public class EventDivisionRepository(ApplicationDbContext context, IMeilisearchService meilisearchService)
+    : IEventDivisionRepository
 {
     public async Task<ICollection<EventDivision>> GetEventDivisionsAsync(List<string> order, List<bool> desc,
         int position, int take, Expression<Func<EventDivision, bool>>? predicate = null)

@@ -12,7 +12,5 @@ public abstract class PublicResource : LikeableResource
 
     public bool IsLocked { get; set; }
 
-    public List<Tag> Tags { get; set; } = [];
-
     public DateTimeOffset DateUpdated { get; set; }
 }

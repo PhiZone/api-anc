@@ -156,6 +156,7 @@ public class ChapterController(
                 });
         var illustrationUrl = (await fileStorageService.UploadImage<Chapter>(dto.Title, dto.Illustration, (16, 9)))
             .Item1;
+        await fileStorageService.SendUserInput(illustrationUrl, "Illustration", Request, currentUser);
         var chapter = new Chapter
         {
             Title = dto.Title,
@@ -288,6 +289,7 @@ public class ChapterController(
         {
             chapter.Illustration =
                 (await fileStorageService.UploadImage<Chapter>(chapter.Title, dto.File, (16, 9))).Item1;
+            await fileStorageService.SendUserInput(chapter.Illustration, "Illustration", Request, currentUser);
             chapter.DateUpdated = DateTimeOffset.UtcNow;
         }
 
@@ -373,9 +375,7 @@ public class ChapterController(
         var total = await chapterRepository.CountChapterSongsAsync(id, predicateExpr);
         var list = new List<SongAdmitteeDto>();
         foreach (var admission in admissions)
-        {
             list.Add(await dtoMapper.MapChapterSongAsync<SongAdmitteeDto>(admission, currentUser));
-        }
 
         return Ok(new ResponseDto<IEnumerable<SongAdmitteeDto>>
         {

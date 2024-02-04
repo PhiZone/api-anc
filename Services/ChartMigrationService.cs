@@ -21,15 +21,18 @@ public class ChartMigrationService(IServiceProvider serviceProvider) : IHostedSe
         _voteService = scope.ServiceProvider.GetRequiredService<IVoteService>();
         _recordService = scope.ServiceProvider.GetRequiredService<IRecordService>();
 
-        _logger.LogInformation(LogEvents.ChartMigration, "[{Now}] Chart migration started", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+        _logger.LogInformation(LogEvents.ChartMigration, "[{Now}] Chart migration started",
+            DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
         try
         {
             await MigrateChartsAsync();
-            _logger.LogInformation(LogEvents.ChartMigration, "[{Now}] Chart migration finished", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+            _logger.LogInformation(LogEvents.ChartMigration, "[{Now}] Chart migration finished",
+                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
         }
         catch (Exception ex)
         {
-            _logger.LogError(LogEvents.ChartMigration, ex, "[{Now}] Chart migration failed", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+            _logger.LogError(LogEvents.ChartMigration, ex, "[{Now}] Chart migration failed",
+                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
         }
     }
 
@@ -44,7 +47,8 @@ public class ChartMigrationService(IServiceProvider serviceProvider) : IHostedSe
             await _chartRepository.GetChartsAsync(["DateCreated"], [false], 0, -1);
         foreach (var chart in charts)
         {
-            _logger.LogInformation(LogEvents.ChartMigration, "[{Now}] Migrating Chart #{Id}", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), chart.Id);
+            _logger.LogInformation(LogEvents.ChartMigration, "[{Now}] Migrating Chart #{Id}",
+                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), chart.Id);
             var records =
                 await _recordRepository.GetRecordsAsync(["DateCreated"], [false], 0,
                     -1, e => e.ChartId == chart.Id);

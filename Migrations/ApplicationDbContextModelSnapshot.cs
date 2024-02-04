@@ -23,6 +23,21 @@ namespace PhiZoneApi.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("ChartTag", b =>
+                {
+                    b.Property<Guid>("ChartsId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TagsId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("ChartsId", "TagsId");
+
+                    b.HasIndex("TagsId");
+
+                    b.ToTable("ChartTag", (string)null);
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<int>", b =>
                 {
                     b.Property<int>("Id")
@@ -376,7 +391,40 @@ namespace PhiZoneApi.Migrations
 
                     b.HasIndex("RequesterId");
 
-                    b.ToTable("Admissions");
+                    b.ToTable("Admissions", (string)null);
+                });
+
+            modelBuilder.Entity("PhiZoneApi.Models.ApplicationUser", b =>
+                {
+                    b.Property<Guid>("ApplicationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("AccessToken")
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset?>("DateAccessTokenExpires")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset>("DateCreated")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset?>("DateRefreshTokenExpires")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("RefreshToken")
+                        .HasColumnType("text");
+
+                    b.Property<string>("UnionId")
+                        .HasColumnType("text");
+
+                    b.HasKey("ApplicationId", "UserId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("ApplicationUsers", (string)null);
                 });
 
             modelBuilder.Entity("PhiZoneApi.Models.Authorship", b =>
@@ -403,7 +451,7 @@ namespace PhiZoneApi.Migrations
 
                     b.HasIndex("ResourceId");
 
-                    b.ToTable("Authorships");
+                    b.ToTable("Authorships", (string)null);
                 });
 
             modelBuilder.Entity("PhiZoneApi.Models.Collaboration", b =>
@@ -438,7 +486,7 @@ namespace PhiZoneApi.Migrations
 
                     b.HasIndex("SubmissionId");
 
-                    b.ToTable("Collaborations");
+                    b.ToTable("Collaborations", (string)null);
                 });
 
             modelBuilder.Entity("PhiZoneApi.Models.EventTask", b =>
@@ -480,7 +528,7 @@ namespace PhiZoneApi.Migrations
 
                     b.HasIndex("DivisionId");
 
-                    b.ToTable("EventTasks");
+                    b.ToTable("EventTasks", (string)null);
                 });
 
             modelBuilder.Entity("PhiZoneApi.Models.Participation", b =>
@@ -501,7 +549,7 @@ namespace PhiZoneApi.Migrations
 
                     b.HasIndex("ParticipantId");
 
-                    b.ToTable("Participations");
+                    b.ToTable("Participations", (string)null);
                 });
 
             modelBuilder.Entity("PhiZoneApi.Models.PetAnswer", b =>
@@ -562,7 +610,7 @@ namespace PhiZoneApi.Migrations
 
                     b.HasIndex("OwnerId");
 
-                    b.ToTable("PetAnswers");
+                    b.ToTable("PetAnswers", (string)null);
                 });
 
             modelBuilder.Entity("PhiZoneApi.Models.PetChoice", b =>
@@ -585,7 +633,7 @@ namespace PhiZoneApi.Migrations
 
                     b.HasIndex("QuestionId");
 
-                    b.ToTable("PetChoices");
+                    b.ToTable("PetChoices", (string)null);
                 });
 
             modelBuilder.Entity("PhiZoneApi.Models.PetQuestion", b =>
@@ -610,7 +658,7 @@ namespace PhiZoneApi.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("PetQuestions");
+                    b.ToTable("PetQuestions", (string)null);
                 });
 
             modelBuilder.Entity("PhiZoneApi.Models.Region", b =>
@@ -631,7 +679,7 @@ namespace PhiZoneApi.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Regions");
+                    b.ToTable("Regions", (string)null);
                 });
 
             modelBuilder.Entity("PhiZoneApi.Models.Resource", b =>
@@ -700,7 +748,7 @@ namespace PhiZoneApi.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("ResourceRecords");
+                    b.ToTable("ResourceRecords", (string)null);
                 });
 
             modelBuilder.Entity("PhiZoneApi.Models.Role", b =>
@@ -754,26 +802,7 @@ namespace PhiZoneApi.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Tags");
-                });
-
-            modelBuilder.Entity("PhiZoneApi.Models.TapUserRelation", b =>
-                {
-                    b.Property<Guid>("ApplicationId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("UnionId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("ApplicationId", "UserId");
-
-                    b.HasIndex("UserId");
-
-                    b.ToTable("TapUserRelations");
+                    b.ToTable("Tags", (string)null);
                 });
 
             modelBuilder.Entity("PhiZoneApi.Models.User", b =>
@@ -909,22 +938,22 @@ namespace PhiZoneApi.Migrations
 
                     b.HasIndex("FollowerId");
 
-                    b.ToTable("UserRelations");
+                    b.ToTable("UserRelations", (string)null);
                 });
 
-            modelBuilder.Entity("PublicResourceTag", b =>
+            modelBuilder.Entity("SongTag", b =>
                 {
-                    b.Property<Guid>("ResourcesId")
+                    b.Property<Guid>("SongsId")
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("TagsId")
                         .HasColumnType("uuid");
 
-                    b.HasKey("ResourcesId", "TagsId");
+                    b.HasKey("SongsId", "TagsId");
 
                     b.HasIndex("TagsId");
 
-                    b.ToTable("PublicResourceTag");
+                    b.ToTable("SongTag", (string)null);
                 });
 
             modelBuilder.Entity("PhiZoneApi.Models.ChartAsset", b =>
@@ -950,7 +979,7 @@ namespace PhiZoneApi.Migrations
 
                     b.HasIndex("ChartId");
 
-                    b.ToTable("ChartAssets");
+                    b.ToTable("ChartAssets", (string)null);
                 });
 
             modelBuilder.Entity("PhiZoneApi.Models.ChartAssetSubmission", b =>
@@ -981,7 +1010,7 @@ namespace PhiZoneApi.Migrations
 
                     b.HasIndex("RepresentationId");
 
-                    b.ToTable("ChartAssetSubmissions");
+                    b.ToTable("ChartAssetSubmissions", (string)null);
                 });
 
             modelBuilder.Entity("PhiZoneApi.Models.Like", b =>
@@ -993,7 +1022,7 @@ namespace PhiZoneApi.Migrations
 
                     b.HasIndex("ResourceId");
 
-                    b.ToTable("Likes");
+                    b.ToTable("Likes", (string)null);
                 });
 
             modelBuilder.Entity("PhiZoneApi.Models.LikeableResource", b =>
@@ -1025,7 +1054,7 @@ namespace PhiZoneApi.Migrations
 
                     b.HasIndex("OperatorId");
 
-                    b.ToTable("Notifications");
+                    b.ToTable("Notifications", (string)null);
                 });
 
             modelBuilder.Entity("PhiZoneApi.Models.PlayConfiguration", b =>
@@ -1071,7 +1100,7 @@ namespace PhiZoneApi.Migrations
                     b.Property<bool>("SimultaneousNoteHint")
                         .HasColumnType("boolean");
 
-                    b.ToTable("PlayConfigurations");
+                    b.ToTable("PlayConfigurations", (string)null);
                 });
 
             modelBuilder.Entity("PhiZoneApi.Models.Submission", b =>
@@ -1092,6 +1121,10 @@ namespace PhiZoneApi.Migrations
 
                     b.Property<int>("Status")
                         .HasColumnType("integer");
+
+                    b.Property<string[]>("Tags")
+                        .IsRequired()
+                        .HasColumnType("text[]");
 
                     b.HasIndex("RepresentationId");
 
@@ -1117,7 +1150,7 @@ namespace PhiZoneApi.Migrations
 
                     b.HasIndex("ChartId");
 
-                    b.ToTable("VolunteerVotes");
+                    b.ToTable("VolunteerVotes", (string)null);
                 });
 
             modelBuilder.Entity("PhiZoneApi.Models.Vote", b =>
@@ -1153,7 +1186,7 @@ namespace PhiZoneApi.Migrations
 
                     b.HasIndex("ChartId");
 
-                    b.ToTable("Votes");
+                    b.ToTable("Votes", (string)null);
                 });
 
             modelBuilder.Entity("PhiZoneApi.Models.Announcement", b =>
@@ -1179,7 +1212,7 @@ namespace PhiZoneApi.Migrations
 
                     b.HasIndex("ResourceId");
 
-                    b.ToTable("Announcements");
+                    b.ToTable("Announcements", (string)null);
                 });
 
             modelBuilder.Entity("PhiZoneApi.Models.Application", b =>
@@ -1187,6 +1220,9 @@ namespace PhiZoneApi.Migrations
                     b.HasBaseType("PhiZoneApi.Models.LikeableResource");
 
                     b.Property<string>("ApiEndpoint")
+                        .HasColumnType("text");
+
+                    b.Property<string>("AuthorizationPage")
                         .HasColumnType("text");
 
                     b.Property<DateTimeOffset>("DateUpdated")
@@ -1217,10 +1253,13 @@ namespace PhiZoneApi.Migrations
                     b.Property<string>("TapClientId")
                         .HasColumnType("text");
 
+                    b.Property<string>("TokenEndpoint")
+                        .HasColumnType("text");
+
                     b.Property<int>("Type")
                         .HasColumnType("integer");
 
-                    b.ToTable("Applications");
+                    b.ToTable("Applications", (string)null);
                 });
 
             modelBuilder.Entity("PhiZoneApi.Models.Comment", b =>
@@ -1243,7 +1282,7 @@ namespace PhiZoneApi.Migrations
 
                     b.HasIndex("ResourceId");
 
-                    b.ToTable("Comments");
+                    b.ToTable("Comments", (string)null);
                 });
 
             modelBuilder.Entity("PhiZoneApi.Models.EventTeam", b =>
@@ -1275,7 +1314,7 @@ namespace PhiZoneApi.Migrations
 
                     b.HasIndex("DivisionId");
 
-                    b.ToTable("EventTeams");
+                    b.ToTable("EventTeams", (string)null);
                 });
 
             modelBuilder.Entity("PhiZoneApi.Models.PublicResource", b =>
@@ -1353,7 +1392,7 @@ namespace PhiZoneApi.Migrations
 
                     b.HasIndex("ChartId");
 
-                    b.ToTable("Records");
+                    b.ToTable("Records", (string)null);
                 });
 
             modelBuilder.Entity("PhiZoneApi.Models.Reply", b =>
@@ -1373,7 +1412,7 @@ namespace PhiZoneApi.Migrations
 
                     b.HasIndex("CommentId");
 
-                    b.ToTable("Replies");
+                    b.ToTable("Replies", (string)null);
                 });
 
             modelBuilder.Entity("PhiZoneApi.Models.ChartSubmission", b =>
@@ -1434,7 +1473,7 @@ namespace PhiZoneApi.Migrations
 
                     b.HasIndex("SongSubmissionId");
 
-                    b.ToTable("ChartSubmissions");
+                    b.ToTable("ChartSubmissions", (string)null);
                 });
 
             modelBuilder.Entity("PhiZoneApi.Models.SongSubmission", b =>
@@ -1507,7 +1546,7 @@ namespace PhiZoneApi.Migrations
 
                     b.HasIndex("ReviewerId");
 
-                    b.ToTable("SongSubmissions");
+                    b.ToTable("SongSubmissions", (string)null);
                 });
 
             modelBuilder.Entity("PhiZoneApi.Models.Chapter", b =>
@@ -1530,7 +1569,7 @@ namespace PhiZoneApi.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.ToTable("Chapters");
+                    b.ToTable("Chapters", (string)null);
                 });
 
             modelBuilder.Entity("PhiZoneApi.Models.Chart", b =>
@@ -1607,7 +1646,7 @@ namespace PhiZoneApi.Migrations
 
                     b.HasIndex("SongId");
 
-                    b.ToTable("Charts");
+                    b.ToTable("Charts", (string)null);
                 });
 
             modelBuilder.Entity("PhiZoneApi.Models.Collection", b =>
@@ -1630,7 +1669,7 @@ namespace PhiZoneApi.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.ToTable("Collections");
+                    b.ToTable("Collections", (string)null);
                 });
 
             modelBuilder.Entity("PhiZoneApi.Models.Event", b =>
@@ -1652,7 +1691,7 @@ namespace PhiZoneApi.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.ToTable("Events");
+                    b.ToTable("Events", (string)null);
                 });
 
             modelBuilder.Entity("PhiZoneApi.Models.EventDivision", b =>
@@ -1704,7 +1743,7 @@ namespace PhiZoneApi.Migrations
 
                     b.HasIndex("EventId");
 
-                    b.ToTable("EventDivisions");
+                    b.ToTable("EventDivisions", (string)null);
                 });
 
             modelBuilder.Entity("PhiZoneApi.Models.Song", b =>
@@ -1772,7 +1811,22 @@ namespace PhiZoneApi.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.ToTable("Songs");
+                    b.ToTable("Songs", (string)null);
+                });
+
+            modelBuilder.Entity("ChartTag", b =>
+                {
+                    b.HasOne("PhiZoneApi.Models.Chart", null)
+                        .WithMany()
+                        .HasForeignKey("ChartsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PhiZoneApi.Models.Tag", null)
+                        .WithMany()
+                        .HasForeignKey("TagsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<int>", b =>
@@ -1883,6 +1937,25 @@ namespace PhiZoneApi.Migrations
                     b.Navigation("Requestee");
 
                     b.Navigation("Requester");
+                });
+
+            modelBuilder.Entity("PhiZoneApi.Models.ApplicationUser", b =>
+                {
+                    b.HasOne("PhiZoneApi.Models.Application", "Application")
+                        .WithMany("TapUserRelations")
+                        .HasForeignKey("ApplicationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PhiZoneApi.Models.User", "User")
+                        .WithMany("TapUserRelations")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Application");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("PhiZoneApi.Models.Authorship", b =>
@@ -2000,25 +2073,6 @@ namespace PhiZoneApi.Migrations
                     b.Navigation("Owner");
                 });
 
-            modelBuilder.Entity("PhiZoneApi.Models.TapUserRelation", b =>
-                {
-                    b.HasOne("PhiZoneApi.Models.Application", "Application")
-                        .WithMany("TapUserRelations")
-                        .HasForeignKey("ApplicationId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("PhiZoneApi.Models.User", "User")
-                        .WithMany("TapUserRelations")
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Application");
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("PhiZoneApi.Models.User", b =>
                 {
                     b.HasOne("PhiZoneApi.Models.Region", "Region")
@@ -2049,11 +2103,11 @@ namespace PhiZoneApi.Migrations
                     b.Navigation("Follower");
                 });
 
-            modelBuilder.Entity("PublicResourceTag", b =>
+            modelBuilder.Entity("SongTag", b =>
                 {
-                    b.HasOne("PhiZoneApi.Models.PublicResource", null)
+                    b.HasOne("PhiZoneApi.Models.Song", null)
                         .WithMany()
-                        .HasForeignKey("ResourcesId")
+                        .HasForeignKey("SongsId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

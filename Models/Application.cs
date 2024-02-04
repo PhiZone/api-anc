@@ -1,4 +1,5 @@
-﻿using PhiZoneApi.Enums;
+﻿using System.Text.Json.Serialization;
+using PhiZoneApi.Enums;
 
 namespace PhiZoneApi.Models;
 
@@ -20,13 +21,17 @@ public class Application : LikeableResource
 
     public string? TapClientId { get; set; }
 
+    public string? AuthorizationPage { get; set; }
+
+    public string? TokenEndpoint { get; set; }
+
     public string? Secret { get; set; }
 
     public DateTimeOffset DateUpdated { get; set; }
 
-    public IEnumerable<User> TapUsers { get; } = new List<User>();
+    [JsonIgnore] public List<User> TapUsers { get; } = [];
 
-    public IEnumerable<TapUserRelation> TapUserRelations { get; } = new List<TapUserRelation>();
+    [JsonIgnore] public List<ApplicationUser> TapUserRelations { get; } = [];
 
     public override string GetDisplay()
     {

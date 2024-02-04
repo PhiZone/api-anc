@@ -40,6 +40,8 @@ public class ChartSubmissionDto
 
     public int NoteCount { get; set; }
 
+    public string[] Tags { get; set; } = [];
+
     public Guid? SongId { get; set; }
 
     public Guid? SongSubmissionId { get; set; }

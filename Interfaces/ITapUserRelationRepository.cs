@@ -5,33 +5,33 @@ namespace PhiZoneApi.Interfaces;
 
 public interface ITapUserRelationRepository
 {
-    Task<ICollection<TapUserRelation>> GetApplicationsAsync(int userId, List<string> order, List<bool> desc,
+    Task<ICollection<ApplicationUser>> GetApplicationsAsync(int userId, List<string> order, List<bool> desc,
         int position,
-        int take, Expression<Func<TapUserRelation, bool>>? predicate = null);
+        int take, Expression<Func<ApplicationUser, bool>>? predicate = null);
 
-    Task<ICollection<TapUserRelation>> GetUsersAsync(Guid applicationId, List<string> order, List<bool> desc,
+    Task<ICollection<ApplicationUser>> GetUsersAsync(Guid applicationId, List<string> order, List<bool> desc,
         int position,
-        int take, Expression<Func<TapUserRelation, bool>>? predicate = null);
+        int take, Expression<Func<ApplicationUser, bool>>? predicate = null);
 
-    Task<ICollection<TapUserRelation>> GetRelationsAsync(List<string> order, List<bool> desc, int position,
+    Task<ICollection<ApplicationUser>> GetRelationsAsync(List<string> order, List<bool> desc, int position,
         int take,
-        Expression<Func<TapUserRelation, bool>>? predicate = null);
+        Expression<Func<ApplicationUser, bool>>? predicate = null);
 
-    Task<TapUserRelation> GetRelationAsync(Guid applicationId, int userId);
+    Task<ApplicationUser> GetRelationAsync(Guid applicationId, int userId);
 
-    Task<bool> CreateRelationAsync(TapUserRelation userRelation);
+    Task<bool> CreateRelationAsync(ApplicationUser applicationUser);
 
-    Task<bool> UpdateRelationAsync(TapUserRelation userRelation);
+    Task<bool> UpdateRelationAsync(ApplicationUser applicationUser);
 
     Task<bool> RemoveRelationAsync(Guid applicationId, int userId);
 
     Task<bool> SaveAsync();
 
-    Task<int> CountRelationsAsync(Expression<Func<TapUserRelation, bool>>? predicate = null);
+    Task<int> CountRelationsAsync(Expression<Func<ApplicationUser, bool>>? predicate = null);
 
     Task<bool> RelationExistsAsync(Guid applicationId, int userId);
 
-    Task<int> CountApplicationsAsync(int userId, Expression<Func<TapUserRelation, bool>>? predicate = null);
+    Task<int> CountApplicationsAsync(int userId, Expression<Func<ApplicationUser, bool>>? predicate = null);
 
-    Task<int> CountUsersAsync(Guid applicationId, Expression<Func<TapUserRelation, bool>>? predicate = null);
+    Task<int> CountUsersAsync(Guid applicationId, Expression<Func<ApplicationUser, bool>>? predicate = null);
 }

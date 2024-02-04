@@ -15,7 +15,7 @@ public class SongRepository(ApplicationDbContext context, IMeilisearchService me
     public async Task<ICollection<Song>> GetSongsAsync(List<string> order, List<bool> desc, int position, int take,
         Expression<Func<Song, bool>>? predicate = null, int? currentUserId = null)
     {
-        var result = context.Songs.OrderBy(order, desc);
+        var result = context.Songs.Include(e => e.Tags).OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
         if (currentUserId != null)
             result = result.IncludeFilter(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
@@ -25,15 +25,16 @@ public class SongRepository(ApplicationDbContext context, IMeilisearchService me
 
     public async Task<Song> GetSongAsync(Guid id, int? currentUserId = null)
     {
-        IQueryable<Song> result = context.Songs;
+        IQueryable<Song> result = context.Songs.Include(e => e.Tags);
         if (currentUserId != null)
             result = result.IncludeFilter(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
         return (await result.FirstOrDefaultAsync(song => song.Id == id))!;
     }
 
-    public async Task<Song?> GetRandomSongAsync(Expression<Func<Song, bool>>? predicate = null, int? currentUserId = null)
+    public async Task<Song?> GetRandomSongAsync(Expression<Func<Song, bool>>? predicate = null,
+        int? currentUserId = null)
     {
-        var result = context.Songs.OrderBy(song => EF.Functions.Random()).AsQueryable();
+        var result = context.Songs.Include(e => e.Tags).OrderBy(song => EF.Functions.Random()).AsQueryable();
         if (predicate != null) result = result.Where(predicate);
         if (currentUserId != null)
             result = result.IncludeFilter(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));

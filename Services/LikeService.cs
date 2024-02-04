@@ -3,11 +3,19 @@ using PhiZoneApi.Models;
 
 namespace PhiZoneApi.Services;
 
-public class LikeService(ILikeRepository likeRepository, IChapterRepository chapterRepository,
-    ICollectionRepository collectionRepository, ISongRepository songRepository, IChartRepository chartRepository,
-    IRecordRepository recordRepository, ICommentRepository commentRepository, IReplyRepository replyRepository,
-    IApplicationRepository applicationRepository, IAnnouncementRepository announcementRepository,
-    IResourceService resourceService, INotificationService notificationService) : ILikeService
+public class LikeService(
+    ILikeRepository likeRepository,
+    IChapterRepository chapterRepository,
+    ICollectionRepository collectionRepository,
+    ISongRepository songRepository,
+    IChartRepository chartRepository,
+    IRecordRepository recordRepository,
+    ICommentRepository commentRepository,
+    IReplyRepository replyRepository,
+    IApplicationRepository applicationRepository,
+    IAnnouncementRepository announcementRepository,
+    IResourceService resourceService,
+    INotificationService notificationService) : ILikeService
 {
     public async Task<bool> CreateLikeAsync(Chapter chapter, int userId, DateTimeOffset? dateCreated = null)
     {

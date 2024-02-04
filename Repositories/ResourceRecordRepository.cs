@@ -9,8 +9,8 @@ using PhiZoneApi.Utils;
 
 namespace PhiZoneApi.Repositories;
 
-public class ResourceRecordRepository
-    (ApplicationDbContext context, IMeilisearchService meilisearchService) : IResourceRecordRepository
+public class ResourceRecordRepository(ApplicationDbContext context, IMeilisearchService meilisearchService)
+    : IResourceRecordRepository
 {
     public async Task<ICollection<ResourceRecord>> GetResourceRecordsAsync(List<string> order, List<bool> desc,
         int position, int take, Expression<Func<ResourceRecord, bool>>? predicate = null)

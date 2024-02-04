@@ -24,15 +24,18 @@ public class FileMigrationService(IServiceProvider serviceProvider, int position
         _songSubmissionRepository = scope.ServiceProvider.GetRequiredService<ISongSubmissionRepository>();
         _chartSubmissionRepository = scope.ServiceProvider.GetRequiredService<IChartSubmissionRepository>();
 
-        _logger.LogInformation(LogEvents.FileMigration, "[{Now}] File migration started", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+        _logger.LogInformation(LogEvents.FileMigration, "[{Now}] File migration started",
+            DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
         try
         {
             await MigrateFilesAsync(cancellationToken);
-            _logger.LogInformation(LogEvents.FileMigration, "[{Now}] File migration finished", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+            _logger.LogInformation(LogEvents.FileMigration, "[{Now}] File migration finished",
+                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
         }
         catch (Exception ex)
         {
-            _logger.LogError(LogEvents.FileMigration, ex, "[{Now}] File migration failed", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+            _logger.LogError(LogEvents.FileMigration, ex, "[{Now}] File migration failed",
+                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
         }
     }
 
@@ -48,7 +51,9 @@ public class FileMigrationService(IServiceProvider serviceProvider, int position
         var i = 0;
         foreach (var song in songs)
         {
-            _logger.LogInformation(LogEvents.FileMigration, "[{Now}] Migrating files for Song #{Id} {Current} / {Total}", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+            _logger.LogInformation(LogEvents.FileMigration,
+                "[{Now}] Migrating files for Song #{Id} {Current} / {Total}",
+                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
                 song.Id, ++i, songs.Count);
 
             if (song.File != null)
@@ -70,7 +75,9 @@ public class FileMigrationService(IServiceProvider serviceProvider, int position
             var j = 0;
             foreach (var chart in charts)
             {
-                _logger.LogInformation(LogEvents.FileMigration, "[{Now}] Migrating files for Chart #{Id} {Current} / {Total}", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+                _logger.LogInformation(LogEvents.FileMigration,
+                    "[{Now}] Migrating files for Chart #{Id} {Current} / {Total}",
+                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
                     chart.Id, ++j, charts.Count);
                 if (chart.File == null) continue;
                 (chart.File, chart.FileChecksum) =

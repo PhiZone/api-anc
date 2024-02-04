@@ -10,17 +10,17 @@ public class AnnouncementDto
 
     public string Content { get; set; } = null!;
 
-    public int OwnerId { get; set; }
-
-    public DateTimeOffset DateCreated { get; set; }
-
-    public DateTimeOffset DateUpdated { get; set; }
-
     public int LikeCount { get; set; }
 
     public Guid? ResourceId { get; set; }
 
     public PublicResourceType ResourceType { get; set; }
+
+    public int OwnerId { get; set; }
+
+    public DateTimeOffset DateCreated { get; set; }
+
+    public DateTimeOffset DateUpdated { get; set; }
 
     public DateTimeOffset? DateLiked { get; set; }
 }

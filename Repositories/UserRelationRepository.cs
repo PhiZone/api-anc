@@ -8,7 +8,8 @@ using PhiZoneApi.Utils;
 
 namespace PhiZoneApi.Repositories;
 
-public class UserRelationRepository(ApplicationDbContext context, IMeilisearchService meilisearchService) : IUserRelationRepository
+public class UserRelationRepository(ApplicationDbContext context, IMeilisearchService meilisearchService)
+    : IUserRelationRepository
 {
     public async Task<ICollection<UserRelation>> GetFollowersAsync(int userId, List<string> order, List<bool> desc,
         int position,
@@ -56,8 +57,10 @@ public class UserRelationRepository(ApplicationDbContext context, IMeilisearchSe
     {
         var follower = await context.Users.FirstAsync(e => e.Id == userRelation.FollowerId);
         var followee = await context.Users.FirstAsync(e => e.Id == userRelation.FolloweeId);
-        follower.FolloweeCount = await context.UserRelations.CountAsync(e => e.FollowerId == userRelation.FollowerId && e.Type != UserRelationType.Blacklisted) + 1;
-        followee.FollowerCount = await context.UserRelations.CountAsync(e => e.FolloweeId == userRelation.FolloweeId && e.Type != UserRelationType.Blacklisted) + 1;
+        follower.FolloweeCount = await context.UserRelations.CountAsync(e =>
+            e.FollowerId == userRelation.FollowerId && e.Type != UserRelationType.Blacklisted) + 1;
+        followee.FollowerCount = await context.UserRelations.CountAsync(e =>
+            e.FolloweeId == userRelation.FolloweeId && e.Type != UserRelationType.Blacklisted) + 1;
         await context.UserRelations.AddAsync(userRelation);
         context.Users.UpdateRange(follower, followee);
         await meilisearchService.UpdateBatchAsync([follower, followee]);
@@ -70,8 +73,10 @@ public class UserRelationRepository(ApplicationDbContext context, IMeilisearchSe
         var followee = await context.Users.FirstAsync(e => e.Id == userRelation.FolloweeId);
         context.UserRelations.Update(userRelation);
         var result = await SaveAsync();
-        follower.FolloweeCount = await context.UserRelations.CountAsync(e => e.FollowerId == userRelation.FollowerId && e.Type != UserRelationType.Blacklisted);
-        followee.FollowerCount = await context.UserRelations.CountAsync(e => e.FolloweeId == userRelation.FolloweeId && e.Type != UserRelationType.Blacklisted);
+        follower.FolloweeCount = await context.UserRelations.CountAsync(e =>
+            e.FollowerId == userRelation.FollowerId && e.Type != UserRelationType.Blacklisted);
+        followee.FollowerCount = await context.UserRelations.CountAsync(e =>
+            e.FolloweeId == userRelation.FolloweeId && e.Type != UserRelationType.Blacklisted);
         context.Users.UpdateRange(follower, followee);
         await meilisearchService.UpdateBatchAsync([follower, followee]);
         return result && await SaveAsync();
@@ -81,9 +86,13 @@ public class UserRelationRepository(ApplicationDbContext context, IMeilisearchSe
     {
         var relation = await context.UserRelations.Include(e => e.Follower)
             .Include(e => e.Followee).FirstAsync(relation =>
-            relation.FollowerId == followerId && relation.FolloweeId == followeeId);
-        relation.Follower.FolloweeCount = await context.UserRelations.CountAsync(e => e.FollowerId == followerId && e.Type != UserRelationType.Blacklisted) - 1;
-        relation.Followee.FollowerCount = await context.UserRelations.CountAsync(e => e.FolloweeId == followeeId && e.Type != UserRelationType.Blacklisted) - 1;
+                relation.FollowerId == followerId && relation.FolloweeId == followeeId);
+        relation.Follower.FolloweeCount =
+            await context.UserRelations.CountAsync(e =>
+                e.FollowerId == followerId && e.Type != UserRelationType.Blacklisted) - 1;
+        relation.Followee.FollowerCount =
+            await context.UserRelations.CountAsync(e =>
+                e.FolloweeId == followeeId && e.Type != UserRelationType.Blacklisted) - 1;
         context.UserRelations.Remove(relation);
         context.Users.UpdateRange(relation.Follower, relation.Followee);
         await meilisearchService.UpdateBatchAsync([relation.Follower, relation.Followee]);

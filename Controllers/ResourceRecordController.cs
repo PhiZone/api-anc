@@ -26,9 +26,14 @@ namespace PhiZoneApi.Controllers;
 [ApiController]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme,
     Policy = "AllowAnonymous")]
-public class ResourceRecordController(IResourceRecordRepository resourceRecordRepository,
-    IOptions<DataSettings> dataSettings, IMapper mapper, IFilterService filterService, UserManager<User> userManager,
-    IResourceService resourceService, IMeilisearchService meilisearchService) : Controller
+public class ResourceRecordController(
+    IResourceRecordRepository resourceRecordRepository,
+    IOptions<DataSettings> dataSettings,
+    IMapper mapper,
+    IFilterService filterService,
+    UserManager<User> userManager,
+    IResourceService resourceService,
+    IMeilisearchService meilisearchService) : Controller
 {
     /// <summary>
     ///     Retrieves resource records.

@@ -22,8 +22,13 @@ namespace PhiZoneApi.Controllers;
 [ApiVersion("2.0")]
 [ApiController]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
-public class NotificationController(IOptions<DataSettings> dataSettings, INotificationRepository notificationRepository,
-    UserManager<User> userManager, IResourceService resourceService, IFilterService filterService, IDtoMapper dtoMapper,
+public class NotificationController(
+    IOptions<DataSettings> dataSettings,
+    INotificationRepository notificationRepository,
+    UserManager<User> userManager,
+    IResourceService resourceService,
+    IFilterService filterService,
+    IDtoMapper dtoMapper,
     IMeilisearchService meilisearchService) : Controller
 {
     /// <summary>
@@ -65,6 +70,7 @@ public class NotificationController(IOptions<DataSettings> dataSettings, INotifi
                 dto.PerPage, predicateExpr, currentUser.Id);
             total = await notificationRepository.CountNotificationsAsync(predicateExpr);
         }
+
         var list = notifications.Select(dtoMapper.MapNotification<NotificationDto>).ToList();
 
         return Ok(new ResponseDto<IEnumerable<NotificationDto>>

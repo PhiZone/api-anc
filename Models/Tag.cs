@@ -1,4 +1,6 @@
-﻿namespace PhiZoneApi.Models;
+﻿using System.Text.Json.Serialization;
+
+namespace PhiZoneApi.Models;
 
 public class Tag
 {
@@ -10,7 +12,9 @@ public class Tag
 
     public string? Description { get; set; }
 
-    public List<PublicResource> Resources { get; set; } = new();
-
     public DateTimeOffset DateCreated { get; set; }
+
+    [JsonIgnore] public List<Song> Songs { get; } = [];
+
+    [JsonIgnore] public List<Chart> Charts { get; } = [];
 }

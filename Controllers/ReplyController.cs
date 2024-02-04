@@ -24,9 +24,16 @@ namespace PhiZoneApi.Controllers;
 [ApiController]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme,
     Policy = "AllowAnonymous")]
-public class ReplyController(IReplyRepository replyRepository, IOptions<DataSettings> dataSettings,
-        IDtoMapper dtoMapper, IFilterService filterService, UserManager<User> userManager,
-        ILikeRepository likeRepository, ILikeService likeService, IMapper mapper, IResourceService resourceService)
+public class ReplyController(
+    IReplyRepository replyRepository,
+    IOptions<DataSettings> dataSettings,
+    IDtoMapper dtoMapper,
+    IFilterService filterService,
+    UserManager<User> userManager,
+    ILikeRepository likeRepository,
+    ILikeService likeService,
+    IMapper mapper,
+    IResourceService resourceService)
     : Controller
 {
     /// <summary>

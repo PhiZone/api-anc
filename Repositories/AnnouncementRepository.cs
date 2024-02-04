@@ -10,8 +10,8 @@ using Z.EntityFramework.Plus;
 
 namespace PhiZoneApi.Repositories;
 
-public class AnnouncementRepository
-    (ApplicationDbContext context, IMeilisearchService meilisearchService) : IAnnouncementRepository
+public class AnnouncementRepository(ApplicationDbContext context, IMeilisearchService meilisearchService)
+    : IAnnouncementRepository
 {
     public async Task<ICollection<Announcement>> GetAnnouncementsAsync(List<string> order, List<bool> desc,
         int position, int take, Expression<Func<Announcement, bool>>? predicate = null, int? currentUserId = null)

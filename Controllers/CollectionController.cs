@@ -70,8 +70,7 @@ public class CollectionController(
                 showHidden: currentUser is { Role: UserRole.Administrator });
             var idList = result.Hits.Select(item => item.Id).ToList();
             collections = (await collectionRepository.GetCollectionsAsync(["DateCreated"], [false], position,
-                dto.PerPage, e => idList.Contains(e.Id), currentUser?.Id)).OrderBy(e =>
-                idList.IndexOf(e.Id));
+                dto.PerPage, e => idList.Contains(e.Id), currentUser?.Id)).OrderBy(e => idList.IndexOf(e.Id));
             total = result.TotalHits;
         }
         else
@@ -156,6 +155,7 @@ public class CollectionController(
                 });
         var illustrationUrl = (await fileStorageService.UploadImage<Collection>(dto.Title, dto.Illustration, (16, 9)))
             .Item1;
+        await fileStorageService.SendUserInput(illustrationUrl, "Illustration", Request, currentUser);
         var collection = new Collection
         {
             Title = dto.Title,
@@ -288,6 +288,7 @@ public class CollectionController(
         {
             collection.Illustration =
                 (await fileStorageService.UploadImage<Collection>(collection.Title, dto.File, (16, 9))).Item1;
+            await fileStorageService.SendUserInput(collection.Illustration, "Illustration", Request, currentUser);
             collection.DateUpdated = DateTimeOffset.UtcNow;
         }
 
@@ -373,9 +374,7 @@ public class CollectionController(
         var total = await collectionRepository.CountCollectionChartsAsync(id, predicateExpr);
         var list = new List<ChartAdmitteeDto>();
         foreach (var admission in admissions)
-        {
             list.Add(await dtoMapper.MapCollectionChartAsync<ChartAdmitteeDto>(admission, currentUser));
-        }
 
         return Ok(new ResponseDto<IEnumerable<ChartAdmitteeDto>>
         {

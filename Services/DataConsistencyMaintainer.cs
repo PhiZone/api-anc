@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore;
 using PhiZoneApi.Constants;
 using PhiZoneApi.Data;
 using PhiZoneApi.Enums;
+using PhiZoneApi.Interfaces;
+
 // ReSharper disable InvertIf
 
 namespace PhiZoneApi.Services;
@@ -10,8 +12,13 @@ namespace PhiZoneApi.Services;
 public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger<DataConsistencyMaintainer> logger)
     : IHostedService, IDisposable
 {
-    private Timer? _timer;
     private CancellationToken _cancellationToken;
+    private Timer? _timer;
+
+    public void Dispose()
+    {
+        _timer?.Dispose();
+    }
 
     public Task StartAsync(CancellationToken cancellationToken)
     {
@@ -20,13 +27,88 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
         return Task.CompletedTask;
     }
 
+    public Task StopAsync(CancellationToken cancellationToken)
+    {
+        _timer?.Change(Timeout.Infinite, 0);
+        return Task.CompletedTask;
+    }
+
     private async void Check(object? state)
     {
         await using var scope = serviceProvider.CreateAsyncScope();
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var recordRepository = scope.ServiceProvider.GetRequiredService<IRecordRepository>();
+        var recordService = scope.ServiceProvider.GetRequiredService<IRecordService>();
         var culture = (CultureInfo)CultureInfo.CurrentCulture.Clone();
         culture.NumberFormat.PercentPositivePattern = 1;
-        
+
+        foreach (var record in await context.Records.Include(e => e.Chart).ToListAsync(_cancellationToken))
+        {
+            var update = false;
+            var likeCount = await context.Likes.CountAsync(e => e.ResourceId == record.Id, _cancellationToken);
+            var score = recordService.CalculateScore(record.Perfect, record.GoodEarly + record.GoodLate, record.Bad,
+                record.Miss, record.MaxCombo);
+            var accuracy = recordService.CalculateAccuracy(record.Perfect, record.GoodEarly + record.GoodLate,
+                record.Bad, record.Miss);
+            if (record.LikeCount != likeCount)
+            {
+                logger.LogInformation(LogEvents.DataConsistencyMaintenance,
+                    "[{Now}] Found inconsistency for Record \"{Score} {Accuracy}\" on its {Property}: {ActualCount} != {ExpectedCount}",
+                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), record.Score, record.Accuracy.ToString("P2", culture),
+                    nameof(record.LikeCount), record.LikeCount, likeCount);
+                record.LikeCount = likeCount;
+                update = true;
+            }
+
+            if (record.Score != score)
+            {
+                logger.LogInformation(LogEvents.DataConsistencyMaintenance,
+                    "[{Now}] Found inconsistency for Record \"{Score} {Accuracy}\" on its {Property}: {ActualCount} != {ExpectedCount}",
+                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), record.Score, record.Accuracy.ToString("P2", culture),
+                    nameof(record.Score), record.Score, score);
+                record.Score = score;
+                update = true;
+            }
+
+            if (Math.Abs(record.Accuracy - accuracy) > 1e-8)
+            {
+                logger.LogInformation(LogEvents.DataConsistencyMaintenance,
+                    "[{Now}] Found inconsistency for Record \"{Score} {Accuracy}\" on its {Property}: {ActualCount} != {ExpectedCount}",
+                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), record.Score, record.Accuracy.ToString("P2", culture),
+                    nameof(record.Accuracy), record.Accuracy, accuracy);
+                record.Accuracy = accuracy;
+                update = true;
+            }
+
+            if (record.StdDeviation < 0.1)
+            {
+                logger.LogInformation(LogEvents.DataConsistencyMaintenance,
+                    "[{Now}] Found inconsistency for Record \"{Score} {Accuracy}\" on its {Property}: {ActualCount} < {ExpectedCount}",
+                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), record.Score, record.Accuracy.ToString("P2", culture),
+                    nameof(record.StdDeviation), record.StdDeviation, 0.1);
+                if (record.StdDeviation > 0)
+                    record.StdDeviation *= 1000;
+                else
+                    record.StdDeviation = 40;
+                update = true;
+            }
+
+            var rksFactor = recordService.CalculateRksFactor(record.PerfectJudgment, record.GoodJudgment);
+            var rks = recordService.CalculateRks(record.Perfect, record.GoodEarly + record.GoodLate, record.Bad,
+                record.Miss, record.Chart.Difficulty, record.StdDeviation) * rksFactor;
+            if (Math.Abs(record.Rks - rks) > 1e-8)
+            {
+                logger.LogInformation(LogEvents.DataConsistencyMaintenance,
+                    "[{Now}] Found inconsistency for Record \"{Score} {Accuracy}\" on its {Property}: {ActualCount} != {ExpectedCount}",
+                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), record.Score, record.Accuracy.ToString("P2", culture),
+                    nameof(record.Rks), record.Rks, rks);
+                record.Rks = rks;
+                update = true;
+            }
+
+            if (update) context.Records.Update(record);
+        }
+
         foreach (var user in await context.Users.ToListAsync(_cancellationToken))
         {
             var update = false;
@@ -34,6 +116,11 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
                 e => e.FollowerId == user.Id && e.Type != UserRelationType.Blacklisted, _cancellationToken);
             var followerCount = await context.UserRelations.CountAsync(
                 e => e.FolloweeId == user.Id && e.Type != UserRelationType.Blacklisted, _cancellationToken);
+            var phiRks = (await recordRepository.GetRecordsAsync(["Rks"], [true], 0, 1,
+                    r => r.OwnerId == user.Id && r.Score == 1000000 && r.Chart.IsRanked)).FirstOrDefault()
+                ?.Rks ?? 0d;
+            var best19Rks = (await recordRepository.GetPersonalBests(user.Id)).Sum(r => r.Rks);
+            var rks = (phiRks + best19Rks) / 20;
             if (user.FolloweeCount != followeeCount)
             {
                 logger.LogInformation(LogEvents.DataConsistencyMaintenance,
@@ -62,10 +149,21 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
                 update = true;
             }
 
-            if (update)
+            if (Math.Abs(user.Rks - rks) > 1e-8)
             {
-                context.Users.Update(user);
+                logger.LogInformation(LogEvents.DataConsistencyMaintenance,
+                    "[{Now}] Found inconsistency for User \"{UserName}\" on {Pronoun} {Property}: {ActualCount} != {ExpectedCount}",
+                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), user.UserName, user.Gender switch
+                    {
+                        Gender.Male => "his",
+                        Gender.Female => "her",
+                        _ => "their"
+                    }, nameof(user.Rks), user.Rks, rks);
+                user.Rks = rks;
+                update = true;
             }
+
+            if (update) context.Users.Update(user);
         }
 
         foreach (var chart in await context.Charts.Include(e => e.Song).ToListAsync(_cancellationToken))
@@ -82,7 +180,7 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
                 chart.PlayCount = playCount;
                 update = true;
             }
-            
+
             if (chart.LikeCount != likeCount)
             {
                 logger.LogInformation(LogEvents.DataConsistencyMaintenance,
@@ -93,10 +191,7 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
                 update = true;
             }
 
-            if (update)
-            {
-                context.Charts.Update(chart);
-            }
+            if (update) context.Charts.Update(chart);
         }
 
         foreach (var comment in await context.Comments.ToListAsync(_cancellationToken))
@@ -108,23 +203,25 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
             {
                 logger.LogInformation(LogEvents.DataConsistencyMaintenance,
                     "[{Now}] Found inconsistency for Comment \"{Content}\" on its {Property}: {ActualCount} != {ExpectedCount}",
-                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), comment.Content.Length > 10 ? $"{comment.Content[..10]}..." : comment.Content, nameof(comment.ReplyCount), comment.ReplyCount, replyCount);
+                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+                    comment.Content.Length > 10 ? $"{comment.Content[..10]}..." : comment.Content,
+                    nameof(comment.ReplyCount), comment.ReplyCount, replyCount);
                 comment.ReplyCount = replyCount;
                 update = true;
             }
+
             if (comment.LikeCount != likeCount)
             {
                 logger.LogInformation(LogEvents.DataConsistencyMaintenance,
                     "[{Now}] Found inconsistency for Comment \"{Content}\" on its {Property}: {ActualCount} != {ExpectedCount}",
-                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), comment.Content.Length > 10 ? $"{comment.Content[..10]}..." : comment.Content, nameof(comment.LikeCount), comment.LikeCount, likeCount);
+                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+                    comment.Content.Length > 10 ? $"{comment.Content[..10]}..." : comment.Content,
+                    nameof(comment.LikeCount), comment.LikeCount, likeCount);
                 comment.LikeCount = likeCount;
                 update = true;
             }
 
-            if (update)
-            {
-                context.Comments.Update(comment);
-            }
+            if (update) context.Comments.Update(comment);
         }
 
         foreach (var collection in await context.Collections.ToListAsync(_cancellationToken))
@@ -134,7 +231,8 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
             {
                 logger.LogInformation(LogEvents.DataConsistencyMaintenance,
                     "[{Now}] Found inconsistency for Collection \"{Title}\" on its {Property}: {ActualCount} != {ExpectedCount}",
-                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), collection.Title, nameof(collection.LikeCount), collection.LikeCount, likeCount);
+                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), collection.Title, nameof(collection.LikeCount),
+                    collection.LikeCount, likeCount);
                 collection.LikeCount = likeCount;
                 context.Collections.Update(collection);
             }
@@ -147,7 +245,8 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
             {
                 logger.LogInformation(LogEvents.DataConsistencyMaintenance,
                     "[{Now}] Found inconsistency for Chapter \"{Title}\" on its {Property}: {ActualCount} != {ExpectedCount}",
-                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), chapter.Title, nameof(chapter.LikeCount), chapter.LikeCount, likeCount);
+                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), chapter.Title, nameof(chapter.LikeCount),
+                    chapter.LikeCount, likeCount);
                 chapter.LikeCount = likeCount;
                 context.Chapters.Update(chapter);
             }
@@ -160,7 +259,8 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
             {
                 logger.LogInformation(LogEvents.DataConsistencyMaintenance,
                     "[{Now}] Found inconsistency for Announcement \"{Title}\" on its {Property}: {ActualCount} != {ExpectedCount}",
-                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), announcement.Title, nameof(announcement.LikeCount), announcement.LikeCount, likeCount);
+                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), announcement.Title, nameof(announcement.LikeCount),
+                    announcement.LikeCount, likeCount);
                 announcement.LikeCount = likeCount;
                 context.Announcements.Update(announcement);
             }
@@ -175,23 +275,23 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
             {
                 logger.LogInformation(LogEvents.DataConsistencyMaintenance,
                     "[{Now}] Found inconsistency for Song \"{Title}\" on its {Property}: {ActualCount} != {ExpectedCount}",
-                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), song.Title, nameof(song.PlayCount), song.PlayCount, playCount);
+                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), song.Title, nameof(song.PlayCount), song.PlayCount,
+                    playCount);
                 song.PlayCount = playCount;
                 update = true;
             }
+
             if (song.LikeCount != likeCount)
             {
                 logger.LogInformation(LogEvents.DataConsistencyMaintenance,
                     "[{Now}] Found inconsistency for Song \"{Title}\" on its {Property}: {ActualCount} != {ExpectedCount}",
-                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), song.Title, nameof(song.LikeCount), song.LikeCount, likeCount);
+                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), song.Title, nameof(song.LikeCount), song.LikeCount,
+                    likeCount);
                 song.LikeCount = likeCount;
                 update = true;
             }
 
-            if (update)
-            {
-                context.Songs.Update(song);
-            }
+            if (update) context.Songs.Update(song);
         }
 
         foreach (var application in await context.Applications.ToListAsync(_cancellationToken))
@@ -201,22 +301,10 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
             {
                 logger.LogInformation(LogEvents.DataConsistencyMaintenance,
                     "[{Now}] Found inconsistency for Application \"{Name}\" on its {Property}: {ActualCount} != {ExpectedCount}",
-                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), application.Name, nameof(application.LikeCount), application.LikeCount, likeCount);
+                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), application.Name, nameof(application.LikeCount),
+                    application.LikeCount, likeCount);
                 application.LikeCount = likeCount;
                 context.Applications.Update(application);
-            }
-        }
-
-        foreach (var record in await context.Records.ToListAsync(_cancellationToken))
-        {
-            var likeCount = await context.Likes.CountAsync(e => e.ResourceId == record.Id, _cancellationToken);
-            if (record.LikeCount != likeCount)
-            {
-                logger.LogInformation(LogEvents.DataConsistencyMaintenance,
-                    "[{Now}] Found inconsistency for Record \"{Score} {Accuracy}\" on its {Property}: {ActualCount} != {ExpectedCount}",
-                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), record.Score, record.Accuracy.ToString("P2", culture), nameof(record.LikeCount), record.LikeCount, likeCount);
-                record.LikeCount = likeCount;
-                context.Records.Update(record);
             }
         }
 
@@ -227,7 +315,9 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
             {
                 logger.LogInformation(LogEvents.DataConsistencyMaintenance,
                     "[{Now}] Found inconsistency for Reply \"{Content}\" on its {Property}: {ActualCount} != {ExpectedCount}",
-                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), reply.Content.Length > 10 ? $"{reply.Content[..10]}..." : reply.Content, nameof(reply.LikeCount), reply.LikeCount, likeCount);
+                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+                    reply.Content.Length > 10 ? $"{reply.Content[..10]}..." : reply.Content, nameof(reply.LikeCount),
+                    reply.LikeCount, likeCount);
                 reply.LikeCount = likeCount;
                 context.Replies.Update(reply);
             }
@@ -240,7 +330,8 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
             {
                 logger.LogInformation(LogEvents.DataConsistencyMaintenance,
                     "[{Now}] Found inconsistency for Event \"{Title}\" on its {Property}: {ActualCount} != {ExpectedCount}",
-                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), eventEntity.Title, nameof(eventEntity.LikeCount), eventEntity.LikeCount, likeCount);
+                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), eventEntity.Title, nameof(eventEntity.LikeCount),
+                    eventEntity.LikeCount, likeCount);
                 eventEntity.LikeCount = likeCount;
                 context.Events.Update(eventEntity);
             }
@@ -253,7 +344,8 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
             {
                 logger.LogInformation(LogEvents.DataConsistencyMaintenance,
                     "[{Now}] Found inconsistency for Event Division \"{Title}\" on its {Property}: {ActualCount} != {ExpectedCount}",
-                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), eventDivision.Title, nameof(eventDivision.LikeCount), eventDivision.LikeCount, likeCount);
+                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), eventDivision.Title, nameof(eventDivision.LikeCount),
+                    eventDivision.LikeCount, likeCount);
                 eventDivision.LikeCount = likeCount;
                 context.EventDivisions.Update(eventDivision);
             }
@@ -266,23 +358,13 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
             {
                 logger.LogInformation(LogEvents.DataConsistencyMaintenance,
                     "[{Now}] Found inconsistency for Event Team \"{Name}\" on its {Property}: {ActualCount} != {ExpectedCount}",
-                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), eventTeam.Name, nameof(eventTeam.LikeCount), eventTeam.LikeCount, likeCount);
+                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), eventTeam.Name, nameof(eventTeam.LikeCount),
+                    eventTeam.LikeCount, likeCount);
                 eventTeam.LikeCount = likeCount;
                 context.EventTeams.Update(eventTeam);
             }
         }
 
         await context.SaveChangesAsync(_cancellationToken);
-    }
-
-    public Task StopAsync(CancellationToken cancellationToken)
-    {
-        _timer?.Change(Timeout.Infinite, 0);
-        return Task.CompletedTask;
-    }
-
-    public void Dispose()
-    {
-        _timer?.Dispose();
     }
 }

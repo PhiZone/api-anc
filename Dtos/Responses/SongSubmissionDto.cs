@@ -48,6 +48,8 @@ public class SongSubmissionDto
 
     public TimeSpan PreviewEnd { get; set; }
 
+    public string[] Tags { get; set; } = [];
+
     public int? ReviewerId { get; set; }
 
     public string? Message { get; set; }

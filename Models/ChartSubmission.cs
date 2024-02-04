@@ -41,5 +41,5 @@ public class ChartSubmission : Submission
 
     public RequestStatus AdmissionStatus { get; set; }
 
-    [JsonIgnore] public IEnumerable<VolunteerVote> VolunteerVotes { get; } = new List<VolunteerVote>();
+    [JsonIgnore] public List<VolunteerVote> VolunteerVotes { get; } = [];
 }

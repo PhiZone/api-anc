@@ -20,13 +20,13 @@ public class ApplicationDto
 
     public ApplicationType Type { get; set; }
 
+    public int LikeCount { get; set; }
+
     public int OwnerId { get; set; }
 
     public DateTimeOffset DateCreated { get; set; }
 
     public DateTimeOffset DateUpdated { get; set; }
-
-    public int LikeCount { get; set; }
 
     public DateTimeOffset? DateLiked { get; set; }
 }
