@@ -50,6 +50,7 @@ public class ChartController(
     IRecordRepository recordRepository,
     ICollectionRepository collectionRepository,
     IAdmissionRepository admissionRepository,
+    ITagRepository tagRepository,
     ITemplateService templateService,
     ILeaderboardService leaderboardService,
     ILogger<ChartController> logger,
@@ -66,14 +67,19 @@ public class ChartController(
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<ChartDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetCharts([FromQuery] ArrayRequestDto dto,
-        [FromQuery] ChartFilterDto? filterDto = null)
+        [FromQuery] ChartFilterDto? filterDto = null, [FromQuery] ArrayTagDto? tagDto = null)
     {
         var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
             dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
-        var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser);
+        var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser,
+            e => tagDto == null ||
+                 ((tagDto.TagsToInclude == null || e.Tags.Any(tag =>
+                      tagDto.TagsToInclude.Select(resourceService.Normalize).ToList().Contains(tag.NormalizedName))) &&
+                  (tagDto.TagsToExclude == null || e.Tags.All(tag =>
+                      !tagDto.TagsToExclude.Select(resourceService.Normalize).ToList().Contains(tag.NormalizedName)))));
         IEnumerable<Chart> charts;
         int total;
         if (dto.Search != null)
@@ -82,8 +88,7 @@ public class ChartController(
                 showHidden: currentUser is { Role: UserRole.Administrator });
             var idList = result.Hits.Select(item => item.Id).ToList();
             charts = (await chartRepository.GetChartsAsync(["DateCreated"], [false], position, dto.PerPage,
-                e => idList.Contains(e.Id), currentUser?.Id)).OrderBy(e =>
-                idList.IndexOf(e.Id));
+                e => idList.Contains(e.Id), currentUser?.Id)).OrderBy(e => idList.IndexOf(e.Id));
             total = result.TotalHits;
         }
         else
@@ -167,10 +172,15 @@ public class ChartController(
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<ChartDetailedDto>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetRandomChart([FromQuery] ArrayRequestDto dto,
-        [FromQuery] ChartFilterDto? filterDto = null)
+        [FromQuery] ChartFilterDto? filterDto = null, [FromQuery] ArrayTagDto? tagDto = null)
     {
         var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser, e => !e.IsHidden);
+        var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser, e => !e.IsHidden &&
+            (tagDto == null ||
+             ((tagDto.TagsToInclude == null || e.Tags.Any(tag =>
+                  tagDto.TagsToInclude.Select(resourceService.Normalize).ToList().Contains(tag.NormalizedName))) &&
+              (tagDto.TagsToExclude == null || e.Tags.All(tag =>
+                  !tagDto.TagsToExclude.Select(resourceService.Normalize).ToList().Contains(tag.NormalizedName))))));
         var chart = await chartRepository.GetRandomChartAsync(predicateExpr, currentUser?.Id);
 
         if (chart == null)
@@ -239,6 +249,8 @@ public class ChartController(
         var illustrationUrl = dto.Illustration != null
             ? (await fileStorageService.UploadImage<Chart>(dto.Title ?? song.Title, dto.Illustration, (16, 9))).Item1
             : null;
+        if (illustrationUrl != null)
+            await fileStorageService.SendUserInput(illustrationUrl, "Illustration", Request, currentUser);
 
         var chartInfo = dto.File != null ? await chartService.Upload(dto.Title ?? song.Title, dto.File) : null;
 
@@ -277,6 +289,8 @@ public class ChartController(
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
         logger.LogInformation(LogEvents.ChartInfo, "New chart: {Title} [{Level} {Difficulty}]", dto.Title ?? song.Title,
             dto.Level, Math.Floor(dto.Difficulty));
+
+        await tagRepository.CreateTagsAsync(dto.Tags, chart);
 
         return StatusCode(StatusCodes.Status201Created);
     }
@@ -323,6 +337,7 @@ public class ChartController(
                 });
 
         var dto = mapper.Map<ChartUpdateDto>(chart);
+        dto.Tags = chart.Tags.Select(tag => tag.Name).ToList();
         patchDocument.ApplyTo(dto, ModelState);
 
         if (!TryValidateModel(dto))
@@ -350,6 +365,8 @@ public class ChartController(
         if (!await chartRepository.UpdateChartAsync(chart))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+
+        await tagRepository.CreateTagsAsync(dto.Tags, chart);
 
         return NoContent();
     }
@@ -512,6 +529,7 @@ public class ChartController(
             chart.Illustration =
                 (await fileStorageService.UploadImage<Chart>(
                     chart.Title ?? (await songRepository.GetSongAsync(chart.SongId)).Title, dto.File, (16, 9))).Item1;
+            await fileStorageService.SendUserInput(chart.Illustration, "Illustration", Request, currentUser);
             chart.DateUpdated = DateTimeOffset.UtcNow;
         }
 
@@ -1308,61 +1326,6 @@ public class ChartController(
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
         return NoContent();
-    }
-
-    /// <summary>
-    ///     Retrieves records from a specific chart.
-    /// </summary>
-    /// <param name="id">A chart's ID.</param>
-    /// <returns>An array of records.</returns>
-    /// <response code="200">Returns an array of records.</response>
-    /// <response code="400">When any of the parameters is invalid.</response>
-    /// <response code="404">When the specified chart is not found.</response>
-    [HttpGet("{id:guid}/records")]
-    [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<RecordDto>>))]
-    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
-    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetChartRecords([FromRoute] Guid id, [FromQuery] ArrayRequestDto dto,
-        [FromQuery] RecordFilterDto? filterDto = null)
-    {
-        var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
-            dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
-        dto.Page = dto.Page > 1 ? dto.Page : 1;
-        var position = dto.PerPage * (dto.Page - 1);
-        var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser);
-
-        if (!await chartRepository.ChartExistsAsync(id))
-            return NotFound(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
-            });
-
-        var chart = await chartRepository.GetChartAsync(id);
-
-        if ((currentUser == null || !resourceService.HasPermission(currentUser, UserRole.Administrator)) &&
-            chart.IsLocked)
-            return BadRequest(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Locked
-            });
-
-        var records = await chartRepository.GetChartRecordsAsync(id, dto.Order, dto.Desc, position, dto.PerPage,
-            predicateExpr, currentUser?.Id);
-        var total = await chartRepository.CountChartRecordsAsync(id, predicateExpr);
-        var list = records.Select(dtoMapper.MapRecord<RecordDto>).ToList();
-
-        return Ok(new ResponseDto<IEnumerable<RecordDto>>
-        {
-            Status = ResponseStatus.Ok,
-            Code = ResponseCodes.Ok,
-            Total = total,
-            PerPage = dto.PerPage,
-            HasPrevious = position > 0,
-            HasNext = dto.PerPage > 0 && dto.PerPage * dto.Page < total,
-            Data = list
-        });
     }
 
     /// <summary>

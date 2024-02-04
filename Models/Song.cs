@@ -43,7 +43,9 @@ public class Song : PublicResource
 
     public int PlayCount { get; set; }
 
-    [JsonIgnore] public IEnumerable<Chart> Charts { get; } = new List<Chart>();
+    [JsonIgnore] public List<Chart> Charts { get; } = [];
+
+    public List<Tag> Tags { get; } = [];
 
     public override string GetDisplay()
     {

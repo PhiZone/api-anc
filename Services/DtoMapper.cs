@@ -1,5 +1,4 @@
 ﻿using AutoMapper;
-using Microsoft.AspNetCore.Identity;
 using PhiZoneApi.Dtos.Responses;
 using PhiZoneApi.Enums;
 using PhiZoneApi.Interfaces;
@@ -159,7 +158,8 @@ public class DtoMapper(
         return dto;
     }
 
-    public async Task<T> MapCollectionChartAsync<T>(Admission admission, User? currentUser = null) where T : ChartAdmitteeDto
+    public async Task<T> MapCollectionChartAsync<T>(Admission admission, User? currentUser = null)
+        where T : ChartAdmitteeDto
     {
         var dto = MapChart<T>(await chartRepository.GetChartAsync(admission.AdmitteeId, currentUser?.Id));
         dto.Label = admission.Label;
@@ -179,6 +179,7 @@ public class DtoMapper(
     public T MapRecord<T>(Record record) where T : RecordDto
     {
         var dto = mapper.Map<T>(record);
+        dto.Owner = MapUser<UserDto>(record.Owner);
         dto.DateLiked = record.Likes.FirstOrDefault()?.DateCreated;
         return dto;
     }
@@ -186,6 +187,7 @@ public class DtoMapper(
     public T MapComment<T>(Comment comment) where T : CommentDto
     {
         var dto = mapper.Map<T>(comment);
+        dto.Owner = MapUser<UserDto>(comment.Owner);
         dto.DateLiked = comment.Likes.FirstOrDefault()?.DateCreated;
         return dto;
     }
@@ -193,6 +195,7 @@ public class DtoMapper(
     public T MapReply<T>(Reply reply) where T : ReplyDto
     {
         var dto = mapper.Map<T>(reply);
+        dto.Owner = MapUser<UserDto>(reply.Owner);
         dto.DateLiked = reply.Likes.FirstOrDefault()?.DateCreated;
         return dto;
     }

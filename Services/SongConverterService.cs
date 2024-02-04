@@ -6,9 +6,13 @@ using RabbitMQ.Client.Events;
 
 namespace PhiZoneApi.Services;
 
-public class SongConverterService(IRabbitMqService rabbitMqService, ISongService songService,
-        ISongRepository songRepository, ISongSubmissionRepository songSubmissionRepository,
-        IFeishuService feishuService, ILogger<SongConverterService> logger)
+public class SongConverterService(
+    IRabbitMqService rabbitMqService,
+    ISongService songService,
+    ISongRepository songRepository,
+    ISongSubmissionRepository songSubmissionRepository,
+    IFeishuService feishuService,
+    ILogger<SongConverterService> logger)
     : BackgroundService
 {
     private readonly IModel _channel = rabbitMqService.GetConnection().CreateModel();

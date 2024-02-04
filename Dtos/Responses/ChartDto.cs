@@ -52,19 +52,21 @@ public class ChartDto
 
     public double RatingOnImpression { get; set; }
 
+    public List<TagDto> Tags { get; set; } = null!;
+
     public Guid SongId { get; set; }
 
     public SongDto Song { get; set; } = null!;
+
+    public int PlayCount { get; set; }
+
+    public int LikeCount { get; set; }
 
     public int OwnerId { get; set; }
 
     public DateTimeOffset DateCreated { get; set; }
 
     public DateTimeOffset DateUpdated { get; set; }
-
-    public int PlayCount { get; set; }
-
-    public int LikeCount { get; set; }
 
     public DateTimeOffset? DateLiked { get; set; }
 }

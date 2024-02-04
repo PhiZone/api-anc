@@ -25,11 +25,20 @@ namespace PhiZoneApi.Controllers;
 [ApiVersion("2.0")]
 [ApiController]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
-public class CollaborationController(ICollaborationRepository collaborationRepository, UserManager<User> userManager,
-        IMapper mapper, IResourceService resourceService, IOptions<DataSettings> dataSettings,
-        IFilterService filterService, ITemplateService templateService, INotificationService notificationService,
-        ISongSubmissionRepository songSubmissionRepository, IChartSubmissionRepository chartSubmissionRepository,
-        IAuthorshipRepository authorshipRepository, ISongRepository songRepository, IChartRepository chartRepository)
+public class CollaborationController(
+    ICollaborationRepository collaborationRepository,
+    UserManager<User> userManager,
+    IMapper mapper,
+    IResourceService resourceService,
+    IOptions<DataSettings> dataSettings,
+    IFilterService filterService,
+    ITemplateService templateService,
+    INotificationService notificationService,
+    ISongSubmissionRepository songSubmissionRepository,
+    IChartSubmissionRepository chartSubmissionRepository,
+    IAuthorshipRepository authorshipRepository,
+    ISongRepository songRepository,
+    IChartRepository chartRepository)
     : Controller
 {
     /// <summary>

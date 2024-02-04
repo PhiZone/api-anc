@@ -9,7 +9,7 @@ public class VolunteerVoteRequestDto
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     [Range(-3, 3, ErrorMessage = ResponseCodes.ValueOutOfRange)]
     public double Score { get; set; }
-    
+
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     public double SuggestedDifficulty { get; set; }
 

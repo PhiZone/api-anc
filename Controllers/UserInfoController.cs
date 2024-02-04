@@ -21,9 +21,15 @@ namespace PhiZoneApi.Controllers;
 [ApiVersion("2.0")]
 [ApiController]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
-public class UserInfoController(UserManager<User> userManager, IDtoMapper mapper, IResourceService resourceService,
-    IUserRepository userRepository, ITapTapService tapTapService, IApplicationRepository applicationRepository,
-    INotificationRepository notificationRepository, ITapUserRelationRepository tapUserRelationRepository) : Controller
+public class UserInfoController(
+    UserManager<User> userManager,
+    IDtoMapper mapper,
+    IResourceService resourceService,
+    IUserRepository userRepository,
+    ITapTapService tapTapService,
+    IApplicationRepository applicationRepository,
+    INotificationRepository notificationRepository,
+    ITapUserRelationRepository tapUserRelationRepository) : Controller
 {
     /// <summary>
     ///     Retrieves user's information.
@@ -134,7 +140,7 @@ public class UserInfoController(UserManager<User> userManager, IDtoMapper mapper
                 Code = ResponseCodes.BindingOccupied
             });
 
-        var tapUserRelation = new TapUserRelation
+        var tapUserRelation = new ApplicationUser
         {
             ApplicationId = dto.ApplicationId, UserId = currentUser.Id, UnionId = unionId
         };

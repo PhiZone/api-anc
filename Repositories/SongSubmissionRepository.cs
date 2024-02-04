@@ -9,8 +9,8 @@ using PhiZoneApi.Utils;
 
 namespace PhiZoneApi.Repositories;
 
-public class SongSubmissionRepository
-    (ApplicationDbContext context, IMeilisearchService meilisearchService) : ISongSubmissionRepository
+public class SongSubmissionRepository(ApplicationDbContext context, IMeilisearchService meilisearchService)
+    : ISongSubmissionRepository
 {
     public async Task<ICollection<SongSubmission>> GetSongSubmissionsAsync(List<string> order, List<bool> desc,
         int position, int take, Expression<Func<SongSubmission, bool>>? predicate = null)

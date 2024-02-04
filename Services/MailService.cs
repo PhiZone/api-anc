@@ -1,10 +1,5 @@
 ﻿using System.Text;
-using MailKit.Net.Smtp;
-using MailKit.Security;
-using Microsoft.Extensions.Options;
-using MimeKit;
 using Newtonsoft.Json;
-using PhiZoneApi.Configurations;
 using PhiZoneApi.Constants;
 using PhiZoneApi.Dtos.Deliverers;
 using PhiZoneApi.Enums;
@@ -13,12 +8,13 @@ using StackExchange.Redis;
 
 namespace PhiZoneApi.Services;
 
-public class MailService(IOptions<MailSettings> options, ITemplateService templateService,
-        IRabbitMqService rabbitMqService, IConnectionMultiplexer redis, ILogger<MailService> logger)
-    : IMailService
+public class MailService(
+    ITemplateService templateService,
+    IRabbitMqService rabbitMqService,
+    IConnectionMultiplexer redis,
+    IMessengerService messengerService,
+    ILogger<MailService> logger) : IMailService
 {
-    private readonly MailSettings _settings = options.Value;
-
     public async Task<MailTaskDto?> GenerateEmailAsync(string email, string userName, string language,
         EmailRequestMode mode)
     {
@@ -71,23 +67,13 @@ public class MailService(IOptions<MailSettings> options, ITemplateService templa
     {
         try
         {
-            using var emailMessage = new MimeMessage();
-            var emailFrom = new MailboxAddress(_settings.SenderName, _settings.SenderAddress);
-            emailMessage.From.Add(emailFrom);
-            var emailTo = new MailboxAddress(mailTaskDto.UserName, mailTaskDto.EmailAddress);
-            emailMessage.To.Add(emailTo);
-
-            emailMessage.Subject = mailTaskDto.EmailSubject;
-
-            var emailBodyBuilder = new BodyBuilder { TextBody = mailTaskDto.EmailBody };
-
-            emailMessage.Body = emailBodyBuilder.ToMessageBody();
-
-            using var mailClient = new SmtpClient();
-            await mailClient.ConnectAsync(_settings.Server, _settings.Port, SecureSocketOptions.None);
-            await mailClient.AuthenticateAsync(_settings.UserName, _settings.Password);
-            await mailClient.SendAsync(emailMessage);
-            await mailClient.DisconnectAsync(true);
+            var response = await messengerService.SendMail(mailTaskDto);
+            if (!response.IsSuccessStatusCode)
+            {
+                logger.LogWarning(LogEvents.MailFailure, "Failed to send an email to {Email} for {User}:\n{Content}",
+                    mailTaskDto.EmailAddress, mailTaskDto.UserName, await response.Content.ReadAsStringAsync());
+                return response.StatusCode.ToString();
+            }
         }
         catch (Exception ex)
         {

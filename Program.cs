@@ -45,7 +45,10 @@ builder.Services.AddApiVersioning(options =>
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
+    // options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
+        o => o.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery));
+    // BUG System.InvalidCastException: Reading as 'System.Guid' is not supported for fields having DataTypeName 'timestamp with time zone'
     options.UseOpenIddict<int>();
 });
 
@@ -91,6 +94,8 @@ builder.Services.AddIdentity<User, Role>()
     .AddUserManager<UserManager<User>>()
     .AddDefaultTokenProviders();
 
+builder.Services.AddHttpContextAccessor();
+
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserRelationRepository, UserRelationRepository>();
 builder.Services.AddScoped<IRegionRepository, RegionRepository>();
@@ -106,6 +111,7 @@ builder.Services.AddScoped<IChartRepository, ChartRepository>();
 builder.Services.AddScoped<ILikeRepository, LikeRepository>();
 builder.Services.AddScoped<IVoteRepository, VoteRepository>();
 builder.Services.AddScoped<IVolunteerVoteRepository, VolunteerVoteRepository>();
+builder.Services.AddScoped<ITagRepository, TagRepository>();
 builder.Services.AddScoped<IApplicationRepository, ApplicationRepository>();
 builder.Services.AddScoped<IAnnouncementRepository, AnnouncementRepository>();
 builder.Services.AddScoped<IAdmissionRepository, AdmissionRepository>();
@@ -130,7 +136,6 @@ builder.Services.AddScoped<IFilterService, FilterService>();
 builder.Services.AddScoped<ILikeService, LikeService>();
 builder.Services.AddScoped<IVoteService, VoteService>();
 builder.Services.AddScoped<IVolunteerVoteService, VolunteerVoteService>();
-builder.Services.AddScoped<IResourceService, ResourceService>();
 builder.Services.AddScoped<IDtoMapper, DtoMapper>();
 builder.Services.AddScoped<ETagFilter>();
 builder.Services.AddScoped<ISongService, SongService>();
@@ -142,9 +147,11 @@ builder.Services.AddScoped<ITapTapService, TapTapService>();
 builder.Services.AddScoped<IMailService, MailService>();
 builder.Services.AddScoped<IMultimediaService, MultimediaService>();
 builder.Services.AddScoped<ITemplateService, TemplateService>();
+builder.Services.AddSingleton<IResourceService, ResourceService>();
 builder.Services.AddSingleton<IFileStorageService, FileStorageService>();
 builder.Services.AddSingleton<IRabbitMqService, RabbitMqService>();
 builder.Services.AddSingleton<IFeishuService, FeishuService>();
+builder.Services.AddSingleton<IMessengerService, MessengerService>();
 builder.Services.AddSingleton<IMeilisearchService, MeilisearchService>();
 builder.Services.AddSingleton<ILeaderboardService, LeaderboardService>();
 builder.Services.AddSingleton<IConnectionMultiplexer>(
@@ -177,6 +184,7 @@ builder.Services.Configure<DataSettings>(builder.Configuration.GetSection("DataS
 builder.Services.Configure<MailSettings>(builder.Configuration.GetSection("MailSettings"));
 builder.Services.Configure<TapTapSettings>(builder.Configuration.GetSection("TapTapSettings"));
 builder.Services.Configure<FeishuSettings>(builder.Configuration.GetSection("FeishuSettings"));
+builder.Services.Configure<MessengerSettings>(builder.Configuration.GetSection("MessengerSettings"));
 builder.Services.Configure<LanguageSettings>(builder.Configuration.GetSection("LanguageSettings"));
 builder.Services.Configure<RabbitMqSettings>(builder.Configuration.GetSection("RabbitMQSettings"));
 builder.Services.Configure<MeilisearchSettings>(builder.Configuration.GetSection("MeilisearchSettings"));

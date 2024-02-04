@@ -24,10 +24,18 @@ namespace PhiZoneApi.Controllers;
 [ApiController]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme,
     Policy = "AllowAnonymous")]
-public class CommentController(ICommentRepository commentRepository, IOptions<DataSettings> dataSettings,
-        IDtoMapper dtoMapper, IFilterService filterService, UserManager<User> userManager,
-        IReplyRepository replyRepository, ILikeRepository likeRepository, ILikeService likeService, IMapper mapper,
-        IResourceService resourceService, INotificationService notificationService)
+public class CommentController(
+    ICommentRepository commentRepository,
+    IOptions<DataSettings> dataSettings,
+    IDtoMapper dtoMapper,
+    IFilterService filterService,
+    UserManager<User> userManager,
+    IReplyRepository replyRepository,
+    ILikeRepository likeRepository,
+    ILikeService likeService,
+    IMapper mapper,
+    IResourceService resourceService,
+    INotificationService notificationService)
     : Controller
 {
     /// <summary>

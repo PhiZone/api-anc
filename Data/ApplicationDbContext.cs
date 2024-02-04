@@ -6,12 +6,9 @@ using PhiZoneApi.Models;
 
 namespace PhiZoneApi.Data;
 
-public class ApplicationDbContext : IdentityDbContext<User, Role, int>
+public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+    : IdentityDbContext<User, Role, int>(options)
 {
-    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
-    {
-    }
-
     public override DbSet<User> Users { get; set; } = null!;
     public DbSet<UserRelation> UserRelations { get; set; } = null!;
     public DbSet<Region> Regions { get; set; } = null!;
@@ -41,7 +38,7 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, int>
     public DbSet<PetChoice> PetChoices { get; set; } = null!;
     public DbSet<PetAnswer> PetAnswers { get; set; } = null!;
     public DbSet<ResourceRecord> ResourceRecords { get; set; } = null!;
-    public DbSet<TapUserRelation> TapUserRelations { get; set; } = null!;
+    public DbSet<ApplicationUser> ApplicationUsers { get; set; } = null!;
     public DbSet<Event> Events { get; set; } = null!;
     public DbSet<EventDivision> EventDivisions { get; set; } = null!;
     public DbSet<EventTask> EventTasks { get; set; } = null!;
@@ -51,8 +48,11 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, int>
     protected override void OnConfiguring(DbContextOptionsBuilder builder)
     {
         base.OnConfiguring(builder);
-        builder.ConfigureWarnings(wb => wb
-            .Ignore(CoreEventId.RowLimitingOperationWithoutOrderByWarning));
+        builder.ConfigureWarnings(wb =>
+        {
+            wb.Ignore(CoreEventId.RowLimitingOperationWithoutOrderByWarning);
+            // wb.Ignore(RelationalEventId.MultipleCollectionIncludeWarning); // See Program.cs:49~51
+        });
     }
 
     protected override void OnModelCreating(ModelBuilder builder)
@@ -68,7 +68,7 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, int>
         builder.Entity<User>()
             .HasMany(e => e.TapApplications)
             .WithMany(e => e.TapUsers)
-            .UsingEntity<TapUserRelation>(
+            .UsingEntity<ApplicationUser>(
                 l => l.HasOne<Application>(e => e.Application).WithMany(e => e.TapUserRelations),
                 r => r.HasOne<User>(e => e.User).WithMany(e => e.TapUserRelations));
 
@@ -77,6 +77,10 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, int>
             .WithMany(e => e.EventTeams)
             .UsingEntity<Participation>(l => l.HasOne<User>(e => e.Participant).WithMany(e => e.Participations),
                 r => r.HasOne<EventTeam>(e => e.EventTeam).WithMany(e => e.Participations));
+
+        builder.Entity<Song>().HasMany(e => e.Tags).WithMany(e => e.Songs);
+
+        builder.Entity<Chart>().HasMany(e => e.Tags).WithMany(e => e.Charts);
 
         builder.Entity<Resource>().UseTpcMappingStrategy();
 

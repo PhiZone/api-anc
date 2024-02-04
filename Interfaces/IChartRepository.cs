@@ -14,9 +14,6 @@ public interface IChartRepository
 
     Task<Chart?> GetRandomChartAsync(Expression<Func<Chart, bool>>? predicate = null, int? currentUserId = null);
 
-    Task<ICollection<Record>> GetChartRecordsAsync(Guid id, List<string> order, List<bool> desc, int position, int take,
-        Expression<Func<Record, bool>>? predicate = null, int? currentUserId = null);
-
     Task<bool> ChartExistsAsync(Guid id);
 
     Task<bool> CreateChartAsync(Chart chart);
@@ -30,6 +27,4 @@ public interface IChartRepository
     Task<bool> SaveAsync();
 
     Task<int> CountChartsAsync(Expression<Func<Chart, bool>>? predicate = null);
-
-    Task<int> CountChartRecordsAsync(Guid id, Expression<Func<Record, bool>>? predicate = null);
 }

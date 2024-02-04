@@ -36,11 +36,6 @@ public class Record : LikeableResource, IComparable<Record>
 
     public Application Application { get; set; } = null!;
 
-    public override string GetDisplay()
-    {
-        return $"{Score} {Accuracy:P2}";
-    }
-
     public int CompareTo(Record? other)
     {
         if (ReferenceEquals(this, other)) return 0;
@@ -49,6 +44,10 @@ public class Record : LikeableResource, IComparable<Record>
         if (Math.Abs(Accuracy - other.Accuracy) > 1e-6) return Accuracy > other.Accuracy ? -1 : 1;
         if (Score != other.Score) return Score > other.Score ? -1 : 1;
         return DateCreated.CompareTo(other.DateCreated);
+    }
 
+    public override string GetDisplay()
+    {
+        return $"{Score} {Accuracy:P2}";
     }
 }

@@ -395,13 +395,20 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
                 {
                     Title = title,
                     EditionType =
-                        edition.Contains("原版") || edition.ToUpper().Contains("ORIGINAL") ? EditionType.Original :
-                        edition.Contains('剪') || edition.ToUpper().Contains("SELF") ||
-                        edition.ToUpper().Contains("EDITED") ? EditionType.EditedByUploaderUnlicensed :
-                        EditionType.EditedBySecondParty,
+                        edition.Contains("原版") ||
+                        edition.Contains("ORIGINAL", StringComparison.CurrentCultureIgnoreCase)
+                            ? EditionType.Original
+                            : edition.Contains('剪') ||
+                              edition.Contains("SELF", StringComparison.CurrentCultureIgnoreCase) ||
+                              edition.Contains("EDITED", StringComparison.CurrentCultureIgnoreCase)
+                                ? EditionType.EditedByUploaderUnlicensed
+                                : EditionType.EditedBySecondParty,
                     Edition =
-                        edition.Contains("原版") || edition.ToUpper().Contains("ORIGINAL") || edition.Contains('剪') ||
-                        edition.ToUpper().Contains("SELF") || edition.ToUpper().Contains("EDITED")
+                        edition.Contains("原版") ||
+                        edition.Contains("ORIGINAL", StringComparison.CurrentCultureIgnoreCase) ||
+                        edition.Contains('剪') ||
+                        edition.Contains("SELF", StringComparison.CurrentCultureIgnoreCase) ||
+                        edition.Contains("EDITED", StringComparison.CurrentCultureIgnoreCase)
                             ? null
                             : edition,
                     AuthorName = authorName,
@@ -1046,13 +1053,19 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
                 {
                     Title = title,
                     EditionType =
-                        edition.Contains("原版") || edition.ToUpper().Contains("ORIGINAL") ? EditionType.Original :
-                        edition.Contains('剪') || edition.ToUpper().Contains("SELF") ||
-                        edition.ToUpper().Contains("EDITED") ? EditionType.EditedByUploaderUnlicensed :
-                        EditionType.EditedBySecondParty,
+                        edition.Contains("原版") ||
+                        edition.Contains("ORIGINAL", StringComparison.CurrentCultureIgnoreCase)
+                            ? EditionType.Original
+                            : edition.Contains('剪') ||
+                              edition.Contains("SELF", StringComparison.CurrentCultureIgnoreCase)
+                                ? EditionType.EditedByUploaderUnlicensed
+                                : EditionType.EditedBySecondParty,
                     Edition =
-                        edition.Contains("原版") || edition.ToUpper().Contains("ORIGINAL") || edition.Contains('剪') ||
-                        edition.ToUpper().Contains("SELF") || edition.ToUpper().Contains("EDITED")
+                        edition.Contains("原版") ||
+                        edition.Contains("ORIGINAL", StringComparison.CurrentCultureIgnoreCase) ||
+                        edition.Contains('剪') ||
+                        edition.Contains("SELF", StringComparison.CurrentCultureIgnoreCase) ||
+                        edition.Contains("EDITED", StringComparison.CurrentCultureIgnoreCase)
                             ? null
                             : edition,
                     AuthorName = reader.GetString("composer"),
@@ -1124,17 +1137,13 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
                 index = reader.GetInt32("id");
                 var song = await reader.IsDBNullAsync("song_id", cancellationToken)
                     ? null
-                    :
-                    _songDictionary.TryGetValue(reader.GetInt32("song_id"), out var songId)
-                        ?
-                        await _songRepository.GetSongAsync(songId)
+                    : _songDictionary.TryGetValue(reader.GetInt32("song_id"), out var songId)
+                        ? await _songRepository.GetSongAsync(songId)
                         : null;
                 var songSubmission = await reader.IsDBNullAsync("song_upload_id", cancellationToken)
                     ? null
-                    :
-                    _songSubmissionDictionary.TryGetValue(reader.GetInt32("song_upload_id"), out var songSubmissionId)
-                        ?
-                        await _songSubmissionRepository.GetSongSubmissionAsync(songSubmissionId)
+                    : _songSubmissionDictionary.TryGetValue(reader.GetInt32("song_upload_id"), out var songSubmissionId)
+                        ? await _songSubmissionRepository.GetSongSubmissionAsync(songSubmissionId)
                         : null;
                 if (song == null && songSubmission == null) continue;
 

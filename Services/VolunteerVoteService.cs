@@ -7,8 +7,10 @@ using PhiZoneApi.Models;
 
 namespace PhiZoneApi.Services;
 
-public class VolunteerVoteService(IVolunteerVoteRepository volunteerVoteRepository,
-    IChartSubmissionRepository chartSubmissionRepository, ISubmissionService submissionService) : IVolunteerVoteService
+public class VolunteerVoteService(
+    IVolunteerVoteRepository volunteerVoteRepository,
+    IChartSubmissionRepository chartSubmissionRepository,
+    ISubmissionService submissionService) : IVolunteerVoteService
 {
     private readonly Dictionary<int, (double, double, double)> _voteScoreDictionary = new()
     {
@@ -73,7 +75,8 @@ public class VolunteerVoteService(IVolunteerVoteRepository volunteerVoteReposito
                 chartSubmission.Status = RequestStatus.Rejected;
                 await submissionService.RejectChart(chartSubmission);
             }
-            else if (score >= scoreRange.Item2 && (!chartSubmission.IsRanked || votes.Count == _voteScoreDictionary.Last().Key))
+            else if (score >= scoreRange.Item2 &&
+                     (!chartSubmission.IsRanked || votes.Count == _voteScoreDictionary.Last().Key))
             {
                 chartSubmission.IsRanked = chartSubmission.IsRanked && score >= scoreRange.Item3;
                 chartSubmission.Difficulty = Math.Round(suggestedDifficulty * 10, MidpointRounding.AwayFromZero) / 10;

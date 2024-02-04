@@ -42,4 +42,7 @@ public class ChartSubmissionUpdateDto
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     public bool IsRanked { get; set; }
+
+    [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
+    public List<string> Tags { get; set; } = [];
 }

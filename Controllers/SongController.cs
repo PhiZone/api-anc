@@ -44,6 +44,7 @@ public class SongController(
     IChapterRepository chapterRepository,
     IAdmissionRepository admissionRepository,
     IAuthorshipRepository authorshipRepository,
+    ITagRepository tagRepository,
     IResourceService resourceService,
     INotificationService notificationService,
     ITemplateService templateService,
@@ -61,14 +62,19 @@ public class SongController(
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<SongDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetSongs([FromQuery] ArrayRequestDto dto,
-        [FromQuery] SongFilterDto? filterDto = null)
+        [FromQuery] SongFilterDto? filterDto = null, [FromQuery] ArrayTagDto? tagDto = null)
     {
         var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
             dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
-        var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser);
+        var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser,
+            e => tagDto == null ||
+                 ((tagDto.TagsToInclude == null || e.Tags.Any(tag =>
+                      tagDto.TagsToInclude.Select(resourceService.Normalize).ToList().Contains(tag.NormalizedName))) &&
+                  (tagDto.TagsToExclude == null || e.Tags.All(tag =>
+                      !tagDto.TagsToExclude.Select(resourceService.Normalize).ToList().Contains(tag.NormalizedName)))));
         IEnumerable<Song> songs;
         int total;
         if (dto.Search != null)
@@ -77,8 +83,7 @@ public class SongController(
                 showHidden: currentUser is { Role: UserRole.Administrator });
             var idList = result.Hits.Select(item => item.Id).ToList();
             songs = (await songRepository.GetSongsAsync(["DateCreated"], [false], position, dto.PerPage,
-                e => idList.Contains(e.Id), currentUser?.Id)).OrderBy(e =>
-                idList.IndexOf(e.Id));
+                e => idList.Contains(e.Id), currentUser?.Id)).OrderBy(e => idList.IndexOf(e.Id));
             total = result.TotalHits;
         }
         else
@@ -145,10 +150,18 @@ public class SongController(
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<SongDto>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetRandomSong([FromQuery] ArrayRequestDto dto,
-        [FromQuery] SongFilterDto? filterDto = null)
+        [FromQuery] SongFilterDto? filterDto = null, [FromQuery] ArrayTagDto? tagDto = null)
     {
         var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser, e => !e.IsHidden);
+        var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser,
+            e => !e.IsHidden && (tagDto == null ||
+                                 ((tagDto.TagsToInclude == null || e.Tags.Any(tag =>
+                                     tagDto.TagsToInclude.Select(resourceService.Normalize)
+                                         .Contains(tag.NormalizedName))) && (tagDto.TagsToExclude == null ||
+                                                                             e.Tags.All(tag =>
+                                                                                 !tagDto.TagsToExclude
+                                                                                     .Select(resourceService.Normalize)
+                                                                                     .Contains(tag.NormalizedName))))));
         var song = await songRepository.GetRandomSongAsync(predicateExpr, currentUser?.Id);
 
         if (song == null)
@@ -216,6 +229,7 @@ public class SongController(
         }
 
         var illustrationUrl = (await fileStorageService.UploadImage<Song>(dto.Title, dto.Illustration, (16, 9))).Item1;
+        await fileStorageService.SendUserInput(illustrationUrl, "Illustration", Request, currentUser);
         string? license = null;
         if (dto.License != null) license = (await fileStorageService.Upload<Song>(dto.Title, dto.License)).Item1;
 
@@ -251,6 +265,8 @@ public class SongController(
         if (!await songRepository.CreateSongAsync(song))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+
+        await tagRepository.CreateTagsAsync(dto.Tags, song);
 
         // ReSharper disable once InvertIf
         if (!wait)
@@ -304,6 +320,7 @@ public class SongController(
                 });
 
         var dto = mapper.Map<SongUpdateDto>(song);
+        dto.Tags = song.Tags.Select(tag => tag.Name).ToList();
         patchDocument.ApplyTo(dto, ModelState);
 
         if (!TryValidateModel(dto))
@@ -343,6 +360,8 @@ public class SongController(
         if (!await songRepository.UpdateSongAsync(song))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+
+        await tagRepository.CreateTagsAsync(dto.Tags, song);
 
         return NoContent();
     }
@@ -464,6 +483,7 @@ public class SongController(
         if (dto.File != null)
         {
             song.Illustration = (await fileStorageService.UploadImage<Song>(song.Title, dto.File, (16, 9))).Item1;
+            await fileStorageService.SendUserInput(song.Illustration, "Illustration", Request, currentUser);
             song.DateUpdated = DateTimeOffset.UtcNow;
         }
 
@@ -982,7 +1002,8 @@ public class SongController(
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        var charts = await chartRepository.GetChartsAsync(dto.Order, dto.Desc, position, dto.PerPage, predicateExpr, currentUser?.Id);
+        var charts = await chartRepository.GetChartsAsync(dto.Order, dto.Desc, position, dto.PerPage, predicateExpr,
+            currentUser?.Id);
         var total = await chartRepository.CountChartsAsync(predicateExpr);
         var list = charts.Select(dtoMapper.MapChart<ChartDto>).ToList();
 

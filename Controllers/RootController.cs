@@ -15,10 +15,18 @@ namespace PhiZoneApi.Controllers;
 [Route("")]
 [ApiVersion("2.0")]
 [ApiController]
-public class RootController(IUserRepository userRepository, IChapterRepository chapterRepository,
-        ISongRepository songRepository, IChartRepository chartRepository, ICommentRepository commentRepository,
-        ILikeRepository likeRepository, IRecordRepository recordRepository, IReplyRepository replyRepository,
-        IConnectionMultiplexer redis, UserManager<User> userManager, IResourceService resourceService)
+public class RootController(
+    IUserRepository userRepository,
+    IChapterRepository chapterRepository,
+    ISongRepository songRepository,
+    IChartRepository chartRepository,
+    ICommentRepository commentRepository,
+    ILikeRepository likeRepository,
+    IRecordRepository recordRepository,
+    IReplyRepository replyRepository,
+    IConnectionMultiplexer redis,
+    UserManager<User> userManager,
+    IResourceService resourceService)
     : Controller
 {
     /// <summary>

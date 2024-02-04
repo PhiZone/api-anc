@@ -47,6 +47,9 @@ public class ChartSubmissionCreationDto
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     public bool IsRanked { get; set; }
 
+    [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
+    public List<string> Tags { get; set; } = [];
+
     public Guid? SongId { get; set; }
 
     public Guid? SongSubmissionId { get; set; }

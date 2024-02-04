@@ -48,17 +48,19 @@ public class SongDto
 
     public TimeSpan PreviewEnd { get; set; }
 
-    public List<ChartLevelDto> ChartLevels { get; set; } = new(5);
+    public List<ChartLevelDto> ChartLevels { get; set; } = new(Enum.GetValues<ChartLevel>().Length);
+
+    public List<TagDto> Tags { get; set; } = null!;
+
+    public int PlayCount { get; set; }
+
+    public int LikeCount { get; set; }
 
     public int OwnerId { get; set; }
 
     public DateTimeOffset DateCreated { get; set; }
 
     public DateTimeOffset DateUpdated { get; set; }
-
-    public int PlayCount { get; set; }
-
-    public int LikeCount { get; set; }
 
     public DateTimeOffset? DateLiked { get; set; }
 }

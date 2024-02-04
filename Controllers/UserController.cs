@@ -78,7 +78,8 @@ public class UserController(
         }
         else
         {
-            users = await userRepository.GetUsersAsync(dto.Order, dto.Desc, position, dto.PerPage, predicateExpr, currentUser?.Id);
+            users = await userRepository.GetUsersAsync(dto.Order, dto.Desc, position, dto.PerPage, predicateExpr,
+                currentUser?.Id);
             total = await userRepository.CountUsersAsync(predicateExpr);
         }
 
@@ -207,6 +208,8 @@ public class UserController(
         user.Role = UserRole.Member;
         await userManager.UpdateAsync(user);
         await meilisearchService.AddAsync(user);
+        if (avatarUrl != null)
+            await fileStorageService.SendUserInput(avatarUrl, "Avatar", Request, user);
         var configuration = new PlayConfiguration
         {
             Name = templateService.GetMessage("default", user.Language),
@@ -226,7 +229,6 @@ public class UserController(
             DateCreated = DateTimeOffset.UtcNow
         };
         await playConfigurationRepository.CreatePlayConfigurationAsync(configuration);
-
         return StatusCode(StatusCodes.Status201Created);
     }
 
@@ -463,8 +465,11 @@ public class UserController(
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
         if (dto.File != null)
+        {
             user.Avatar = (await fileStorageService.UploadImage<User>(user.UserName ?? "Avatar", dto.File, (1, 1)))
                 .Item1;
+            await fileStorageService.SendUserInput(user.Avatar, "Avatar", Request, currentUser);
+        }
 
         await userManager.UpdateAsync(user);
         await meilisearchService.UpdateAsync(user);
@@ -738,28 +743,27 @@ public class UserController(
     }
 
     /// <summary>
-    ///     Retrieves a user's best play records.
+    ///     Retrieves a user's personal bests.
     /// </summary>
     /// <param name="id">A user's ID.</param>
     /// <returns>Phi1 and Best19.</returns>
     /// <response code="200">Returns Phi1 and Best19.</response>
-    [HttpGet("{id:int}/bestRecords")]
+    [HttpGet("{id:int}/personalBests")]
     [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<UserBestRecordsDto>))]
-    public async Task<IActionResult> GetBestRecords([FromRoute] int id)
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<UserPersonalBestsDto>))]
+    public async Task<IActionResult> GetPersonalBests([FromRoute] int id)
     {
         var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         var phi1 = (await recordRepository.GetRecordsAsync(["Rks"], [true], 0, 1,
             r => r.OwnerId == id && r.Score == 1000000 && r.Chart.IsRanked, true, currentUser?.Id)).FirstOrDefault();
         var phi1Dto = phi1 != null ? dtoMapper.MapRecord<RecordDto>(phi1) : null;
         var b19 = await recordRepository.GetPersonalBests(id, queryChart: true, currentUserId: currentUser?.Id);
-        var b19Dto = new List<RecordDto>();
-        foreach (var record in b19) b19Dto.Add(dtoMapper.MapRecord<RecordDto>(record));
-        return Ok(new ResponseDto<UserBestRecordsDto>
+        var b19Dto = b19.Select(dtoMapper.MapRecord<RecordDto>).ToList();
+        return Ok(new ResponseDto<UserPersonalBestsDto>
         {
             Status = ResponseStatus.Ok,
             Code = ResponseCodes.Ok,
-            Data = new UserBestRecordsDto { Phi1 = phi1Dto, Best19 = b19Dto }
+            Data = new UserPersonalBestsDto { Phi1 = phi1Dto, Best19 = b19Dto }
         });
     }
 }

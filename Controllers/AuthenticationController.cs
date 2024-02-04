@@ -27,9 +27,15 @@ namespace PhiZoneApi.Controllers;
 [ApiVersion("2.0")]
 [Route("auth")]
 [Produces("application/json")]
-public class AuthenticationController(UserManager<User> userManager, IConnectionMultiplexer redis,
-    IMailService mailService, IResourceService resourceService, ITapTapService tapTapService,
-    IUserRepository userRepository, IApplicationRepository applicationRepository, IDtoMapper dtoMapper,
+public class AuthenticationController(
+    UserManager<User> userManager,
+    IConnectionMultiplexer redis,
+    IMailService mailService,
+    IResourceService resourceService,
+    ITapTapService tapTapService,
+    IUserRepository userRepository,
+    IApplicationRepository applicationRepository,
+    IDtoMapper dtoMapper,
     ILogger<AuthenticationController> logger) : Controller
 {
     /// <summary>
@@ -202,7 +208,8 @@ public class AuthenticationController(UserManager<User> userManager, IConnection
             user.AccessFailedCount = 0;
             await userManager.UpdateAsync(user);
 
-            logger.LogInformation(LogEvents.UserInfo, "[{Now}] New login: #{Id} {UserName}", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), user.Id, user.UserName);
+            logger.LogInformation(LogEvents.UserInfo, "[{Now}] New login: #{Id} {UserName}",
+                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), user.Id, user.UserName);
 
             return SignIn(claimsPrincipal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
         }

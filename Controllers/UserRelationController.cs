@@ -22,8 +22,12 @@ namespace PhiZoneApi.Controllers;
 [ApiController]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme,
     Policy = "AllowAnonymous")]
-public class UserRelationController(IUserRelationRepository userRelationRepository, IFilterService filterService,
-        UserManager<User> userManager, IOptions<DataSettings> dataSettings, IMapper mapper)
+public class UserRelationController(
+    IUserRelationRepository userRelationRepository,
+    IFilterService filterService,
+    UserManager<User> userManager,
+    IOptions<DataSettings> dataSettings,
+    IMapper mapper)
     : Controller
 {
     /// <summary>

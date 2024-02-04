@@ -5,12 +5,19 @@ using PhiZoneApi.Models;
 
 namespace PhiZoneApi.Services;
 
-public class SubmissionService(ISongRepository songRepository, INotificationService notificationService,
-    IResourceService resourceService, IChartRepository chartRepository, IChartAssetRepository chartAssetRepository,
+public class SubmissionService(
+    ISongRepository songRepository,
+    INotificationService notificationService,
+    IResourceService resourceService,
+    IChartRepository chartRepository,
+    IChartAssetRepository chartAssetRepository,
     IChartSubmissionRepository chartSubmissionRepository,
-    IChartAssetSubmissionRepository chartAssetSubmissionRepository, ISongSubmissionRepository songSubmissionRepository,
-    ICollaborationRepository collaborationRepository, IAuthorshipRepository authorshipRepository,
-    UserManager<User> userManager, IUserRelationRepository userRelationRepository) : ISubmissionService
+    IChartAssetSubmissionRepository chartAssetSubmissionRepository,
+    ISongSubmissionRepository songSubmissionRepository,
+    ICollaborationRepository collaborationRepository,
+    IAuthorshipRepository authorshipRepository,
+    UserManager<User> userManager,
+    IUserRelationRepository userRelationRepository) : ISubmissionService
 {
     public async Task<Song> ApproveSong(SongSubmission songSubmission, bool isOriginal, bool isHidden, bool isLocked)
     {

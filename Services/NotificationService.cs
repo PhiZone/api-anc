@@ -5,8 +5,12 @@ using PhiZoneApi.Models;
 
 namespace PhiZoneApi.Services;
 
-public class NotificationService(INotificationRepository notificationRepository, ITemplateService templateService,
-        UserManager<User> userManager, IUserRelationRepository userRelationRepository, IResourceService resourceService)
+public class NotificationService(
+    INotificationRepository notificationRepository,
+    ITemplateService templateService,
+    UserManager<User> userManager,
+    IUserRelationRepository userRelationRepository,
+    IResourceService resourceService)
     : INotificationService
 {
     public async Task Notify(User receiver, User? sender, NotificationType type, string key,

@@ -14,5 +14,7 @@ public abstract class Submission : Resource
 
     public PublicResource? Representation { get; set; }
 
+    public List<string> Tags { get; set; } = [];
+
     public DateTimeOffset DateUpdated { get; set; }
 }

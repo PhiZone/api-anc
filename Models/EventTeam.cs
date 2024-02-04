@@ -21,14 +21,9 @@ public class EventTeam : LikeableResource, IComparable<EventTeam>
 
     public EventDivision Division { get; set; } = null!;
 
-    [JsonIgnore] public IEnumerable<User> Participants { get; set; } = new List<User>();
+    [JsonIgnore] public List<User> Participants { get; set; } = [];
 
-    [JsonIgnore] public IEnumerable<Participation> Participations { get; set; } = new List<Participation>();
-
-    public override string GetDisplay()
-    {
-        return Name;
-    }
+    [JsonIgnore] public List<Participation> Participations { get; set; } = [];
 
     public int CompareTo(EventTeam? other)
     {
@@ -38,5 +33,10 @@ public class EventTeam : LikeableResource, IComparable<EventTeam>
         if (other.Score == null) return -1;
         if (Math.Abs(Score.Value - other.Score.Value) < 1e-5) return 0;
         return Score > other.Score ? -1 : 1;
+    }
+
+    public override string GetDisplay()
+    {
+        return Name;
     }
 }

@@ -38,19 +38,19 @@ public class User : IdentityUser<int>
 
     public Region Region { get; set; } = null!;
 
-    [JsonIgnore] public IEnumerable<User> Followers { get; } = new List<User>();
+    [JsonIgnore] public List<User> Followers { get; } = [];
 
-    [JsonIgnore] public IEnumerable<UserRelation> FollowerRelations { get; } = new List<UserRelation>();
+    [JsonIgnore] public List<UserRelation> FollowerRelations { get; } = [];
 
-    [JsonIgnore] public IEnumerable<User> Followees { get; } = new List<User>();
+    [JsonIgnore] public List<User> Followees { get; } = [];
 
-    [JsonIgnore] public IEnumerable<UserRelation> FolloweeRelations { get; } = new List<UserRelation>();
+    [JsonIgnore] public List<UserRelation> FolloweeRelations { get; } = [];
 
-    [JsonIgnore] public IEnumerable<Application> TapApplications { get; } = new List<Application>();
+    [JsonIgnore] public List<Application> TapApplications { get; } = [];
 
-    [JsonIgnore] public IEnumerable<TapUserRelation> TapUserRelations { get; } = new List<TapUserRelation>();
+    [JsonIgnore] public List<ApplicationUser> TapUserRelations { get; } = [];
 
-    [JsonIgnore] public IEnumerable<EventTeam> EventTeams { get; } = new List<EventTeam>();
+    [JsonIgnore] public List<EventTeam> EventTeams { get; } = [];
 
-    [JsonIgnore] public IEnumerable<Participation> Participations { get; } = new List<Participation>();
+    [JsonIgnore] public List<Participation> Participations { get; } = [];
 }

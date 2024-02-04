@@ -29,9 +29,16 @@ namespace PhiZoneApi.Controllers;
 [ApiController]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme,
     Policy = "AllowAnonymous")]
-public class PlayerController(IPlayConfigurationRepository configurationRepository, IOptions<DataSettings> dataSettings,
-    UserManager<User> userManager, IFilterService filterService, IMapper mapper, IChartRepository chartRepository,
-    IApplicationRepository applicationRepository, IConnectionMultiplexer redis, ISongRepository songRepository,
+public class PlayerController(
+    IPlayConfigurationRepository configurationRepository,
+    IOptions<DataSettings> dataSettings,
+    UserManager<User> userManager,
+    IFilterService filterService,
+    IMapper mapper,
+    IChartRepository chartRepository,
+    IApplicationRepository applicationRepository,
+    IConnectionMultiplexer redis,
+    ISongRepository songRepository,
     IResourceService resourceService) : Controller
 {
     /// <summary>

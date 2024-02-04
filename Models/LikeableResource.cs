@@ -5,8 +5,8 @@ namespace PhiZoneApi.Models;
 public abstract class LikeableResource : Resource
 {
     public int LikeCount { get; set; }
-    
-    [JsonIgnore] public IEnumerable<Like> Likes { get; } = new List<Like>();
+
+    [JsonIgnore] public List<Like> Likes { get; } = [];
 
     public abstract string GetDisplay();
 }
