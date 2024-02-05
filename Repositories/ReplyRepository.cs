@@ -4,7 +4,6 @@ using PhiZoneApi.Data;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 using PhiZoneApi.Utils;
-using Z.EntityFramework.Plus;
 
 namespace PhiZoneApi.Repositories;
 
@@ -16,7 +15,7 @@ public class ReplyRepository(ApplicationDbContext context) : IReplyRepository
         var result = context.Replies.Include(e => e.Owner).ThenInclude(e => e.Region).OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
         if (currentUserId != null)
-            result = result.IncludeFilter(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
+            result = result.Include(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
         result = result.Skip(position);
         return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
@@ -25,7 +24,7 @@ public class ReplyRepository(ApplicationDbContext context) : IReplyRepository
     {
         IQueryable<Reply> result = context.Replies.Include(e => e.Owner).ThenInclude(e => e.Region);
         if (currentUserId != null)
-            result = result.IncludeFilter(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
+            result = result.Include(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
         return (await result.FirstOrDefaultAsync(like => like.Id == id))!;
     }
 

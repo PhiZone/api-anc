@@ -4,7 +4,6 @@ using PhiZoneApi.Data;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 using PhiZoneApi.Utils;
-using Z.EntityFramework.Plus;
 
 namespace PhiZoneApi.Repositories;
 
@@ -17,12 +16,15 @@ public class RecordRepository(ApplicationDbContext context, IMeilisearchService 
         if (queryChart)
             result = result.Include(e => e.Chart)
                 .ThenInclude(e => e.Song)
+                .ThenInclude(e => e.Charts)
+                .Include(e => e.Chart)
+                .ThenInclude(e => e.Song)
                 .ThenInclude(e => e.Tags)
                 .Include(e => e.Chart)
                 .ThenInclude(e => e.Tags);
         if (predicate != null) result = result.Where(predicate);
         if (currentUserId != null)
-            result = result.IncludeFilter(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
+            result = result.Include(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
         result = result.Skip(position);
         return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
@@ -32,6 +34,9 @@ public class RecordRepository(ApplicationDbContext context, IMeilisearchService 
         IQueryable<Record> result = queryChart
             ? context.Records.Include(e => e.Chart)
                 .ThenInclude(e => e.Song)
+                .ThenInclude(e => e.Charts)
+                .Include(e => e.Chart)
+                .ThenInclude(e => e.Song)
                 .ThenInclude(e => e.Tags)
                 .Include(e => e.Chart)
                 .ThenInclude(e => e.Tags)
@@ -39,7 +44,7 @@ public class RecordRepository(ApplicationDbContext context, IMeilisearchService 
                 .ThenInclude(e => e.Region)
             : context.Records.Include(e => e.Owner).ThenInclude(e => e.Region);
         if (currentUserId != null)
-            result = result.IncludeFilter(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
+            result = result.Include(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
         return (await result.FirstOrDefaultAsync(record => record.Id == id))!;
     }
 
@@ -50,7 +55,10 @@ public class RecordRepository(ApplicationDbContext context, IMeilisearchService 
 
     public async Task<bool> CreateRecordAsync(Record record)
     {
-        var chart = await context.Charts.Include(chart => chart.Song).FirstAsync(e => e.Id == record.ChartId);
+        var chart = await context.Charts
+            .Include(e => e.Song)
+            .ThenInclude(e => e.Tags)
+            .FirstAsync(e => e.Id == record.ChartId);
         chart.PlayCount = await context.Records.CountAsync(e => e.ChartId == record.Chart.Id) + 1;
         chart.Song.PlayCount = await context.Records.CountAsync(e => e.Chart.SongId == record.Chart.SongId) + 1;
         await context.Records.AddAsync(record);
@@ -113,6 +121,8 @@ public class RecordRepository(ApplicationDbContext context, IMeilisearchService 
         if (queryChart)
             result = result.Include(e => e.Chart)
                 .ThenInclude(e => e.Song)
+                .ThenInclude(e => e.Charts).Include(e => e.Chart)
+                .ThenInclude(e => e.Song)
                 .ThenInclude(e => e.Tags)
                 .Include(e => e.Chart)
                 .ThenInclude(e => e.Tags);
@@ -120,7 +130,7 @@ public class RecordRepository(ApplicationDbContext context, IMeilisearchService 
             .GroupBy(e => e.ChartId)
             .Select(g => g.OrderByDescending(e => e.Rks).ThenBy(e => e.DateCreated).First());
         if (currentUserId != null)
-            result = result.IncludeFilter(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
+            result = result.Include(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
         var list = (await result.ToListAsync()).OrderByDescending(e => e.Rks);
         return take >= 0 ? list.Take(take).ToList() : list.ToList();
     }

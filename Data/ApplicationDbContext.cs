@@ -51,7 +51,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         builder.ConfigureWarnings(wb =>
         {
             wb.Ignore(CoreEventId.RowLimitingOperationWithoutOrderByWarning);
-            // wb.Ignore(RelationalEventId.MultipleCollectionIncludeWarning); // See Program.cs:49~51
         });
     }
 

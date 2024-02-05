@@ -102,9 +102,9 @@ public partial class ResourceService(
         return (result, users);
     }
 
-    public string Normalize(string input)
+    public string Normalize(string? input)
     {
-        return WhitespaceRegex().Replace(input, "").ToUpper();
+        return input != null ? WhitespaceRegex().Replace(input, "").ToUpper() : "";
     }
 
     public ResourceDto GetResources()

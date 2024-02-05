@@ -4,7 +4,6 @@ using PhiZoneApi.Data;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 using PhiZoneApi.Utils;
-using Z.EntityFramework.Plus;
 
 // ReSharper disable InvertIf
 
@@ -17,11 +16,12 @@ public class ChartRepository(ApplicationDbContext context, IMeilisearchService m
     {
         var result = context.Charts.Include(e => e.Tags)
             .Include(e => e.Song)
+            .ThenInclude(e => e.Charts).Include(e => e.Song)
             .ThenInclude(e => e.Tags)
             .OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
         if (currentUserId != null)
-            result = result.IncludeFilter(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
+            result = result.Include(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
         result = result.Skip(position);
         return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
@@ -30,9 +30,10 @@ public class ChartRepository(ApplicationDbContext context, IMeilisearchService m
     {
         IQueryable<Chart> result = context.Charts.Include(e => e.Tags)
             .Include(e => e.Song)
+            .ThenInclude(e => e.Charts).Include(e => e.Song)
             .ThenInclude(e => e.Tags);
         if (currentUserId != null)
-            result = result.IncludeFilter(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
+            result = result.Include(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
         return (await result.FirstOrDefaultAsync(chart => chart.Id == id))!;
     }
 
@@ -41,11 +42,12 @@ public class ChartRepository(ApplicationDbContext context, IMeilisearchService m
     {
         IQueryable<Chart> result = context.Charts.Include(e => e.Tags)
             .Include(e => e.Song)
+            .ThenInclude(e => e.Charts).Include(e => e.Song)
             .ThenInclude(e => e.Tags)
             .OrderBy(chart => EF.Functions.Random());
         if (predicate != null) result = result.Where(predicate);
         if (currentUserId != null)
-            result = result.IncludeFilter(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
+            result = result.Include(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
         return await result.FirstOrDefaultAsync();
     }
 

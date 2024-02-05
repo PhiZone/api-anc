@@ -5,7 +5,6 @@ using PhiZoneApi.Enums;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 using PhiZoneApi.Utils;
-using Z.EntityFramework.Plus;
 
 // ReSharper disable InvertIf
 
@@ -20,7 +19,7 @@ public class CollectionRepository(ApplicationDbContext context, IMeilisearchServ
         var result = context.Collections.OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
         if (currentUserId != null)
-            result = result.IncludeFilter(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
+            result = result.Include(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
         result = result.Skip(position);
         return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
@@ -29,7 +28,7 @@ public class CollectionRepository(ApplicationDbContext context, IMeilisearchServ
     {
         IQueryable<Collection> result = context.Collections;
         if (currentUserId != null)
-            result = result.IncludeFilter(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
+            result = result.Include(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
         return (await result.FirstOrDefaultAsync(collection => collection.Id == id))!;
     }
 

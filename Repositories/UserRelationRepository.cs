@@ -16,8 +16,8 @@ public class UserRelationRepository(ApplicationDbContext context, IMeilisearchSe
         int take, Expression<Func<UserRelation, bool>>? predicate = null)
     {
         var result = context.UserRelations
-            .Include(relation => relation.Follower)
-            .Where(relation => relation.Type != UserRelationType.Blacklisted && relation.FolloweeId == userId)
+            .Include(e => e.Follower)
+            .Where(e => e.Type != UserRelationType.Blacklisted && e.FolloweeId == userId)
             .OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
         result = result.Skip(position);
@@ -29,7 +29,7 @@ public class UserRelationRepository(ApplicationDbContext context, IMeilisearchSe
         int take, Expression<Func<UserRelation, bool>>? predicate = null)
     {
         var result = context.UserRelations
-            .Include(relation => relation.Followee)
+            .Include(e => e.Followee)
             .Where(relation => relation.Type != UserRelationType.Blacklisted && relation.FollowerId == userId)
             .OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);

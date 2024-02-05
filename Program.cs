@@ -45,10 +45,8 @@ builder.Services.AddApiVersioning(options =>
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
-    // options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
         o => o.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery));
-    // BUG System.InvalidCastException: Reading as 'System.Guid' is not supported for fields having DataTypeName 'timestamp with time zone'
     options.UseOpenIddict<int>();
 });
 
