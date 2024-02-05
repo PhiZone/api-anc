@@ -55,6 +55,7 @@ public class TagRepository(
         foreach (var tagName in tagNames)
         {
             var normalized = resourceService.Normalize(tagName);
+            if (tags.Any(tag => tag.NormalizedName == normalized)) continue;
             var tag = await context.Tags.FirstOrDefaultAsync(e => e.NormalizedName == normalized);
             if (tag != null) continue;
             tags.Add(new Tag
@@ -126,6 +127,11 @@ public class TagRepository(
         foreach (var tagName in tagNames)
         {
             var normalized = resourceService.Normalize(tagName);
+            if (existingTags.Any(tag => tag.NormalizedName == normalized) ||
+                newTags.Any(tag => tag.NormalizedName == normalized))
+            {
+                continue;
+            }
             var tag = await context.Tags.FirstOrDefaultAsync(e => e.NormalizedName == normalized);
             if (tag != null)
             {
