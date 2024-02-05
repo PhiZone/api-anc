@@ -28,6 +28,9 @@ namespace PhiZoneApi.Controllers;
     Policy = "AllowAnonymous")]
 public class TagController(
     ITagRepository tagRepository,
+    ISongRepository songRepository,
+    IChartRepository chartRepository,
+    IDtoMapper dtoMapper,
     IOptions<DataSettings> dataSettings,
     IFilterService filterService,
     UserManager<User> userManager,
@@ -262,5 +265,91 @@ public class TagController(
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
         return NoContent();
+    }
+
+    /// <summary>
+    ///     Retrieves songs from a specific tag.
+    /// </summary>
+    /// <param name="id">A tag's ID.</param>
+    /// <returns>An array of songs.</returns>
+    /// <response code="200">Returns an array of songs.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="404">When the specified tag is not found.</response>
+    [HttpGet("{id:guid}/songs")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<SongDto>>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> GetTagSongs([FromRoute] Guid id, [FromQuery] ArrayRequestDto dto)
+    {
+        var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
+            dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
+        dto.Page = dto.Page > 1 ? dto.Page : 1;
+        var position = dto.PerPage * (dto.Page - 1);
+        if (!await tagRepository.TagExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+
+        var songs = await songRepository.GetSongsAsync(dto.Order, dto.Desc, position, dto.PerPage,
+            e => e.Tags.Any(tag => tag.Id == id), currentUser?.Id);
+        var total = await songRepository.CountSongsAsync(e => e.Tags.Any(tag => tag.Id == id));
+        var list = songs.Select(dtoMapper.MapSong<SongDto>).ToList();
+
+        return Ok(new ResponseDto<IEnumerable<SongDto>>
+        {
+            Status = ResponseStatus.Ok,
+            Code = ResponseCodes.Ok,
+            Total = total,
+            PerPage = dto.PerPage,
+            HasPrevious = position > 0,
+            HasNext = dto.PerPage > 0 && dto.PerPage * dto.Page < total,
+            Data = list
+        });
+    }
+
+    /// <summary>
+    ///     Retrieves charts from a specific tag.
+    /// </summary>
+    /// <param name="id">A tag's ID.</param>
+    /// <returns>An array of charts.</returns>
+    /// <response code="200">Returns an array of charts.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="404">When the specified tag is not found.</response>
+    [HttpGet("{id:guid}/charts")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<ChartDto>>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> GetTagCharts([FromRoute] Guid id, [FromQuery] ArrayRequestDto dto)
+    {
+        var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
+            dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
+        dto.Page = dto.Page > 1 ? dto.Page : 1;
+        var position = dto.PerPage * (dto.Page - 1);
+        if (!await tagRepository.TagExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+
+        var charts = await chartRepository.GetChartsAsync(dto.Order, dto.Desc, position, dto.PerPage,
+            e => e.Tags.Any(tag => tag.Id == id), currentUser?.Id);
+        var total = await chartRepository.CountChartsAsync(e => e.Tags.Any(tag => tag.Id == id));
+        var list = charts.Select(dtoMapper.MapChart<ChartDto>).ToList();
+
+        return Ok(new ResponseDto<IEnumerable<ChartDto>>
+        {
+            Status = ResponseStatus.Ok,
+            Code = ResponseCodes.Ok,
+            Total = total,
+            PerPage = dto.PerPage,
+            HasPrevious = position > 0,
+            HasNext = dto.PerPage > 0 && dto.PerPage * dto.Page < total,
+            Data = list
+        });
     }
 }

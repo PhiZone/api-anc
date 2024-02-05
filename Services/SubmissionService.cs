@@ -16,6 +16,7 @@ public class SubmissionService(
     ISongSubmissionRepository songSubmissionRepository,
     ICollaborationRepository collaborationRepository,
     IAuthorshipRepository authorshipRepository,
+    ITagRepository tagRepository,
     UserManager<User> userManager,
     IUserRelationRepository userRelationRepository) : ISubmissionService
 {
@@ -117,6 +118,8 @@ public class SubmissionService(
 
             await songRepository.UpdateSongAsync(song);
         }
+
+        await tagRepository.CreateTagsAsync(songSubmission.Tags, song);
 
         await notificationService.Notify(songSubmission.Owner, null, NotificationType.System,
             "song-submission-approval",
@@ -287,6 +290,8 @@ public class SubmissionService(
         foreach (var submission in assetSubmissions) await ApproveChartAsset(submission, chart.Id);
 
         foreach (var asset in assetsToDelete) await chartAssetRepository.RemoveChartAssetAsync(asset.Id);
+
+        await tagRepository.CreateTagsAsync(chartSubmission.Tags, chart);
 
         await notificationService.Notify(owner, null, NotificationType.System, "chart-submission-approval",
             new Dictionary<string, string>
