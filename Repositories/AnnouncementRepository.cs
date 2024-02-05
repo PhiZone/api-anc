@@ -4,7 +4,6 @@ using PhiZoneApi.Data;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 using PhiZoneApi.Utils;
-using Z.EntityFramework.Plus;
 
 // ReSharper disable InvertIf
 
@@ -19,7 +18,7 @@ public class AnnouncementRepository(ApplicationDbContext context, IMeilisearchSe
         var result = context.Announcements.OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
         if (currentUserId != null)
-            result = result.IncludeFilter(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
+            result = result.Include(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
         result = result.Skip(position);
         return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
@@ -28,7 +27,7 @@ public class AnnouncementRepository(ApplicationDbContext context, IMeilisearchSe
     {
         IQueryable<Announcement> result = context.Announcements;
         if (currentUserId != null)
-            result = result.IncludeFilter(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
+            result = result.Include(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
         return (await result.FirstOrDefaultAsync(announcement => announcement.Id == id))!;
     }
 

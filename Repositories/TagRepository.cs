@@ -120,7 +120,6 @@ public class TagRepository(
     private async Task<(List<Tag> existingTags, List<Tag> newTags, bool result)> CreateAndGetTags(
         IEnumerable<string> tagNames)
     {
-        Console.WriteLine("Creating tags");
         List<Tag> existingTags = [];
         List<Tag> newTags = [];
         var now = DateTimeOffset.UtcNow;
@@ -131,10 +130,8 @@ public class TagRepository(
             if (tag != null)
             {
                 existingTags.Add(tag);
-                Console.WriteLine($"{tagName} ({tag.Name}) already exists with an id {tag.Id}");
                 continue;
             }
-            Console.WriteLine($"{tagName} does not exist. Creating...");
 
             newTags.Add(new Tag
             {

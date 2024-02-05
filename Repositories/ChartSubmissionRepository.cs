@@ -4,7 +4,6 @@ using PhiZoneApi.Data;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 using PhiZoneApi.Utils;
-using Z.EntityFramework.Plus;
 
 // ReSharper disable InvertIf
 
@@ -16,10 +15,15 @@ public class ChartSubmissionRepository(ApplicationDbContext context, IMeilisearc
     public async Task<ICollection<ChartSubmission>> GetChartSubmissionsAsync(List<string> order, List<bool> desc,
         int position, int take, Expression<Func<ChartSubmission, bool>>? predicate = null, int? currentUserId = null)
     {
-        var result = context.ChartSubmissions.Include(e => e.Song).Include(e => e.SongSubmission).OrderBy(order, desc);
+        var result = context.ChartSubmissions.Include(e => e.Song)
+            .ThenInclude(e => e!.Charts)
+            .Include(e => e.Song)
+            .ThenInclude(e => e!.Tags)
+            .Include(e => e.SongSubmission)
+            .OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
         if (currentUserId != null)
-            result = result.IncludeFilter(e => e.VolunteerVotes.Where(vote => vote.OwnerId == currentUserId).Take(1));
+            result = result.Include(e => e.VolunteerVotes.Where(vote => vote.OwnerId == currentUserId).Take(1));
         result = result.Skip(position);
         return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
@@ -29,12 +33,15 @@ public class ChartSubmissionRepository(ApplicationDbContext context, IMeilisearc
         int? currentUserId = null)
     {
         var result = context.ChartSubmissions.Include(e => e.Song)
+            .ThenInclude(e => e!.Charts)
+            .Include(e => e.Song)
+            .ThenInclude(e => e!.Tags)
             .Include(e => e.SongSubmission)
             .Where(chart => chart.OwnerId == userId)
             .OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
         if (currentUserId != null)
-            result = result.IncludeFilter(e => e.VolunteerVotes.Where(vote => vote.OwnerId == currentUserId).Take(1));
+            result = result.Include(e => e.VolunteerVotes.Where(vote => vote.OwnerId == currentUserId).Take(1));
         result = result.Skip(position);
         return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
@@ -42,9 +49,12 @@ public class ChartSubmissionRepository(ApplicationDbContext context, IMeilisearc
     public async Task<ChartSubmission> GetChartSubmissionAsync(Guid id, int? currentUserId = null)
     {
         IQueryable<ChartSubmission> result = context.ChartSubmissions.Include(e => e.Song)
+            .ThenInclude(e => e!.Charts)
+            .Include(e => e.Song)
+            .ThenInclude(e => e!.Tags)
             .Include(e => e.SongSubmission);
         if (currentUserId != null)
-            result = result.IncludeFilter(e => e.VolunteerVotes.Where(vote => vote.OwnerId == currentUserId).Take(1));
+            result = result.Include(e => e.VolunteerVotes.Where(vote => vote.OwnerId == currentUserId).Take(1));
         return (await result.FirstOrDefaultAsync(chart => chart.Id == id))!;
     }
 

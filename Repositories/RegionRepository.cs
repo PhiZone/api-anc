@@ -5,7 +5,6 @@ using PhiZoneApi.Enums;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 using PhiZoneApi.Utils;
-using Z.EntityFramework.Plus;
 
 // ReSharper disable InvertIf
 
@@ -39,7 +38,7 @@ public class RegionRepository(ApplicationDbContext context, IMeilisearchService 
         var result = context.Users.Where(user => user.Region == region).OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
         if (currentUserId != null)
-            result = result.IncludeFilter(e => e.FollowerRelations.Where(relation =>
+            result = result.Include(e => e.FollowerRelations.Where(relation =>
                     relation.FollowerId == currentUserId && relation.Type != UserRelationType.Blacklisted)
                 .Take(1));
         result = result.Skip(position);
@@ -55,7 +54,7 @@ public class RegionRepository(ApplicationDbContext context, IMeilisearchService 
         var result = context.Users.Where(user => user.Region == region).OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
         if (currentUserId != null)
-            result = result.IncludeFilter(e => e.FollowerRelations.Where(relation =>
+            result = result.Include(e => e.FollowerRelations.Where(relation =>
                     relation.FollowerId == currentUserId && relation.Type != UserRelationType.Blacklisted)
                 .Take(1));
         result = result.Skip(position);
