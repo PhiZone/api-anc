@@ -259,6 +259,7 @@ public class RecordController(
         var record = new Record
         {
             ChartId = info.ChartId,
+            Chart = chart,
             OwnerId = info.PlayerId,
             ApplicationId = info.ApplicationId,
             Score = score,
