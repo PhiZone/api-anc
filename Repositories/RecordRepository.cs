@@ -126,11 +126,11 @@ public class RecordRepository(ApplicationDbContext context, IMeilisearchService 
                 .ThenInclude(e => e.Tags)
                 .Include(e => e.Chart)
                 .ThenInclude(e => e.Tags);
+        if (currentUserId != null)
+            result = result.Include(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
         result = result.Where(e => e.Chart.IsRanked && e.OwnerId == ownerId)
             .GroupBy(e => e.ChartId)
             .Select(g => g.OrderByDescending(e => e.Rks).ThenBy(e => e.DateCreated).First());
-        if (currentUserId != null)
-            result = result.Include(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
         var list = (await result.ToListAsync()).OrderByDescending(e => e.Rks);
         return take >= 0 ? list.Take(take).ToList() : list.ToList();
     }
