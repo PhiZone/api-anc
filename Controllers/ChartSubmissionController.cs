@@ -88,10 +88,8 @@ public class ChartSubmissionController(
             var result = await meilisearchService.SearchAsync<ChartSubmission>(dto.Search, dto.PerPage, dto.Page,
                 !isVolunteer ? currentUser.Id : null);
             var idList = result.Hits.Select(item => item.Id).ToList();
-            chartSubmissions =
-                (await chartSubmissionRepository.GetChartSubmissionsAsync(["DateCreated"], [false], position,
-                    dto.PerPage, e => idList.Contains(e.Id), currentUser.Id)).OrderBy(e =>
-                    idList.IndexOf(e.Id));
+            chartSubmissions = (await chartSubmissionRepository.GetChartSubmissionsAsync(["DateCreated"], [false],
+                position, dto.PerPage, e => idList.Contains(e.Id), currentUser.Id)).OrderBy(e => idList.IndexOf(e.Id));
             total = result.TotalHits;
         }
         else
@@ -368,8 +366,9 @@ public class ChartSubmissionController(
         }
 
         await feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
-        logger.LogInformation(LogEvents.ChartInfo, "New chart submission: {Title} [{Level} {Difficulty}]",
-            dto.Title ?? song?.Title ?? songSubmission!.Title, dto.Level, Math.Floor(dto.Difficulty));
+        logger.LogInformation(LogEvents.ChartInfo, "[{Now}] New chart submission: {Title} [{Level} {Difficulty}]",
+            DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), dto.Title ?? song?.Title ?? songSubmission!.Title, dto.Level,
+            Math.Floor(dto.Difficulty));
 
         return StatusCode(StatusCodes.Status201Created);
     }

@@ -218,7 +218,8 @@ public class SongController(
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidTimeRelation
                 });
-            logger.LogInformation(LogEvents.SongInfo, "New song: {Title}", dto.Title);
+            logger.LogInformation(LogEvents.SongInfo, "[{Now}] New song: {Title}",
+                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), dto.Title);
         }
         else if (!(TimeSpan.Zero <= dto.PreviewStart && dto.PreviewStart <= dto.PreviewEnd))
         {
@@ -272,7 +273,8 @@ public class SongController(
         if (!wait)
         {
             await songService.PublishAsync(dto.File, song.Id);
-            logger.LogInformation(LogEvents.SongInfo, "Scheduled new song: {Title}", dto.Title);
+            logger.LogInformation(LogEvents.SongInfo, "[{Now}] Scheduled new song: {Title}",
+                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), dto.Title);
         }
 
         return StatusCode(StatusCodes.Status201Created);

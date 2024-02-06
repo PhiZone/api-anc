@@ -72,8 +72,8 @@ public class RecordController(
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser);
-        var records = await recordRepository.GetRecordsAsync(dto.Order, dto.Desc, position,
-            dto.PerPage, predicateExpr, true, currentUser?.Id);
+        var records = await recordRepository.GetRecordsAsync(dto.Order, dto.Desc, position, dto.PerPage, predicateExpr,
+            true, currentUser?.Id);
         var total = await recordRepository.CountRecordsAsync(predicateExpr);
         var list = records.Select(dtoMapper.MapRecord<RecordDto>).ToList();
 
@@ -252,9 +252,9 @@ public class RecordController(
         var culture = (CultureInfo)CultureInfo.CurrentCulture.Clone();
         culture.NumberFormat.PercentPositivePattern = 1;
         logger.LogInformation(LogEvents.RecordInfo,
-            "New record: {User} - {Chart} {Score} {Accuracy} {Rks} {StdDeviation}ms", player.UserName,
-            await resourceService.GetDisplayName(chart), score, accuracy.ToString("P2", culture), rks.ToString("N3"),
-            dto.StdDeviation.ToString("N3"));
+            "[{Now}] New record: {User} - {Chart} {Score} {Accuracy} {Rks} {StdDeviation}ms",
+            DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), player.UserName, await resourceService.GetDisplayName(chart),
+            score, accuracy.ToString("P2", culture), rks.ToString("N3"), dto.StdDeviation.ToString("N3"));
 
         var record = new Record
         {

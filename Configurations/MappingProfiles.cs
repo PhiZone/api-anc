@@ -23,7 +23,8 @@ public class MappingProfiles : Profile
         CreateMap<Collection, CollectionUpdateDto>();
         CreateMap<Song, SongDto>();
         CreateMap<Song, SongAdmitteeDto>();
-        CreateMap<Song, SongUpdateDto>().ForMember(x => x.Tags, opt => opt.Ignore());;
+        CreateMap<Song, SongUpdateDto>().ForMember(x => x.Tags, opt => opt.Ignore());
+        ;
         CreateMap<Chart, ChartDto>();
         CreateMap<Chart, ChartDetailedDto>();
         CreateMap<Chart, ChartAdmitteeDto>();

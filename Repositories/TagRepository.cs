@@ -129,9 +129,7 @@ public class TagRepository(
             var normalized = resourceService.Normalize(tagName);
             if (existingTags.Any(tag => tag.NormalizedName == normalized) ||
                 newTags.Any(tag => tag.NormalizedName == normalized))
-            {
                 continue;
-            }
             var tag = await context.Tags.FirstOrDefaultAsync(e => e.NormalizedName == normalized);
             if (tag != null)
             {

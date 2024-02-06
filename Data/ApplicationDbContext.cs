@@ -48,10 +48,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     protected override void OnConfiguring(DbContextOptionsBuilder builder)
     {
         base.OnConfiguring(builder);
-        builder.ConfigureWarnings(wb =>
-        {
-            wb.Ignore(CoreEventId.RowLimitingOperationWithoutOrderByWarning);
-        });
+        builder.ConfigureWarnings(wb => { wb.Ignore(CoreEventId.RowLimitingOperationWithoutOrderByWarning); });
     }
 
     protected override void OnModelCreating(ModelBuilder builder)
