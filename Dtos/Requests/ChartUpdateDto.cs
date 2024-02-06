@@ -24,6 +24,13 @@ public class ChartUpdateDto
     public double Difficulty { get; set; }
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
+    public ChartFormat Format { get; set; }
+
+    [MaxLength(100, ErrorMessage = ResponseCodes.ValueTooLong)]
+    [UserInputValidator(ErrorMessage = ResponseCodes.ContentProhibited)]
+    public string? FileChecksum { get; set; }
+
+    [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     [MaxLength(800, ErrorMessage = ResponseCodes.ValueTooLong)]
     [UserInputValidator(ErrorMessage = ResponseCodes.ContentProhibited)]
     public string AuthorName { get; set; } = null!;

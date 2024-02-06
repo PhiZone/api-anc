@@ -23,7 +23,6 @@ public class UserRegistrationDto
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     [RegularExpression(@"^(?=.*[^a-zA-Z0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9]).{6,18}$",
         ErrorMessage = ResponseCodes.InvalidPassword)]
-    [UserInputValidator(ErrorMessage = ResponseCodes.ContentProhibited)]
     public string Password { get; set; } = string.Empty;
 
     public IFormFile? Avatar { get; set; }

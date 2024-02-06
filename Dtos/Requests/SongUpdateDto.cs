@@ -25,6 +25,10 @@ public class SongUpdateDto
     [UserInputValidator(ErrorMessage = ResponseCodes.ContentProhibited)]
     public string AuthorName { get; set; } = null!;
 
+    [MaxLength(100, ErrorMessage = ResponseCodes.ValueTooLong)]
+    [UserInputValidator(ErrorMessage = ResponseCodes.ContentProhibited)]
+    public string? FileChecksum { get; set; }
+
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     [MaxLength(200, ErrorMessage = ResponseCodes.ValueTooLong)]
     [UserInputValidator(ErrorMessage = ResponseCodes.ContentProhibited)]
