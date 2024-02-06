@@ -1,4 +1,5 @@
-﻿using PhiZoneApi.Enums;
+﻿using System.Text.Json.Serialization;
+using PhiZoneApi.Enums;
 
 namespace PhiZoneApi.Models;
 
@@ -12,7 +13,7 @@ public abstract class Submission : Resource
 
     public Guid? RepresentationId { get; set; }
 
-    public PublicResource? Representation { get; set; }
+    [JsonIgnore] public PublicResource? Representation { get; set; }
 
     public List<string> Tags { get; set; } = [];
 
