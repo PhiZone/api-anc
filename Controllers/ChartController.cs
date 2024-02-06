@@ -175,12 +175,17 @@ public class ChartController(
         [FromQuery] ChartFilterDto? filterDto = null, [FromQuery] ArrayTagDto? tagDto = null)
     {
         var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser, e => !e.IsHidden &&
-            (tagDto == null ||
-             ((tagDto.TagsToInclude == null || e.Tags.Any(tag =>
-                  tagDto.TagsToInclude.Select(resourceService.Normalize).ToList().Contains(tag.NormalizedName))) &&
-              (tagDto.TagsToExclude == null || e.Tags.All(tag =>
-                  !tagDto.TagsToExclude.Select(resourceService.Normalize).ToList().Contains(tag.NormalizedName))))));
+        var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser,
+            e => !e.IsHidden && (tagDto == null ||
+                                 ((tagDto.TagsToInclude == null || e.Tags.Any(tag =>
+                                     tagDto.TagsToInclude.Select(resourceService.Normalize)
+                                         .ToList()
+                                         .Contains(tag.NormalizedName))) && (tagDto.TagsToExclude == null ||
+                                                                             e.Tags.All(tag =>
+                                                                                 !tagDto.TagsToExclude
+                                                                                     .Select(resourceService.Normalize)
+                                                                                     .ToList()
+                                                                                     .Contains(tag.NormalizedName))))));
         var chart = await chartRepository.GetRandomChartAsync(predicateExpr, currentUser?.Id);
 
         if (chart == null)
@@ -287,8 +292,9 @@ public class ChartController(
         if (!await chartRepository.CreateChartAsync(chart))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
-        logger.LogInformation(LogEvents.ChartInfo, "New chart: {Title} [{Level} {Difficulty}]", dto.Title ?? song.Title,
-            dto.Level, Math.Floor(dto.Difficulty));
+        logger.LogInformation(LogEvents.ChartInfo, "[{Now}] New chart: {Title} [{Level} {Difficulty}]",
+            DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), dto.Title ?? song.Title, dto.Level,
+            Math.Floor(dto.Difficulty));
 
         await tagRepository.CreateTagsAsync(dto.Tags, chart);
 

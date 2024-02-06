@@ -33,7 +33,8 @@ public class SongRepository(ApplicationDbContext context, IMeilisearchService me
     public async Task<Song?> GetRandomSongAsync(Expression<Func<Song, bool>>? predicate = null,
         int? currentUserId = null)
     {
-        var result = context.Songs.Include(e => e.Charts).Include(e => e.Tags).OrderBy(song => EF.Functions.Random()).AsQueryable();
+        var result = context.Songs.Include(e => e.Charts).Include(e => e.Tags).OrderBy(song => EF.Functions.Random())
+            .AsQueryable();
         if (predicate != null) result = result.Where(predicate);
         if (currentUserId != null)
             result = result.Include(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));

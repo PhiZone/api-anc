@@ -11,8 +11,7 @@ using PhiZoneApi.Models;
 
 namespace PhiZoneApi.Services;
 
-public class ChartService(IFileStorageService fileStorageService, ILogger<ChartService> logger)
-    : IChartService
+public class ChartService(IFileStorageService fileStorageService, ILogger<ChartService> logger) : IChartService
 {
     private static readonly Regex PecCommandRegex = new("^(-?[0-9]+)|(n[1-4]|bp|cp|cm|cd|cr|ca|cf|cv|#|&)[ -.0-9]+$");
 
@@ -227,25 +226,29 @@ public class ChartService(IFileStorageService fileStorageService, ILogger<ChartS
                     {
                         new() { Alpha = 1.0, Easing = 1, X = 0.0 }, new() { Alpha = 1.0, Easing = 1, X = 9999999.0 }
                     };
-                if (line.PosControl != null) line.PosControl = line.PosControl.Where(e => e != null).ToList();
+                if (line.PosControl != null)
+                    line.PosControl = line.PosControl.Where(e => e != null).ToList();
                 else
                     line.PosControl = new List<PosControl?>
                     {
                         new() { Pos = 1.0, Easing = 1, X = 0.0 }, new() { Pos = 1.0, Easing = 1, X = 9999999.0 }
                     };
-                if (line.SizeControl != null) line.SizeControl = line.SizeControl.Where(e => e != null).ToList();
+                if (line.SizeControl != null)
+                    line.SizeControl = line.SizeControl.Where(e => e != null).ToList();
                 else
                     line.SizeControl = new List<SizeControl?>
                     {
                         new() { Size = 1.0, Easing = 1, X = 0.0 }, new() { Size = 1.0, Easing = 1, X = 9999999.0 }
                     };
-                if (line.SkewControl != null) line.SkewControl = line.SkewControl.Where(e => e != null).ToList();
+                if (line.SkewControl != null)
+                    line.SkewControl = line.SkewControl.Where(e => e != null).ToList();
                 else
                     line.SkewControl = new List<SkewControl?>
                     {
                         new() { Skew = 0.0, Easing = 1, X = 0.0 }, new() { Skew = 0.0, Easing = 1, X = 9999999.0 }
                     };
-                if (line.YControl != null) line.YControl = line.YControl.Where(e => e != null).ToList();
+                if (line.YControl != null)
+                    line.YControl = line.YControl.Where(e => e != null).ToList();
                 else
                     line.YControl = new List<YControl?>
                     {
@@ -585,7 +588,8 @@ public class ChartService(IFileStorageService fileStorageService, ILogger<ChartS
         }
         catch (Exception ex)
         {
-            logger.LogError(LogEvents.ChartFailure, ex, "Failed to parse chart");
+            logger.LogError(LogEvents.ChartFailure, ex, "[{Now}] Failed to parse chart",
+                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
             return null;
         }
     }

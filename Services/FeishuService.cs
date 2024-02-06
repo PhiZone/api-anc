@@ -72,8 +72,9 @@ public class FeishuService : IFeishuService
             };
             var response = await _client.SendAsync(request);
             if (!response.IsSuccessStatusCode)
-                _logger.LogError(LogEvents.FeishuFailure, "An error occurred whilst announcing song update:\n{Error}",
-                    await response.Content.ReadAsStringAsync());
+                _logger.LogError(LogEvents.FeishuFailure,
+                    "[{Now}] An error occurred whilst announcing song update:\n{Error}",
+                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), await response.Content.ReadAsStringAsync());
         }
     }
 
@@ -126,8 +127,9 @@ public class FeishuService : IFeishuService
             };
             var response = await _client.SendAsync(request);
             if (!response.IsSuccessStatusCode)
-                _logger.LogError(LogEvents.FeishuFailure, "An error occurred whilst announcing chart update:\n{Error}",
-                    await response.Content.ReadAsStringAsync());
+                _logger.LogError(LogEvents.FeishuFailure,
+                    "[{Now}] An error occurred whilst announcing chart update:\n{Error}",
+                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), await response.Content.ReadAsStringAsync());
         }
     }
 
@@ -167,8 +169,8 @@ public class FeishuService : IFeishuService
             var response = await _client.SendAsync(request);
             if (!response.IsSuccessStatusCode)
                 _logger.LogError(LogEvents.FeishuFailure,
-                    "An error occurred whilst announcing PET answer update:\n{Error}",
-                    await response.Content.ReadAsStringAsync());
+                    "[{Now}] An error occurred whilst announcing PET answer update:\n{Error}",
+                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), await response.Content.ReadAsStringAsync());
         }
     }
 
@@ -188,8 +190,9 @@ public class FeishuService : IFeishuService
         };
         var response = await _client.SendAsync(request);
         if (!response.IsSuccessStatusCode)
-            _logger.LogError(LogEvents.FeishuFailure, "An error occurred whilst updating tenant token:\n{Error}",
-                await response.Content.ReadAsStringAsync());
+            _logger.LogError(LogEvents.FeishuFailure,
+                "[{Now}] An error occurred whilst updating tenant token:\n{Error}",
+                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), await response.Content.ReadAsStringAsync());
 
         var data = JsonConvert.DeserializeObject<FeishuTokenDelivererDto>(await response.Content.ReadAsStringAsync())!;
         _token = data.TenantAccessToken;

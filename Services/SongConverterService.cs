@@ -12,8 +12,7 @@ public class SongConverterService(
     ISongRepository songRepository,
     ISongSubmissionRepository songSubmissionRepository,
     IFeishuService feishuService,
-    ILogger<SongConverterService> logger)
-    : BackgroundService
+    ILogger<SongConverterService> logger) : BackgroundService
 {
     private readonly IModel _channel = rabbitMqService.GetConnection().CreateModel();
 
@@ -48,8 +47,8 @@ public class SongConverterService(
 
                     await songSubmissionRepository.UpdateSongSubmissionAsync(song);
                     await feishuService.Notify(song, FeishuResources.ContentReviewalChat);
-                    logger.LogInformation(LogEvents.SongInfo, "Completed song submission schedule: {Title}",
-                        song.Title);
+                    logger.LogInformation(LogEvents.SongInfo, "[{Now}] Completed song submission schedule: {Title}",
+                        DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), song.Title);
                 }
             }
             else
@@ -67,7 +66,8 @@ public class SongConverterService(
                     if (song.PreviewStart > song.PreviewEnd) song.PreviewStart = TimeSpan.Zero;
 
                     await songRepository.UpdateSongAsync(song);
-                    logger.LogInformation(LogEvents.SongInfo, "Completed song schedule: {Title}", song.Title);
+                    logger.LogInformation(LogEvents.SongInfo, "[{Now}] Completed song schedule: {Title}",
+                        DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), song.Title);
                 }
             }
 

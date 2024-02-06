@@ -37,8 +37,8 @@ public class MessengerService : IMessengerService
         };
         var response = await _client.SendAsync(request);
         if (!response.IsSuccessStatusCode)
-            _logger.LogError(LogEvents.MessengerFailure, "An error occurred whilst sending email:\n{Error}",
-                await response.Content.ReadAsStringAsync());
+            _logger.LogError(LogEvents.MessengerFailure, "[{Now}] An error occurred whilst sending email:\n{Error}",
+                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), await response.Content.ReadAsStringAsync());
 
         return response;
     }
@@ -55,8 +55,9 @@ public class MessengerService : IMessengerService
         };
         var response = await _client.SendAsync(request);
         if (!response.IsSuccessStatusCode)
-            _logger.LogError(LogEvents.MessengerFailure, "An error occurred whilst sending user input:\n{Error}",
-                await response.Content.ReadAsStringAsync());
+            _logger.LogError(LogEvents.MessengerFailure,
+                "[{Now}] An error occurred whilst sending user input:\n{Error}",
+                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), await response.Content.ReadAsStringAsync());
 
         return response;
     }
@@ -79,8 +80,9 @@ public class MessengerService : IMessengerService
         };
         var response = await _client.SendAsync(request);
         if (!response.IsSuccessStatusCode)
-            _logger.LogError(LogEvents.MessengerFailure, "An error occurred whilst updating access token:\n{Error}",
-                await response.Content.ReadAsStringAsync());
+            _logger.LogError(LogEvents.MessengerFailure,
+                "[{Now}] An error occurred whilst updating access token:\n{Error}",
+                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), await response.Content.ReadAsStringAsync());
 
         var data =
             JsonConvert.DeserializeObject<OpenIddictTokenResponseDto>(await response.Content.ReadAsStringAsync())!;

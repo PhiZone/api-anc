@@ -92,15 +92,18 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
         foreach (var child in _configuration.GetSection("Migration").GetSection("ApplicationDictionary").GetChildren())
             _applicationDictionary[int.Parse(child.Key)] = Guid.Parse(child.Value!);
 
-        _logger.LogInformation(LogEvents.DataMigration, "Data migration started");
+        _logger.LogInformation(LogEvents.DataMigration, "[{Now}] Data migration started",
+            DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
         try
         {
             await MigrateDataAsync(cancellationToken);
-            _logger.LogInformation(LogEvents.DataMigration, "Data migration finished");
+            _logger.LogInformation(LogEvents.DataMigration, "[{Now}] Data migration finished",
+                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
         }
         catch (Exception ex)
         {
-            _logger.LogError(LogEvents.DataMigration, ex, "Data migration failed");
+            _logger.LogError(LogEvents.DataMigration, ex, "[{Now}] Data migration failed",
+                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
         }
     }
 

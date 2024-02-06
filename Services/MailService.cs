@@ -70,15 +70,17 @@ public class MailService(
             var response = await messengerService.SendMail(mailTaskDto);
             if (!response.IsSuccessStatusCode)
             {
-                logger.LogWarning(LogEvents.MailFailure, "Failed to send an email to {Email} for {User}:\n{Content}",
-                    mailTaskDto.EmailAddress, mailTaskDto.UserName, await response.Content.ReadAsStringAsync());
+                logger.LogWarning(LogEvents.MailFailure,
+                    "[{Now}] Failed to send an email to {Email} for {User}:\n{Content}",
+                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), mailTaskDto.EmailAddress, mailTaskDto.UserName,
+                    await response.Content.ReadAsStringAsync());
                 return response.StatusCode.ToString();
             }
         }
         catch (Exception ex)
         {
-            logger.LogWarning(LogEvents.MailFailure, ex, "Failed to send an email to {Email} for {User}",
-                mailTaskDto.EmailAddress, mailTaskDto.UserName);
+            logger.LogWarning(LogEvents.MailFailure, ex, "[{Now}] Failed to send an email to {Email} for {User}",
+                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), mailTaskDto.EmailAddress, mailTaskDto.UserName);
             return ex.Message;
         }
 
