@@ -10,6 +10,7 @@ public class MappingProfiles : Profile
     public MappingProfiles()
     {
         CreateMap<User, UserDto>().ForMember(x => x.Role, opt => opt.Ignore());
+        CreateMap<User, AuthorDto>().ForMember(x => x.Role, opt => opt.Ignore());
         CreateMap<User, UserDetailedDto>();
         CreateMap<User, UserUpdateDto>();
         CreateMap<UserRegistrationDto, User>();
@@ -24,7 +25,6 @@ public class MappingProfiles : Profile
         CreateMap<Song, SongDto>();
         CreateMap<Song, SongAdmitteeDto>();
         CreateMap<Song, SongUpdateDto>().ForMember(x => x.Tags, opt => opt.Ignore());
-        ;
         CreateMap<Chart, ChartDto>();
         CreateMap<Chart, ChartDetailedDto>();
         CreateMap<Chart, ChartAdmitteeDto>();
