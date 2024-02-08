@@ -1,6 +1,7 @@
 ﻿using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using PhiZoneApi.Data;
+using PhiZoneApi.Enums;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 using PhiZoneApi.Utils;
@@ -10,8 +11,7 @@ namespace PhiZoneApi.Repositories;
 public class AuthorshipRepository(ApplicationDbContext context) : IAuthorshipRepository
 {
     public async Task<ICollection<Authorship>> GetResourcesAsync(int authorId, List<string> order, List<bool> desc,
-        int position,
-        int take, Expression<Func<Authorship, bool>>? predicate = null)
+        int position, int take, Expression<Func<Authorship, bool>>? predicate = null)
     {
         var result = context.Authorships.Where(authorship => authorship.AuthorId == authorId).OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
@@ -20,8 +20,7 @@ public class AuthorshipRepository(ApplicationDbContext context) : IAuthorshipRep
     }
 
     public async Task<ICollection<Authorship>> GetAuthorsAsync(Guid resourceId, List<string> order, List<bool> desc,
-        int position,
-        int take, Expression<Func<Authorship, bool>>? predicate = null)
+        int position, int take, Expression<Func<Authorship, bool>>? predicate = null)
     {
         var result = context.Authorships.Where(authorship => authorship.ResourceId == resourceId).OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
@@ -30,24 +29,40 @@ public class AuthorshipRepository(ApplicationDbContext context) : IAuthorshipRep
     }
 
     public async Task<ICollection<Authorship>> GetAuthorshipsAsync(List<string> order, List<bool> desc, int position,
-        int take,
-        Expression<Func<Authorship, bool>>? predicate = null)
+        int take, Expression<Func<Authorship, bool>>? predicate = null, int? currentUserId = null)
     {
-        var result = context.Authorships.OrderBy(order, desc);
+        var result = context.Authorships.Include(e => e.Author).ThenInclude(e => e.Region).OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
+        if (currentUserId != null)
+            result = result.Include(e => e.Author)
+                .ThenInclude(e => e.FollowerRelations.Where(relation =>
+                        relation.FollowerId == currentUserId && relation.Type != UserRelationType.Blacklisted)
+                    .Take(1));
         result = result.Skip(position);
         return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
 
-    public async Task<Authorship> GetAuthorshipAsync(Guid resourceId, int authorId)
+    public async Task<Authorship> GetAuthorshipAsync(Guid resourceId, int authorId, int? currentUserId = null)
     {
-        return (await context.Authorships.FirstOrDefaultAsync(authorship =>
+        IQueryable<Authorship> result = context.Authorships.Include(e => e.Author).ThenInclude(e => e.Region);
+        if (currentUserId != null)
+            result = result.Include(e => e.Author)
+                .ThenInclude(e => e.FollowerRelations.Where(relation =>
+                        relation.FollowerId == currentUserId && relation.Type != UserRelationType.Blacklisted)
+                    .Take(1));
+        return (await result.FirstOrDefaultAsync(authorship =>
             authorship.ResourceId == resourceId && authorship.AuthorId == authorId))!;
     }
 
-    public async Task<Authorship> GetAuthorshipAsync(Guid id)
+    public async Task<Authorship> GetAuthorshipAsync(Guid id, int? currentUserId = null)
     {
-        return (await context.Authorships.FirstOrDefaultAsync(authorship => authorship.Id == id))!;
+        IQueryable<Authorship> result = context.Authorships.Include(e => e.Author).ThenInclude(e => e.Region);
+        if (currentUserId != null)
+            result = result.Include(e => e.Author)
+                .ThenInclude(e => e.FollowerRelations.Where(relation =>
+                        relation.FollowerId == currentUserId && relation.Type != UserRelationType.Blacklisted)
+                    .Take(1));
+        return (await result.FirstOrDefaultAsync(authorship => authorship.Id == id))!;
     }
 
     public async Task<bool> CreateAuthorshipAsync(Authorship authorship)
@@ -71,8 +86,7 @@ public class AuthorshipRepository(ApplicationDbContext context) : IAuthorshipRep
 
     public async Task<bool> RemoveAuthorshipAsync(Guid id)
     {
-        context.Authorships.Remove(
-            (await context.Authorships.FirstOrDefaultAsync(authorship => authorship.Id == id))!);
+        context.Authorships.Remove((await context.Authorships.FirstOrDefaultAsync(authorship => authorship.Id == id))!);
         return await SaveAsync();
     }
 

@@ -12,11 +12,11 @@ public interface IAuthorshipRepository
         int take, Expression<Func<Authorship, bool>>? predicate = null);
 
     Task<ICollection<Authorship>> GetAuthorshipsAsync(List<string> order, List<bool> desc, int position, int take,
-        Expression<Func<Authorship, bool>>? predicate = null);
+        Expression<Func<Authorship, bool>>? predicate = null, int? currentUserId = null);
 
-    Task<Authorship> GetAuthorshipAsync(Guid resourceId, int authorId);
+    Task<Authorship> GetAuthorshipAsync(Guid resourceId, int authorId, int? currentUserId = null);
 
-    Task<Authorship> GetAuthorshipAsync(Guid id);
+    Task<Authorship> GetAuthorshipAsync(Guid id, int? currentUserId = null);
 
     Task<bool> CreateAuthorshipAsync(Authorship authorship);
 

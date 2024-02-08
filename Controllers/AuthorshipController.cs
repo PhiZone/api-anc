@@ -3,9 +3,12 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using OpenIddict.Abstractions;
 using OpenIddict.Validation.AspNetCore;
+using PhiZoneApi.Configurations;
 using PhiZoneApi.Constants;
+using PhiZoneApi.Dtos.Filters;
 using PhiZoneApi.Dtos.Requests;
 using PhiZoneApi.Dtos.Responses;
 using PhiZoneApi.Enums;
@@ -27,10 +30,52 @@ public class AuthorshipController(
     IAuthorshipRepository authorshipRepository,
     IDtoMapper dtoMapper,
     UserManager<User> userManager,
-    IUserRepository userRepository,
     IMapper mapper,
+    IOptions<DataSettings> dataSettings,
+    IFilterService filterService,
     IResourceService resourceService) : Controller
 {
+    /// <summary>
+    ///     Retrieves authorships.
+    /// </summary>
+    /// <returns>An array of authorships.</returns>
+    /// <response code="200">Returns an array of authorships.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    [HttpGet]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<AuthorDto>>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> GetAuthorships([FromQuery] ArrayRequestDto dto,
+        [FromQuery] AuthorshipFilterDto? filterDto = null)
+    {
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!));
+        dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
+            dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
+        dto.Page = dto.Page > 1 ? dto.Page : 1;
+        var position = dto.PerPage * (dto.Page - 1);
+        var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser);
+        var authorships = await authorshipRepository.GetAuthorshipsAsync(dto.Order, dto.Desc, position, dto.PerPage,
+            predicateExpr, currentUser?.Id);
+        var list = authorships.Select(e =>
+        {
+            var author = dtoMapper.MapUser<AuthorDto>(e.Author);
+            author.Position = e.Position;
+            return author;
+        });
+        var total = await authorshipRepository.CountAuthorshipsAsync(predicateExpr);
+
+        return Ok(new ResponseDto<IEnumerable<AuthorDto>>
+        {
+            Status = ResponseStatus.Ok,
+            Code = ResponseCodes.Ok,
+            Total = total,
+            PerPage = dto.PerPage,
+            HasPrevious = position > 0,
+            HasNext = dto.PerPage > 0 && dto.PerPage * dto.Page < total,
+            Data = list
+        });
+    }
+
     /// <summary>
     ///     Retrieves a specific authorship.
     /// </summary>
@@ -57,9 +102,8 @@ public class AuthorshipController(
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        var authorship = await authorshipRepository.GetAuthorshipAsync(id);
-        var dto = dtoMapper.MapUser<AuthorDto>(
-            (await userRepository.GetUserByIdAsync(authorship.AuthorId, currentUser?.Id))!);
+        var authorship = await authorshipRepository.GetAuthorshipAsync(id, currentUser?.Id);
+        var dto = dtoMapper.MapUser<AuthorDto>(authorship.Author);
         dto.Position = authorship.Position;
 
         return Ok(new ResponseDto<AuthorDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
