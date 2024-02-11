@@ -12,34 +12,39 @@ public class UserRelationRepository(ApplicationDbContext context, IMeilisearchSe
     : IUserRelationRepository
 {
     public async Task<ICollection<UserRelation>> GetFollowersAsync(int userId, List<string> order, List<bool> desc,
-        int position,
-        int take, Expression<Func<UserRelation, bool>>? predicate = null)
+        int position, int take, Expression<Func<UserRelation, bool>>? predicate = null, int? currentUserId = null)
     {
-        var result = context.UserRelations
-            .Include(e => e.Follower)
+        var result = context.UserRelations.Include(e => e.Follower)
             .Where(e => e.Type != UserRelationType.Blacklisted && e.FolloweeId == userId)
             .OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
+        if (currentUserId != null)
+            result = result.Include(e => e.Follower)
+                .ThenInclude(e => e.FollowerRelations.Where(relation =>
+                        relation.FollowerId == currentUserId && relation.Type != UserRelationType.Blacklisted)
+                    .Take(1));
         result = result.Skip(position);
         return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
 
     public async Task<ICollection<UserRelation>> GetFolloweesAsync(int userId, List<string> order, List<bool> desc,
-        int position,
-        int take, Expression<Func<UserRelation, bool>>? predicate = null)
+        int position, int take, Expression<Func<UserRelation, bool>>? predicate = null, int? currentUserId = null)
     {
-        var result = context.UserRelations
-            .Include(e => e.Followee)
+        var result = context.UserRelations.Include(e => e.Followee)
             .Where(relation => relation.Type != UserRelationType.Blacklisted && relation.FollowerId == userId)
             .OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
+        if (currentUserId != null)
+            result = result.Include(e => e.Followee)
+                .ThenInclude(e => e.FollowerRelations.Where(relation =>
+                        relation.FollowerId == currentUserId && relation.Type != UserRelationType.Blacklisted)
+                    .Take(1));
         result = result.Skip(position);
         return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
 
     public async Task<ICollection<UserRelation>> GetRelationsAsync(List<string> order, List<bool> desc, int position,
-        int take,
-        Expression<Func<UserRelation, bool>>? predicate = null)
+        int take, Expression<Func<UserRelation, bool>>? predicate = null)
     {
         var result = context.UserRelations.OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
@@ -85,8 +90,8 @@ public class UserRelationRepository(ApplicationDbContext context, IMeilisearchSe
     public async Task<bool> RemoveRelationAsync(int followerId, int followeeId)
     {
         var relation = await context.UserRelations.Include(e => e.Follower)
-            .Include(e => e.Followee).FirstAsync(relation =>
-                relation.FollowerId == followerId && relation.FolloweeId == followeeId);
+            .Include(e => e.Followee)
+            .FirstAsync(relation => relation.FollowerId == followerId && relation.FolloweeId == followeeId);
         relation.Follower.FolloweeCount =
             await context.UserRelations.CountAsync(e =>
                 e.FollowerId == followerId && e.Type != UserRelationType.Blacklisted) - 1;

@@ -19,6 +19,7 @@ public class DatabaseSeeder(IServiceProvider serviceProvider) : IHostedService
         await PopulateScopes(scope, cancellationToken);
         await PopulateInternalApps(scope, cancellationToken);
         await PopulateLeaderboards(scope, cancellationToken);
+        await PopulateScripts(scope, cancellationToken);
     }
 
     public Task StopAsync(CancellationToken cancellationToken)
@@ -72,6 +73,13 @@ public class DatabaseSeeder(IServiceProvider serviceProvider) : IHostedService
     {
         var leaderboardService = scope.ServiceProvider.GetRequiredService<ILeaderboardService>();
         await leaderboardService.Initialize(scope.ServiceProvider.GetRequiredService<ApplicationDbContext>(),
+            cancellationToken);
+    }
+
+    private static async Task PopulateScripts(IServiceScope scope, CancellationToken cancellationToken)
+    {
+        var scriptService = scope.ServiceProvider.GetRequiredService<IScriptService>();
+        await scriptService.Initialize(scope.ServiceProvider.GetRequiredService<ApplicationDbContext>(),
             cancellationToken);
     }
 

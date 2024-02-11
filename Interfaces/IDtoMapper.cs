@@ -7,6 +7,8 @@ public interface IDtoMapper
 {
     T MapUser<T>(User user) where T : UserDto;
 
+    T MapFollowee<T>(User user, int? currentUserId = null) where T : UserDto;
+
     Task<AdmissionDto<TAdmitter, TAdmittee>> MapChapterAdmissionAsync<TAdmitter, TAdmittee>(Admission admission,
         User? currentUser = null) where TAdmitter : ChapterDto where TAdmittee : SongDto;
 
@@ -44,6 +46,8 @@ public interface IDtoMapper
     T MapReply<T>(Reply reply) where T : ReplyDto;
 
     T MapApplication<T>(Application application) where T : ApplicationDto;
+
+    T MapApplicationService<T>(ApplicationService applicationService) where T : ApplicationServiceDto;
 
     T MapAnnouncement<T>(Announcement announcement) where T : AnnouncementDto;
 

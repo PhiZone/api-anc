@@ -10,6 +10,8 @@ public class Event : PublicResource
 
     public string Illustrator { get; set; } = null!;
 
+    public DateTimeOffset DateUnveiled { get; set; }
+
     public override string GetDisplay()
     {
         return Subtitle != null ? $"{Title} - {Subtitle}" : Title;

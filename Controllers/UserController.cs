@@ -72,8 +72,7 @@ public class UserController(
             var result = await meilisearchService.SearchAsync<User>(dto.Search, dto.PerPage, dto.Page);
             var idList = result.Hits.Select(item => item.Id).ToList();
             users = (await userRepository.GetUsersAsync(["Id"], [false], position, dto.PerPage,
-                e => idList.Contains(e.Id), currentUser?.Id)).OrderBy(e =>
-                idList.IndexOf(e.Id));
+                e => idList.Contains(e.Id), currentUser?.Id)).OrderBy(e => idList.IndexOf(e.Id));
             total = result.TotalHits;
         }
         else
@@ -208,8 +207,7 @@ public class UserController(
         user.Role = UserRole.Member;
         await userManager.UpdateAsync(user);
         await meilisearchService.AddAsync(user);
-        if (avatarUrl != null)
-            await fileStorageService.SendUserInput(avatarUrl, "Avatar", Request, user);
+        if (avatarUrl != null) await fileStorageService.SendUserInput(avatarUrl, "Avatar", Request, user);
         var configuration = new PlayConfiguration
         {
             Name = templateService.GetMessage("default", user.Language),
@@ -552,9 +550,8 @@ public class UserController(
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser);
-        var relations =
-            await userRelationRepository.GetFollowersAsync(user.Id, dto.Order, dto.Desc, position, dto.PerPage,
-                predicateExpr);
+        var relations = await userRelationRepository.GetFollowersAsync(user.Id, dto.Order, dto.Desc, position,
+            dto.PerPage, predicateExpr, currentUser?.Id);
         var total = await userRelationRepository.CountFollowersAsync(user.Id, predicateExpr);
         var list = relations.Select(relation => dtoMapper.MapUser<UserDto>(relation.Follower)).ToList();
 
@@ -600,11 +597,11 @@ public class UserController(
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser);
-        var relations =
-            await userRelationRepository.GetFolloweesAsync(user.Id, dto.Order, dto.Desc, position, dto.PerPage,
-                predicateExpr);
+        var relations = await userRelationRepository.GetFolloweesAsync(user.Id, dto.Order, dto.Desc, position,
+            dto.PerPage, predicateExpr, currentUser?.Id);
         var total = await userRelationRepository.CountFolloweesAsync(user.Id, predicateExpr);
-        var list = relations.Select(relation => dtoMapper.MapUser<UserDto>(relation.Followee)).ToList();
+        var list = relations.Select(relation => dtoMapper.MapFollowee<UserDto>(relation.Followee, currentUser?.Id))
+            .ToList();
 
         return Ok(new ResponseDto<IEnumerable<UserDto>>
         {

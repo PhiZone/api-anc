@@ -27,6 +27,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Vote> Votes { get; set; } = null!;
     public DbSet<PlayConfiguration> PlayConfigurations { get; set; } = null!;
     public DbSet<Application> Applications { get; set; } = null!;
+    public DbSet<ApplicationService> ApplicationServices { get; set; } = null!;
+    public DbSet<ApplicationServiceRecord> ApplicationServiceRecords { get; set; } = null!;
     public DbSet<Announcement> Announcements { get; set; } = null!;
     public DbSet<VolunteerVote> VolunteerVotes { get; set; } = null!;
     public DbSet<SongSubmission> SongSubmissions { get; set; } = null!;

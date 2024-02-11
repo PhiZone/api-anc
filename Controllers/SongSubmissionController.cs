@@ -36,7 +36,10 @@ public class SongSubmissionController(
     IMapper mapper,
     ISongService songService,
     IAuthorshipRepository authorshipRepository,
+    IApplicationServiceRepository applicationServiceRepository,
+    IApplicationServiceRecordRepository applicationServiceRecordRepository,
     ISubmissionService submissionService,
+    IScriptService scriptService,
     IResourceService resourceService,
     ICollaborationRepository collaborationRepository,
     INotificationService notificationService,
@@ -775,6 +778,161 @@ public class SongSubmissionController(
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
         return NoContent();
+    }
+
+    /// <summary>
+    ///     Applies a specific song submission to an application service.
+    /// </summary>
+    /// <param name="id">A song submission's ID.</param>
+    /// <returns>A response from the application service.</returns>
+    /// <response code="200">Returns a service response.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
+    /// <response code="404">When the specified song submission is not found.</response>
+    [HttpPost("{id:guid}/useService")]
+    [Consumes("application/json")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<ServiceResponseDto>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> ApplySongSubmissionToService([FromRoute] Guid id,
+        [FromBody] ApplicationServiceUsageDto dto)
+    {
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!resourceService.HasPermission(currentUser, UserRole.Qualified))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+        if (!await songSubmissionRepository.SongSubmissionExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+        if (!await applicationServiceRepository.ApplicationServiceExistsAsync(dto.ApplicationServiceId))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+        var service = await applicationServiceRepository.GetApplicationServiceAsync(dto.ApplicationServiceId);
+        if (service.TargetType != ServiceTargetType.SongSubmission)
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
+            });
+        var songSubmission = await songSubmissionRepository.GetSongSubmissionAsync(id);
+        var result =
+            await scriptService.RunAsync(dto.ApplicationServiceId, dto.Parameters, songSubmission, currentUser);
+
+        return Ok(new ResponseDto<ServiceResponseDto>
+        {
+            Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = result
+        });
+    }
+
+    /// <summary>
+    ///     Retrieves service records.
+    /// </summary>
+    /// <returns>An array of service records.</returns>
+    /// <response code="200">Returns an array of service records.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    [HttpGet("{id:guid}/serviceRecords")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK,
+        Type = typeof(ResponseDto<IEnumerable<ApplicationServiceRecordDto>>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> GetApplicationServiceRecords([FromRoute] Guid id, [FromQuery] ArrayRequestDto dto,
+        [FromQuery] ApplicationServiceRecordFilterDto? filterDto = null)
+    {
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!resourceService.HasPermission(currentUser, UserRole.Qualified))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+        if (!await songSubmissionRepository.SongSubmissionExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+        dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
+            dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
+        dto.Page = dto.Page > 1 ? dto.Page : 1;
+        var position = dto.PerPage * (dto.Page - 1);
+        var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser, e => e.ResourceId == id);
+        var applicationServiceRecords =
+            await applicationServiceRecordRepository.GetApplicationServiceRecordsAsync(dto.Order, dto.Desc, position,
+                dto.PerPage, predicateExpr);
+        var total = await applicationServiceRecordRepository.CountApplicationServiceRecordsAsync(predicateExpr);
+        var list = applicationServiceRecords.Select(mapper.Map<ApplicationServiceRecordDto>).ToList();
+
+        return Ok(new ResponseDto<IEnumerable<ApplicationServiceRecordDto>>
+        {
+            Status = ResponseStatus.Ok,
+            Code = ResponseCodes.Ok,
+            Total = total,
+            PerPage = dto.PerPage,
+            HasPrevious = position > 0,
+            HasNext = dto.PerPage > 0 && dto.PerPage * dto.Page < total,
+            Data = list
+        });
+    }
+
+    /// <summary>
+    ///     Retrieves a specific service record.
+    /// </summary>
+    /// <param name="id">A service record's ID.</param>
+    /// <returns>A service record.</returns>
+    /// <response code="200">Returns a service record.</response>
+    /// <response code="304">
+    ///     When the resource has not been updated since last retrieval. Requires <c>If-None-Match</c>.
+    /// </response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="404">When the specified service record is not found.</response>
+    [HttpGet("{id:guid}/serviceRecords/{recordId:guid}")]
+    [ServiceFilter(typeof(ETagFilter))]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<ApplicationServiceRecordDto>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status304NotModified, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> GetApplicationServiceRecord([FromRoute] Guid id, [FromRoute] Guid recordId)
+    {
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!resourceService.HasPermission(currentUser, UserRole.Qualified))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+        if (!await songSubmissionRepository.SongSubmissionExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+        if (!await applicationServiceRecordRepository.ApplicationServiceRecordExistsAsync(recordId))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+        var applicationServiceRecord =
+            await applicationServiceRecordRepository.GetApplicationServiceRecordAsync(recordId);
+        if (applicationServiceRecord.ResourceId != id)
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+        var dto = mapper.Map<ApplicationServiceRecordDto>(applicationServiceRecord);
+
+        return Ok(new ResponseDto<ApplicationServiceRecordDto>
+        {
+            Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto
+        });
     }
 
     /// <summary>

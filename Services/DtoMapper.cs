@@ -24,6 +24,16 @@ public class DtoMapper(
         return dto;
     }
 
+    public T MapFollowee<T>(User user, int? currentUserId = null) where T : UserDto
+    {
+        var dto = mapper.Map<T>(user);
+        dto.Role = user.Role.ToString();
+        dto.DateFollowed = user.FollowerRelations
+            .FirstOrDefault(e => currentUserId != null && e.FollowerId == currentUserId)
+            ?.DateCreated;
+        return dto;
+    }
+
     public async Task<AdmissionDto<TAdmitter, TAdmittee>> MapChapterAdmissionAsync<TAdmitter, TAdmittee>(
         Admission admission, User? currentUser = null) where TAdmitter : ChapterDto where TAdmittee : SongDto
     {
@@ -166,8 +176,7 @@ public class DtoMapper(
         return dto;
     }
 
-    public T MapChartSubmission<T>(ChartSubmission chart)
-        where T : ChartSubmissionDto
+    public T MapChartSubmission<T>(ChartSubmission chart) where T : ChartSubmissionDto
     {
         var dto = mapper.Map<T>(chart);
         if (chart.Song != null) dto.Song = MapSong<SongDto>(chart.Song);
@@ -204,6 +213,13 @@ public class DtoMapper(
     {
         var dto = mapper.Map<T>(application);
         dto.DateLiked = application.Likes.FirstOrDefault()?.DateCreated;
+        return dto;
+    }
+
+    public T MapApplicationService<T>(ApplicationService applicationService) where T : ApplicationServiceDto
+    {
+        var dto = mapper.Map<T>(applicationService);
+        dto.Application = MapApplication<ApplicationDto>(applicationService.Application);
         return dto;
     }
 

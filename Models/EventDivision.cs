@@ -32,7 +32,11 @@ public class EventDivision : PublicResource
 
     public Event Event { get; set; } = null!;
 
-    public DateTimeOffset DatePublicized { get; set; }
+    public DateTimeOffset DateUnveiled { get; set; }
+
+    public DateTimeOffset DateStarted { get; set; }
+
+    public DateTimeOffset DateEnded { get; set; }
 
     public override string GetDisplay()
     {

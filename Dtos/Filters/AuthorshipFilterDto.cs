@@ -1,5 +1,4 @@
-﻿using PhiZoneApi.Enums;
-using PhiZoneApi.Models;
+﻿using PhiZoneApi.Models;
 
 namespace PhiZoneApi.Dtos.Filters;
 
