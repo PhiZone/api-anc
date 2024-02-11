@@ -3,7 +3,7 @@ namespace PhiZoneApi.Enums;
 public enum EventDivisionStatus
 {
     Created,
-    Publicized,
+    Unveiled,
     Started,
     Ended
 }

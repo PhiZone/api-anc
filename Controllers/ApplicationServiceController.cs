@@ -21,32 +21,34 @@ using PhiZoneApi.Utils;
 
 namespace PhiZoneApi.Controllers;
 
-[Route("authorships")]
+[Route("applicationServices")]
 [ApiVersion("2.0")]
 [ApiController]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme,
     Policy = "AllowAnonymous")]
-public class AuthorshipController(
-    IAuthorshipRepository authorshipRepository,
+public class ApplicationServiceController(
+    IApplicationServiceRepository applicationServiceRepository,
+    IApplicationRepository applicationRepository,
+    IOptions<DataSettings> dataSettings,
     IDtoMapper dtoMapper,
+    IFilterService filterService,
+    IScriptService scriptService,
     UserManager<User> userManager,
     IMapper mapper,
-    IOptions<DataSettings> dataSettings,
-    IFilterService filterService,
     IResourceService resourceService) : Controller
 {
     /// <summary>
-    ///     Retrieves authorships.
+    ///     Retrieves application services.
     /// </summary>
-    /// <returns>An array of authorships.</returns>
-    /// <response code="200">Returns an array of authorships.</response>
+    /// <returns>An array of application services.</returns>
+    /// <response code="200">Returns an array of application services.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     [HttpGet]
     [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<AuthorDto>>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<ApplicationServiceDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetAuthorships([FromQuery] ArrayRequestDto dto,
-        [FromQuery] AuthorshipFilterDto? filterDto = null)
+    public async Task<IActionResult> GetApplicationServices([FromQuery] ArrayRequestDto dto,
+        [FromQuery] ApplicationServiceFilterDto? filterDto = null)
     {
         var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
@@ -54,17 +56,13 @@ public class AuthorshipController(
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser);
-        var authorships = await authorshipRepository.GetAuthorshipsAsync(dto.Order, dto.Desc, position, dto.PerPage,
-            predicateExpr, currentUser?.Id);
-        var list = authorships.Select(e =>
-        {
-            var author = dtoMapper.MapUser<AuthorDto>(e.Author);
-            author.Position = e.Position;
-            return author;
-        });
-        var total = await authorshipRepository.CountAuthorshipsAsync(predicateExpr);
+        var applicationServices =
+            await applicationServiceRepository.GetApplicationServicesAsync(dto.Order, dto.Desc, position, dto.PerPage,
+                predicateExpr);
+        var total = await applicationServiceRepository.CountApplicationServicesAsync(predicateExpr);
+        var list = applicationServices.Select(dtoMapper.MapApplicationService<ApplicationServiceDto>).ToList();
 
-        return Ok(new ResponseDto<IEnumerable<AuthorDto>>
+        return Ok(new ResponseDto<IEnumerable<ApplicationServiceDto>>
         {
             Status = ResponseStatus.Ok,
             Code = ResponseCodes.Ok,
@@ -77,47 +75,102 @@ public class AuthorshipController(
     }
 
     /// <summary>
-    ///     Retrieves a specific authorship.
+    ///     Retrieves a specific application service.
     /// </summary>
-    /// <param name="id">An authorship's ID.</param>
-    /// <returns>An authorship.</returns>
-    /// <response code="200">Returns an authorship.</response>
+    /// <param name="id">An application service's ID.</param>
+    /// <returns>An application service.</returns>
+    /// <response code="200">Returns an application service.</response>
     /// <response code="304">
     ///     When the resource has not been updated since last retrieval. Requires <c>If-None-Match</c>.
     /// </response>
     /// <response code="400">When any of the parameters is invalid.</response>
-    /// <response code="404">When the specified authorship is not found.</response>
+    /// <response code="404">When the specified application service is not found.</response>
     [HttpGet("{id:guid}")]
     [ServiceFilter(typeof(ETagFilter))]
     [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<AuthorDto>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<ApplicationServiceDto>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status304NotModified, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetAuthorship([FromRoute] Guid id)
+    public async Task<IActionResult> GetApplicationService([FromRoute] Guid id)
     {
-        var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        if (!await authorshipRepository.AuthorshipExistsAsync(id))
+        if (!await applicationServiceRepository.ApplicationServiceExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        var authorship = await authorshipRepository.GetAuthorshipAsync(id, currentUser?.Id);
-        var dto = dtoMapper.MapUser<AuthorDto>(authorship.Author);
-        dto.Position = authorship.Position;
+        var applicationService = await applicationServiceRepository.GetApplicationServiceAsync(id);
+        var dto = dtoMapper.MapApplicationService<ApplicationServiceDto>(applicationService);
 
-        return Ok(new ResponseDto<AuthorDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
+        return Ok(new ResponseDto<ApplicationServiceDto>
+        {
+            Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto
+        });
     }
 
     /// <summary>
-    ///     Updates an authorship.
+    ///     Creates a new application service.
     /// </summary>
+    /// <returns>An empty body.</returns>
+    /// <response code="201">Returns an empty body.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
+    /// <response code="500">When an internal server error has occurred.</response>
+    [HttpPost]
+    [Consumes("application/json")]
+    [Produces("application/json")]
+    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
+    [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> CreateApplicationService([FromBody] ApplicationServiceRequestDto dto)
+    {
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!resourceService.HasPermission(currentUser, UserRole.Administrator))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+        if (!await applicationRepository.ApplicationExistsAsync(dto.ApplicationId))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
+            });
+
+        var applicationService = new ApplicationService
+        {
+            Name = dto.Name,
+            TargetType = dto.TargetType,
+            Description = dto.Description,
+            Code = dto.Code,
+            Parameters = dto.Parameters,
+            ApplicationId = dto.ApplicationId,
+            DateCreated = DateTimeOffset.UtcNow
+        };
+        if (!await applicationServiceRepository.CreateApplicationServiceAsync(applicationService))
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+
+        scriptService.Compile(applicationService.Id, applicationService.Code, applicationService.TargetType);
+
+        return StatusCode(StatusCodes.Status201Created);
+    }
+
+    /// <summary>
+    ///     Updates an application service.
+    /// </summary>
+    /// <param name="id">An application service's ID.</param>
+    /// <param name="patchDocument">A JSON Patch Document.</param>
     /// <returns>An empty body.</returns>
     /// <response code="204">Returns an empty body.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="403">When the user does not have sufficient permission.</response>
-    /// <response code="404">When the specified authorship or author is not found.</response>
+    /// <response code="404">When the specified application service is not found.</response>
     /// <response code="500">When an internal server error has occurred.</response>
     [HttpPatch("{id:guid}")]
     [Consumes("application/json")]
@@ -129,14 +182,16 @@ public class AuthorshipController(
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> UpdateAuthorship([FromRoute] Guid id,
-        [FromBody] JsonPatchDocument<AuthorshipRequestDto> patchDocument)
+    public async Task<IActionResult> UpdateApplicationService([FromRoute] Guid id,
+        [FromBody] JsonPatchDocument<ApplicationServiceRequestDto> patchDocument)
     {
-        if (!await authorshipRepository.AuthorshipExistsAsync(id))
+        if (!await applicationServiceRepository.ApplicationServiceExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
+
+        var applicationService = await applicationServiceRepository.GetApplicationServiceAsync(id);
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if (!resourceService.HasPermission(currentUser, UserRole.Administrator))
@@ -146,8 +201,7 @@ public class AuthorshipController(
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
-        var authorship = await authorshipRepository.GetAuthorshipAsync(id);
-        var dto = mapper.Map<AuthorshipRequestDto>(authorship);
+        var dto = mapper.Map<ApplicationServiceRequestDto>(applicationService);
         patchDocument.ApplyTo(dto, ModelState);
 
         if (!TryValidateModel(dto))
@@ -157,33 +211,39 @@ public class AuthorshipController(
                 Code = ResponseCodes.InvalidData,
                 Errors = ModelErrorTranslator.Translate(ModelState)
             });
-
-        if (await userManager.FindByIdAsync(dto.AuthorId.ToString()) == null)
+        if (!await applicationRepository.ApplicationExistsAsync(dto.ApplicationId))
             return NotFound(new ResponseDto<object>
             {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNotFound
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
             });
 
-        authorship.AuthorId = dto.AuthorId;
-        authorship.Position = dto.Position;
+        applicationService.Name = dto.Name;
+        applicationService.TargetType = dto.TargetType;
+        applicationService.Description = dto.Description;
+        applicationService.Code = dto.Code;
+        applicationService.Parameters = dto.Parameters;
+        applicationService.ApplicationId = dto.ApplicationId;
+        applicationService.DateUpdated = DateTimeOffset.UtcNow;
 
-        if (!await authorshipRepository.UpdateAuthorshipAsync(authorship))
+        if (!await applicationServiceRepository.UpdateApplicationServiceAsync(applicationService))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+
+        scriptService.Compile(applicationService.Id, applicationService.Code, applicationService.TargetType);
 
         return NoContent();
     }
 
     /// <summary>
-    ///     Removes an authorship.
+    ///     Removes an application service.
     /// </summary>
-    /// <param name="id">An authorship's ID.</param>
+    /// <param name="id">An application service's ID.</param>
     /// <returns>An empty body.</returns>
     /// <response code="204">Returns an empty body.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="403">When the user does not have sufficient permission.</response>
-    /// <response code="404">When the specified authorship is not found.</response>
+    /// <response code="404">When the specified application service is not found.</response>
     /// <response code="500">When an internal server error has occurred.</response>
     [HttpDelete("{id:guid}")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
@@ -194,16 +254,14 @@ public class AuthorshipController(
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> RemoveAuthorship([FromRoute] Guid id)
+    public async Task<IActionResult> RemoveApplicationService([FromRoute] Guid id)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-
-        if (!await authorshipRepository.AuthorshipExistsAsync(id))
+        if (!await applicationServiceRepository.ApplicationServiceExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-
         if (!resourceService.HasPermission(currentUser, UserRole.Administrator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
@@ -211,9 +269,11 @@ public class AuthorshipController(
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
-        if (!await authorshipRepository.RemoveAuthorshipAsync(id))
+        if (!await applicationServiceRepository.RemoveApplicationServiceAsync(id))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+
+        scriptService.RemoveServiceScript(id);
 
         return NoContent();
     }

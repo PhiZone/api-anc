@@ -111,6 +111,8 @@ builder.Services.AddScoped<IVoteRepository, VoteRepository>();
 builder.Services.AddScoped<IVolunteerVoteRepository, VolunteerVoteRepository>();
 builder.Services.AddScoped<ITagRepository, TagRepository>();
 builder.Services.AddScoped<IApplicationRepository, ApplicationRepository>();
+builder.Services.AddScoped<IApplicationServiceRepository, ApplicationServiceRepository>();
+builder.Services.AddScoped<IApplicationServiceRecordRepository, ApplicationServiceRecordRepository>();
 builder.Services.AddScoped<IAnnouncementRepository, AnnouncementRepository>();
 builder.Services.AddScoped<IAdmissionRepository, AdmissionRepository>();
 builder.Services.AddScoped<IAuthorshipRepository, AuthorshipRepository>();
@@ -152,6 +154,7 @@ builder.Services.AddSingleton<IFeishuService, FeishuService>();
 builder.Services.AddSingleton<IMessengerService, MessengerService>();
 builder.Services.AddSingleton<IMeilisearchService, MeilisearchService>();
 builder.Services.AddSingleton<ILeaderboardService, LeaderboardService>();
+builder.Services.AddSingleton<IScriptService, ScriptService>();
 builder.Services.AddSingleton<IConnectionMultiplexer>(
     ConnectionMultiplexer.Connect(builder.Configuration.GetValue<string>("RedisConnection") ?? "localhost"));
 builder.Services.AddSingleton<IHostedService>(provider => new MailSenderService(
