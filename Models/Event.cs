@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace PhiZoneApi.Models;
 
 public class Event : PublicResource
@@ -11,6 +13,8 @@ public class Event : PublicResource
     public string Illustrator { get; set; } = null!;
 
     public DateTimeOffset DateUnveiled { get; set; }
+
+    [JsonIgnore] public List<User> Administrators { get; set; } = [];
 
     public override string GetDisplay()
     {

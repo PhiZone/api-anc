@@ -152,12 +152,16 @@ public class ApplicationController(
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
+        var avatarUrl = (await fileStorageService.UploadImage<Application>(dto.Name, dto.Avatar, (1, 1)))
+            .Item1;
         var illustrationUrl = (await fileStorageService.UploadImage<Application>(dto.Name, dto.Illustration, (16, 9)))
             .Item1;
+        await fileStorageService.SendUserInput(avatarUrl, "Avatar", Request, currentUser);
         await fileStorageService.SendUserInput(illustrationUrl, "Illustration", Request, currentUser);
         var application = new Application
         {
             Name = dto.Name,
+            Avatar = avatarUrl,
             Illustration = illustrationUrl,
             Illustrator = dto.Illustrator,
             Description = dto.Description,
@@ -246,6 +250,59 @@ public class ApplicationController(
     }
 
     /// <summary>
+    ///     Updates an application's avatar.
+    /// </summary>
+    /// <param name="id">Application's ID.</param>
+    /// <param name="dto">The new avatar.</param>
+    /// <returns>An empty body.</returns>
+    /// <response code="204">Returns an empty body.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
+    /// <response code="404">When the specified application is not found.</response>
+    /// <response code="500">When an internal server error has occurred.</response>
+    [HttpPatch("{id:guid}/avatar")]
+    [Consumes("multipart/form-data")]
+    [Produces("application/json")]
+    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
+    [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> UpdateApplicationAvatar([FromRoute] Guid id, [FromForm] FileDto dto)
+    {
+        if (!await applicationRepository.ApplicationExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+
+        var application = await applicationRepository.GetApplicationAsync(id);
+
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!resourceService.HasPermission(currentUser, UserRole.Administrator))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+        if (dto.File != null)
+        {
+            application.Avatar =
+                (await fileStorageService.UploadImage<Application>(application.Name, dto.File, (16, 9))).Item1;
+            await fileStorageService.SendUserInput(application.Avatar, "Avatar", Request, currentUser);
+            application.DateUpdated = DateTimeOffset.UtcNow;
+        }
+
+        if (!await applicationRepository.UpdateApplicationAsync(application))
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+        return NoContent();
+    }
+
+    /// <summary>
     ///     Updates an application's illustration.
     /// </summary>
     /// <param name="id">Application's ID.</param>
@@ -310,8 +367,8 @@ public class ApplicationController(
     /// <response code="404">When the specified application is not found.</response>
     /// <response code="500">When an internal server error has occurred.</response>
     [HttpDelete("{id:guid}")]
-    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Produces("application/json")]
+    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -392,8 +449,8 @@ public class ApplicationController(
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="404">When the specified application is not found.</response>
     [HttpPost("{id:guid}/likes")]
-    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Produces("application/json")]
+    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -431,8 +488,8 @@ public class ApplicationController(
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="404">When the specified application is not found.</response>
     [HttpDelete("{id:guid}/likes")]
-    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Produces("application/json")]
+    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -509,8 +566,8 @@ public class ApplicationController(
     /// <response code="404">When the specified application is not found.</response>
     /// <response code="500">When an internal server error has occurred.</response>
     [HttpPost("{id:guid}/comments")]
-    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Produces("application/json")]
+    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]

@@ -64,11 +64,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 r => r.HasOne<User>(e => e.Followee).WithMany(e => e.FollowerRelations));
 
         builder.Entity<User>()
-            .HasMany(e => e.TapApplications)
-            .WithMany(e => e.TapUsers)
+            .HasMany(e => e.Applications)
+            .WithMany(e => e.ApplicationUsers)
             .UsingEntity<ApplicationUser>(
-                l => l.HasOne<Application>(e => e.Application).WithMany(e => e.TapUserRelations),
-                r => r.HasOne<User>(e => e.User).WithMany(e => e.TapUserRelations));
+                l => l.HasOne<Application>(e => e.Application).WithMany(e => e.ApplicationUserRelations),
+                r => r.HasOne<User>(e => e.User).WithMany(e => e.ApplicationLinks));
 
         builder.Entity<EventTeam>()
             .HasMany(e => e.Participants)

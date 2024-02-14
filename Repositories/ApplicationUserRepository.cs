@@ -7,28 +7,21 @@ using PhiZoneApi.Utils;
 
 namespace PhiZoneApi.Repositories;
 
-public class TapUserRelationRepository(ApplicationDbContext context) : ITapUserRelationRepository
+public class ApplicationUserRepository(ApplicationDbContext context) : IApplicationUserRepository
 {
     public async Task<ICollection<ApplicationUser>> GetApplicationsAsync(int userId, List<string> order,
-        List<bool> desc,
-        int position,
-        int take, Expression<Func<ApplicationUser, bool>>? predicate = null)
+        List<bool> desc, int position, int take, Expression<Func<ApplicationUser, bool>>? predicate = null)
     {
-        var result = context.ApplicationUsers
-            .Where(relation => relation.UserId == userId)
-            .OrderBy(order, desc);
+        var result = context.ApplicationUsers.Where(relation => relation.UserId == userId).OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
         result = result.Skip(position);
         return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
 
     public async Task<ICollection<ApplicationUser>> GetUsersAsync(Guid applicationId, List<string> order,
-        List<bool> desc,
-        int position,
-        int take, Expression<Func<ApplicationUser, bool>>? predicate = null)
+        List<bool> desc, int position, int take, Expression<Func<ApplicationUser, bool>>? predicate = null)
     {
-        var result = context.ApplicationUsers
-            .Where(relation => relation.ApplicationId == applicationId)
+        var result = context.ApplicationUsers.Where(relation => relation.ApplicationId == applicationId)
             .OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
         result = result.Skip(position);
@@ -36,8 +29,7 @@ public class TapUserRelationRepository(ApplicationDbContext context) : ITapUserR
     }
 
     public async Task<ICollection<ApplicationUser>> GetRelationsAsync(List<string> order, List<bool> desc, int position,
-        int take,
-        Expression<Func<ApplicationUser, bool>>? predicate = null)
+        int take, Expression<Func<ApplicationUser, bool>>? predicate = null)
     {
         var result = context.ApplicationUsers.OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
@@ -49,6 +41,13 @@ public class TapUserRelationRepository(ApplicationDbContext context) : ITapUserR
     {
         return (await context.ApplicationUsers.FirstOrDefaultAsync(relation =>
             relation.ApplicationId == applicationId && relation.UserId == userId))!;
+    }
+
+    public async Task<ApplicationUser> GetRelationAsync(Guid applicationId, string remoteUserId)
+    {
+        return (await context.ApplicationUsers.Include(e => e.User)
+            .FirstOrDefaultAsync(relation =>
+                relation.ApplicationId == applicationId && relation.RemoteUserId == remoteUserId))!;
     }
 
     public async Task<bool> CreateRelationAsync(ApplicationUser applicationUser)
@@ -88,30 +87,30 @@ public class TapUserRelationRepository(ApplicationDbContext context) : ITapUserR
             relation.ApplicationId == applicationId && relation.UserId == userId);
     }
 
+    public async Task<bool> RelationExistsAsync(Guid applicationId, string remoteUserId)
+    {
+        return await context.ApplicationUsers.AnyAsync(relation =>
+            relation.ApplicationId == applicationId && relation.RemoteUserId == remoteUserId);
+    }
+
     public async Task<int> CountApplicationsAsync(int userId, Expression<Func<ApplicationUser, bool>>? predicate = null)
     {
         if (predicate != null)
-            return await context.ApplicationUsers.Where(relation =>
-                    relation.User.Id == userId)
+            return await context.ApplicationUsers.Where(relation => relation.User.Id == userId)
                 .Where(predicate)
                 .CountAsync();
 
-        return await context.ApplicationUsers
-            .Where(relation => relation.User.Id == userId)
-            .CountAsync();
+        return await context.ApplicationUsers.Where(relation => relation.User.Id == userId).CountAsync();
     }
 
     public async Task<int> CountUsersAsync(Guid applicationId,
         Expression<Func<ApplicationUser, bool>>? predicate = null)
     {
         if (predicate != null)
-            return await context.ApplicationUsers.Where(relation =>
-                    relation.Application.Id == applicationId)
+            return await context.ApplicationUsers.Where(relation => relation.Application.Id == applicationId)
                 .Where(predicate)
                 .CountAsync();
 
-        return await context.ApplicationUsers
-            .Where(relation => relation.Application.Id == applicationId)
-            .CountAsync();
+        return await context.ApplicationUsers.Where(relation => relation.Application.Id == applicationId).CountAsync();
     }
 }

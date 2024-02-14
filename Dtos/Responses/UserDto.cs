@@ -35,4 +35,6 @@ public class UserDto
     public DateTimeOffset? DateOfBirth { get; set; }
 
     public DateTimeOffset? DateFollowed { get; set; }
+
+    public List<ApplicationUserDto>? ApplicationLinks { get; set; }
 }

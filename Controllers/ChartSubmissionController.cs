@@ -1119,13 +1119,13 @@ public class ChartSubmissionController(
     ///     Applies a specific chart submission to an application service.
     /// </summary>
     /// <param name="id">A chart submission's ID.</param>
-    /// <returns>A response from the application service.</returns>
+    /// <returns>A service response.</returns>
     /// <response code="200">Returns a service response.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="403">When the user does not have sufficient permission.</response>
     /// <response code="404">When the specified chart submission is not found.</response>
-    [HttpPost("{id:guid}/useService")]
+    [HttpPost("{id:guid}/useService/{serviceId:guid}")]
     [Consumes("application/json")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<ServiceResponseDto>))]
@@ -1133,7 +1133,7 @@ public class ChartSubmissionController(
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> ApplyChartSubmissionToService([FromRoute] Guid id,
+    public async Task<IActionResult> ApplyChartSubmissionToService([FromRoute] Guid id, [FromRoute] Guid serviceId,
         [FromBody] ApplicationServiceUsageDto dto)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
@@ -1148,12 +1148,12 @@ public class ChartSubmissionController(
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        if (!await applicationServiceRepository.ApplicationServiceExistsAsync(dto.ApplicationServiceId))
+        if (!await applicationServiceRepository.ApplicationServiceExistsAsync(serviceId))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        var service = await applicationServiceRepository.GetApplicationServiceAsync(dto.ApplicationServiceId);
+        var service = await applicationServiceRepository.GetApplicationServiceAsync(serviceId);
         if (service.TargetType != ServiceTargetType.ChartSubmission)
             return BadRequest(new ResponseDto<object>
             {
@@ -1161,7 +1161,7 @@ public class ChartSubmissionController(
             });
         var chartSubmission = await chartSubmissionRepository.GetChartSubmissionAsync(id);
         var result =
-            await scriptService.RunAsync(dto.ApplicationServiceId, dto.Parameters, chartSubmission, currentUser);
+            await scriptService.RunAsync(serviceId, dto.Parameters, chartSubmission, currentUser);
 
         return Ok(
             new ResponseDto<ServiceResponseDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = result });

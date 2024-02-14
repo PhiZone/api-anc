@@ -10,7 +10,9 @@ public class ApplicationUser
 
     public Application Application { get; set; } = null!;
 
-    public string? UnionId { get; set; }
+    public string? TapUnionId { get; set; }
+
+    public string? RemoteUserId { get; set; }
 
     public string? AccessToken { get; set; }
 
@@ -21,4 +23,6 @@ public class ApplicationUser
     public DateTimeOffset? DateRefreshTokenExpires { get; set; }
 
     public DateTimeOffset DateCreated { get; set; }
+
+    public DateTimeOffset DateUpdated { get; set; }
 }

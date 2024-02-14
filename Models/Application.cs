@@ -7,6 +7,8 @@ public class Application : LikeableResource
 {
     public string Name { get; set; } = null!;
 
+    public string Avatar { get; set; } = null!;
+
     public string Illustration { get; set; } = null!;
 
     public string Illustrator { get; set; } = null!;
@@ -21,17 +23,13 @@ public class Application : LikeableResource
 
     public string? TapClientId { get; set; }
 
-    public string? AuthorizationPage { get; set; }
-
-    public string? TokenEndpoint { get; set; }
-
     public string? Secret { get; set; }
 
     public DateTimeOffset DateUpdated { get; set; }
 
-    [JsonIgnore] public List<User> TapUsers { get; } = [];
+    [JsonIgnore] public List<User> ApplicationUsers { get; } = [];
 
-    [JsonIgnore] public List<ApplicationUser> TapUserRelations { get; } = [];
+    [JsonIgnore] public List<ApplicationUser> ApplicationUserRelations { get; } = [];
 
     public override string GetDisplay()
     {

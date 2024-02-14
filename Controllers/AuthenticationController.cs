@@ -2,12 +2,14 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using OpenIddict.Abstractions;
 using OpenIddict.Server.AspNetCore;
+using OpenIddict.Validation.AspNetCore;
 using PhiZoneApi.Constants;
 using PhiZoneApi.Dtos.Deliverers;
 using PhiZoneApi.Dtos.Requests;
@@ -15,6 +17,7 @@ using PhiZoneApi.Dtos.Responses;
 using PhiZoneApi.Enums;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
+using PhiZoneApi.Services;
 using PhiZoneApi.Utils;
 using StackExchange.Redis;
 using static OpenIddict.Abstractions.OpenIddictConstants;
@@ -36,6 +39,7 @@ public class AuthenticationController(
     IUserRepository userRepository,
     IApplicationRepository applicationRepository,
     IDtoMapper dtoMapper,
+    AuthProviderFactory factory,
     ILogger<AuthenticationController> logger) : Controller
 {
     /// <summary>
@@ -62,7 +66,7 @@ public class AuthenticationController(
     /// <response code="404">
     ///     When
     ///     1. using Direct mode and the user has input an email address that does not match any existing user;
-    ///     2. using TapTap mode and the union ID does not match any existing user.
+    ///     2. using any other mode and the union ID / remote user ID does not match any existing user.
     /// </response>
     [HttpPost("token")]
     [IgnoreAntiforgeryToken]
@@ -73,53 +77,46 @@ public class AuthenticationController(
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(OpenIddictErrorDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(OpenIddictErrorDto))]
     public async Task<IActionResult> Exchange([FromForm] OpenIddictTokenRequestDto dto,
-        [FromQuery] Guid? tapApplicationId = null)
+        [FromQuery] string? provider = null, [FromQuery] Guid? tapApplicationId = null)
     {
         var request = HttpContext.GetOpenIddictServerRequest()!;
 
-        if (tapApplicationId != null)
+        if (provider != null)
         {
-            if (!await applicationRepository.ApplicationExistsAsync(tapApplicationId.Value))
-                return NotFound(new ResponseDto<object>
+            if (!Enum.TryParse(typeof(AuthProvider), provider, true, out var providerEnum))
+                return Forbid(new AuthenticationProperties(new Dictionary<string, string>
                 {
-                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ApplicationNotFound
-                });
+                    [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidClient,
+                    [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
+                        "The specified authentication provider does not exist."
+                }!), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
 
-            if ((await applicationRepository.GetApplicationAsync(tapApplicationId.Value)).TapClientId == null)
-                return BadRequest(new ResponseDto<object>
+            var authProvider = factory.GetAuthProvider((providerEnum as AuthProvider?)!.Value);
+            if (authProvider == null)
+                return Forbid(new AuthenticationProperties(new Dictionary<string, string>
                 {
-                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
-                });
+                    [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidClient,
+                    [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
+                        "The specified authentication provider does not exist."
+                }!), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
 
-            var response = await tapTapService.Login(new TapTapRequestDto
-            {
-                MacKey = dto.username!, AccessToken = dto.password!, ApplicationId = tapApplicationId.Value
-            });
-
-            if (response == null)
-                return BadRequest(new ResponseDto<object>
-                {
-                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidData
-                });
-
-            if (!response.IsSuccessStatusCode)
+            var result = await authProvider.RequestTokenAsync(dto.username!, dto.password!);
+            if (result == null)
                 return Forbid(new AuthenticationProperties(new Dictionary<string, string>
                 {
                     [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidRequest,
                     [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
-                        "Unable to log into TapTap with provided credentials."
-                }!));
+                        "Unable to log into the specified provider with provided credentials."
+                }!), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
 
-            var responseDto =
-                JsonConvert.DeserializeObject<TapTapDelivererDto>(await response.Content.ReadAsStringAsync())!;
-            var user = await userRepository.GetUserByTapUnionIdAsync(tapApplicationId.Value, responseDto.Data.Unionid);
+            var user = await authProvider.GetIdentityAsync(result.Value.Item1);
             if (user == null)
-                return NotFound(new AuthenticationProperties(new Dictionary<string, string>
+                return Forbid(new AuthenticationProperties(new Dictionary<string, string>
                 {
                     [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidToken,
                     [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
                         "Unable to find a user with provided credentials."
-                }!));
+                }!), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
 
             var actionResult = await CheckUserLockoutState(user);
             if (actionResult != null) return actionResult;
@@ -138,7 +135,85 @@ public class AuthenticationController(
 
             user.DateLastLoggedIn = DateTimeOffset.UtcNow;
             user.AccessFailedCount = 0;
-            await userManager.UpdateAsync(user);
+            await userRepository.SaveAsync();
+
+            logger.LogInformation(LogEvents.UserInfo, "[{Now}] New login ({Provider}): #{Id} {UserName}",
+                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), providerEnum.ToString(), user.Id, user.UserName);
+
+            return SignIn(claimsPrincipal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+        }
+
+        if (tapApplicationId != null)
+        {
+            if (!await applicationRepository.ApplicationExistsAsync(tapApplicationId.Value))
+                return Forbid(new AuthenticationProperties(new Dictionary<string, string>
+                {
+                    [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidClient,
+                    [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
+                        "The specified application does not exist."
+                }!), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+
+            if ((await applicationRepository.GetApplicationAsync(tapApplicationId.Value)).TapClientId == null)
+                return Forbid(new AuthenticationProperties(new Dictionary<string, string>
+                {
+                    [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidClient,
+                    [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
+                        "The specified application does not have a client ID for TapTap."
+                }!), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+
+            var response = await tapTapService.Login(new TapTapRequestDto
+            {
+                MacKey = dto.username!, AccessToken = dto.password!, ApplicationId = tapApplicationId.Value
+            });
+
+            if (response == null)
+                return Forbid(new AuthenticationProperties(new Dictionary<string, string>
+                {
+                    [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidRequest,
+                    [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
+                        "Insufficient data to contact TapTap."
+                }!), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+
+            if (!response.IsSuccessStatusCode)
+                return Forbid(new AuthenticationProperties(new Dictionary<string, string>
+                {
+                    [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.AccessDenied,
+                    [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
+                        "Unable to log into TapTap with provided credentials."
+                }!), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+
+            var responseDto =
+                JsonConvert.DeserializeObject<TapTapDelivererDto>(await response.Content.ReadAsStringAsync())!;
+            var user = await userRepository.GetUserByTapUnionIdAsync(tapApplicationId.Value, responseDto.Data.Unionid);
+            if (user == null)
+                return Forbid(new AuthenticationProperties(new Dictionary<string, string>
+                {
+                    [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidToken,
+                    [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
+                        "Unable to find a user with provided credentials."
+                }!), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+
+            var actionResult = await CheckUserLockoutState(user);
+            if (actionResult != null) return actionResult;
+
+            var identity = new ClaimsIdentity(TokenValidationParameters.DefaultAuthenticationType, Claims.Name,
+                Claims.Role);
+
+            identity.AddClaim(Claims.Subject, user.Id.ToString(), Destinations.AccessToken);
+            identity.AddClaim(Claims.Username, user.UserName!, Destinations.AccessToken);
+
+            foreach (var role in await userManager.GetRolesAsync(user))
+                identity.AddClaim(Claims.Role, role, Destinations.AccessToken);
+
+            var claimsPrincipal = new ClaimsPrincipal(identity);
+            claimsPrincipal.SetScopes(Scopes.Roles, Scopes.OfflineAccess, Scopes.Email, Scopes.Profile);
+
+            user.DateLastLoggedIn = DateTimeOffset.UtcNow;
+            user.AccessFailedCount = 0;
+            await userRepository.SaveAsync();
+
+            logger.LogInformation(LogEvents.UserInfo, "[{Now}] New login (TapTap): #{Id} {UserName}",
+                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), user.Id, user.UserName);
 
             return SignIn(claimsPrincipal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
         }
@@ -147,12 +222,12 @@ public class AuthenticationController(
         {
             var user = await userManager.FindByEmailAsync(request.Username!);
             if (user == null)
-                return NotFound(new AuthenticationProperties(new Dictionary<string, string>
+                return Forbid(new AuthenticationProperties(new Dictionary<string, string>
                 {
                     [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidToken,
                     [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
                         "Unable to find a user with provided credentials."
-                }!));
+                }!), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
             if (!resourceService.HasPermission(user, UserRole.Member))
                 return Forbid(
                     new AuthenticationProperties(new Dictionary<string, string>
@@ -281,6 +356,43 @@ public class AuthenticationController(
     public IActionResult Revoke([FromForm] OpenIddictRevocationRequestDto dto)
     {
         return Ok();
+    }
+
+    /// <summary>
+    ///     Requests identity from an authentication provider.
+    /// </summary>
+    /// <returns>A service response.</returns>
+    /// <response code="200">Returns a service response.</response>
+    /// <response code="404">When the specified authentication provider is not found.</response>
+    [HttpPost("provider/{provider}")]
+    [Consumes("application/json")]
+    [Produces("application/json")]
+    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme,
+        Policy = "AllowAnonymous")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<ServiceResponseDto>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> UseAuthProvider([FromRoute] string provider, [FromBody] ProviderRequestDto dto)
+    {
+        var currentUser = await userManager.FindByIdAsync(User.GetClaim(Claims.Subject)!);
+        if (!Enum.TryParse(typeof(AuthProvider), provider, true, out var providerEnum))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+
+        var authProvider = factory.GetAuthProvider((providerEnum as AuthProvider?)!.Value);
+        if (authProvider == null)
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+
+        return Ok(new ResponseDto<ServiceResponseDto>
+        {
+            Status = ResponseStatus.Ok,
+            Code = ResponseCodes.Ok,
+            Data = await authProvider.RequestIdentityAsync(dto.State, dto.RedirectUri, currentUser)
+        });
     }
 
     /// <summary>

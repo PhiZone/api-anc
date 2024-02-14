@@ -14,7 +14,7 @@ public class UserInputValidator : ValidationAttribute
     {
         var resourceService = context.GetRequiredService<IResourceService>();
 
-        if (value == null) return ValidationResult.Success;
+        if (value == null || ((string)value).Trim() == string.Empty) return ValidationResult.Success;
 
         // ReSharper disable once InvertIf
         if (((string)value).Contains('<') || ((string)value).Contains('>'))

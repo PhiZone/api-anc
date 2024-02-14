@@ -6,6 +6,8 @@ public class ApplicationDto
 {
     public Guid Id { get; set; }
 
+    public string Avatar { get; set; } = null!;
+
     public string Name { get; set; } = null!;
 
     public string Illustration { get; set; } = null!;

@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using PhiZoneApi.Enums;
 
 namespace PhiZoneApi.Models;
@@ -37,6 +38,8 @@ public class EventDivision : PublicResource
     public DateTimeOffset DateStarted { get; set; }
 
     public DateTimeOffset DateEnded { get; set; }
+
+    [JsonIgnore] public List<User> Administrators { get; set; } = [];
 
     public override string GetDisplay()
     {

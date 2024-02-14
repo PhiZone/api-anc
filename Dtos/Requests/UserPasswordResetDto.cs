@@ -10,7 +10,7 @@ public class UserPasswordResetDto
     public string Code { get; set; } = string.Empty;
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
-    [RegularExpression(@"^(?=.*[^a-zA-Z0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9]).{6,18}$",
+    [RegularExpression(@"^.{6,24}$",
         ErrorMessage = ResponseCodes.InvalidPassword)]
     public string Password { get; set; } = string.Empty;
 }

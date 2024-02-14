@@ -16,7 +16,7 @@ public class ScriptService(IServiceProvider serviceProvider) : IScriptService
     private readonly Dictionary<Guid, Script> _eventTaskScripts = new();
     private readonly Dictionary<Guid, Script<ServiceResponseDto>> _serviceScripts = new();
 
-    public async Task Initialize(ApplicationDbContext context, CancellationToken cancellationToken)
+    public async Task InitializeAsync(ApplicationDbContext context, CancellationToken cancellationToken)
     {
         foreach (var service in await context.ApplicationServices.ToListAsync(cancellationToken))
         {

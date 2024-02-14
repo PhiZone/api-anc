@@ -14,6 +14,10 @@ public class ApplicationCreationDto
 
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
+    public IFormFile Avatar { get; set; } = null!;
+
+
+    [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     public IFormFile Illustration { get; set; } = null!;
 
 
