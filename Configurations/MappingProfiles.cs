@@ -44,6 +44,7 @@ public class MappingProfiles : Profile
         CreateMap<ApplicationService, ApplicationServiceDto>();
         CreateMap<ApplicationService, ApplicationServiceRequestDto>();
         CreateMap<ApplicationServiceRecord, ApplicationServiceRecordDto>();
+        CreateMap<ApplicationUser, ApplicationUserDto>();
         CreateMap<Announcement, AnnouncementDto>();
         CreateMap<Announcement, AnnouncementRequestDto>();
         CreateMap<PlayConfiguration, PlayConfigurationResponseDto>();

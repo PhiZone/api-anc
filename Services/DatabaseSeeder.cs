@@ -20,6 +20,7 @@ public class DatabaseSeeder(IServiceProvider serviceProvider) : IHostedService
         await PopulateInternalApps(scope, cancellationToken);
         await PopulateLeaderboards(scope, cancellationToken);
         await PopulateScripts(scope, cancellationToken);
+        await PopulateAuthProviders(scope);
     }
 
     public Task StopAsync(CancellationToken cancellationToken)
@@ -72,15 +73,21 @@ public class DatabaseSeeder(IServiceProvider serviceProvider) : IHostedService
     private static async Task PopulateLeaderboards(IServiceScope scope, CancellationToken cancellationToken)
     {
         var leaderboardService = scope.ServiceProvider.GetRequiredService<ILeaderboardService>();
-        await leaderboardService.Initialize(scope.ServiceProvider.GetRequiredService<ApplicationDbContext>(),
+        await leaderboardService.InitializeAsync(scope.ServiceProvider.GetRequiredService<ApplicationDbContext>(),
             cancellationToken);
     }
 
     private static async Task PopulateScripts(IServiceScope scope, CancellationToken cancellationToken)
     {
         var scriptService = scope.ServiceProvider.GetRequiredService<IScriptService>();
-        await scriptService.Initialize(scope.ServiceProvider.GetRequiredService<ApplicationDbContext>(),
+        await scriptService.InitializeAsync(scope.ServiceProvider.GetRequiredService<ApplicationDbContext>(),
             cancellationToken);
+    }
+
+    private static async Task PopulateAuthProviders(IServiceScope scope)
+    {
+        var authProviderFactory = scope.ServiceProvider.GetRequiredService<AuthProviderFactory>();
+        await authProviderFactory.InitializeAsync();
     }
 
     private static async Task PopulateRegions(IServiceScope scope, CancellationToken cancellationToken)

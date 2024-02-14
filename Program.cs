@@ -126,7 +126,7 @@ builder.Services.AddScoped<IResourceRecordRepository, ResourceRecordRepository>(
 builder.Services.AddScoped<IPetQuestionRepository, PetQuestionRepository>();
 builder.Services.AddScoped<IPetChoiceRepository, PetChoiceRepository>();
 builder.Services.AddScoped<IPetAnswerRepository, PetAnswerRepository>();
-builder.Services.AddScoped<ITapUserRelationRepository, TapUserRelationRepository>();
+builder.Services.AddScoped<IApplicationUserRepository, ApplicationUserRepository>();
 builder.Services.AddScoped<IEventRepository, EventRepository>();
 builder.Services.AddScoped<IEventDivisionRepository, EventDivisionRepository>();
 builder.Services.AddScoped<IEventTaskRepository, EventTaskRepository>();
@@ -155,6 +155,8 @@ builder.Services.AddSingleton<IMessengerService, MessengerService>();
 builder.Services.AddSingleton<IMeilisearchService, MeilisearchService>();
 builder.Services.AddSingleton<ILeaderboardService, LeaderboardService>();
 builder.Services.AddSingleton<IScriptService, ScriptService>();
+builder.Services.AddSingleton<AuthProviderFactory>();
+builder.Services.AddSingleton<IAuthProvider, GitHubAuthProvider>();
 builder.Services.AddSingleton<IConnectionMultiplexer>(
     ConnectionMultiplexer.Connect(builder.Configuration.GetValue<string>("RedisConnection") ?? "localhost"));
 builder.Services.AddSingleton<IHostedService>(provider => new MailSenderService(
@@ -189,6 +191,7 @@ builder.Services.Configure<MessengerSettings>(builder.Configuration.GetSection("
 builder.Services.Configure<LanguageSettings>(builder.Configuration.GetSection("LanguageSettings"));
 builder.Services.Configure<RabbitMqSettings>(builder.Configuration.GetSection("RabbitMQSettings"));
 builder.Services.Configure<MeilisearchSettings>(builder.Configuration.GetSection("MeilisearchSettings"));
+builder.Services.Configure<List<AuthProvider>>(builder.Configuration.GetSection("AuthProviders"));
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
@@ -209,6 +212,12 @@ builder.Services.Configure<IdentityOptions>(options =>
     options.ClaimsIdentity.RoleClaimType = OpenIddictConstants.Claims.Role;
     options.SignIn.RequireConfirmedEmail = true;
     options.User.AllowedUserNameCharacters = string.Empty;
+    options.Password.RequireDigit = false;
+    options.Password.RequireLowercase = false;
+    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequireUppercase = false;
+    options.Password.RequiredLength = 6;
+    options.Password.RequiredUniqueChars = 0;
 });
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

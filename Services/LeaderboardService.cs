@@ -11,7 +11,7 @@ public class LeaderboardService : ILeaderboardService
     private readonly Dictionary<Guid, Leaderboard<Record>> _chartLeaderboards = new();
     private readonly Dictionary<Guid, Leaderboard<EventTeam>> _eventDivisionLeaderboards = new();
 
-    public async Task Initialize(ApplicationDbContext context, CancellationToken cancellationToken)
+    public async Task InitializeAsync(ApplicationDbContext context, CancellationToken cancellationToken)
     {
         foreach (var chart in await context.Charts.ToListAsync(cancellationToken))
         {

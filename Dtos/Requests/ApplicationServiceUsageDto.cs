@@ -6,8 +6,5 @@ namespace PhiZoneApi.Dtos.Requests;
 public class ApplicationServiceUsageDto
 {
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
-    public Guid ApplicationServiceId { get; set; }
-
-    [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     public Dictionary<string, string> Parameters { get; set; } = null!;
 }

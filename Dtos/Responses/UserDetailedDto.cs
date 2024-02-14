@@ -12,5 +12,5 @@ public class UserDetailedDto : UserDto
 
     public bool TwoFactorEnabled { get; set; }
 
-    public int Notifications { get; set; } = 0;
+    public int Notifications { get; set; }
 }

@@ -45,12 +45,9 @@ public static class ResponseCodes
     public const string PasswordIncorrect = "PasswordIncorrect";
 
     /// <summary>
-    ///     The password should be at least 6 characters long,
-    ///     contain at least one non-alphanumeric character,
-    ///     have at least one lowercase letter, one uppercase letter, one digit,
-    ///     and can have a maximum length of 18 characters.
+    ///     The password should be between 6 and 24 characters in length.
     /// </summary>
-    /// <code>^(?=.*[^a-zA-Z0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9]).{6,18}$</code>
+    /// <code>^.{6,24}$</code>
     public const string InvalidPassword = "InvalidPassword";
 
     /// <summary>

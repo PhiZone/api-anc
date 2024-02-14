@@ -62,8 +62,6 @@ public class RecordRepository(ApplicationDbContext context, IMeilisearchService 
         chart.PlayCount = await context.Records.CountAsync(e => e.ChartId == record.Chart.Id) + 1;
         chart.Song.PlayCount = await context.Records.CountAsync(e => e.Chart.SongId == record.Chart.SongId) + 1;
         await context.Records.AddAsync(record);
-        context.Charts.Update(record.Chart);
-        context.Songs.Update(record.Chart.Song);
         await meilisearchService.UpdateAsync(record.Chart);
         await meilisearchService.UpdateAsync(record.Chart.Song);
         return await SaveAsync();
@@ -92,8 +90,6 @@ public class RecordRepository(ApplicationDbContext context, IMeilisearchService 
         record.Chart.PlayCount = await context.Records.CountAsync(e => e.ChartId == record.Chart.Id) - 1;
         record.Chart.Song.PlayCount = await context.Records.CountAsync(e => e.Chart.SongId == record.Chart.SongId) - 1;
         context.Records.Remove(record);
-        context.Charts.Update(record.Chart);
-        context.Songs.Update(record.Chart.Song);
         await meilisearchService.UpdateAsync(record.Chart);
         await meilisearchService.UpdateAsync(record.Chart.Song);
         return await SaveAsync();

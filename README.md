@@ -20,82 +20,70 @@ Based on ASP.NET Core.
     - [x] Token Disposal
     - [x] Email Confirmation
     - [x] Password Reset
-    - [ ] Two-factor Authentication
-    - [ ] Phone Number Confirmation
+    - [ ] Login through Third-party Platforms
+    - [ ] ~~Two-factor Authentication~~ (Not planned)
+    - [ ] ~~Phone Number Confirmation~~ (Not planned)
 4. TapTap
     - [x] Login & Account Binding
 
 ## Configuration
 
-The files `appsettings.Development.json` and `appsettings.Production.json` are ignored by Git using `.gitignore`. You
-should create them yourself.
+A template for both `appsettings.Development.json` and `appsettings.Production.json` is as follows.
 
 ```json
 {
-  "Secret": "YourSecretHere",
-  "ConnectionStrings": {
-    "DefaultConnection": "Host=localhost:5432;Username=yourusername;Password=yourpassword;Database=yourdatabase"
-  },
-  "MailSettings": {
-    "Server": "smtp.exmail.qq.com",
-    "Port": 465,
-    "SenderName": "PhiZone",
-    "SenderAddress": "example@example.com",
-    "UserName": "example@example.com",
-    "Password": "yourpassword"
-  },
-  "TapTapSettings": {
-    "ClientId": "yourid",
-    "ClientToken": "yourtoken", 
-    "TapApiUrl": "https://openapi.taptap.com",
-    "FileStorageUrl": "https://example.com"
-  },
-  "RabbitMQSettings": {
-    "HostName": "localhost",
-    "Port": 5672,
-    "UserName": "yourusername",
-    "Password": "yourpassword"
+   "Secret": "YourSecretHere",
+   "ConnectionStrings": {
+      "DefaultConnection": "Host=localhost:5432;Username=yourusername;Password=yourpassword;Database=yourdatabase"
+   },
+   "MailSettings": {
+      "Server": "smtp.example.com",
+      "Port": 465,
+      "SenderName": "PhiZone",
+      "SenderAddress": "example@example.com",
+      "UserName": "example@example.com",
+      "Password": "yourpassword"
+   },
+   "TapTapSettings": {
+      "ClientId": "yourid",
+      "ClientToken": "yourtoken",
+      "TapApiUrl": "https://openapi.taptap.com",
+      "FileStorageUrl": "https://oss.example.com"
+   },
+   "RabbitMQSettings": {
+      "HostName": "localhost",
+      "Port": 5672,
+      "UserName": "yourusername",
+      "Password": "yourpassword"
    },
    "FeishuSettings": {
       "ApiUrl": "https://open.feishu.cn",
       "AppId": "yourappid",
       "AppSecret": "yourappsecret",
-      "Cards": [
-         "songcard",
-         "chartcard",
-         "petanswercard"
-      ],
-      "Chats": [
-         "contentreviewal",
-         "qualificationreviewal",
-         "recruitmentreviewal"
-      ]
+      "Cards": ["songcard", "chartcard", "petanswercard"],
+      "Chats": ["contentreviewal", "qualificationreviewal", "recruitmentreviewal"]
    },
-  "RedisConnection": "localhost:6379,password:yourpassword"
+   "MessengerSettings": {
+      "ApiUrl": "https://msgapi.example.com",
+      "ClientId": "yourid",
+      "ClientSecret": "yoursecret"
+   },
+   "AuthProviders": [
+      {
+         "Name": "GitHub",
+         "ApplicationId": "yourguid",
+         "ClientId": "yourid",
+         "ClientSecret": "yoursecret",
+         "AvatarUrl": "https://res.example.com/github-mark.png",
+         "IllustrationUrl": "https://res.example.com/github.png"
+      }
+   ],
+   "RedisConnection": "localhost:6379,password:yourpassword"
 }
+
 ```
 
 ## Data Processing
 
-For details on processing an image in the File Storage,
+For details on processing an image on the OSS,
 see [Qiniu Developer Docs](https://developer.qiniu.com/dora/3683/img-directions-for-use).
-
-## Political Affiliation
-
-As a website developed and maintained by us Chinese, PhiZone obeys the laws of the PRC, including
-the [Anti-Secession Law](https://www.gov.cn/gongbao/content/2005/content_63187.htm), which states:
-
-> 世界上只有一个中国，大陆和台湾同属一个中国，中国的主权和领土完整不容分割。维护国家主权和领土完整是包括台湾同胞在内的全中国人民的共同义务。
->
-> There is only one China in the world. Both the mainland and Taiwan belong to one China. China's sovereignty and
-> territorial integrity brook no division. Safeguarding China's sovereignty and territorial integrity is the common
-> obligation of all Chinese people, the Taiwan compatriots included.
-
-Regions are introduced to PhiZone for statistical purposes. To obey the law and fulfill the obligation, we've
-appended `Prov. China` to the name of Taiwan so as to emphasize that Taiwan is part of China.
-
-Flags are displayed normally except, in all languages, for Taiwan, which instead uses `TW` embedded in a badge
-as an icon in place of a flag.
-
-For your information, both Hong Kong and Macau are special administrative regions of China, thus having the
-suffix `SAR China` appended to their names.

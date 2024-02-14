@@ -37,7 +37,6 @@ public class ReplyRepository(ApplicationDbContext context) : IReplyRepository
     {
         var comment = await context.Comments.FirstAsync(e => e.Id == reply.CommentId);
         comment.ReplyCount = await context.Replies.CountAsync(e => e.CommentId == reply.CommentId) + 1;
-        context.Comments.Update(comment);
         await context.Replies.AddAsync(reply);
         return await SaveAsync();
     }
@@ -52,7 +51,6 @@ public class ReplyRepository(ApplicationDbContext context) : IReplyRepository
     {
         var reply = await context.Replies.Include(e => e.Comment).FirstAsync(reply => reply.Id == id);
         reply.Comment.ReplyCount = await context.Replies.CountAsync(e => e.CommentId == reply.CommentId) - 1;
-        context.Comments.Update(reply.Comment);
         context.Replies.Remove(reply);
         return await SaveAsync();
     }

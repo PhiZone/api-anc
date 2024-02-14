@@ -46,9 +46,9 @@ public class User : IdentityUser<int>
 
     [JsonIgnore] public List<UserRelation> FolloweeRelations { get; } = [];
 
-    [JsonIgnore] public List<Application> TapApplications { get; } = [];
+    [JsonIgnore] public List<Application> Applications { get; } = [];
 
-    [JsonIgnore] public List<ApplicationUser> TapUserRelations { get; } = [];
+    [JsonIgnore] public List<ApplicationUser> ApplicationLinks { get; } = [];
 
     [JsonIgnore] public List<EventTeam> EventTeams { get; } = [];
 

@@ -7,7 +7,7 @@ namespace PhiZoneApi.Interfaces;
 
 public interface IScriptService
 {
-    Task Initialize(ApplicationDbContext context, CancellationToken cancellationToken);
+    Task InitializeAsync(ApplicationDbContext context, CancellationToken cancellationToken);
 
     Task<ServiceResponseDto> RunAsync<T>(Guid id, Dictionary<string, string> parameters, T target, User currentUser);
 

@@ -12,6 +12,7 @@ using PhiZoneApi.Enums;
 using PhiZoneApi.Filters;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
+using PhiZoneApi.Services;
 
 // ReSharper disable RouteTemplates.ActionRoutePrefixCanBeExtractedToControllerRoute
 
@@ -29,7 +30,8 @@ public class UserInfoController(
     ITapTapService tapTapService,
     IApplicationRepository applicationRepository,
     INotificationRepository notificationRepository,
-    ITapUserRelationRepository tapUserRelationRepository) : Controller
+    AuthProviderFactory factory,
+    IApplicationUserRepository applicationUserRepository) : Controller
 {
     /// <summary>
     ///     Retrieves user's information.
@@ -67,19 +69,68 @@ public class UserInfoController(
     }
 
     /// <summary>
-    ///     Binds a user to a TapTap account.
+    ///     Binds a user to an account of the specified authentication provider.
     /// </summary>
-    /// <param name="id">A user's ID.</param>
     /// <returns>An empty body.</returns>
     /// <response code="204">Returns an empty body.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="403">When the user does not have sufficient permission.</response>
-    /// <response code="404">When the specified user is not found.</response>
+    /// <response code="404">When the specified application is not found.</response>
+    [HttpPost("bindings/{provider}")]
+    [Consumes("application/json")]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> BindAuthProvider([FromRoute] string provider, [FromQuery] string code,
+        [FromQuery] string state)
+    {
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+
+        if (!resourceService.HasPermission(currentUser, UserRole.Member))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+
+        if (!Enum.TryParse(typeof(AuthProvider), provider, true, out var providerEnum))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+        var authProvider = factory.GetAuthProvider((providerEnum as AuthProvider?)!.Value);
+        if (authProvider == null)
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+
+        await authProvider.RequestTokenAsync(code, state, currentUser);
+        if (!await authProvider.BindIdentityAsync(currentUser))
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidData
+            });
+
+        return NoContent();
+    }
+
+    /// <summary>
+    ///     Binds a user to a TapTap account.
+    /// </summary>
+    /// <returns>An empty body.</returns>
+    /// <response code="204">Returns an empty body.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
+    /// <response code="404">When the specified application is not found.</response>
     [HttpPost("bindings/tapTap")]
     [Consumes("application/json")]
     [Produces("application/json")]
-    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
@@ -108,7 +159,7 @@ public class UserInfoController(
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
             });
 
-        if (await tapUserRelationRepository.RelationExistsAsync(dto.ApplicationId, currentUser.Id))
+        if (await applicationUserRepository.RelationExistsAsync(dto.ApplicationId, currentUser.Id))
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
@@ -142,10 +193,10 @@ public class UserInfoController(
 
         var tapUserRelation = new ApplicationUser
         {
-            ApplicationId = dto.ApplicationId, UserId = currentUser.Id, UnionId = unionId
+            ApplicationId = dto.ApplicationId, UserId = currentUser.Id, TapUnionId = unionId
         };
 
-        if (!await tapUserRelationRepository.CreateRelationAsync(tapUserRelation))
+        if (!await applicationUserRepository.CreateRelationAsync(tapUserRelation))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
@@ -153,17 +204,66 @@ public class UserInfoController(
     }
 
     /// <summary>
-    ///     Unbinds a user from a TapTap account.
+    ///     Unbinds a user from an account of the specified authentication provider.
     /// </summary>
-    /// <param name="id">A user's ID.</param>
     /// <returns>An empty body.</returns>
     /// <response code="204">Returns an empty body.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="403">When the user does not have sufficient permission.</response>
-    /// <response code="404">When the specified user is not found.</response>
+    /// <response code="404">When the specified application is not found.</response>
+    [HttpDelete("bindings/{provider}")]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> UnbindAuthProvider([FromRoute] string provider)
+    {
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+
+        if (!resourceService.HasPermission(currentUser, UserRole.Member))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+
+        if (!Enum.TryParse(typeof(AuthProvider), provider, true, out var providerEnum))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+        var authProvider = factory.GetAuthProvider((providerEnum as AuthProvider?)!.Value);
+        if (authProvider == null)
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+
+        if (!await applicationUserRepository.RelationExistsAsync(authProvider.GetApplicationId(), currentUser.Id))
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
+            });
+
+        if (!await applicationUserRepository.RemoveRelationAsync(authProvider.GetApplicationId(), currentUser.Id))
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+        return NoContent();
+    }
+
+    /// <summary>
+    ///     Unbinds a user from a TapTap account.
+    /// </summary>
+    /// <returns>An empty body.</returns>
+    /// <response code="204">Returns an empty body.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
+    /// <response code="404">When the specified application is not found.</response>
     [HttpDelete("bindings/tapTap")]
-    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
@@ -187,13 +287,13 @@ public class UserInfoController(
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ApplicationNotFound
             });
 
-        if (!await tapUserRelationRepository.RelationExistsAsync(applicationId, currentUser.Id))
+        if (!await applicationUserRepository.RelationExistsAsync(applicationId, currentUser.Id))
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
             });
 
-        if (!await tapUserRelationRepository.RemoveRelationAsync(applicationId, currentUser.Id))
+        if (!await applicationUserRepository.RemoveRelationAsync(applicationId, currentUser.Id))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
         return NoContent();
