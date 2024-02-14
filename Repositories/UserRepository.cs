@@ -28,7 +28,7 @@ public class UserRepository(ApplicationDbContext context) : IUserRepository
     public async Task<User?> GetUserByIdAsync(int id, int? currentUserId = null)
     {
         IQueryable<User> result = context.Users.Include(e => e.Region)
-            .Include(e => e.ApplicationLinks)
+            .Include(e => e.ApplicationLinks.Where(link => link.RemoteUserId != null))
             .ThenInclude(e => e.Application);
         if (currentUserId != null)
             result = result.Include(e => e.FollowerRelations.Where(relation =>
@@ -40,7 +40,7 @@ public class UserRepository(ApplicationDbContext context) : IUserRepository
     public async Task<User?> GetUserByRemoteIdAsync(Guid applicationId, string remoteId, int? currentUserId = null)
     {
         IQueryable<User> result = context.Users.Include(e => e.Region)
-            .Include(e => e.ApplicationLinks)
+            .Include(e => e.ApplicationLinks.Where(link => link.RemoteUserId != null))
             .ThenInclude(e => e.Application);
         if (currentUserId != null)
             result = result.Include(e => e.FollowerRelations.Where(relation =>
@@ -53,7 +53,7 @@ public class UserRepository(ApplicationDbContext context) : IUserRepository
     public async Task<User?> GetUserByTapUnionIdAsync(Guid applicationId, string unionId, int? currentUserId = null)
     {
         IQueryable<User> result = context.Users.Include(e => e.Region)
-            .Include(e => e.ApplicationLinks)
+            .Include(e => e.ApplicationLinks.Where(link => link.RemoteUserId != null))
             .ThenInclude(e => e.Application);
         if (currentUserId != null)
             result = result.Include(e => e.FollowerRelations.Where(relation =>
