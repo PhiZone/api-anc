@@ -54,7 +54,7 @@ public static class ResponseCodes
     ///     The username can only contain numbers, underscores and English / Chinese / Japanese / Korean characters, and must
     ///     be between 4 and 12 characters in length.
     /// </summary>
-    /// <code>^([A-Za-z0-9_]{4,24})|([a-zA-Z0-9_\u4e00-\u9fff\u3041-\u309f\u30a0-\u30ff\uac00-\ud7a3]{3,12})|([\u4e00-\u9fff\u3041-\u309f\u30a0-\u30ff\uac00-\ud7a3]{2,12})$</code>
+    /// <code>^([A-Za-z0-9_]{4,24}|[a-zA-Z0-9_\u4e00-\u9fff\u3041-\u309f\u30a0-\u30ff\uac00-\ud7a3]{3,12}|[\u4e00-\u9fff\u3041-\u309f\u30a0-\u30ff\uac00-\ud7a3]{2,12})$</code>
     public const string InvalidUserName = "InvalidUserName";
 
     /// <summary>
