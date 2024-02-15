@@ -10,6 +10,7 @@
 *.userosscache
 *.sln.docstates
 deploy.sh
+Resources/resources.json
 
 # Mono auto generated files
 mono_crash.*
