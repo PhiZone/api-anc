@@ -35,11 +35,11 @@
     },
     {
       "Key": "song-follower-update",
-      "Content": "{User} has published a new song {Song}!"
+      "Content": "{User} uploaded a new song {Song}!"
     },
     {
       "Key": "chart-follower-update",
-      "Content": "{User} has published a new chart {Chart}!"
+      "Content": "{User} uploaded a new chart {Chart}!"
     },
     {
       "Key": "new-comment",
@@ -59,7 +59,7 @@
     },
     {
       "Key": "chart-collab",
-      "Content": "{User} has invited you to collaborate on the chart {Chart}! {Collaboration}"
+      "Content": "{User} invited you to collaborate on the chart {Chart}! {Collaboration}"
     },
     {
       "Key": "collab-approval",
@@ -111,7 +111,7 @@
     },
     {
       "Key": "mention",
-      "Content": "{User} has mentioned you: {Content}"
+      "Content": "{User} mentioned you: {Content}"
     },
     {
       "Key": "default",

@@ -1,0 +1,121 @@
+﻿{
+  "Emails": [
+    {
+      "Mode": 0,
+      "Subject": "[PhiZone] 请确认你的邮件地址",
+      "Body": "敬爱的 {UserName}：\n\n　　请在注册页面上输入代码 {Code} 来确认你的邮箱地址。该代码在 5 分钟内有效。\n\n　　如果你未预料到接收该封邮件，请忽略。\n\nPhiZone"
+    },
+    {
+      "Mode": 1,
+      "Subject": "[PhiZone] 你的密码将被重置",
+      "Body": "敬爱的 {UserName}：\n\n　　你刚刚申请重置你的密码。请在密码重置页面输入框中输入代码 {Code} 以继续。该代码在 5 分钟内有效。\n\n　　如果你未预料到接收该封邮件，请忽略。\n\nPhiZone"
+    },
+    {
+      "Mode": 2,
+      "Subject": "[PhiZone] 你的账户将被删除",
+      "Body": "敬爱的 {UserName}：\n\n　　你刚刚申请删除你的账户。请在验证页面输入框中输入代码 {Code} 以继续。该代码在 5 分钟内有效。\n\n　　如果你未预料到接收该封邮件，请忽略。\n\nPhiZone"
+    }
+  ],
+  "Messages": [
+    {
+      "Key": "song-submission-approval",
+      "Content": "你提交的曲目 {Song} 已通过！"
+    },
+    {
+      "Key": "song-submission-rejection",
+      "Content": "你提交的曲目 {Song} 被拒绝。原因：{Reason}"
+    },
+    {
+      "Key": "chart-submission-approval",
+      "Content": "你提交的谱面 {Chart} 已通过！"
+    },
+    {
+      "Key": "chart-submission-rejection",
+      "Content": "你提交的谱面 {Chart} 被拒绝。"
+    },
+    {
+      "Key": "song-follower-update",
+      "Content": "{User} 发布了新曲目 {Song}！"
+    },
+    {
+      "Key": "chart-follower-update",
+      "Content": "{User} 发布了新谱面 {Chart}！"
+    },
+    {
+      "Key": "new-comment",
+      "Content": "{User} 在 {Resource} 下发布了评论：{Comment}"
+    },
+    {
+      "Key": "new-reply",
+      "Content": "{User} 回复了你：{Reply}"
+    },
+    {
+      "Key": "new-like",
+      "Content": "{User} 给 {Resource} 点赞了！"
+    },
+    {
+      "Key": "song-collab",
+      "Content": "{User} 邀请你联合发布曲目 {Song}！{Collaboration}"
+    },
+    {
+      "Key": "chart-collab",
+      "Content": "{User} 邀请你联合发布谱面 {Chart}！{Collaboration}"
+    },
+    {
+      "Key": "collab-approval",
+      "Content": "{User} 同意了你的合作邀请！{Collaboration}"
+    },
+    {
+      "Key": "collab-rejection",
+      "Content": "{User} 拒绝了你的合作邀请。{Collaboration}"
+    },
+    {
+      "Key": "chapter-admission",
+      "Content": "{User} 申请将曲目 {Song} 收录于章节 {Chapter}。{Admission}"
+    },
+    {
+      "Key": "collection-admission",
+      "Content": "{User} 申请将谱面 {Chart} 收录于合集 {Collection}。{Admission}"
+    },
+    {
+      "Key": "song-admission",
+      "Content": "{User} 申请将谱面 {Chart} 收录于曲目 {Song}。{Admission}"
+    },
+    {
+      "Key": "song-submission-admission",
+      "Content": "{User} 申请将谱面 {Chart} 收录于曲目稿件 {Song}。{Admission}"
+    },
+    {
+      "Key": "admission-approval",
+      "Content": "{User} 同意了你的收录申请！{Admission}"
+    },
+    {
+      "Key": "admission-rejection",
+      "Content": "{User} 拒绝了你的收录申请。{Admission}"
+    },
+    {
+      "Key": "pet-volunteer",
+      "Content": "恭喜！你以 {Score} 分的成绩通过了权限晋升测试，获得“志愿者”角色。"
+    },
+    {
+      "Key": "pet-qualified",
+      "Content": "恭喜！你以 {Score} 分的成绩通过了权限晋升测试，获得“认证用户”角色。"
+    },
+    {
+      "Key": "pet-failed",
+      "Content": "很抱歉，你在权限晋升测试中获得了 {Score} 分，未达到最低晋升要求。"
+    },
+    {
+      "Key": "more-info",
+      "Content": "点击此处查看详情。"
+    },
+    {
+      "Key": "mention",
+      "Content": "{User} 提到了你：{Content}"
+    },
+    {
+      "Key": "default",
+      "Content": "默认"
+    }
+  ]
+}
