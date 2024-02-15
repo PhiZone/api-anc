@@ -20,7 +20,7 @@ Based on ASP.NET Core.
     - [x] Token Disposal
     - [x] Email Confirmation
     - [x] Password Reset
-    - [ ] Login through Third-party Platforms
+    - [x] Login through Third-party Platforms
     - [ ] ~~Two-factor Authentication~~ (Not planned)
     - [ ] ~~Phone Number Confirmation~~ (Not planned)
 4. TapTap
@@ -28,7 +28,7 @@ Based on ASP.NET Core.
 
 ## Configuration
 
-A template for both `appsettings.Development.json` and `appsettings.Production.json` is as follows.
+A template for both `./appsettings.Development.json` and `./appsettings.Production.json` is as follows.
 
 ```json
 {
@@ -81,6 +81,18 @@ A template for both `appsettings.Development.json` and `appsettings.Production.j
    "RedisConnection": "localhost:6379,password:yourpassword"
 }
 
+```
+
+A template for `./Resources/resources.json` is as follows.
+
+```json
+{
+  "ProhibitedWords": [
+    "word1",
+    "word2",
+    "word3"
+  ]
+}
 ```
 
 ## Data Processing
