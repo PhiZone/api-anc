@@ -32,53 +32,61 @@ A template for both `./appsettings.Development.json` and `./appsettings.Producti
 
 ```json
 {
-   "Secret": "YourSecretHere",
-   "ConnectionStrings": {
-      "DefaultConnection": "Host=localhost:5432;Username=yourusername;Password=yourpassword;Database=yourdatabase"
-   },
-   "MailSettings": {
-      "Server": "smtp.example.com",
-      "Port": 465,
-      "SenderName": "PhiZone",
-      "SenderAddress": "example@example.com",
-      "UserName": "example@example.com",
-      "Password": "yourpassword"
-   },
-   "TapTapSettings": {
+  "Secret": "YourSecretHere",
+  "ConnectionStrings": {
+    "DefaultConnection": "Host=localhost:5432;Username=yourusername;Password=yourpassword;Database=yourdatabase"
+  },
+  "MailSettings": {
+    "Server": "smtp.example.com",
+    "Port": 465,
+    "SenderName": "PhiZone",
+    "SenderAddress": "example@example.com",
+    "UserName": "example@example.com",
+    "Password": "yourpassword"
+  },
+  "TapTapSettings": {
+    "ClientId": "yourid",
+    "ClientToken": "yourtoken",
+    "TapApiUrl": "https://openapi.taptap.com",
+    "FileStorageUrl": "https://oss.example.com"
+  },
+  "RabbitMQSettings": {
+    "HostName": "localhost",
+    "Port": 5672,
+    "UserName": "yourusername",
+    "Password": "yourpassword"
+  },
+  "FeishuSettings": {
+    "ApiUrl": "https://open.feishu.cn",
+    "AppId": "yourappid",
+    "AppSecret": "yourappsecret",
+    "Cards": [
+      "songcard",
+      "chartcard",
+      "petanswercard"
+    ],
+    "Chats": [
+      "contentreviewal",
+      "qualificationreviewal",
+      "recruitmentreviewal"
+    ]
+  },
+  "MessengerSettings": {
+    "ApiUrl": "https://msgapi.example.com",
+    "ClientId": "yourid",
+    "ClientSecret": "yoursecret"
+  },
+  "AuthProviders": [
+    {
+      "Name": "GitHub",
+      "ApplicationId": "yourguid",
       "ClientId": "yourid",
-      "ClientToken": "yourtoken",
-      "TapApiUrl": "https://openapi.taptap.com",
-      "FileStorageUrl": "https://oss.example.com"
-   },
-   "RabbitMQSettings": {
-      "HostName": "localhost",
-      "Port": 5672,
-      "UserName": "yourusername",
-      "Password": "yourpassword"
-   },
-   "FeishuSettings": {
-      "ApiUrl": "https://open.feishu.cn",
-      "AppId": "yourappid",
-      "AppSecret": "yourappsecret",
-      "Cards": ["songcard", "chartcard", "petanswercard"],
-      "Chats": ["contentreviewal", "qualificationreviewal", "recruitmentreviewal"]
-   },
-   "MessengerSettings": {
-      "ApiUrl": "https://msgapi.example.com",
-      "ClientId": "yourid",
-      "ClientSecret": "yoursecret"
-   },
-   "AuthProviders": [
-      {
-         "Name": "GitHub",
-         "ApplicationId": "yourguid",
-         "ClientId": "yourid",
-         "ClientSecret": "yoursecret",
-         "AvatarUrl": "https://res.example.com/github-mark.png",
-         "IllustrationUrl": "https://res.example.com/github.png"
-      }
-   ],
-   "RedisConnection": "localhost:6379,password:yourpassword"
+      "ClientSecret": "yoursecret",
+      "AvatarUrl": "https://res.example.com/github-mark.png",
+      "IllustrationUrl": "https://res.example.com/github.png"
+    }
+  ],
+  "RedisConnection": "localhost:6379,password:yourpassword"
 }
 
 ```

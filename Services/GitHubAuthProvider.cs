@@ -126,29 +126,17 @@ public class GitHubAuthProvider : IAuthProvider
         await using var scope = _serviceProvider.CreateAsyncScope();
         var applicationUserRepository = scope.ServiceProvider.GetRequiredService<IApplicationUserRepository>();
         var userRepository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
-        if (!await applicationUserRepository.RelationExistsAsync(_applicationId, user.Id))
-        {
-            return false;
-        }
+        if (!await applicationUserRepository.RelationExistsAsync(_applicationId, user.Id)) return false;
 
         var applicationUser = await applicationUserRepository.GetRelationAsync(_applicationId, user.Id);
-        if (applicationUser.AccessToken == null)
-        {
-            return false;
-        }
+        if (applicationUser.AccessToken == null) return false;
 
         var response = await RetrieveIdentityAsync(applicationUser.AccessToken);
-        if (!response.IsSuccessStatusCode)
-        {
-            return false;
-        }
+        if (!response.IsSuccessStatusCode) return false;
 
         var content = JsonConvert.DeserializeObject<GitHubUserDto>(await response.Content.ReadAsStringAsync())!;
         var existingUser = await userRepository.GetUserByRemoteIdAsync(_applicationId, content.Login);
-        if (existingUser != null && existingUser.Id != user.Id)
-        {
-            return false;
-        }
+        if (existingUser != null && existingUser.Id != user.Id) return false;
 
         applicationUser.RemoteUserId = content.Login;
         await applicationUserRepository.UpdateRelationAsync(applicationUser);
