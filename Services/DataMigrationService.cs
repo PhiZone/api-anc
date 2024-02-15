@@ -180,7 +180,7 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
                     Avatar = avatar,
                     Language = reader.GetString("language") switch
                     {
-                        "en" => "en",
+                        "en" => "en-US",
                         "zh-Hans" => "zh-CN",
                         "zh-Hant" => "zh-TW",
                         _ => "zh-CN"
