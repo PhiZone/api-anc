@@ -36,14 +36,6 @@ A template for both `./appsettings.Development.json` and `./appsettings.Producti
   "ConnectionStrings": {
     "DefaultConnection": "Host=localhost:5432;Username=yourusername;Password=yourpassword;Database=yourdatabase"
   },
-  "MailSettings": {
-    "Server": "smtp.example.com",
-    "Port": 465,
-    "SenderName": "PhiZone",
-    "SenderAddress": "example@example.com",
-    "UserName": "example@example.com",
-    "Password": "yourpassword"
-  },
   "TapTapSettings": {
     "ClientId": "yourid",
     "ClientToken": "yourtoken",
