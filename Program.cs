@@ -184,7 +184,6 @@ if (args.Length >= 1)
 
 builder.Services.Configure<ApiBehaviorOptions>(options => { options.SuppressModelStateInvalidFilter = true; });
 builder.Services.Configure<DataSettings>(builder.Configuration.GetSection("DataSettings"));
-builder.Services.Configure<MailSettings>(builder.Configuration.GetSection("MailSettings"));
 builder.Services.Configure<TapTapSettings>(builder.Configuration.GetSection("TapTapSettings"));
 builder.Services.Configure<FeishuSettings>(builder.Configuration.GetSection("FeishuSettings"));
 builder.Services.Configure<MessengerSettings>(builder.Configuration.GetSection("MessengerSettings"));
