@@ -7,13 +7,14 @@ using RabbitMQ.Client.Events;
 
 namespace PhiZoneApi.Services;
 
-public class MailSenderService(IMailService mailService, IRabbitMqService rabbitMqService) : BackgroundService
+public class MailSenderService(IMailService mailService, IRabbitMqService rabbitMqService, IHostEnvironment env) : BackgroundService
 {
     private readonly IModel _channel = rabbitMqService.GetConnection().CreateModel();
+    private readonly string _queue = env.IsProduction() ? "email" : "email-dev";
 
     protected override Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _channel.QueueDeclare("email", false, false, false, null);
+        _channel.QueueDeclare(_queue, false, false, false, null);
 
         var consumer = new EventingBasicConsumer(_channel);
         consumer.Received += async (_, args) =>
@@ -25,7 +26,7 @@ public class MailSenderService(IMailService mailService, IRabbitMqService rabbit
             _channel.BasicAck(args.DeliveryTag, false);
         };
 
-        _channel.BasicConsume("email", false, consumer);
+        _channel.BasicConsume(_queue, false, consumer);
 
         return Task.CompletedTask;
     }

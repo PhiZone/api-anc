@@ -13,8 +13,11 @@ public class MailService(
     IRabbitMqService rabbitMqService,
     IConnectionMultiplexer redis,
     IMessengerService messengerService,
+    IHostEnvironment env,
     ILogger<MailService> logger) : IMailService
 {
+    private readonly string _queue = env.IsProduction() ? "email" : "email-dev";
+
     public async Task<MailTaskDto?> GenerateEmailAsync(string email, string userName, string language,
         EmailRequestMode mode)
     {
@@ -50,7 +53,7 @@ public class MailService(
         try
         {
             using var channel = rabbitMqService.GetConnection().CreateModel();
-            channel.BasicPublish("", "email", false, null, body);
+            channel.BasicPublish("", _queue, false, null, body);
         }
         catch (Exception)
         {

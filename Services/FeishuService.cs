@@ -177,7 +177,13 @@ public class FeishuService : IFeishuService
     private async Task UpdateToken()
     {
         var now = DateTimeOffset.UtcNow;
-        if (now - _lastTokenUpdate <= TimeSpan.FromMinutes(89)) return;
+        if (now - _lastTokenUpdate <= TimeSpan.FromHours(1.8))
+        {
+            _logger.LogInformation(LogEvents.FeishuInfo,
+                "[{Now}] Skipping token update since it was last updated at {LastUpdate}",
+                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), _lastTokenUpdate.ToString("yyyy-MM-dd HH:mm:ss"));
+            return;
+        }
 
         var request = new HttpRequestMessage
         {
@@ -189,10 +195,18 @@ public class FeishuService : IFeishuService
             })
         };
         var response = await _client.SendAsync(request);
-        if (!response.IsSuccessStatusCode)
+        if (response.IsSuccessStatusCode)
+        {
+            _logger.LogInformation(LogEvents.FeishuInfo,
+                "[{Now}] Successfully updated tenant token since its last update at {LastUpdate}",
+                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), _lastTokenUpdate.ToString("yyyy-MM-dd HH:mm:ss"));
+        }
+        else
+        {
             _logger.LogError(LogEvents.FeishuFailure,
                 "[{Now}] An error occurred whilst updating tenant token:\n{Error}",
                 DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), await response.Content.ReadAsStringAsync());
+        }
 
         var data = JsonConvert.DeserializeObject<FeishuTokenDelivererDto>(await response.Content.ReadAsStringAsync())!;
         _token = data.TenantAccessToken;
