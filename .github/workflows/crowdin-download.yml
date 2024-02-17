@@ -1,9 +1,7 @@
 name: Crowdin Download
 
 on:
-  workflow_dispatch: 
-  schedule:
-    - cron: '0 2 * * *'
+  workflow_dispatch:
 
 permissions: write-all
 
@@ -13,6 +11,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: 'main'
 
       - name: Synchronize with Crowdin
         uses: crowdin/github-action@v1
