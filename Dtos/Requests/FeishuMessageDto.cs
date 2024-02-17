@@ -10,5 +10,5 @@ public class FeishuMessageDto
 
     [JsonProperty("content")] public string Content { get; set; } = null!;
 
-    // public string Uuid { get; set; } = null!;
+    [JsonProperty("uuid")] public Guid Uuid { get; set; }
 }
