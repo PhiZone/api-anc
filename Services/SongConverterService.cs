@@ -11,14 +11,15 @@ public class SongConverterService(
     ISongService songService,
     ISongRepository songRepository,
     ISongSubmissionRepository songSubmissionRepository,
-    IFeishuService feishuService,
+    IFeishuService feishuService, IHostEnvironment env,
     ILogger<SongConverterService> logger) : BackgroundService
 {
     private readonly IModel _channel = rabbitMqService.GetConnection().CreateModel();
+    private readonly string _queue = env.IsProduction() ? "song" : "song-dev";
 
     protected override Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _channel.QueueDeclare("song", false, false, false, null);
+        _channel.QueueDeclare(_queue, false, false, false, null);
 
         var consumer = new EventingBasicConsumer(_channel);
         consumer.Received += async (_, args) =>
@@ -74,7 +75,7 @@ public class SongConverterService(
             _channel.BasicAck(args.DeliveryTag, false);
         };
 
-        _channel.BasicConsume("song", false, consumer);
+        _channel.BasicConsume(_queue, false, consumer);
 
         return Task.CompletedTask;
     }

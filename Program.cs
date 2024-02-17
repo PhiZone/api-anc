@@ -161,13 +161,14 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(
     ConnectionMultiplexer.Connect(builder.Configuration.GetValue<string>("RedisConnection") ?? "localhost"));
 builder.Services.AddSingleton<IHostedService>(provider => new MailSenderService(
     provider.GetService<IServiceScopeFactory>()!.CreateScope().ServiceProvider.GetService<IMailService>()!,
-    provider.GetService<IRabbitMqService>()!));
+    provider.GetService<IRabbitMqService>()!, provider.GetService<IHostEnvironment>()!));
 builder.Services.AddSingleton<IHostedService>(provider => new SongConverterService(
     provider.GetService<IRabbitMqService>()!,
     provider.GetService<IServiceScopeFactory>()!.CreateScope().ServiceProvider.GetService<ISongService>()!,
     provider.GetService<IServiceScopeFactory>()!.CreateScope().ServiceProvider.GetService<ISongRepository>()!,
     provider.GetService<IServiceScopeFactory>()!.CreateScope().ServiceProvider.GetService<ISongSubmissionRepository>()!,
-    provider.GetService<IFeishuService>()!, provider.GetService<ILogger<SongConverterService>>()!));
+    provider.GetService<IFeishuService>()!, provider.GetService<IHostEnvironment>()!,
+    provider.GetService<ILogger<SongConverterService>>()!));
 builder.Services.AddHostedService<DatabaseSeeder>();
 builder.Services.AddHostedService<DataConsistencyMaintainer>();
 
