@@ -181,7 +181,7 @@ public class RecordController(
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentIsPrivate
             });
-        if (chart.FileChecksum != null && !chart.FileChecksum.Equals(dto.Checksum))
+        if (chart.FileChecksum != null && !chart.FileChecksum.Equals(dto.Checksum, StringComparison.OrdinalIgnoreCase))
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorWithMessage,
