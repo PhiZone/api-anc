@@ -358,6 +358,8 @@ public class ChartController(
         chart.LevelType = dto.LevelType;
         chart.Level = dto.Level;
         chart.Difficulty = dto.Difficulty;
+        chart.Format = dto.Format;
+        chart.FileChecksum = dto.FileChecksum;
         chart.AuthorName = dto.AuthorName;
         chart.Illustrator = dto.Illustrator;
         chart.Description = dto.Description;
