@@ -14,11 +14,11 @@ public class VolunteerVoteService(
 {
     private readonly Dictionary<int, (double, double, double)> _voteScoreDictionary = new()
     {
-        { 2, (-2, 1.5, 2.5) },
-        { 3, (-1.6, 1.3, 2.3) },
-        { 4, (-1.5, 1, 1.75) },
-        { 5, (-0.8, 0.5, 1.2) },
-        { 6, (0, 0, 1.0) }
+        { 2, (-2.4, 1.5, 2.5) },
+        { 3, (-1.2, 0.9, 2.1) },
+        { 4, (-0.5, 0.45, 1.8) },
+        { 5, (-0.2, 0.15, 1.6) },
+        { 6, (0, 0, 1.5) }
     };
 
     public async Task<bool> CreateVolunteerVoteAsync(VolunteerVoteRequestDto dto, ChartSubmission chartSubmission,
