@@ -825,8 +825,7 @@ public class SongSubmissionController(
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
             });
         var songSubmission = await songSubmissionRepository.GetSongSubmissionAsync(id);
-        var result =
-            await scriptService.RunAsync(serviceId, dto.Parameters, songSubmission, currentUser);
+        var result = await scriptService.RunAsync(serviceId, dto.Parameters, songSubmission, currentUser);
 
         return Ok(new ResponseDto<ServiceResponseDto>
         {
@@ -1051,14 +1050,16 @@ public class SongSubmissionController(
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!resourceService.HasPermission(currentUser, UserRole.Volunteer))
+        var songSubmission = await songSubmissionRepository.GetSongSubmissionAsync(id);
+
+        if ((songSubmission.OwnerId == currentUser.Id &&
+             !resourceService.HasPermission(currentUser, UserRole.Administrator)) ||
+            !resourceService.HasPermission(currentUser, UserRole.Volunteer))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-
-        var songSubmission = await songSubmissionRepository.GetSongSubmissionAsync(id);
 
         songSubmission.Status = dto.Status;
         songSubmission.ReviewerId = currentUser.Id;
