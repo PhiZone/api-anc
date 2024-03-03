@@ -27,17 +27,17 @@ public class VolunteerVoteService(
         bool result;
         if (await volunteerVoteRepository.VolunteerVoteExistsAsync(chartSubmission.Id, user.Id))
         {
-            var volunteerVolunteerVote =
+            var volunteerVote =
                 await volunteerVoteRepository.GetVolunteerVoteAsync(chartSubmission.Id, user.Id);
-            volunteerVolunteerVote.Score = dto.Score;
-            volunteerVolunteerVote.SuggestedDifficulty = dto.SuggestedDifficulty;
-            volunteerVolunteerVote.Message = dto.Message;
-            volunteerVolunteerVote.DateCreated = DateTimeOffset.UtcNow;
-            result = await volunteerVoteRepository.UpdateVolunteerVoteAsync(volunteerVolunteerVote);
+            volunteerVote.Score = dto.Score;
+            volunteerVote.SuggestedDifficulty = dto.SuggestedDifficulty;
+            volunteerVote.Message = dto.Message;
+            volunteerVote.DateCreated = DateTimeOffset.UtcNow;
+            result = await volunteerVoteRepository.UpdateVolunteerVoteAsync(volunteerVote);
         }
         else
         {
-            var volunteerVolunteerVote = new VolunteerVote
+            var volunteerVote = new VolunteerVote
             {
                 ChartId = chartSubmission.Id,
                 Score = dto.Score,
@@ -46,7 +46,7 @@ public class VolunteerVoteService(
                 OwnerId = user.Id,
                 DateCreated = DateTimeOffset.UtcNow
             };
-            result = await volunteerVoteRepository.CreateVolunteerVoteAsync(volunteerVolunteerVote);
+            result = await volunteerVoteRepository.CreateVolunteerVoteAsync(volunteerVote);
         }
 
         return result && await UpdateChartSubmissionAsync(chartSubmission);
@@ -55,8 +55,8 @@ public class VolunteerVoteService(
     public async Task<bool> RemoveVolunteerVoteAsync(ChartSubmission chartSubmission, int userId)
     {
         if (!await volunteerVoteRepository.VolunteerVoteExistsAsync(chartSubmission.Id, userId)) return false;
-        var volunteerVolunteerVote = await volunteerVoteRepository.GetVolunteerVoteAsync(chartSubmission.Id, userId);
-        var result = await volunteerVoteRepository.RemoveVolunteerVoteAsync(volunteerVolunteerVote.Id);
+        var volunteerVote = await volunteerVoteRepository.GetVolunteerVoteAsync(chartSubmission.Id, userId);
+        var result = await volunteerVoteRepository.RemoveVolunteerVoteAsync(volunteerVote.Id);
         return result && await UpdateChartSubmissionAsync(chartSubmission);
     }
 
