@@ -2,5 +2,6 @@
 
 public enum AuthProvider
 {
-    GitHub
+    GitHub,
+    Phira
 }

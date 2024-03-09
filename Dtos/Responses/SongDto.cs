@@ -52,7 +52,7 @@ public class SongDto
 
     public List<TagDto> Tags { get; set; } = null!;
 
-    public int PlayCount { get; set; }
+    public long PlayCount { get; set; }
 
     public int LikeCount { get; set; }
 

@@ -11,7 +11,8 @@ public class SongConverterService(
     ISongService songService,
     ISongRepository songRepository,
     ISongSubmissionRepository songSubmissionRepository,
-    IFeishuService feishuService, IHostEnvironment env,
+    IFeishuService feishuService,
+    IHostEnvironment env,
     ILogger<SongConverterService> logger) : BackgroundService
 {
     private readonly IModel _channel = rabbitMqService.GetConnection().CreateModel();

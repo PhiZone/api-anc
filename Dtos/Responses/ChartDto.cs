@@ -58,7 +58,7 @@ public class ChartDto
 
     public SongDto Song { get; set; } = null!;
 
-    public int PlayCount { get; set; }
+    public long PlayCount { get; set; }
 
     public int LikeCount { get; set; }
 

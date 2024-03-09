@@ -14,7 +14,7 @@ public class User : IdentityUser<int>
 
     public UserRole Role { get; set; }
 
-    public int Experience { get; set; }
+    public long Experience { get; set; }
 
     public string? Tag { get; set; }
 
