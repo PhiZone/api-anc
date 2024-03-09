@@ -23,7 +23,7 @@
         <PackageReference Include="NVorbis" Version="0.10.5"/>
         <PackageReference Include="OpenIddict.AspNetCore" Version="5.2.0"/>
         <PackageReference Include="OpenIddict.EntityFrameworkCore" Version="5.2.0"/>
-        <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="8.0.0"/>
+        <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="8.0.1"/>
         <PackageReference Include="RabbitMQ.Client" Version="6.7.0"/>
         <PackageReference Include="Romanization.NET" Version="0.9.5"/>
         <PackageReference Include="SixLabors.ImageSharp" Version="3.1.3"/>
