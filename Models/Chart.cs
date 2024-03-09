@@ -48,7 +48,7 @@ public class Chart : PublicResource
 
     public Song Song { get; set; } = null!;
 
-    public int PlayCount { get; set; }
+    public long PlayCount { get; set; }
 
     public List<Tag> Tags { get; } = [];
 

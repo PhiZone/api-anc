@@ -41,7 +41,7 @@ public class Song : PublicResource
 
     public TimeSpan PreviewEnd { get; set; }
 
-    public int PlayCount { get; set; }
+    public long PlayCount { get; set; }
 
     [JsonIgnore] public List<Chart> Charts { get; } = [];
 

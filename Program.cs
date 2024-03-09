@@ -63,9 +63,9 @@ builder.Services.AddOpenIddict()
         options.AllowRefreshTokenFlow();
         options.UseReferenceAccessTokens();
         options.UseReferenceRefreshTokens();
-        options.RegisterScopes(OpenIddictConstants.Permissions.Scopes.Email,
-            OpenIddictConstants.Permissions.Scopes.Profile,
-            OpenIddictConstants.Permissions.Scopes.Roles);
+        // options.RegisterScopes(OpenIddictConstants.Permissions.Scopes.Email,
+        //     OpenIddictConstants.Permissions.Scopes.Profile,
+        //     OpenIddictConstants.Permissions.Scopes.Roles);
         options.SetAccessTokenLifetime(TimeSpan.FromHours(6));
         options.SetRefreshTokenLifetime(TimeSpan.FromDays(14));
         options.AddDevelopmentEncryptionCertificate().AddDevelopmentSigningCertificate();
@@ -157,6 +157,7 @@ builder.Services.AddSingleton<ILeaderboardService, LeaderboardService>();
 builder.Services.AddSingleton<IScriptService, ScriptService>();
 builder.Services.AddSingleton<AuthProviderFactory>();
 builder.Services.AddSingleton<IAuthProvider, GitHubAuthProvider>();
+builder.Services.AddSingleton<IAuthProvider, PhiraAuthProvider>();
 builder.Services.AddSingleton<IConnectionMultiplexer>(
     ConnectionMultiplexer.Connect(builder.Configuration.GetValue<string>("RedisConnection") ?? "localhost"));
 builder.Services.AddSingleton<IHostedService>(provider => new MailSenderService(

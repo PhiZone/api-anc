@@ -11,7 +11,7 @@ using AuthProvider = PhiZoneApi.Configurations.AuthProvider;
 
 namespace PhiZoneApi.Services;
 
-public class GitHubAuthProvider : IAuthProvider
+public class PhiraAuthProvider : IAuthProvider
 {
     private readonly Guid _applicationId;
     private readonly string _avatarUrl;
@@ -22,12 +22,12 @@ public class GitHubAuthProvider : IAuthProvider
     private readonly IConnectionMultiplexer _redis;
     private readonly IServiceProvider _serviceProvider;
 
-    public GitHubAuthProvider(IOptions<List<AuthProvider>> authProviders, IConnectionMultiplexer redis,
+    public PhiraAuthProvider(IOptions<List<AuthProvider>> authProviders, IConnectionMultiplexer redis,
         IServiceProvider serviceProvider)
     {
         _redis = redis;
         _serviceProvider = serviceProvider;
-        var providerSettings = authProviders.Value.First(e => e.Name == "GitHub");
+        var providerSettings = authProviders.Value.First(e => e.Name == "Phira");
         _clientId = providerSettings.ClientId;
         _clientSecret = providerSettings.ClientSecret;
         _applicationId = providerSettings.ApplicationId;
@@ -45,12 +45,12 @@ public class GitHubAuthProvider : IAuthProvider
             {
                 Id = _applicationId,
                 OwnerId = 1,
-                Name = "GitHub",
+                Name = "Phira",
                 Avatar = _avatarUrl,
                 Illustration = _illustrationUrl,
-                Illustrator = "GitHub",
-                Homepage = "https://github.com",
-                Type = ApplicationType.AuthProvider,
+                Illustrator = "Phira",
+                Homepage = "https://phira.moe",
+                Type = ApplicationType.MobilePlayer,
                 DateCreated = DateTimeOffset.UtcNow,
                 DateUpdated = DateTimeOffset.UtcNow
             };
@@ -61,19 +61,20 @@ public class GitHubAuthProvider : IAuthProvider
     public async Task<ServiceResponseDto> RequestIdentityAsync(string state, string redirectUri, User? user = null)
     {
         var db = _redis.GetDatabase();
-        await db.StringSetAsync($"phizone:github:{state}", user?.Id.ToString() ?? string.Empty, TimeSpan.FromHours(2));
+        await db.StringSetAsync($"phizone:phira:{state}", user?.Id.ToString() ?? string.Empty, TimeSpan.FromHours(2));
         var query = new QueryBuilder
         {
-            { "client_id", _clientId }, { "state", state },
-            { "redirect_uri", $"https://redirect.phi.zone/?uri={redirectUri}" }
+            { "clientID", _clientId },
+            { "state", state },
+            { "scope", "1" },
+            { "redirectURI", $"https://redirect.phi.zone/?uri={redirectUri}" }
         };
         if (user != null) query.Add("login", user.Email!);
 
         return new ServiceResponseDto
         {
             Type = ServiceResponseType.Redirect,
-            RedirectUri =
-                new UriBuilder("https://github.com/login/oauth/authorize") { Query = query.ToString() }.Uri,
+            RedirectUri = new UriBuilder("https://phira.moe/oauth") { Query = query.ToString() }.Uri,
             Message = null
         };
     }
@@ -81,7 +82,7 @@ public class GitHubAuthProvider : IAuthProvider
     public async Task<(string, string?)?> RequestTokenAsync(string code, string state, User? user = null)
     {
         var db = _redis.GetDatabase();
-        var key = $"phizone:github:{state}";
+        var key = $"phizone:phira:{state}";
         if (!await db.KeyExistsAsync(key)) return null;
 
         var userId = await db.StringGetAsync(key);
@@ -91,11 +92,14 @@ public class GitHubAuthProvider : IAuthProvider
         var request = new HttpRequestMessage
         {
             Method = HttpMethod.Post,
-            RequestUri = new UriBuilder("https://github.com/login/oauth/access_token")
+            RequestUri = new UriBuilder("https://api.phira.cn/oauth/token")
             {
                 Query = new QueryBuilder
                 {
-                    { "client_id", _clientId }, { "client_secret", _clientSecret }, { "code", code }
+                    { "grant_type", "authorization_code" },
+                    { "client_id", _clientId },
+                    { "client_secret", _clientSecret },
+                    { "code", code }
                 }.ToString()
             }.Uri,
             Headers = { { "Accept", "application/json" } }
@@ -103,11 +107,11 @@ public class GitHubAuthProvider : IAuthProvider
         var response = await _client.SendAsync(request);
         if (!response.IsSuccessStatusCode) return null;
 
-        var content = JsonConvert.DeserializeObject<GitHubTokenDto>(await response.Content.ReadAsStringAsync())!;
+        var content = JsonConvert.DeserializeObject<PhiraTokenDto>(await response.Content.ReadAsStringAsync())!;
         // ReSharper disable once InvertIf
         if (user != null) await UpdateTokenAsync(user, content.AccessToken);
 
-        return new ValueTuple<string, string?>(content.AccessToken, null);
+        return new ValueTuple<string, string?>(content.AccessToken, content.RefreshToken);
     }
 
     public async Task<User?> GetIdentityAsync(string accessToken)
@@ -115,10 +119,10 @@ public class GitHubAuthProvider : IAuthProvider
         var response = await RetrieveIdentityAsync(accessToken);
         if (!response.IsSuccessStatusCode) return null;
 
-        var content = JsonConvert.DeserializeObject<GitHubUserDto>(await response.Content.ReadAsStringAsync())!;
+        var content = JsonConvert.DeserializeObject<PhiraUserDto>(await response.Content.ReadAsStringAsync())!;
         await using var scope = _serviceProvider.CreateAsyncScope();
         var userRepository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
-        return await userRepository.GetUserByRemoteIdAsync(_applicationId, content.Login);
+        return await userRepository.GetUserByRemoteIdAsync(_applicationId, content.Id.ToString());
     }
 
     public async Task<bool> BindIdentityAsync(User user)
@@ -134,11 +138,11 @@ public class GitHubAuthProvider : IAuthProvider
         var response = await RetrieveIdentityAsync(applicationUser.AccessToken);
         if (!response.IsSuccessStatusCode) return false;
 
-        var content = JsonConvert.DeserializeObject<GitHubUserDto>(await response.Content.ReadAsStringAsync())!;
-        var existingUser = await userRepository.GetUserByRemoteIdAsync(_applicationId, content.Login);
+        var content = JsonConvert.DeserializeObject<PhiraUserDto>(await response.Content.ReadAsStringAsync())!;
+        var existingUser = await userRepository.GetUserByRemoteIdAsync(_applicationId, content.Id.ToString());
         if (existingUser != null && existingUser.Id != user.Id) return false;
 
-        applicationUser.RemoteUserId = content.Login;
+        applicationUser.RemoteUserId = content.Id.ToString();
         applicationUser.RemoteUserName = content.Name;
         await applicationUserRepository.UpdateRelationAsync(applicationUser);
         return true;
@@ -195,8 +199,8 @@ public class GitHubAuthProvider : IAuthProvider
         var request = new HttpRequestMessage
         {
             Method = HttpMethod.Get,
-            RequestUri = new Uri("https://api.github.com/user"),
-            Headers = { { "Authorization", $"Bearer {accessToken}" }, { "User-Agent", "PhiZone" } }
+            RequestUri = new Uri("https://api.phira.cn/me"),
+            Headers = { { "Authorization", $"Bearer {accessToken}" } }
         };
         return await _client.SendAsync(request);
     }

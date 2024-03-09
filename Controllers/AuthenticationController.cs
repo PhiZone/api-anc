@@ -1,5 +1,4 @@
-﻿using System.Collections.Immutable;
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
@@ -127,11 +126,8 @@ public class AuthenticationController(
             identity.AddClaim(Claims.Subject, user.Id.ToString(), Destinations.AccessToken);
             identity.AddClaim(Claims.Username, user.UserName!, Destinations.AccessToken);
 
-            foreach (var role in await userManager.GetRolesAsync(user))
-                identity.AddClaim(Claims.Role, role, Destinations.AccessToken);
-
             var claimsPrincipal = new ClaimsPrincipal(identity);
-            claimsPrincipal.SetScopes(Scopes.Roles, Scopes.OfflineAccess, Scopes.Email, Scopes.Profile);
+            claimsPrincipal.SetScopes(Scopes.OfflineAccess);
 
             user.DateLastLoggedIn = DateTimeOffset.UtcNow;
             user.AccessFailedCount = 0;
@@ -202,11 +198,8 @@ public class AuthenticationController(
             identity.AddClaim(Claims.Subject, user.Id.ToString(), Destinations.AccessToken);
             identity.AddClaim(Claims.Username, user.UserName!, Destinations.AccessToken);
 
-            foreach (var role in await userManager.GetRolesAsync(user))
-                identity.AddClaim(Claims.Role, role, Destinations.AccessToken);
-
             var claimsPrincipal = new ClaimsPrincipal(identity);
-            claimsPrincipal.SetScopes(Scopes.Roles, Scopes.OfflineAccess, Scopes.Email, Scopes.Profile);
+            claimsPrincipal.SetScopes(Scopes.OfflineAccess);
 
             user.DateLastLoggedIn = DateTimeOffset.UtcNow;
             user.AccessFailedCount = 0;
@@ -273,11 +266,8 @@ public class AuthenticationController(
             identity.AddClaim(Claims.Subject, user.Id.ToString(), Destinations.AccessToken);
             identity.AddClaim(Claims.Username, user.UserName!, Destinations.AccessToken);
 
-            foreach (var role in await userManager.GetRolesAsync(user))
-                identity.AddClaim(Claims.Role, role, Destinations.AccessToken);
-
             var claimsPrincipal = new ClaimsPrincipal(identity);
-            claimsPrincipal.SetScopes(Scopes.Roles, Scopes.OfflineAccess, Scopes.Email, Scopes.Profile);
+            claimsPrincipal.SetScopes(Scopes.OfflineAccess);
 
             user.DateLastLoggedIn = DateTimeOffset.UtcNow;
             user.AccessFailedCount = 0;
@@ -311,8 +301,7 @@ public class AuthenticationController(
 
             identity.SetClaim(Claims.Subject, await userManager.GetUserIdAsync(user))
                 .SetClaim(Claims.Email, await userManager.GetEmailAsync(user))
-                .SetClaim(Claims.Name, await userManager.GetUserNameAsync(user))
-                .SetClaims(Claims.Role, (await userManager.GetRolesAsync(user)).ToImmutableArray());
+                .SetClaim(Claims.Name, await userManager.GetUserNameAsync(user));
 
             identity.SetDestinations(GetDestinations);
 

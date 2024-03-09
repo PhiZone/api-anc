@@ -10,6 +10,8 @@ public class ApplicationUserDto
 
     public string? RemoteUserId { get; set; }
 
+    public string? RemoteUserName { get; set; }
+
     public DateTimeOffset DateCreated { get; set; }
 
     public DateTimeOffset DateUpdated { get; set; }
