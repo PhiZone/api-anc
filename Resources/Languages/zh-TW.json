@@ -3,17 +3,17 @@
     {
       "Mode": 0,
       "Subject": "[PhiZone] 請確認你的郵件地址",
-      "Body": "敬愛的 {UserName}：\n\n　　請在注冊頁面上輸入代碼 {Code} 來確認你的郵件地址。該代碼在 5 分鐘內有效。\n\n　　如果你未申請接收此封郵件，請忽略。\n\nPhiZone"
+      "Body": "親愛的 {UserName}：\n\n　　請在註冊頁面上輸入代碼 {Code} 來確認你的郵件地址。該代碼在 5 分鐘內有效。\n\n　　如果你未申請接收此封郵件，請忽略。\n\nPhiZone"
     },
     {
       "Mode": 1,
       "Subject": "[PhiZone] 你的密碼將被重設",
-      "Body": "敬愛的 {UserName}：\n\n　　你剛剛申請重設你的密碼。請在密碼重設頁面輸入框中輸入代碼 {Code} 以繼續。該代碼在 5 分鐘內有效。\n\n　　如果你未申請接收此封郵件，請忽略。\n\nPhiZone"
+      "Body": "親愛的 {UserName}：\n\n　　你剛剛申請重設你的密碼。請在密碼重設頁面輸入框中輸入代碼 {Code} 以繼續。該代碼在 5 分鐘內有效。\n\n　　如果你未申請接收此封郵件，請忽略。\n\nPhiZone"
     },
     {
       "Mode": 2,
       "Subject": "[PhiZone] 你的賬戶將被刪除",
-      "Body": "敬愛的 {UserName}：\n\n　　你剛剛申請刪除你的賬戶。請在驗證頁面輸入框中輸入代碼 {Code} 以繼續。該代碼在 5 分鐘內有效。\n\n　　如果你未申請接收此封郵件，請忽略。\n\nPhiZone"
+      "Body": "親愛的 {UserName}：\n\n　　你剛剛申請刪除你的帳戶。請在驗證頁面輸入框中輸入代碼 {Code} 以繼續。該代碼在 5 分鐘內有效。\n\n　　如果你未申請接收此封郵件，請忽略。\n\nPhiZone"
     }
   ],
   "Messages": [
