@@ -7,7 +7,7 @@ namespace PhiZoneApi.Services;
 public class VoteService(IVoteRepository voteRepository, IChartRepository chartRepository)
     : IVoteService
 {
-    private readonly List<int> _experienceList =
+    private readonly List<ulong> _experienceList =
     [
         0,
         50,

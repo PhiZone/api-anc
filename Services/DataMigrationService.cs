@@ -187,7 +187,7 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
                     },
                     Gender = (Gender)reader.GetInt32("gender"),
                     Biography = await reader.GetStr("bio"),
-                    Experience = reader.GetInt32("exp"),
+                    Experience = reader.GetUInt64("exp"),
                     Tag = await reader.GetStr("tag"),
                     Rks = reader.GetDouble("rks"),
                     RegionId = regionId,

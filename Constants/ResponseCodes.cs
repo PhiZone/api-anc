@@ -257,4 +257,14 @@ public static class ResponseCodes
     ///     There exists prohibited content in user's input text.
     /// </summary>
     public const string ContentProhibited = "ContentProhibited";
+
+    /// <summary>
+    ///     The specified authentication provider does not exist.
+    /// </summary>
+    public const string AuthProviderNotFound = "AuthProviderNotFound";
+
+    /// <summary>
+    ///     Failed to authenticate the user on the specified provider with provided credentials.
+    /// </summary>
+    public const string AuthFailure = "AuthFailure";
 }

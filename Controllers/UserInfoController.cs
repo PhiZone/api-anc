@@ -63,8 +63,7 @@ public class UserInfoController(
 
         var dto = mapper.MapUser<UserDetailedDto>(user);
         dto.Notifications =
-            await notificationRepository.CountNotificationsAsync(e =>
-                e.OwnerId == user.Id && e.DateRead == null);
+            await notificationRepository.CountNotificationsAsync(e => e.OwnerId == user.Id && e.DateRead == null);
         return Ok(new ResponseDto<UserDetailedDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
     }
 
@@ -86,7 +85,7 @@ public class UserInfoController(
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> BindAuthProvider([FromRoute] string provider, [FromQuery] string code,
-        [FromQuery] string state)
+        [FromQuery] string state, [FromQuery] string? redirectUri = null)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
 
@@ -109,7 +108,7 @@ public class UserInfoController(
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        await authProvider.RequestTokenAsync(code, state, currentUser);
+        await authProvider.RequestTokenAsync(code, state, currentUser, redirectUri);
         if (!await authProvider.BindIdentityAsync(currentUser))
             return BadRequest(new ResponseDto<object>
             {
@@ -187,13 +186,16 @@ public class UserInfoController(
         if (await userRepository.GetUserByTapUnionIdAsync(dto.ApplicationId, unionId) != null)
             return BadRequest(new ResponseDto<object>
             {
-                Status = ResponseStatus.ErrorBrief,
-                Code = ResponseCodes.BindingOccupied
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.BindingOccupied
             });
 
         var tapUserRelation = new ApplicationUser
         {
-            ApplicationId = dto.ApplicationId, UserId = currentUser.Id, TapUnionId = unionId
+            ApplicationId = dto.ApplicationId,
+            UserId = currentUser.Id,
+            TapUnionId = unionId,
+            DateCreated = DateTimeOffset.UtcNow,
+            DateUpdated = DateTimeOffset.UtcNow
         };
 
         if (!await applicationUserRepository.CreateRelationAsync(tapUserRelation))

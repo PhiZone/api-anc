@@ -63,8 +63,8 @@ public class TagController(
         {
             var result = await meilisearchService.SearchAsync<Tag>(dto.Search, dto.PerPage, dto.Page);
             var idList = result.Hits.Select(item => item.Id).ToList();
-            tags = (await tagRepository.GetTagsAsync(["DateCreated"], [false], position, dto.PerPage,
-                e => idList.Contains(e.Id))).OrderBy(e => idList.IndexOf(e.Id));
+            tags = (await tagRepository.GetTagsAsync(["DateCreated"], [false], 0, -1, e => idList.Contains(e.Id)))
+                .OrderBy(e => idList.IndexOf(e.Id));
             total = result.TotalHits;
         }
         else

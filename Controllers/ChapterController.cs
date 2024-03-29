@@ -69,7 +69,7 @@ public class ChapterController(
             var result = await meilisearchService.SearchAsync<Chapter>(dto.Search, dto.PerPage, dto.Page,
                 showHidden: currentUser is { Role: UserRole.Administrator });
             var idList = result.Hits.Select(item => item.Id).ToList();
-            chapters = (await chapterRepository.GetChaptersAsync(["DateCreated"], [false], position, dto.PerPage,
+            chapters = (await chapterRepository.GetChaptersAsync(["DateCreated"], [false], 0, -1,
                 e => idList.Contains(e.Id), currentUser?.Id)).OrderBy(e =>
                 idList.IndexOf(e.Id));
             total = result.TotalHits;

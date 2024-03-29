@@ -1,6 +1,8 @@
 ﻿using System.Text.RegularExpressions;
+using Ganss.Xss;
 using Microsoft.AspNetCore.Identity;
 using Newtonsoft.Json;
+using OpenIddict.Abstractions;
 using PhiZoneApi.Dtos.Deliverers;
 using PhiZoneApi.Enums;
 using PhiZoneApi.Interfaces;
@@ -8,10 +10,7 @@ using PhiZoneApi.Models;
 
 namespace PhiZoneApi.Services;
 
-public partial class ResourceService(
-    IServiceProvider serviceProvider,
-    IConfiguration configuration)
-    : IResourceService
+public partial class ResourceService(IServiceProvider serviceProvider, IConfiguration configuration) : IResourceService
 {
     private readonly ResourceDto _resourceDto = JsonConvert.DeserializeObject<ResourceDto>(File.ReadAllText(
         Path.Combine(Directory.GetCurrentDirectory(),
@@ -107,9 +106,61 @@ public partial class ResourceService(
         return input != null ? WhitespaceRegex().Replace(input, "").ToUpper() : "";
     }
 
-    public ResourceDto GetResources()
+    public bool IsUserNameValid(string userName)
     {
-        return _resourceDto;
+        return IsValid(userName, UserNameRegex());
+    }
+
+    public bool IsEmailValid(string email)
+    {
+        return IsValid(email, EmailRegex());
+    }
+
+    public async Task<bool> IsUserInputValidAsync(string input, string memberName)
+    {
+        if (input.Trim() == string.Empty) return true;
+
+        if (input.Contains('<') && input.Contains('>'))
+        {
+            var sanitizer = new HtmlSanitizer();
+            if (sanitizer.Sanitize(input) != input) return false;
+        }
+
+        if (_resourceDto.ProhibitedWords.Any(word => input.Contains(word, StringComparison.CurrentCultureIgnoreCase)))
+            return false;
+
+        await using var scope = serviceProvider.CreateAsyncScope();
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<User>>();
+        var httpContextAccessor = scope.ServiceProvider.GetRequiredService<IHttpContextAccessor>();
+        var request = httpContextAccessor.HttpContext!.Request;
+        var userId = httpContextAccessor.HttpContext!.User.GetClaim(OpenIddictConstants.Claims.Subject);
+        var user = userId != null ? userManager.FindByIdAsync(userId).Result : null;
+        var messengerService = scope.ServiceProvider.GetRequiredService<IMessengerService>();
+        await messengerService.SendUserInput(new UserInputDelivererDto
+        {
+            Content = input,
+            IsImage = false,
+            MemberName = memberName,
+            ResourceId = (string?)request.RouteValues["id"],
+            ActionName = (string)request.RouteValues["action"]!,
+            ControllerName = (string)request.RouteValues["controller"]!,
+            RequestMethod = request.Method,
+            RequestPath = request.Path,
+            UserId = userId != null ? int.Parse(userId) : null,
+            UserName = user?.UserName,
+            UserAvatar = user?.Avatar,
+            DateCreated = DateTimeOffset.UtcNow
+        });
+        return true;
+    }
+
+    private bool IsValid(string input, Regex regex)
+    {
+        if (string.IsNullOrEmpty(input)) return false;
+        var enumerator = regex.EnumerateMatches((ReadOnlySpan<char>)input).GetEnumerator();
+        if (!enumerator.MoveNext()) return false;
+        var current = enumerator.Current;
+        return current.Index == 0 && current.Length == input.Length;
     }
 
     private static int GetPriority(UserRole role)
@@ -134,4 +185,12 @@ public partial class ResourceService(
 
     [GeneratedRegex(@"@([A-Za-z0-9_\u4e00-\u9fff\u3041-\u309f\u30a0-\u30ff\uac00-\ud7a3]+)")]
     private static partial Regex UserMentionRichTextRegex();
+
+    [GeneratedRegex(
+        @"^([A-Za-z0-9_]{4,24}|[a-zA-Z0-9_\u4e00-\u9fff\u3041-\u309f\u30a0-\u30ff\uac00-\ud7a3]{3,12}|[\u4e00-\u9fff\u3041-\u309f\u30a0-\u30ff\uac00-\ud7a3]{2,12})$")]
+    private static partial Regex UserNameRegex();
+
+    [GeneratedRegex(
+        @"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$")]
+    private static partial Regex EmailRegex();
 }

@@ -242,7 +242,7 @@ public class RecordController(
         var rks = recordService.CalculateRks(dto.Perfect, dto.GoodEarly + dto.GoodLate, dto.Bad, dto.Miss,
             chart.Difficulty, dto.StdDeviation) * rksFactor;
         var rksBefore = player.Rks;
-        var experienceDelta = 0;
+        var experienceDelta = 0ul;
         var highestAccuracy = 0d;
         if (await recordRepository.CountRecordsAsync(record =>
                 record.ChartId == info.ChartId && record.OwnerId == player.Id) > 0)
@@ -282,7 +282,7 @@ public class RecordController(
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
-        experienceDelta += (int)(rksFactor * score switch
+        experienceDelta += (ulong)(rksFactor * score switch
         {
             1000000 => 20,
             >= 960000 => 14,
@@ -298,7 +298,7 @@ public class RecordController(
             if (pos <= 1000)
             {
                 var temp = Math.Pow(chart.Difficulty, 7d / 5);
-                experienceDelta += (int)Math.Pow(chart.Difficulty + 2, temp * (Math.Pow(pos, 4d / 7) - temp) / -1152);
+                experienceDelta += (ulong)Math.Pow(chart.Difficulty + 2, temp * (Math.Pow(pos, 4d / 7) - temp) / -1152);
             }
         }
 
@@ -308,7 +308,7 @@ public class RecordController(
         var best19Rks = (await recordRepository.GetPersonalBests(player.Id)).Sum(r => r.Rks);
         var rksAfter = (phiRks + best19Rks) / 20;
 
-        if (!chart.IsRanked) experienceDelta = (int)(experienceDelta * 0.1);
+        if (!chart.IsRanked) experienceDelta = (ulong)(experienceDelta * 0.1);
 
         player.Experience += experienceDelta;
         player.Rks = rksAfter;
