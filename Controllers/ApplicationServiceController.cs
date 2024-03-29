@@ -58,7 +58,7 @@ public class ApplicationServiceController(
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser);
         var applicationServices =
             await applicationServiceRepository.GetApplicationServicesAsync(dto.Order, dto.Desc, position, dto.PerPage,
-                predicateExpr);
+                predicateExpr, currentUser?.Id);
         var total = await applicationServiceRepository.CountApplicationServicesAsync(predicateExpr);
         var list = applicationServices.Select(dtoMapper.MapApplicationService<ApplicationServiceDto>).ToList();
 
@@ -94,12 +94,13 @@ public class ApplicationServiceController(
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetApplicationService([FromRoute] Guid id)
     {
+        var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         if (!await applicationServiceRepository.ApplicationServiceExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        var applicationService = await applicationServiceRepository.GetApplicationServiceAsync(id);
+        var applicationService = await applicationServiceRepository.GetApplicationServiceAsync(id, currentUser?.Id);
         var dto = dtoMapper.MapApplicationService<ApplicationServiceDto>(applicationService);
 
         return Ok(new ResponseDto<ApplicationServiceDto>

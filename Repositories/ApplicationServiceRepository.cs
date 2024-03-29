@@ -13,17 +13,21 @@ public class ApplicationServiceRepository(ApplicationDbContext context)
     : IApplicationServiceRepository
 {
     public async Task<ICollection<ApplicationService>> GetApplicationServicesAsync(List<string> order, List<bool> desc,
-        int position, int take, Expression<Func<ApplicationService, bool>>? predicate = null)
+        int position, int take, Expression<Func<ApplicationService, bool>>? predicate = null, int? currentUserId = null)
     {
         var result = context.ApplicationServices.Include(e => e.Application).OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
+        if (currentUserId != null)
+            result = result.Include(e => e.Application.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
         result = result.Skip(position);
         return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
 
-    public async Task<ApplicationService> GetApplicationServiceAsync(Guid id)
+    public async Task<ApplicationService> GetApplicationServiceAsync(Guid id, int? currentUserId = null)
     {
         IQueryable<ApplicationService> result = context.ApplicationServices.Include(e => e.Application);
+        if (currentUserId != null)
+            result = result.Include(e => e.Application.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
         return (await result.FirstOrDefaultAsync(applicationService => applicationService.Id == id))!;
     }
 

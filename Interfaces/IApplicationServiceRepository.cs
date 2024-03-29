@@ -6,9 +6,9 @@ namespace PhiZoneApi.Interfaces;
 public interface IApplicationServiceRepository
 {
     Task<ICollection<ApplicationService>> GetApplicationServicesAsync(List<string> order, List<bool> desc, int position,
-        int take, Expression<Func<ApplicationService, bool>>? predicate = null);
+        int take, Expression<Func<ApplicationService, bool>>? predicate = null, int? currentUserId = null);
 
-    Task<ApplicationService> GetApplicationServiceAsync(Guid id);
+    Task<ApplicationService> GetApplicationServiceAsync(Guid id, int? currentUserId = null);
 
     Task<bool> ApplicationServiceExistsAsync(Guid id);
 
