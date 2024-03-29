@@ -59,8 +59,8 @@ public class RecordRepository(ApplicationDbContext context, IMeilisearchService 
             .Include(e => e.Song)
             .ThenInclude(e => e.Tags)
             .FirstAsync(e => e.Id == record.ChartId);
-        chart.PlayCount = await context.Records.CountAsync(e => e.ChartId == record.Chart.Id) + 1;
-        chart.Song.PlayCount = await context.Records.CountAsync(e => e.Chart.SongId == record.Chart.SongId) + 1;
+        chart.PlayCount = await context.Records.LongCountAsync(e => e.ChartId == record.Chart.Id) + 1;
+        chart.Song.PlayCount = await context.Records.LongCountAsync(e => e.Chart.SongId == record.Chart.SongId) + 1;
         await context.Records.AddAsync(record);
         await meilisearchService.UpdateAsync(record.Chart);
         await meilisearchService.UpdateAsync(record.Chart.Song);

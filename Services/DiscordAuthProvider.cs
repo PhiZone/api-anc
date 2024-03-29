@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http.Extensions;
+﻿using System.Net;
+using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using PhiZoneApi.Dtos.Deliverers;
@@ -11,28 +12,34 @@ using AuthProvider = PhiZoneApi.Configurations.AuthProvider;
 
 namespace PhiZoneApi.Services;
 
-public class PhiraAuthProvider : IAuthProvider
+public class DiscordAuthProvider : IAuthProvider
 {
     private readonly Guid _applicationId;
     private readonly string _avatarUrl;
-    private readonly HttpClient _client = new();
+    private readonly HttpClient _client;
     private readonly string _clientId;
     private readonly string _clientSecret;
     private readonly string _illustrationUrl;
     private readonly IConnectionMultiplexer _redis;
     private readonly IServiceProvider _serviceProvider;
 
-    public PhiraAuthProvider(IOptions<List<AuthProvider>> authProviders, IConnectionMultiplexer redis,
-        IServiceProvider serviceProvider)
+    public DiscordAuthProvider(IOptions<List<AuthProvider>> authProviders, IConnectionMultiplexer redis,
+        IServiceProvider serviceProvider, IConfiguration config)
     {
         _redis = redis;
         _serviceProvider = serviceProvider;
-        var providerSettings = authProviders.Value.First(e => e.Name == "Phira");
+        var providerSettings = authProviders.Value.First(e => e.Name == "Discord");
         _clientId = providerSettings.ClientId;
         _clientSecret = providerSettings.ClientSecret;
         _applicationId = providerSettings.ApplicationId;
         _avatarUrl = providerSettings.AvatarUrl;
         _illustrationUrl = providerSettings.IllustrationUrl;
+        _client = string.IsNullOrEmpty(config["Proxy"])
+            ? new HttpClient()
+            : new HttpClient(new HttpClientHandler
+            {
+                Proxy = new WebProxy { Address = new Uri(config["Proxy"]!) }
+            });
     }
 
     public async Task InitializeAsync()
@@ -45,12 +52,12 @@ public class PhiraAuthProvider : IAuthProvider
             {
                 Id = _applicationId,
                 OwnerId = 1,
-                Name = "Phira",
+                Name = "Discord",
                 Avatar = _avatarUrl,
                 Illustration = _illustrationUrl,
-                Illustrator = "Phira",
-                Homepage = "https://phira.moe",
-                Type = ApplicationType.MobilePlayer,
+                Illustrator = "Discord",
+                Homepage = "https://discord.com",
+                Type = ApplicationType.AuthProvider,
                 DateCreated = DateTimeOffset.UtcNow,
                 DateUpdated = DateTimeOffset.UtcNow
             };
@@ -61,20 +68,21 @@ public class PhiraAuthProvider : IAuthProvider
     public async Task<ServiceResponseDto> RequestIdentityAsync(string state, string redirectUri, User? user = null)
     {
         var db = _redis.GetDatabase();
-        await db.StringSetAsync($"phizone:phira:{state}", user?.Id.ToString() ?? string.Empty, TimeSpan.FromHours(2));
+        await db.StringSetAsync($"phizone:discord:{state}", user?.Id.ToString() ?? string.Empty, TimeSpan.FromHours(2));
         var query = new QueryBuilder
         {
-            { "clientID", _clientId },
+            { "response_type", "code" },
+            { "scope", "identify email" },
+            { "client_id", _clientId },
             { "state", state },
-            { "scope", "1" },
-            { "redirectURI", $"https://redirect.phi.zone/?uri={redirectUri}" }
+            { "redirect_uri", redirectUri }
         };
         if (user != null) query.Add("login", user.Email!);
 
         return new ServiceResponseDto
         {
             Type = ServiceResponseType.Redirect,
-            RedirectUri = new UriBuilder("https://phira.moe/oauth") { Query = query.ToString() }.Uri,
+            RedirectUri = new UriBuilder("https://discord.com/oauth2/authorize") { Query = query.ToString() }.Uri,
             Message = null
         };
     }
@@ -82,37 +90,38 @@ public class PhiraAuthProvider : IAuthProvider
     public async Task<(string, string?)?> RequestTokenAsync(string code, string state, User? user = null,
         string? redirectUri = null)
     {
+        if (redirectUri == null) return null;
         var db = _redis.GetDatabase();
-        var key = $"phizone:phira:{state}";
+        var key = $"phizone:discord:{state}";
         if (!await db.KeyExistsAsync(key)) return null;
 
         var userId = await db.StringGetAsync(key);
         await db.KeyDeleteAsync(key);
         if ((user == null && userId != string.Empty) || (user != null && userId != user.Id.ToString())) return null;
 
+        var data = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            { "client_id", _clientId },
+            { "client_secret", _clientSecret },
+            { "code", code },
+            { "grant_type", "authorization_code" },
+            { "redirect_uri", redirectUri }
+        });
         var request = new HttpRequestMessage
         {
             Method = HttpMethod.Post,
-            RequestUri = new UriBuilder("https://api.phira.cn/oauth/token")
-            {
-                Query = new QueryBuilder
-                {
-                    { "grant_type", "authorization_code" },
-                    { "client_id", _clientId },
-                    { "client_secret", _clientSecret },
-                    { "code", code }
-                }.ToString()
-            }.Uri,
-            Headers = { { "Accept", "application/json" } }
+            RequestUri = new Uri("https://discord.com/api/v10/oauth2/token"),
+            Headers = { { "Accept", "application/json" } },
+            Content = data
         };
         var response = await _client.SendAsync(request);
         if (!response.IsSuccessStatusCode) return null;
 
-        var content = JsonConvert.DeserializeObject<PhiraTokenDto>(await response.Content.ReadAsStringAsync())!;
+        var content = JsonConvert.DeserializeObject<DiscordTokenDto>(await response.Content.ReadAsStringAsync())!;
         // ReSharper disable once InvertIf
         if (user != null) await UpdateTokenAsync(user, content.AccessToken, content.RefreshToken);
 
-        return new ValueTuple<string, string?>(content.AccessToken, content.RefreshToken);
+        return new ValueTuple<string, string?>(content.AccessToken, null);
     }
 
     public async Task<User?> GetIdentityAsync(string accessToken)
@@ -120,10 +129,10 @@ public class PhiraAuthProvider : IAuthProvider
         var response = await RetrieveIdentityAsync(accessToken);
         if (!response.IsSuccessStatusCode) return null;
 
-        var content = JsonConvert.DeserializeObject<PhiraUserDto>(await response.Content.ReadAsStringAsync())!;
+        var content = JsonConvert.DeserializeObject<DiscordUserDto>(await response.Content.ReadAsStringAsync())!;
         await using var scope = _serviceProvider.CreateAsyncScope();
         var userRepository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
-        return await userRepository.GetUserByRemoteIdAsync(_applicationId, content.Id.ToString());
+        return await userRepository.GetUserByRemoteIdAsync(_applicationId, content.Id);
     }
 
     public async Task<RemoteUserDto?> GetRemoteIdentityAsync(string accessToken)
@@ -131,16 +140,16 @@ public class PhiraAuthProvider : IAuthProvider
         var response = await RetrieveIdentityAsync(accessToken);
         if (!response.IsSuccessStatusCode) return null;
 
-        var content = JsonConvert.DeserializeObject<PhiraUserDto>(await response.Content.ReadAsStringAsync())!;
+        var content = JsonConvert.DeserializeObject<DiscordUserDto>(await response.Content.ReadAsStringAsync())!;
+        if (content.Email == null) return null;
 
         return new RemoteUserDto
         {
-            Id = content.Id.ToString(),
-            UserName = content.Name,
+            Id = content.Id,
+            UserName = content.Username,
             Email = content.Email,
             Avatar = content.Avatar != null
-                ? await _client.GetByteArrayAsync(content.Avatar.Replace("api.phira.cn/files/",
-                    "files-cf.phira.cn/"))
+                ? await _client.GetByteArrayAsync($"https://cdn.discordapp.com/avatars/{content.Id}/{content.Avatar}")
                 : null
         };
     }
@@ -158,12 +167,12 @@ public class PhiraAuthProvider : IAuthProvider
         var response = await RetrieveIdentityAsync(applicationUser.AccessToken);
         if (!response.IsSuccessStatusCode) return false;
 
-        var content = JsonConvert.DeserializeObject<PhiraUserDto>(await response.Content.ReadAsStringAsync())!;
-        var existingUser = await userRepository.GetUserByRemoteIdAsync(_applicationId, content.Id.ToString());
+        var content = JsonConvert.DeserializeObject<DiscordUserDto>(await response.Content.ReadAsStringAsync())!;
+        var existingUser = await userRepository.GetUserByRemoteIdAsync(_applicationId, content.Id);
         if (existingUser != null && existingUser.Id != user.Id) return false;
 
-        applicationUser.RemoteUserId = content.Id.ToString();
-        applicationUser.RemoteUserName = content.Name;
+        applicationUser.RemoteUserId = content.Id;
+        applicationUser.RemoteUserName = content.GlobalName;
         await applicationUserRepository.UpdateRelationAsync(applicationUser);
         return true;
     }
@@ -188,7 +197,6 @@ public class PhiraAuthProvider : IAuthProvider
         {
             var applicationUser = await applicationUserRepository.GetRelationAsync(_applicationId, user.Id);
             applicationUser.AccessToken = accessToken;
-            applicationUser.RefreshToken = refreshToken;
             applicationUser.DateUpdated = DateTimeOffset.UtcNow;
             await applicationUserRepository.UpdateRelationAsync(applicationUser);
         }
@@ -202,25 +210,24 @@ public class PhiraAuthProvider : IAuthProvider
         var applicationUser = await applicationUserRepository.GetRelationAsync(_applicationId, user.Id);
         if (applicationUser.RefreshToken == null) return false;
 
+        var data = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            { "client_id", _clientId },
+            { "client_secret", _clientSecret },
+            { "grant_type", "refresh_token" },
+            { "refresh_token", applicationUser.RefreshToken }
+        });
         var request = new HttpRequestMessage
         {
             Method = HttpMethod.Post,
-            RequestUri = new UriBuilder("https://api.phira.cn/oauth/token")
-            {
-                Query = new QueryBuilder
-                {
-                    { "grant_type", "refresh_token" },
-                    { "client_id", _clientId },
-                    { "client_secret", _clientSecret },
-                    { "refresh_token", applicationUser.RefreshToken }
-                }.ToString()
-            }.Uri,
-            Headers = { { "Accept", "application/json" } }
+            RequestUri = new Uri("https://discord.com/api/v10/oauth2/token"),
+            Headers = { { "Accept", "application/json" } },
+            Content = data
         };
         var response = await _client.SendAsync(request);
         if (!response.IsSuccessStatusCode) return false;
 
-        var content = JsonConvert.DeserializeObject<PhiraTokenDto>(await response.Content.ReadAsStringAsync())!;
+        var content = JsonConvert.DeserializeObject<DiscordTokenDto>(await response.Content.ReadAsStringAsync())!;
         await UpdateTokenAsync(user, content.AccessToken, content.RefreshToken);
         return true;
     }
@@ -251,8 +258,8 @@ public class PhiraAuthProvider : IAuthProvider
         var request = new HttpRequestMessage
         {
             Method = HttpMethod.Get,
-            RequestUri = new Uri("https://api.phira.cn/me"),
-            Headers = { { "Authorization", $"Bearer {accessToken}" } }
+            RequestUri = new Uri("https://discord.com/api/v10/users/@me"),
+            Headers = { { "Authorization", $"Bearer {accessToken}" }, { "User-Agent", "PhiZone" } }
         };
         return await _client.SendAsync(request);
     }

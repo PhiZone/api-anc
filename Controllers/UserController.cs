@@ -15,8 +15,10 @@ using PhiZoneApi.Enums;
 using PhiZoneApi.Filters;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
+using PhiZoneApi.Services;
 using PhiZoneApi.Utils;
 using StackExchange.Redis;
+using AuthProvider = PhiZoneApi.Enums.AuthProvider;
 
 // ReSharper disable SuggestBaseTypeForParameterInConstructor
 
@@ -43,7 +45,9 @@ public class UserController(
     IResourceService resourceService,
     IConnectionMultiplexer redis,
     ITemplateService templateService,
+    AuthProviderFactory factory,
     IPlayConfigurationRepository playConfigurationRepository,
+    IApplicationUserRepository applicationUserRepository,
     IMeilisearchService meilisearchService) : Controller
 {
     /// <summary>
@@ -71,8 +75,8 @@ public class UserController(
         {
             var result = await meilisearchService.SearchAsync<User>(dto.Search, dto.PerPage, dto.Page);
             var idList = result.Hits.Select(item => item.Id).ToList();
-            users = (await userRepository.GetUsersAsync(["Id"], [false], position, dto.PerPage,
-                e => idList.Contains(e.Id), currentUser?.Id)).OrderBy(e => idList.IndexOf(e.Id));
+            users = (await userRepository.GetUsersAsync(["Id"], [false], 0, -1, e => idList.Contains(e.Id),
+                currentUser?.Id)).OrderBy(e => idList.IndexOf(e.Id));
             total = result.TotalHits;
         }
         else
@@ -132,11 +136,11 @@ public class UserController(
     ///     Creates a new user.
     /// </summary>
     /// <param name="dto">
-    ///     User Name, Email, Password, Language, Gender (optional), Avatar (optional), Biography (optional),
+    ///     User Name, Email, Password, Language, Region, Email Confirmation Code, Gender (optional), Biography (optional),
     ///     Date of Birth (optional)
     /// </param>
     /// <returns>An empty body.</returns>
-    /// <response code="201">Returns an empty body. Sends a confirmation email to the user.</response>
+    /// <response code="201">Returns a login token.</response>
     /// <response code="400">
     ///     When
     ///     1. the input email address / user name has been occupied;
@@ -208,6 +212,7 @@ public class UserController(
         await userManager.UpdateAsync(user);
         await meilisearchService.AddAsync(user);
         if (avatarUrl != null) await fileStorageService.SendUserInput(avatarUrl, "Avatar", Request, user);
+
         var configuration = new PlayConfiguration
         {
             Name = templateService.GetMessage("default", user.Language),
@@ -227,18 +232,25 @@ public class UserController(
             DateCreated = DateTimeOffset.UtcNow
         };
         await playConfigurationRepository.CreatePlayConfigurationAsync(configuration);
-        return StatusCode(StatusCodes.Status201Created);
+
+        return StatusCode(StatusCodes.Status201Created,
+            new ResponseDto<LoginTokenDto>
+            {
+                Status = ResponseStatus.Ok,
+                Code = ResponseCodes.Ok,
+                Data = new LoginTokenDto { Token = await GenerateLoginTokenAsync(user) }
+            });
     }
 
     /// <summary>
     ///     Creates a new user.
     /// </summary>
     /// <param name="dto">
-    ///     User Name, Email, Password, Language, Gender (optional), Biography (optional),
+    ///     User Name, Email, Password, Language, Region, Email Confirmation Code, Gender (optional), Biography (optional),
     ///     Date of Birth (optional)
     /// </param>
     /// <returns>An empty body.</returns>
-    /// <response code="201">Returns an empty body. Sends a confirmation email to the user.</response>
+    /// <response code="201">Returns a login token.</response>
     /// <response code="400">
     ///     When
     ///     1. the input email address / user name has been occupied;
@@ -324,7 +336,167 @@ public class UserController(
         };
         await playConfigurationRepository.CreatePlayConfigurationAsync(configuration);
 
-        return StatusCode(StatusCodes.Status201Created);
+        return StatusCode(StatusCodes.Status201Created,
+            new ResponseDto<LoginTokenDto>
+            {
+                Status = ResponseStatus.Ok,
+                Code = ResponseCodes.Ok,
+                Data = new LoginTokenDto { Token = await GenerateLoginTokenAsync(user) }
+            });
+    }
+
+    /// <summary>
+    ///     Creates a new user using the specified auth provider.
+    /// </summary>
+    /// <param name="dto">
+    ///     Language, Region, Gender (optional), Biography (optional),
+    ///     Date of Birth (optional)
+    /// </param>
+    /// <returns>An empty body.</returns>
+    /// <response code="201">Returns an empty body. Sends a confirmation email to the user.</response>
+    /// <response code="400">
+    ///     When
+    ///     1. the email address has been occupied;
+    ///     2. one of the input fields has failed on data validation.
+    /// </response>
+    /// <response code="500">When an internal server error has occurred.</response>
+    [HttpPost("provider/{provider}")]
+    [Consumes("application/json")]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> RegisterWithProvider([FromRoute] string provider, [FromQuery] string code,
+        [FromQuery] string state, [FromBody] UserRegistrationWithProviderDto dto,
+        [FromQuery] string? redirectUri = null)
+    {
+        if (!Enum.TryParse(typeof(AuthProvider), provider, true, out var providerEnum))
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AuthProviderNotFound
+            });
+
+        var authProvider = factory.GetAuthProvider((providerEnum as AuthProvider?)!.Value);
+        if (authProvider == null)
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AuthProviderNotFound
+            });
+
+        var result = await authProvider.RequestTokenAsync(code, state, redirectUri: redirectUri);
+        if (result == null)
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AuthFailure
+            });
+
+        var remoteUser = await authProvider.GetRemoteIdentityAsync(result.Value.Item1);
+        if (remoteUser == null)
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AuthFailure
+            });
+
+        if (!await resourceService.IsUserInputValidAsync(remoteUser.Email, "Email") ||
+            await userRepository.CountUsersAsync(e => e.NormalizedEmail == remoteUser.Email.ToUpper()) > 0)
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.EmailOccupied
+            });
+
+        if (await userRepository.GetUserByRemoteIdAsync(authProvider.GetApplicationId(), remoteUser.Id) != null)
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.BindingOccupied
+            });
+
+        if (!resourceService.IsEmailValid(remoteUser.Email) ||
+            !await resourceService.IsUserInputValidAsync(remoteUser.Email, "Email"))
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidEmailAddress
+            });
+
+        var userName = remoteUser.UserName;
+        while (!resourceService.IsUserNameValid(userName) ||
+               await userRepository.CountUsersAsync(e => e.NormalizedUserName == userName.ToUpper()) > 0 ||
+               !await resourceService.IsUserInputValidAsync(userName, "UserName"))
+        {
+            var random = new Random();
+            var randomString = new string(Enumerable.Repeat("abcdefghijklmnopqrstuvwxyz0123456789", random.Next(6) + 6)
+                .Select(s => s[random.Next(s.Length)])
+                .ToArray());
+            userName = $"User_{randomString}";
+        }
+
+        string? avatarUrl = null;
+        if (remoteUser.Avatar != null)
+            avatarUrl = (await fileStorageService.UploadImage<User>(remoteUser.UserName, remoteUser.Avatar, (1, 1)))
+                .Item1;
+
+        var user = new User
+        {
+            SecurityStamp = Guid.NewGuid().ToString(),
+            UserName = userName,
+            Email = remoteUser.Email,
+            Avatar = avatarUrl,
+            Language = dto.Language,
+            Gender = dto.Gender,
+            Biography = dto.Biography,
+            RegionId = (await regionRepository.GetRegionAsync(dto.RegionCode)).Id,
+            DateOfBirth =
+                dto.DateOfBirth != null
+                    ? new DateTimeOffset(dto.DateOfBirth.GetValueOrDefault().DateTime, TimeSpan.Zero)
+                    : null,
+            DateJoined = DateTimeOffset.UtcNow
+        };
+        await userManager.CreateAsync(user);
+
+        user.EmailConfirmed = true;
+        user.LockoutEnabled = false;
+        user.Role = UserRole.Member;
+        await userManager.UpdateAsync(user);
+        await meilisearchService.UpdateAsync(user);
+        if (avatarUrl != null) await fileStorageService.SendUserInput(avatarUrl, "Avatar", Request, user);
+
+        var configuration = new PlayConfiguration
+        {
+            Name = templateService.GetMessage("default", user.Language),
+            PerfectJudgment = 80,
+            GoodJudgment = 160,
+            ChartMirroring = ChartMirroringMode.Off,
+            AspectRatio = null,
+            NoteSize = 1,
+            BackgroundLuminance = 0.5,
+            BackgroundBlur = 1,
+            SimultaneousNoteHint = true,
+            FcApIndicator = true,
+            ChartOffset = 0,
+            HitSoundVolume = 1,
+            MusicVolume = 1,
+            OwnerId = user.Id,
+            DateCreated = DateTimeOffset.UtcNow
+        };
+        await playConfigurationRepository.CreatePlayConfigurationAsync(configuration);
+        var applicationUser = new ApplicationUser
+        {
+            ApplicationId = authProvider.GetApplicationId(),
+            UserId = user.Id,
+            AccessToken = result.Value.Item1,
+            RefreshToken = result.Value.Item2,
+            DateCreated = DateTimeOffset.UtcNow,
+            DateUpdated = DateTimeOffset.UtcNow
+        };
+        await applicationUserRepository.CreateRelationAsync(applicationUser);
+        await authProvider.BindIdentityAsync(user);
+
+        return StatusCode(StatusCodes.Status201Created,
+            new ResponseDto<LoginTokenDto>
+            {
+                Status = ResponseStatus.Ok,
+                Code = ResponseCodes.Ok,
+                Data = new LoginTokenDto { Token = await GenerateLoginTokenAsync(user) }
+            });
     }
 
     /// <summary>
@@ -762,5 +934,20 @@ public class UserController(
             Code = ResponseCodes.Ok,
             Data = new UserPersonalBestsDto { Phi1 = phi1Dto, Best19 = b19Dto }
         });
+    }
+
+    private async Task<string> GenerateLoginTokenAsync(User user)
+    {
+        var db = redis.GetDatabase();
+        string token;
+        string key;
+        do
+        {
+            token = Guid.NewGuid().ToString();
+            key = $"phizone:login:{token}";
+        } while (await db.KeyExistsAsync(key));
+
+        await db.StringSetAsync(key, user.Id.ToString(), TimeSpan.FromSeconds(30));
+        return token;
     }
 }

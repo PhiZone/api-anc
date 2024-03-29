@@ -92,7 +92,7 @@ public class ChartSubmissionController(
                 !isVolunteer ? currentUser.Id : null);
             var idList = result.Hits.Select(item => item.Id).ToList();
             chartSubmissions = (await chartSubmissionRepository.GetChartSubmissionsAsync(["DateCreated"], [false],
-                position, dto.PerPage, e => idList.Contains(e.Id), currentUser.Id)).OrderBy(e => idList.IndexOf(e.Id));
+                0, -1, e => idList.Contains(e.Id), currentUser.Id)).OrderBy(e => idList.IndexOf(e.Id));
             total = result.TotalHits;
         }
         else
@@ -1160,11 +1160,12 @@ public class ChartSubmissionController(
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
             });
         var chartSubmission = await chartSubmissionRepository.GetChartSubmissionAsync(id);
-        var result =
-            await scriptService.RunAsync(serviceId, dto.Parameters, chartSubmission, currentUser);
+        var result = await scriptService.RunAsync(serviceId, dto.Parameters, chartSubmission, currentUser);
 
-        return Ok(
-            new ResponseDto<ServiceResponseDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = result });
+        return Ok(new ResponseDto<ServiceResponseDto>
+        {
+            Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = result
+        });
     }
 
     /// <summary>

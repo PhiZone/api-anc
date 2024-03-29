@@ -16,6 +16,8 @@ public class SongDto
 
     public string File { get; set; } = null!;
 
+    public string FileChecksum { get; set; } = null!;
+
     public string Illustration { get; set; } = null!;
 
     public string Illustrator { get; set; } = null!;

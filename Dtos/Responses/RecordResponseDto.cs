@@ -12,7 +12,7 @@ public class RecordResponseDto
 
     public UserDto Player { get; set; } = null!;
 
-    public int ExperienceDelta { get; set; }
+    public ulong ExperienceDelta { get; set; }
 
     public double RksBefore { get; set; }
 

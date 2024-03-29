@@ -87,8 +87,8 @@ public class ChartController(
             var result = await meilisearchService.SearchAsync<Chart>(dto.Search, dto.PerPage, dto.Page,
                 showHidden: currentUser is { Role: UserRole.Administrator });
             var idList = result.Hits.Select(item => item.Id).ToList();
-            charts = (await chartRepository.GetChartsAsync(["DateCreated"], [false], position, dto.PerPage,
-                e => idList.Contains(e.Id), currentUser?.Id)).OrderBy(e => idList.IndexOf(e.Id));
+            charts = (await chartRepository.GetChartsAsync(["DateCreated"], [false], 0, -1, e => idList.Contains(e.Id),
+                currentUser?.Id)).OrderBy(e => idList.IndexOf(e.Id));
             total = result.TotalHits;
         }
         else

@@ -1,5 +1,4 @@
-﻿using PhiZoneApi.Dtos.Deliverers;
-using PhiZoneApi.Enums;
+﻿using PhiZoneApi.Enums;
 using PhiZoneApi.Models;
 
 namespace PhiZoneApi.Interfaces;
@@ -26,5 +25,9 @@ public interface IResourceService
 
     string Normalize(string input);
 
-    ResourceDto GetResources();
+    bool IsUserNameValid(string userName);
+
+    bool IsEmailValid(string email);
+
+    Task<bool> IsUserInputValidAsync(string input, string memberName);
 }

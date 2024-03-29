@@ -62,9 +62,9 @@ public class UserRelationRepository(ApplicationDbContext context, IMeilisearchSe
     {
         var follower = await context.Users.FirstAsync(e => e.Id == userRelation.FollowerId);
         var followee = await context.Users.FirstAsync(e => e.Id == userRelation.FolloweeId);
-        follower.FolloweeCount = await context.UserRelations.CountAsync(e =>
+        follower.FolloweeCount = await context.UserRelations.LongCountAsync(e =>
             e.FollowerId == userRelation.FollowerId && e.Type != UserRelationType.Blacklisted) + 1;
-        followee.FollowerCount = await context.UserRelations.CountAsync(e =>
+        followee.FollowerCount = await context.UserRelations.LongCountAsync(e =>
             e.FolloweeId == userRelation.FolloweeId && e.Type != UserRelationType.Blacklisted) + 1;
         await context.UserRelations.AddAsync(userRelation);
         context.Users.UpdateRange(follower, followee);
@@ -78,9 +78,9 @@ public class UserRelationRepository(ApplicationDbContext context, IMeilisearchSe
         var followee = await context.Users.FirstAsync(e => e.Id == userRelation.FolloweeId);
         context.UserRelations.Update(userRelation);
         var result = await SaveAsync();
-        follower.FolloweeCount = await context.UserRelations.CountAsync(e =>
+        follower.FolloweeCount = await context.UserRelations.LongCountAsync(e =>
             e.FollowerId == userRelation.FollowerId && e.Type != UserRelationType.Blacklisted);
-        followee.FollowerCount = await context.UserRelations.CountAsync(e =>
+        followee.FollowerCount = await context.UserRelations.LongCountAsync(e =>
             e.FolloweeId == userRelation.FolloweeId && e.Type != UserRelationType.Blacklisted);
         context.Users.UpdateRange(follower, followee);
         await meilisearchService.UpdateBatchAsync([follower, followee]);
