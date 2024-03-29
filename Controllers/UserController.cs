@@ -431,7 +431,7 @@ public class UserController(
 
         string? avatarUrl = null;
         if (remoteUser.Avatar != null)
-            avatarUrl = (await fileStorageService.UploadImage<User>(remoteUser.UserName, remoteUser.Avatar, (1, 1)))
+            avatarUrl = (await fileStorageService.UploadImage<User>(userName, remoteUser.Avatar, (1, 1)))
                 .Item1;
 
         var user = new User

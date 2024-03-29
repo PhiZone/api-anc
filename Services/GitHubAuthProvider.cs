@@ -139,7 +139,8 @@ public class GitHubAuthProvider : IAuthProvider
 
         return new RemoteUserDto
         {
-            Id = content.Id.ToString(), UserName = content.Name, Email = content.Email, Avatar = await _client.GetByteArrayAsync(content.AvatarUrl)
+            Id = content.Id.ToString(), UserName = content.Name, Email = content.Email,
+            Avatar = await _client.GetByteArrayAsync(content.AvatarUrl)
         };
     }
 

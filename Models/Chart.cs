@@ -54,6 +54,7 @@ public class Chart : PublicResource
 
     public override string GetDisplay()
     {
-        return $"{(Title != null ? $"{Title} " : Song.Title)}[{Level} {Math.Floor(Difficulty)}]";
+        return
+            $"{(Title != null ? $"{Title} " : Song.Title)}[{Level} {(Difficulty == 0 ? "?" : Math.Floor(Difficulty))}]";
     }
 }

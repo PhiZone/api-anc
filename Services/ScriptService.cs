@@ -36,7 +36,7 @@ public class ScriptService(IServiceProvider serviceProvider) : IScriptService
         }
     }
 
-    public async Task<ServiceResponseDto> RunAsync<T>(Guid id, Dictionary<string, string> parameters, T target,
+    public async Task<ServiceResponseDto> RunAsync<T>(Guid id, Dictionary<string, string> parameters, T? target,
         User currentUser)
     {
         return (await _serviceScripts[id].RunAsync(new ServiceScriptGlobals<T>
@@ -104,7 +104,7 @@ public class ScriptService(IServiceProvider serviceProvider) : IScriptService
     {
         public Dictionary<string, string> Parameters { get; set; } = null!;
 
-        public T Target { get; set; } = default!;
+        public T? Target { get; set; }
 
         public User CurrentUser { get; set; } = null!;
     }
