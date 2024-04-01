@@ -15,8 +15,7 @@ public class FilterService(IResourceService resourceService) : IFilterService
     public async Task<Expression<Func<T, bool>>?> Parse<T>(FilterDto<T>? dto, string? predicate = null,
         User? currentUser = null, Expression<Func<T, bool>>? requirement = null)
     {
-        // var isAdmin = currentUser != null && resourceService.HasPermission(currentUser, UserRole.Administrator);
-        var isAdmin = false; // April fool
+        var isAdmin = currentUser != null && resourceService.HasPermission(currentUser, UserRole.Administrator);
 
         if (isAdmin && predicate != null)
             return await CSharpScript.EvaluateAsync<Expression<Func<T, bool>>>(predicate,
