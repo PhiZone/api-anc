@@ -296,7 +296,6 @@ public class AuthenticationController(
 
             user.DateLastLoggedIn = DateTimeOffset.UtcNow;
             user.AccessFailedCount = 0;
-            user.Tag = "Ciallo\uff5e(\u2220・ω< )\u2312\u2605"; // April fool
             await userManager.UpdateAsync(user);
 
             return SignIn(new ClaimsPrincipal(identity), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
@@ -656,7 +655,6 @@ public class AuthenticationController(
 
         user.DateLastLoggedIn = DateTimeOffset.UtcNow;
         user.AccessFailedCount = 0;
-        user.Tag = "Ciallo\uff5e(\u2220・ω< )\u2312\u2605"; // April fool
         await userRepository.SaveAsync();
 
         logger.LogInformation(LogEvents.UserInfo, "[{Now}] New login ({Method}): #{Id} {UserName}",
