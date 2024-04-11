@@ -66,7 +66,7 @@ public class SubmissionService(
             };
             await songRepository.CreateSongAsync(song);
 
-            if (!isHidden)
+            if (isOriginal && !isHidden)
                 foreach (var relation in await userRelationRepository.GetRelationsAsync(
                              ["DateCreated"], [false], 0, -1,
                              e => e.FolloweeId == songSubmission.OwnerId && e.Type != UserRelationType.Blacklisted))

@@ -74,12 +74,15 @@ public class ChartController(
             dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
+        var tagsToInclude = tagDto?.TagsToInclude?.Select(resourceService.Normalize).ToList();
+        var tagsToExclude = tagDto?.TagsToExclude?.Select(resourceService.Normalize).ToList();
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser,
             e => tagDto == null ||
-                 ((tagDto.TagsToInclude == null || e.Tags.Any(tag =>
-                      tagDto.TagsToInclude.Select(resourceService.Normalize).ToList().Contains(tag.NormalizedName))) &&
-                  (tagDto.TagsToExclude == null || e.Tags.All(tag =>
-                      !tagDto.TagsToExclude.Select(resourceService.Normalize).ToList().Contains(tag.NormalizedName)))));
+                 ((tagDto.TagsToInclude == null || e.Tags.Any(tag => tagsToInclude!.Contains(tag.NormalizedName)) ||
+                   e.Song.Tags.Any(tag => tagsToInclude!.Contains(tag.NormalizedName))) &&
+                  (tagDto.TagsToExclude == null || (e.Tags.All(tag => !tagsToExclude!.Contains(tag.NormalizedName)) &&
+                                                    e.Song.Tags.All(tag =>
+                                                        !tagsToExclude!.Contains(tag.NormalizedName))))));
         IEnumerable<Chart> charts;
         int total;
         if (dto.Search != null)
@@ -175,17 +178,15 @@ public class ChartController(
         [FromQuery] ChartFilterDto? filterDto = null, [FromQuery] ArrayTagDto? tagDto = null)
     {
         var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        var tagsToInclude = tagDto?.TagsToInclude?.Select(resourceService.Normalize).ToList();
+        var tagsToExclude = tagDto?.TagsToExclude?.Select(resourceService.Normalize).ToList();
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser,
-            e => !e.IsHidden && (tagDto == null ||
-                                 ((tagDto.TagsToInclude == null || e.Tags.Any(tag =>
-                                     tagDto.TagsToInclude.Select(resourceService.Normalize)
-                                         .ToList()
-                                         .Contains(tag.NormalizedName))) && (tagDto.TagsToExclude == null ||
-                                                                             e.Tags.All(tag =>
-                                                                                 !tagDto.TagsToExclude
-                                                                                     .Select(resourceService.Normalize)
-                                                                                     .ToList()
-                                                                                     .Contains(tag.NormalizedName))))));
+            e => tagDto == null ||
+                 ((tagDto.TagsToInclude == null || e.Tags.Any(tag => tagsToInclude!.Contains(tag.NormalizedName)) ||
+                   e.Song.Tags.Any(tag => tagsToInclude!.Contains(tag.NormalizedName))) &&
+                  (tagDto.TagsToExclude == null || (e.Tags.All(tag => !tagsToExclude!.Contains(tag.NormalizedName)) &&
+                                                    e.Song.Tags.All(tag =>
+                                                        !tagsToExclude!.Contains(tag.NormalizedName))))));
         var chart = await chartRepository.GetRandomChartAsync(predicateExpr, currentUser?.Id);
 
         if (chart == null)
