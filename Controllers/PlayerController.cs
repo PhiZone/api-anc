@@ -372,7 +372,7 @@ public class PlayerController(
             EarliestEndTime = DateTimeOffset.UtcNow.Add(song.Duration!.Value),
             Timestamp = timestamp
         };
-        await db.StringSetAsync($"phizone:play:{token}", JsonConvert.SerializeObject(info), TimeSpan.FromDays(14));
+        await db.StringSetAsync($"phizone:play:{token}", JsonConvert.SerializeObject(info), TimeSpan.FromHours(18));
         return Ok(new ResponseDto<PlayResponseDto>
         {
             Status = ResponseStatus.Ok, Data = new PlayResponseDto { Token = token, Timestamp = timestamp }
