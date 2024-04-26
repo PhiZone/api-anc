@@ -13,6 +13,7 @@ public class MappingProfiles : Profile
         CreateMap<User, AuthorDto>().ForMember(x => x.Role, opt => opt.Ignore());
         CreateMap<User, UserDetailedDto>();
         CreateMap<User, UserUpdateDto>();
+        CreateMap<UserDetailedDto, UserDto>();
         CreateMap<UserRegistrationDto, User>();
         CreateMap<UserRelation, UserRelationDto>();
         CreateMap<Region, RegionDto>();

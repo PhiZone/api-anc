@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using OpenIddict.Abstractions;
 using OpenIddict.Validation.AspNetCore;
 using PhiZoneApi.Configurations;
@@ -16,6 +17,7 @@ using PhiZoneApi.Filters;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 using PhiZoneApi.Utils;
+using StackExchange.Redis;
 
 // ReSharper disable RouteTemplates.ActionRoutePrefixCanBeExtractedToControllerRoute
 
@@ -53,6 +55,7 @@ public class ChartController(
     ITagRepository tagRepository,
     ITemplateService templateService,
     ILeaderboardService leaderboardService,
+    IConnectionMultiplexer redis,
     ILogger<ChartController> logger,
     IMeilisearchService meilisearchService) : Controller
 {
@@ -157,6 +160,53 @@ public class ChartController(
                     [true], 0, 1, r => r.OwnerId == currentUser.Id && r.ChartId == id)).FirstOrDefault()
                 ?.Rks;
         }
+
+        return Ok(new ResponseDto<ChartDetailedDto>
+        {
+            Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto
+        });
+    }
+
+    /// <summary>
+    ///     Retrieves a specific chart using a TapTap ghost account.
+    /// </summary>
+    /// <param name="id">A chart's ID.</param>
+    /// <returns>A chart.</returns>
+    /// <response code="200">Returns a chart.</response>
+    /// <response code="304">
+    ///     When the resource has not been updated since last retrieval. Requires <c>If-None-Match</c>.
+    /// </response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="404">When the specified chart is not found.</response>
+    [HttpGet("{id:guid}/tapTap")]
+    [ServiceFilter(typeof(ETagFilter))]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<ChartDetailedDto>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status304NotModified, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> GetChartTapTapGhost([FromRoute] Guid id)
+    {
+        var db = redis.GetDatabase();
+        var key =
+            $"phizone:tapghost:{User.GetClaim(OpenIddictConstants.Claims.ClientId)}:{User.GetClaim(OpenIddictConstants.Claims.KeyId)}";
+        if (!await db.KeyExistsAsync(key)) return Unauthorized();
+        var currentUser = JsonConvert.DeserializeObject<UserDetailedDto>((await db.StringGetAsync(key))!)!;
+        if (!await chartRepository.ChartExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+        var chart = await chartRepository.GetChartAsync(id);
+        var dto = dtoMapper.MapChart<ChartDetailedDto>(chart);
+        var records = JsonConvert.DeserializeObject<List<Record>>((await db.StringGetAsync($"{key}:records"))!)!;
+
+        dto.PersonalBestScore = records.OrderByDescending(e => e.Score).FirstOrDefault(r => r.OwnerId == currentUser.Id && r.ChartId == id)
+            ?.Score;
+        dto.PersonalBestAccuracy = records.OrderByDescending(e => e.Accuracy).FirstOrDefault(r => r.OwnerId == currentUser.Id && r.ChartId == id)
+            ?.Accuracy;
+        dto.PersonalBestRks = records.OrderByDescending(e => e.Rks).FirstOrDefault(r => r.OwnerId == currentUser.Id && r.ChartId == id)
+            ?.Rks;
 
         return Ok(new ResponseDto<ChartDetailedDto>
         {

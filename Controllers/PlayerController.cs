@@ -35,6 +35,7 @@ public class PlayerController(
     UserManager<User> userManager,
     IFilterService filterService,
     IMapper mapper,
+    IDtoMapper dtoMapper,
     IChartRepository chartRepository,
     IApplicationRepository applicationRepository,
     IConnectionMultiplexer redis,
@@ -300,8 +301,8 @@ public class PlayerController(
     /// <summary>
     ///     Obtains a play token.
     /// </summary>
-    /// <returns>An object containing a play token and a timestamp of the current time in UTC.</returns>
-    /// <response code="200">Returns an object containing a play token and a timestamp of the current time in UTC.</response>
+    /// <returns>An object containing a play token and a timestamp of the current time in UTC, along with necessary resources required for the play.</returns>
+    /// <response code="200">Returns an object containing a play token and a timestamp of the current time in UTC, along with necessary resources required for the play.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="403">When the user does not have sufficient permission.</response>
@@ -375,7 +376,67 @@ public class PlayerController(
         await db.StringSetAsync($"phizone:play:{token}", JsonConvert.SerializeObject(info), TimeSpan.FromHours(18));
         return Ok(new ResponseDto<PlayResponseDto>
         {
-            Status = ResponseStatus.Ok, Data = new PlayResponseDto { Token = token, Timestamp = timestamp }
+            Status = ResponseStatus.Ok, Data = new PlayResponseDto { Token = token, Timestamp = timestamp, Chart = dtoMapper.MapChart<ChartDto>(chart) }
+        });
+    }
+
+    /// <summary>
+    ///     Obtains a play token using a TapTap ghost account.
+    /// </summary>
+    /// <returns>An object containing a play token and a timestamp of the current time in UTC, along with necessary resources required for the play.</returns>
+    /// <response code="200">Returns an object containing a play token and a timestamp of the current time in UTC, along with necessary resources required for the play.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="404">When the chart is not found.</response>
+    [HttpGet("play/tapTap")]
+    [Produces("application/json")]
+    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<PlayResponseDto>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> PlayTapTapGhost([FromQuery] Guid chartId, [FromQuery] int perfectJudgment, [FromQuery] int goodJudgment)
+    {
+        var db = redis.GetDatabase();
+        var key =
+            $"phizone:tapghost:{User.GetClaim(OpenIddictConstants.Claims.ClientId)}:{User.GetClaim(OpenIddictConstants.Claims.KeyId)}";
+        if (!await db.KeyExistsAsync(key)) return Unauthorized();
+        if (!await chartRepository.ChartExistsAsync(chartId))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+
+        Guid token;
+        do
+        {
+            token = Guid.NewGuid();
+        } while (await db.KeyExistsAsync($"phizone:play:tapghost:{token}"));
+
+        var chart = await chartRepository.GetChartAsync(chartId);
+        if (chart.IsLocked)
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Locked
+            });
+
+        var song = await songRepository.GetSongAsync(chart.SongId);
+        var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
+        var info = new PlayInfoTapTapDto
+        {
+            ChartId = chartId,
+            ApplicationId = Guid.Parse(User.GetClaim(OpenIddictConstants.Claims.ClientId)!),
+            PlayerId = User.GetClaim(OpenIddictConstants.Claims.KeyId)!,
+            EarliestEndTime = DateTimeOffset.UtcNow.Add(song.Duration!.Value),
+            PerfectJudgment = perfectJudgment,
+            GoodJudgment = goodJudgment,
+            Timestamp = timestamp
+        };
+        await db.StringSetAsync($"phizone:play:tapghost:{token}", JsonConvert.SerializeObject(info), TimeSpan.FromHours(18));
+        return Ok(new ResponseDto<PlayResponseDto>
+        {
+            Status = ResponseStatus.Ok, Data = new PlayResponseDto { Token = token, Timestamp = timestamp, Chart = dtoMapper.MapChart<ChartDto>(chart) }
         });
     }
 

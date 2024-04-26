@@ -1,4 +1,5 @@
 ﻿using PhiZoneApi.Enums;
+using System.Text.Json.Serialization;
 
 namespace PhiZoneApi.Models;
 
@@ -51,6 +52,8 @@ public class Chart : PublicResource
     public long PlayCount { get; set; }
 
     public List<Tag> Tags { get; } = [];
+
+    [JsonIgnore] public List<ChartAsset> Assets { get; } = [];
 
     public override string GetDisplay()
     {
