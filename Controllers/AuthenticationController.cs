@@ -202,18 +202,75 @@ public class AuthenticationController(
             var responseDto =
                 JsonConvert.DeserializeObject<TapTapDelivererDto>(await response.Content.ReadAsStringAsync())!;
             var user = await userRepository.GetUserByTapUnionIdAsync(tapApplicationId.Value, responseDto.Data.Unionid);
-            if (user == null)
-                return Forbid(
-                    new AuthenticationProperties(new Dictionary<string, string>
-                    {
-                        [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidToken,
-                        [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
-                            "Unable to find a user with provided credentials."
-                    }!), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+            if (user != null)
+            {
+                var actionResult = await CheckUserLockoutState(user);
+                if (actionResult != null) return actionResult;
+                return await Login(user, "TapTap");
+            }
 
-            var actionResult = await CheckUserLockoutState(user);
-            if (actionResult != null) return actionResult;
-            return await Login(user, "TapTap");
+            var db = redis.GetDatabase();
+            var key = $"phizone:tapghost:{tapApplicationId.Value}:{responseDto.Data.Unionid}";
+            UserDetailedDto ghost;
+            var ghostStr = await db.StringGetAsync(key);
+            if (ghostStr == RedisValue.Null)
+            {
+                ghost = new UserDetailedDto
+                {
+                    Id = -1,
+                    UserName = responseDto.Data.Name,
+                    Avatar = responseDto.Data.Avatar,
+                    Gender = 0,
+                    Region = new RegionDto
+                    {
+                        Id = 47,
+                        Code = "CN",
+                        Name = "China"
+                    },
+                    Language = "zh-CN",
+                    Biography = null,
+                    Role = UserRole.Unactivated.ToString(),
+                    Experience = 0,
+                    Tag = null,
+                    Rks = 0,
+                    FollowerCount = 0,
+                    FolloweeCount = 0,
+                    DateLastLoggedIn = DateTimeOffset.UtcNow,
+                    DateJoined = DateTimeOffset.UtcNow,
+                    DateOfBirth = null,
+                    DateFollowed = null,
+                    ApplicationLinks = null,
+                    Email = "ghost@phizone.cn",
+                    EmailConfirmed = true,
+                    PhoneNumber = null,
+                    PhoneNumberConfirmed = false,
+                    TwoFactorEnabled = false,
+                    Notifications = 0
+                };
+            }
+            else
+            {
+                ghost = JsonConvert.DeserializeObject<UserDetailedDto>(ghostStr!)!;
+                ghost.DateLastLoggedIn = DateTimeOffset.UtcNow;
+            }
+
+            await db.StringSetAsync(key, JsonConvert.SerializeObject(ghost), TimeSpan.FromDays(180));
+            
+            var identity = new ClaimsIdentity(TokenValidationParameters.DefaultAuthenticationType, Claims.Name,
+                Claims.Role);
+
+            identity.AddClaim(Claims.Subject, ghost.Id.ToString(), Destinations.AccessToken);
+            identity.AddClaim(Claims.Username, ghost.UserName, Destinations.AccessToken);
+            identity.AddClaim(Claims.ClientId, tapApplicationId.Value.ToString(), Destinations.AccessToken);
+            identity.AddClaim(Claims.KeyId, responseDto.Data.Unionid, Destinations.AccessToken);
+
+            var claimsPrincipal = new ClaimsPrincipal(identity);
+            claimsPrincipal.SetScopes(Scopes.OfflineAccess);
+
+            logger.LogInformation(LogEvents.UserInfo, "[{Now}] New login (TapTap Ghost): {UserName}",
+                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), ghost.UserName);
+
+            return SignIn(claimsPrincipal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
         }
 
         if (request.IsPasswordGrantType())

@@ -56,6 +56,8 @@ public class ChartDto
 
     public List<TagDto> Tags { get; set; } = null!;
 
+    public List<ChartAssetDto> Assets { get; set; } = null!;
+
     public Guid SongId { get; set; }
 
     public SongDto Song { get; set; } = null!;

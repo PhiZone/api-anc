@@ -26,12 +26,16 @@ public class ChartRepository(ApplicationDbContext context, IMeilisearchService m
         return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
 
-    public async Task<Chart> GetChartAsync(Guid id, int? currentUserId = null)
+    public async Task<Chart> GetChartAsync(Guid id, int? currentUserId = null, bool includeAssets = false)
     {
         IQueryable<Chart> result = context.Charts.Include(e => e.Tags)
             .Include(e => e.Song)
             .ThenInclude(e => e.Charts).Include(e => e.Song)
             .ThenInclude(e => e.Tags);
+        if (includeAssets)
+        {
+            result = result.Include(e => e.Assets);
+        }
         if (currentUserId != null)
             result = result.Include(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
         return (await result.FirstOrDefaultAsync(chart => chart.Id == id))!;

@@ -1127,7 +1127,7 @@ public class ChartSubmissionController(
     /// <response code="404">When the specified chart submission is not found.</response>
     [HttpPost("{id:guid}/useService/{serviceId:guid}")]
     [Consumes("application/json")]
-    [Produces("application/json")]
+    [Produces("application/json")] 
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<ServiceResponseDto>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
