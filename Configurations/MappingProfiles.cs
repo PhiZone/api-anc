@@ -48,6 +48,10 @@ public class MappingProfiles : Profile
         CreateMap<ApplicationUser, ApplicationUserDto>();
         CreateMap<Announcement, AnnouncementDto>();
         CreateMap<Announcement, AnnouncementRequestDto>();
+        CreateMap<Event, EventDto>().ForMember(x => x.Divisions, opt => opt.Ignore());
+        CreateMap<Event, EventUpdateDto>();
+        CreateMap<EventDivision, EventDivisionDto>();
+        CreateMap<EventDivision, EventDivisionUpdateDto>();
         CreateMap<PlayConfiguration, PlayConfigurationResponseDto>();
         CreateMap<PlayConfigurationRequestDto, PlayConfiguration>();
         CreateMap<PlayConfiguration, PlayConfigurationRequestDto>();

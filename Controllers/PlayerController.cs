@@ -399,7 +399,7 @@ public class PlayerController(
     {
         var db = redis.GetDatabase();
         var key =
-            $"phizone:tapghost:{User.GetClaim(OpenIddictConstants.Claims.ClientId)}:{User.GetClaim(OpenIddictConstants.Claims.KeyId)}";
+            $"phizone:tapghost:{User.GetClaim("appId")}:{User.GetClaim("unionId")}";
         if (!await db.KeyExistsAsync(key)) return Unauthorized();
         if (!await chartRepository.ChartExistsAsync(chartId))
             return NotFound(new ResponseDto<object>

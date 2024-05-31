@@ -10,7 +10,11 @@ public interface ITagRepository
 
     Task<Tag> GetTagAsync(Guid id);
 
+    Task<Tag> GetTagAsync(string name);
+
     Task<bool> TagExistsAsync(Guid id);
+
+    Task<bool> TagExistsAsync(string name);
 
     Task<bool> CreateTagAsync(Tag tag);
 

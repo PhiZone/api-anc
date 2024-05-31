@@ -14,6 +14,8 @@ public class Event : PublicResource
 
     public DateTimeOffset DateUnveiled { get; set; }
 
+    [JsonIgnore] public List<EventDivision> Divisions { get; set; } = [];
+
     [JsonIgnore] public List<User> Administrators { get; set; } = [];
 
     public override string GetDisplay()

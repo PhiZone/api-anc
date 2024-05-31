@@ -438,15 +438,15 @@ public class ChartService(IFileStorageService fileStorageService, ILogger<ChartS
     {
         var dto = new PecDto
         {
-            BpmCommands = new List<BpmCommand>(),
-            NoteCommands = new List<NoteCommand>(),
-            SpeedCommands = new List<SpeedCommand>(),
-            MoveCommands = new List<MoveCommand>(),
-            RotationCommands = new List<RotationCommand>(),
-            AlphaCommands = new List<AlphaCommand>(),
-            DurationalMoveCommands = new List<DurationalMoveCommand>(),
-            DurationalRotationCommands = new List<DurationalRotationCommand>(),
-            DurationalAlphaCommands = new List<DurationalAlphaCommand>()
+            BpmCommands = [],
+            NoteCommands = [],
+            SpeedCommands = [],
+            MoveCommands = [],
+            RotationCommands = [],
+            AlphaCommands = [],
+            DurationalMoveCommands = [],
+            DurationalRotationCommands = [],
+            DurationalAlphaCommands = []
         };
 
         try

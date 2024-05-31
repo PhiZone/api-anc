@@ -12,17 +12,22 @@ namespace PhiZoneApi.Repositories;
 public class EventRepository(ApplicationDbContext context, IMeilisearchService meilisearchService) : IEventRepository
 {
     public async Task<ICollection<Event>> GetEventsAsync(List<string> order, List<bool> desc, int position, int take,
-        Expression<Func<Event, bool>>? predicate = null)
+        Expression<Func<Event, bool>>? predicate = null, int? currentUserId = null)
     {
-        var result = context.Events.OrderBy(order, desc);
+        var result = context.Events.Include(e => e.Divisions).Include(e => e.Administrators).OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
+        if (currentUserId != null)
+            result = result.Include(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
         result = result.Skip(position);
         return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
     }
 
-    public async Task<Event> GetEventAsync(Guid id)
+    public async Task<Event> GetEventAsync(Guid id, int? currentUserId = null)
     {
-        return (await context.Events.FirstOrDefaultAsync(eventEntity => eventEntity.Id == id))!;
+        IQueryable<Event> result = context.Events.Include(e => e.Divisions).Include(e => e.Administrators);
+        if (currentUserId != null)
+            result = result.Include(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
+        return (await result.FirstOrDefaultAsync(eventEntity => eventEntity.Id == id))!;
     }
 
     public async Task<bool> EventExistsAsync(Guid id)

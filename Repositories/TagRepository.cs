@@ -29,9 +29,20 @@ public class TagRepository(
         return (await result.FirstOrDefaultAsync(tag => tag.Id == id))!;
     }
 
+    public async Task<Tag> GetTagAsync(string name)
+    {
+        IQueryable<Tag> result = context.Tags;
+        return (await result.FirstOrDefaultAsync(tag => tag.NormalizedName == name))!;
+    }
+
     public async Task<bool> TagExistsAsync(Guid id)
     {
         return await context.Tags.AnyAsync(tag => tag.Id == id);
+    }
+    
+    public async Task<bool> TagExistsAsync(string name)
+    {
+        return await context.Tags.AnyAsync(tag => tag.NormalizedName == name);
     }
 
     public async Task<bool> CreateTagAsync(Tag tag)
