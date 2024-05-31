@@ -37,8 +37,6 @@ public class User : IdentityUser<int>
     public int RegionId { get; set; }
 
     public Region Region { get; set; } = null!;
-    
-    public Guid EventId { get; set; }
 
     [JsonIgnore] public List<User> Followers { get; } = [];
 
