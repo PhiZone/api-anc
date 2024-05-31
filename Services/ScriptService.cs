@@ -37,7 +37,7 @@ public class ScriptService(IServiceProvider serviceProvider) : IScriptService
     }
 
     public async Task<ServiceResponseDto> RunAsync<T>(Guid id, Dictionary<string, string> parameters, T? target,
-        User currentUser)
+        User currentUser, CancellationToken? cancellationToken = null)
     {
         return (await _serviceScripts[id].RunAsync(new ServiceScriptGlobals<T>
         {
@@ -45,17 +45,17 @@ public class ScriptService(IServiceProvider serviceProvider) : IScriptService
             Target = target,
             CurrentUser = currentUser,
             ServiceProvider = serviceProvider
-        })).ReturnValue;
+        }, null, cancellationToken ?? CancellationToken.None)).ReturnValue;
     }
 
-    public async Task RunAsync<T>(Guid id, T? target = default, User? currentUser = null)
+    public async Task RunAsync<T>(Guid id, T? target = default, User? currentUser = null, CancellationToken? cancellationToken = null)
     {
         await _eventTaskScripts[id].RunAsync(new EventTaskScriptGlobals<T>
         {
             Target = target,
             CurrentUser = currentUser,
             ServiceProvider = serviceProvider
-        });
+        }, null, cancellationToken ?? CancellationToken.None);
     }
 
     public void Compile(Guid id, string code, ServiceTargetType type)

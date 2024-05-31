@@ -126,7 +126,7 @@ public class Note : IComparable<Note>
 
 public class EventLayer
 {
-    [JsonProperty("alphaEvents")] public List<AlphaEvent?>? AlphaEvents { get; set; }
+    [JsonProperty("alphaEvents")] public List<Event?>? AlphaEvents { get; set; }
 
     [JsonProperty("moveXEvents")] public List<Event?>? MoveXEvents { get; set; }
 
@@ -152,12 +152,13 @@ public class ExtendedEventLayer
     [JsonProperty("textEvents")] public List<TextEvent?>? TextEvents { get; set; }
 }
 
-public class AlphaEvent : Event
-{
-    [JsonProperty("end")] public new int End { get; set; }
-
-    [JsonProperty("start")] public new int Start { get; set; }
-}
+// Alpha event values are in fact floats and not integers lol
+// public class AlphaEvent : Event
+// {
+//     [JsonProperty("end")] public new int End { get; set; }
+//
+//     [JsonProperty("start")] public new int Start { get; set; }
+// }
 
 public class ColorEvent : Event
 {

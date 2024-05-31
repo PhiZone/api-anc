@@ -51,6 +51,10 @@ public interface IDtoMapper
 
     T MapAnnouncement<T>(Announcement announcement) where T : AnnouncementDto;
 
+    T MapEvent<T>(Event eventEntity) where T : EventDto;
+
+    T MapEventDivision<T>(EventDivision eventDivision) where T : EventDivisionDto;
+
     T MapNotification<T>(Notification notification) where T : NotificationDto;
 
     Task<T> MapPetAnswerAsync<T>(PetAnswer answer) where T : PetAnswerDto;

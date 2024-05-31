@@ -173,6 +173,7 @@ builder.Services.AddSingleton<IHostedService>(provider => new SongConverterServi
     provider.GetService<ILogger<SongConverterService>>()!));
 builder.Services.AddHostedService<DatabaseSeeder>();
 builder.Services.AddHostedService<DataConsistencyMaintainer>();
+builder.Services.AddHostedService<EventTaskScheduler>();
 
 if (args.Length >= 1)
 {
@@ -243,7 +244,8 @@ var app = builder.Build();
 app.UseForwardedHeaders();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment() ||
+    (args.Length >= 1 && string.Equals(args[0], "docs", StringComparison.InvariantCultureIgnoreCase)))
 {
     app.UseSwagger();
     app.UseSwaggerUI(options => { options.SwaggerEndpoint("/swagger/v2/swagger.json", "PhiZone API v2"); });

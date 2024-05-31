@@ -230,6 +230,27 @@ public class DtoMapper(
         return dto;
     }
 
+    public T MapEvent<T>(Event eventEntity) where T : EventDto
+    {
+        var dto = mapper.Map<T>(eventEntity);
+        dto.Divisions = eventEntity.Divisions.Select(e => new DivisionDto
+        {
+            Title = e.Title,
+            Subtitle = e.Subtitle,
+            Type = e.Type,
+            Status = e.Status
+        }).ToList();
+        dto.DateLiked = eventEntity.Likes.FirstOrDefault()?.DateCreated;
+        return dto;
+    }
+
+    public T MapEventDivision<T>(EventDivision eventDivision) where T : EventDivisionDto
+    {
+        var dto = mapper.Map<T>(eventDivision);
+        dto.DateLiked = eventDivision.Likes.FirstOrDefault()?.DateCreated;
+        return dto;
+    }
+
     public T MapNotification<T>(Notification notification) where T : NotificationDto
     {
         var dto = mapper.Map<T>(notification);

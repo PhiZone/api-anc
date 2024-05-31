@@ -75,8 +75,7 @@ public class UserInfoController(
         else
         {
             var db = redis.GetDatabase();
-            var key =
-                $"phizone:tapghost:{User.GetClaim(OpenIddictConstants.Claims.ClientId)}:{User.GetClaim(OpenIddictConstants.Claims.KeyId)}";
+            var key = $"phizone:tapghost:{User.GetClaim("appId")}:{User.GetClaim("unionId")}";
             if (!await db.KeyExistsAsync(key)) return Unauthorized();
             dto = JsonConvert.DeserializeObject<UserDetailedDto>((await db.StringGetAsync(key))!)!;
         }
@@ -341,7 +340,7 @@ public class UserInfoController(
     {
         var db = redis.GetDatabase();
         var key =
-            $"phizone:tapghost:{User.GetClaim(OpenIddictConstants.Claims.ClientId)}:{User.GetClaim(OpenIddictConstants.Claims.KeyId)}";
+            $"phizone:tapghost:{User.GetClaim("appId")}:{User.GetClaim("unionId")}";
         if (!await db.KeyExistsAsync(key)) return Unauthorized();
         string code;
         do
@@ -353,6 +352,7 @@ public class UserInfoController(
                 var type = random.Next(2);
                 codeBuilder.Append(type == 0 ? (char)('A' + random.Next(26)) : (char)('0' + random.Next(10)));
             }
+
             code = codeBuilder.ToString();
         } while (await db.KeyExistsAsync($"phizone:tapghost:inherit:{code}"));
 
@@ -402,7 +402,8 @@ public class UserInfoController(
             });
         key = (await db.StringGetAsync(key))!;
         if (!await db.KeyExistsAsync($"phizone:tapghost:{key}")) return NotFound();
-        var ghost = JsonConvert.DeserializeObject<UserDetailedDto>((await db.StringGetAsync($"phizone:tapghost:{key}"))!)!;
+        var ghost = JsonConvert.DeserializeObject<UserDetailedDto>(
+            (await db.StringGetAsync($"phizone:tapghost:{key}"))!)!;
         if (currentUser.Avatar == null)
         {
             var client = new HttpClient();
@@ -414,7 +415,9 @@ public class UserInfoController(
 
         if (await db.KeyExistsAsync($"phizone:tapghost:{key}:records"))
         {
-            var records = JsonConvert.DeserializeObject<List<Record>>((await db.StringGetAsync($"phizone:tapghost:{key}:records"))!)!;
+            var records =
+                JsonConvert.DeserializeObject<List<Record>>(
+                    (await db.StringGetAsync($"phizone:tapghost:{key}:records"))!)!;
             foreach (var record in records)
             {
                 record.OwnerId = currentUser.Id;

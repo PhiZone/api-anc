@@ -5,5 +5,6 @@ public enum TaskType
     Scheduled,
     OnRegistration,
     OnPreparation,
-    OnSubmission
+    OnSubmission,
+    OnEvaluation,
 }

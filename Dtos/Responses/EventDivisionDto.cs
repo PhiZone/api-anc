@@ -1,10 +1,12 @@
 using System.Text.Json.Serialization;
 using PhiZoneApi.Enums;
 
-namespace PhiZoneApi.Models;
+namespace PhiZoneApi.Dtos.Responses;
 
-public class EventDivision : PublicResource
+public class EventDivisionDto
 {
+    public Guid Id { get; set; }
+    
     public string Title { get; set; } = null!;
 
     public string? Subtitle { get; set; }
@@ -17,8 +19,16 @@ public class EventDivision : PublicResource
 
     public string? Illustrator { get; set; }
     
-    public Guid? TagId { get; set; }
+    public string? Description { get; set; }
+
+    public Accessibility Accessibility { get; set; }
+
+    public bool IsHidden { get; set; }
+
+    public bool IsLocked { get; set; }
     
+    public Guid? TagId { get; set; }
+
     public int? MinTeamCount { get; set; }
 
     public int? MaxTeamCount { get; set; }
@@ -31,9 +41,15 @@ public class EventDivision : PublicResource
 
     public int? MaxSubmissionCount { get; set; }
 
+    public int LikeCount { get; set; }
+
+    public int OwnerId { get; set; }
+
     public Guid EventId { get; set; }
 
-    public Event Event { get; set; } = null!;
+    public EventDto Event { get; set; } = null!;
+
+    public DateTimeOffset DateCreated { get; set; }
 
     public DateTimeOffset DateUnveiled { get; set; }
 
@@ -41,10 +57,7 @@ public class EventDivision : PublicResource
 
     public DateTimeOffset DateEnded { get; set; }
 
-    [JsonIgnore] public List<User> Administrators { get; set; } = [];
+    public DateTimeOffset? DateLiked { get; set; }
 
-    public override string GetDisplay()
-    {
-        return Subtitle != null ? $"{Title} - {Subtitle}" : Title;
-    }
+    public List<UserDto> Administrators { get; set; } = [];
 }

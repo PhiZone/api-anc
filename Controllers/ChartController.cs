@@ -189,7 +189,7 @@ public class ChartController(
     {
         var db = redis.GetDatabase();
         var key =
-            $"phizone:tapghost:{User.GetClaim(OpenIddictConstants.Claims.ClientId)}:{User.GetClaim(OpenIddictConstants.Claims.KeyId)}";
+            $"phizone:tapghost:{User.GetClaim("appId")}:{User.GetClaim("unionId")}";
         if (!await db.KeyExistsAsync(key)) return Unauthorized();
         var currentUser = JsonConvert.DeserializeObject<UserDetailedDto>((await db.StringGetAsync(key))!)!;
         if (!await chartRepository.ChartExistsAsync(id))

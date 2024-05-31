@@ -119,6 +119,38 @@ public class TagController(
     }
 
     /// <summary>
+    ///     Retrieves a specific tag by its name.
+    /// </summary>
+    /// <param name="name">A tag's name.</param>
+    /// <returns>A tag.</returns>
+    /// <response code="200">Returns a tag.</response>
+    /// <response code="304">
+    ///     When the resource has not been updated since last retrieval. Requires <c>If-None-Match</c>.
+    /// </response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="404">When the specified tag is not found.</response>
+    [HttpGet("{name}")]
+    [ServiceFilter(typeof(ETagFilter))]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<TagDto>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status304NotModified, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> GetTag([FromRoute] string name)
+    {
+        var normalizedName = resourceService.Normalize(name);
+        if (!await tagRepository.TagExistsAsync(normalizedName))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+        var tag = await tagRepository.GetTagAsync(normalizedName);
+        var dto = mapper.Map<TagDto>(tag);
+
+        return Ok(new ResponseDto<TagDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
+    }
+
+    /// <summary>
     ///     Creates a new tag.
     /// </summary>
     /// <returns>An empty body.</returns>

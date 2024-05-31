@@ -9,9 +9,11 @@ public interface IScriptService
 {
     Task InitializeAsync(ApplicationDbContext context, CancellationToken cancellationToken);
 
-    Task<ServiceResponseDto> RunAsync<T>(Guid id, Dictionary<string, string> parameters, T target, User currentUser);
+    Task<ServiceResponseDto> RunAsync<T>(Guid id, Dictionary<string, string> parameters, T target, User currentUser,
+        CancellationToken? cancellationToken = null);
 
-    Task RunAsync<T>(Guid id, T? target = default, User? currentUser = null);
+    Task RunAsync<T>(Guid id, T? target = default, User? currentUser = null,
+        CancellationToken? cancellationToken = null);
 
     void Compile(Guid id, string code, ServiceTargetType type);
 

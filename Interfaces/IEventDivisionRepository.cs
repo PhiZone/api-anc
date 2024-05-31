@@ -6,9 +6,9 @@ namespace PhiZoneApi.Interfaces;
 public interface IEventDivisionRepository
 {
     Task<ICollection<EventDivision>> GetEventDivisionsAsync(List<string> order, List<bool> desc, int position, int take,
-        Expression<Func<EventDivision, bool>>? predicate = null);
+        Expression<Func<EventDivision, bool>>? predicate = null, int? currentUserId = null);
 
-    Task<EventDivision> GetEventDivisionAsync(Guid id);
+    Task<EventDivision> GetEventDivisionAsync(Guid id, int? currentUserId = null);
 
     Task<bool> EventDivisionExistsAsync(Guid id);
 

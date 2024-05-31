@@ -263,7 +263,7 @@ public class DatabaseSeeder(IServiceProvider serviceProvider) : IHostedService
             { "OM", "Oman" },
             { "PK", "Pakistan" },
             { "PW", "Palau" },
-            { "PS", "Palestinian Territories" },
+            { "PS", "State of Palestine" },
             { "PA", "Panama" },
             { "PG", "Papua New Guinea" },
             { "PY", "Paraguay" },

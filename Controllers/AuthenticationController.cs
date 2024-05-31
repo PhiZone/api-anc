@@ -217,7 +217,7 @@ public class AuthenticationController(
             {
                 ghost = new UserDetailedDto
                 {
-                    Id = -1,
+                    Id = CriticalValues.TapTapGhostUserId,
                     UserName = responseDto.Data.Name,
                     Avatar = responseDto.Data.Avatar,
                     Gender = 0,
@@ -259,10 +259,11 @@ public class AuthenticationController(
             var identity = new ClaimsIdentity(TokenValidationParameters.DefaultAuthenticationType, Claims.Name,
                 Claims.Role);
 
-            identity.AddClaim(Claims.Subject, ghost.Id.ToString(), Destinations.AccessToken);
-            identity.AddClaim(Claims.Username, ghost.UserName, Destinations.AccessToken);
-            identity.AddClaim(Claims.ClientId, tapApplicationId.Value.ToString(), Destinations.AccessToken);
-            identity.AddClaim(Claims.KeyId, responseDto.Data.Unionid, Destinations.AccessToken);
+            identity.AddClaim(Claims.Subject, ghost.Id.ToString());
+            identity.AddClaim(Claims.Name, ghost.UserName);
+            identity.AddClaim("appId", tapApplicationId.Value.ToString());
+            identity.AddClaim("unionId", responseDto.Data.Unionid);
+            identity.SetDestinations(GetDestinations);
 
             var claimsPrincipal = new ClaimsPrincipal(identity);
             claimsPrincipal.SetScopes(Scopes.OfflineAccess);
@@ -346,9 +347,8 @@ public class AuthenticationController(
             var identity = new ClaimsIdentity(result.Principal!.Claims,
                 TokenValidationParameters.DefaultAuthenticationType, Claims.Name, Claims.Role);
 
-            identity.SetClaim(Claims.Subject, await userManager.GetUserIdAsync(user))
-                .SetClaim(Claims.Name, await userManager.GetUserNameAsync(user));
-
+            identity.SetClaim(Claims.Subject, user.Id.ToString());
+            identity.SetClaim(Claims.Name, user.UserName!);
             identity.SetDestinations(GetDestinations);
 
             user.DateLastLoggedIn = DateTimeOffset.UtcNow;
@@ -671,28 +671,28 @@ public class AuthenticationController(
         {
             case Claims.Name:
                 yield return Destinations.AccessToken;
-
+    
                 if (claim.Subject!.HasScope(Scopes.Profile)) yield return Destinations.IdentityToken;
-
+    
                 yield break;
-
+    
             case Claims.Email:
                 yield return Destinations.AccessToken;
-
+    
                 if (claim.Subject!.HasScope(Scopes.Email)) yield return Destinations.IdentityToken;
-
+    
                 yield break;
-
+    
             case Claims.Role:
                 yield return Destinations.AccessToken;
-
+    
                 if (claim.Subject!.HasScope(Scopes.Roles)) yield return Destinations.IdentityToken;
-
+    
                 yield break;
-
+    
             case "AspNet.Identity.SecurityStamp":
                 yield break;
-
+    
             default:
                 yield return Destinations.AccessToken;
                 yield break;
@@ -704,8 +704,10 @@ public class AuthenticationController(
         var identity = new ClaimsIdentity(TokenValidationParameters.DefaultAuthenticationType, Claims.Name,
             Claims.Role);
 
-        identity.AddClaim(Claims.Subject, user.Id.ToString(), Destinations.AccessToken);
-        identity.AddClaim(Claims.Username, user.UserName!, Destinations.AccessToken);
+        identity.AddClaim(Claims.Subject, user.Id.ToString());
+        identity.AddClaim(Claims.Name, user.UserName!);
+
+        identity.SetDestinations(GetDestinations);
 
         var claimsPrincipal = new ClaimsPrincipal(identity);
         claimsPrincipal.SetScopes(Scopes.OfflineAccess);
