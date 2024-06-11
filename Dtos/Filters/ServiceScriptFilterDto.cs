@@ -3,7 +3,7 @@ using PhiZoneApi.Models;
 
 namespace PhiZoneApi.Dtos.Filters;
 
-public class ApplicationServiceFilterDto : FilterDto<ApplicationService>
+public class ServiceScriptFilterDto : FilterDto<ServiceScript>
 {
     public List<Guid>? RangeId { get; set; }
 

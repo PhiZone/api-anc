@@ -40,7 +40,4 @@ public class EventUpdateDto
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     public DateTimeOffset DateUnveiled { get; set; }
-
-    [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
-    public List<int> Administrators { get; set; } = [];
 }

@@ -12,20 +12,24 @@ namespace PhiZoneApi.Repositories;
 public class EventDivisionRepository(ApplicationDbContext context, IMeilisearchService meilisearchService)
     : IEventDivisionRepository
 {
-    public async Task<ICollection<EventDivision>> GetEventDivisionsAsync(List<string> order, List<bool> desc,
-        int position, int take, Expression<Func<EventDivision, bool>>? predicate = null, int? currentUserId = null)
+    public async Task<ICollection<EventDivision>> GetEventDivisionsAsync(List<string>? order = null,
+        List<bool>? desc = null, int? position = 0, int? take = -1,
+        Expression<Func<EventDivision, bool>>? predicate = null, int? currentUserId = null)
     {
-        var result = context.EventDivisions.Include(e => e.Administrators).OrderBy(order, desc);
+        var result = context.EventDivisions.OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
         if (currentUserId != null)
-            result = result.Include(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
-        result = result.Skip(position);
-        return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
+            result = result.Include(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1))
+                .Include(e => e.Teams.Where(team => team.Participants.Any(f => f.Id == currentUserId)).Take(1));
+        result = result.Skip(position ?? 0);
+        return take >= 0 ? await result.Take(take.Value).ToListAsync() : await result.ToListAsync();
     }
 
     public async Task<EventDivision> GetEventDivisionAsync(Guid id, int? currentUserId = null)
     {
-        IQueryable<EventDivision> result = context.EventDivisions.Include(e => e.Administrators);
+        IQueryable<EventDivision> result = context.EventDivisions;
+        if (currentUserId != null)
+            result = result.Include(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
         return (await result.FirstOrDefaultAsync(eventDivision => eventDivision.Id == id))!;
     }
 

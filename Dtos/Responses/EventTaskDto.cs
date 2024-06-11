@@ -8,7 +8,7 @@ public class EventTaskDto
 
     public string Name { get; set; } = null!;
 
-    public TaskType Type { get; set; }
+    public EventTaskType Type { get; set; }
 
     public string? Code { get; set; }
 

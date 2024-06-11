@@ -69,8 +69,8 @@ public class AnnouncementController(
             var result = await meilisearchService.SearchAsync<Announcement>(dto.Search, dto.PerPage, dto.Page);
             var idList = result.Hits.Select(item => item.Id).ToList();
             announcements =
-                (await announcementRepository.GetAnnouncementsAsync(["DateCreated"], [false], 0, -1,
-                    e => idList.Contains(e.Id), currentUser?.Id)).OrderBy(e => idList.IndexOf(e.Id));
+                (await announcementRepository.GetAnnouncementsAsync(predicate:
+                    e => idList.Contains(e.Id), currentUserId: currentUser?.Id)).OrderBy(e => idList.IndexOf(e.Id));
             total = result.TotalHits;
         }
         else

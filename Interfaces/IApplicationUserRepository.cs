@@ -5,16 +5,19 @@ namespace PhiZoneApi.Interfaces;
 
 public interface IApplicationUserRepository
 {
-    Task<ICollection<ApplicationUser>> GetApplicationsAsync(int userId, List<string> order, List<bool> desc,
-        int position,
-        int take, Expression<Func<ApplicationUser, bool>>? predicate = null);
+    Task<ICollection<ApplicationUser>> GetApplicationsAsync(int userId, List<string>? order = null,
+        List<bool>? desc = null,
+        int? position = 0,
+        int? take = -1, Expression<Func<ApplicationUser, bool>>? predicate = null);
 
-    Task<ICollection<ApplicationUser>> GetUsersAsync(Guid applicationId, List<string> order, List<bool> desc,
-        int position,
-        int take, Expression<Func<ApplicationUser, bool>>? predicate = null);
+    Task<ICollection<ApplicationUser>> GetUsersAsync(Guid applicationId, List<string>? order = null,
+        List<bool>? desc = null,
+        int? position = 0,
+        int? take = -1, Expression<Func<ApplicationUser, bool>>? predicate = null);
 
-    Task<ICollection<ApplicationUser>> GetRelationsAsync(List<string> order, List<bool> desc, int position,
-        int take,
+    Task<ICollection<ApplicationUser>> GetRelationsAsync(List<string>? order = null, List<bool>? desc = null,
+        int? position = 0,
+        int? take = -1,
         Expression<Func<ApplicationUser, bool>>? predicate = null);
 
     Task<ApplicationUser> GetRelationAsync(Guid applicationId, int userId);

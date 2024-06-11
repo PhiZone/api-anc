@@ -16,6 +16,10 @@ public class SubmissionService(
     ISongSubmissionRepository songSubmissionRepository,
     ICollaborationRepository collaborationRepository,
     IAuthorshipRepository authorshipRepository,
+    IEventDivisionRepository eventDivisionRepository,
+    IEventTeamRepository eventTeamRepository,
+    IEventResourceRepository eventResourceRepository,
+    IScriptService scriptService,
     ITagRepository tagRepository,
     UserManager<User> userManager,
     IUserRelationRepository userRelationRepository) : ISubmissionService
@@ -66,13 +70,25 @@ public class SubmissionService(
             };
             await songRepository.CreateSongAsync(song);
 
-            if (isOriginal && !isHidden)
-                foreach (var relation in await userRelationRepository.GetRelationsAsync(
-                             ["DateCreated"], [false], 0, -1,
-                             e => e.FolloweeId == songSubmission.OwnerId && e.Type != UserRelationType.Blacklisted))
+            foreach (var chartSubmission in await chartSubmissionRepository.GetChartSubmissionsAsync(predicate: e =>
+                         e.SongSubmissionId == songSubmission.Id && e.Status == RequestStatus.Approved))
+                await ApproveChart(chartSubmission, song.Id);
+
+            var broadcast = isOriginal && !isHidden && await chartRepository.CountChartsAsync(e => e.SongId == song.Id && e.EventPresences.Any(f =>
+                f.IsAnonymous != null && f.IsAnonymous.Value && f.Team != null &&
+                f.Team.Participations.Any(g => g.ParticipantId == song.OwnerId))) == 0;
+            var (eventDivision, eventTeam) = await GetEventInfo(songSubmission);
+            if (eventDivision != null && eventTeam != null)
+            {
+                await CreateEventResource(eventDivision, eventTeam, song.Id, owner);
+                broadcast = broadcast && !eventDivision.Anonymization;
+            }
+
+            if (broadcast)
+                foreach (var relation in await userRelationRepository.GetRelationsAsync(predicate: e =>
+                             e.FolloweeId == songSubmission.OwnerId && e.Type != UserRelationType.Blacklisted))
                     await notificationService.Notify((await userManager.FindByIdAsync(relation.FollowerId.ToString()))!,
-                        (await userManager.FindByIdAsync(songSubmission.OwnerId.ToString()))!, NotificationType.Updates,
-                        "song-follower-update",
+                        owner, NotificationType.Updates, "song-follower-update",
                         new Dictionary<string, string>
                         {
                             {
@@ -81,11 +97,6 @@ public class SubmissionService(
                             },
                             { "Song", resourceService.GetRichText<Song>(song.Id.ToString(), song.GetDisplay()) }
                         });
-
-            foreach (var chartSubmission in await chartSubmissionRepository.GetChartSubmissionsAsync(
-                         ["DateCreated"], [false], 0, -1,
-                         e => e.SongSubmissionId == songSubmission.Id && e.Status == RequestStatus.Approved))
-                await ApproveChart(chartSubmission, song.Id);
         }
         else
         {
@@ -117,6 +128,23 @@ public class SubmissionService(
             song.DateUpdated = DateTimeOffset.UtcNow;
 
             await songRepository.UpdateSongAsync(song);
+
+            var existingEventResources =
+                await eventResourceRepository.GetEventResourcesAsync(predicate: e => e.ResourceId == song.Id);
+
+            var (eventDivision, eventTeam) = await GetEventInfo(songSubmission);
+            if (eventDivision != null && eventTeam != null)
+            {
+                foreach (var existingEventResource in existingEventResources.Where(e => e.DivisionId != eventDivision.Id))
+                {
+                    await eventResourceRepository.RemoveEventResourceAsync(existingEventResource.DivisionId, song.Id);
+                }
+
+                if (existingEventResources.All(e => e.DivisionId != eventDivision.Id))
+                {
+                    await CreateEventResource(eventDivision, eventTeam, song.Id, owner);
+                }
+            }
         }
 
         await tagRepository.CreateTagsAsync(songSubmission.Tags, song);
@@ -138,16 +166,13 @@ public class SubmissionService(
             {
                 var authorship = new Authorship
                 {
-                    ResourceId = song.Id,
-                    AuthorId = song.OwnerId,
-                    DateCreated = DateTimeOffset.UtcNow
+                    ResourceId = song.Id, AuthorId = song.OwnerId, DateCreated = DateTimeOffset.UtcNow
                 };
                 await authorshipRepository.CreateAuthorshipAsync(authorship);
             }
 
-            foreach (var collaboration in await collaborationRepository.GetCollaborationsAsync(
-                         ["DateCreated"], [false], 0, -1,
-                         e => e.SubmissionId == songSubmission.Id && e.Status == RequestStatus.Approved))
+            foreach (var collaboration in await collaborationRepository.GetCollaborationsAsync(predicate: e =>
+                         e.SubmissionId == songSubmission.Id && e.Status == RequestStatus.Approved))
             {
                 if (await authorshipRepository.AuthorshipExistsAsync(song.Id, collaboration.InviteeId)) continue;
                 var authorship = new Authorship
@@ -233,10 +258,17 @@ public class SubmissionService(
             chartSubmission.RepresentationId = chart.Id;
             await chartSubmissionRepository.UpdateChartSubmissionAsync(chartSubmission);
 
-            if (!song.IsHidden)
-                foreach (var relation in await userRelationRepository.GetRelationsAsync(
-                             ["DateCreated"], [false], 0, -1,
-                             e => e.FolloweeId == chartSubmission.OwnerId && e.Type != UserRelationType.Blacklisted))
+            var broadcast = !song.IsHidden;
+            var (eventDivision, eventTeam) = await GetEventInfo(chartSubmission);
+            if (eventDivision != null && eventTeam != null)
+            {
+                await CreateEventResource(eventDivision, eventTeam, chart.Id, owner);
+                broadcast = broadcast && !chart.IsHidden && !eventDivision.Anonymization;
+            }
+
+            if (broadcast)
+                foreach (var relation in await userRelationRepository.GetRelationsAsync(predicate: e =>
+                             e.FolloweeId == chartSubmission.OwnerId && e.Type != UserRelationType.Blacklisted))
                     await notificationService.Notify((await userManager.FindByIdAsync(relation.FollowerId.ToString()))!,
                         (await userManager.FindByIdAsync(chartSubmission.OwnerId.ToString()))!,
                         NotificationType.Updates, "chart-follower-update",
@@ -276,19 +308,33 @@ public class SubmissionService(
             chart.OwnerId = chartSubmission.OwnerId;
             chart.DateUpdated = DateTimeOffset.UtcNow;
             await chartRepository.UpdateChartAsync(chart);
+
+            var existingEventResources =
+                await eventResourceRepository.GetEventResourcesAsync(predicate: e => e.ResourceId == chart.Id);
+
+            var (eventDivision, eventTeam) = await GetEventInfo(chartSubmission);
+            if (eventDivision != null && eventTeam != null)
+            {
+                foreach (var existingEventResource in existingEventResources.Where(e => e.DivisionId != eventDivision.Id))
+                {
+                    await eventResourceRepository.RemoveEventResourceAsync(existingEventResource.DivisionId, chart.Id);
+                }
+
+                if (existingEventResources.All(e => e.DivisionId != eventDivision.Id))
+                {
+                    await CreateEventResource(eventDivision, eventTeam, chart.Id, owner);
+                }
+            }
         }
 
         var assetSubmissions = await chartAssetSubmissionRepository.GetChartAssetSubmissionsAsync(
-            ["DateCreated"], [false], 0, -1,
-            e => e.ChartSubmissionId == chartSubmission.Id);
+            predicate: e => e.ChartSubmissionId == chartSubmission.Id);
 
         var assetsToDelete =
-            (await chartAssetRepository.GetChartAssetsAsync(["DateCreated"],
-                [false], 0, -1, e => e.ChartId == chart.Id)).Where(asset =>
-                assetSubmissions.Count(assetSubmission => assetSubmission.RepresentationId == asset.Id) == 0);
+            (await chartAssetRepository.GetChartAssetsAsync(predicate: e => e.ChartId == chart.Id)).Where(asset =>
+                assetSubmissions.All(assetSubmission => assetSubmission.RepresentationId != asset.Id));
 
         foreach (var submission in assetSubmissions) await ApproveChartAsset(submission, chart.Id);
-
         foreach (var asset in assetsToDelete) await chartAssetRepository.RemoveChartAssetAsync(asset.Id);
 
         await tagRepository.CreateTagsAsync(chartSubmission.Tags, chart);
@@ -307,16 +353,13 @@ public class SubmissionService(
         {
             var authorship = new Authorship
             {
-                ResourceId = chart.Id,
-                AuthorId = chart.OwnerId,
-                DateCreated = DateTimeOffset.UtcNow
+                ResourceId = chart.Id, AuthorId = chart.OwnerId, DateCreated = DateTimeOffset.UtcNow
             };
             await authorshipRepository.CreateAuthorshipAsync(authorship);
         }
 
-        foreach (var collaboration in await collaborationRepository.GetCollaborationsAsync(
-                     ["DateCreated"], [false], 0, -1,
-                     e => e.SubmissionId == chartSubmission.Id && e.Status == RequestStatus.Approved))
+        foreach (var collaboration in await collaborationRepository.GetCollaborationsAsync(predicate: e =>
+                     e.SubmissionId == chartSubmission.Id && e.Status == RequestStatus.Approved))
         {
             if (await authorshipRepository.AuthorshipExistsAsync(chart.Id, collaboration.InviteeId)) continue;
             var authorship = new Authorship
@@ -382,5 +425,49 @@ public class SubmissionService(
         chartAsset.OwnerId = submission.OwnerId;
         chartAsset.DateUpdated = DateTimeOffset.UtcNow;
         await chartAssetRepository.UpdateChartAssetAsync(chartAsset);
+    }
+
+    private async Task<(EventDivision?, EventTeam?)> GetEventInfo(ChartSubmission chartSubmission)
+    {
+        var normalizedTags = chartSubmission.Tags.Select(resourceService.Normalize);
+        var eventDivisions = await eventDivisionRepository.GetEventDivisionsAsync(predicate: e =>
+            e.Type == EventDivisionType.Chart && e.IsStarted() && normalizedTags.Contains(e.TagName));
+        if (eventDivisions.Count == 0) return (null, null);
+        var eventDivision = eventDivisions.First();
+        var eventTeams = await eventTeamRepository.GetEventTeamsAsync(predicate: e =>
+            e.DivisionId == eventDivision.Id && e.Participations.Any(f => f.ParticipantId == chartSubmission.OwnerId));
+        if (eventTeams.Count == 0) return (eventDivision, null);
+        var eventTeam = eventTeams.First();
+        return (eventDivision, eventTeam);
+    }
+
+    private async Task<(EventDivision?, EventTeam?)> GetEventInfo(SongSubmission songSubmission)
+    {
+        var normalizedTags = songSubmission.Tags.Select(resourceService.Normalize);
+        var eventDivisions = await eventDivisionRepository.GetEventDivisionsAsync(predicate: e =>
+            e.Type == EventDivisionType.Song && e.IsStarted() && normalizedTags.Contains(e.TagName));
+        if (eventDivisions.Count == 0) return (null, null);
+        var eventDivision = eventDivisions.First();
+        var eventTeams = await eventTeamRepository.GetEventTeamsAsync(predicate: e =>
+            e.DivisionId == eventDivision.Id && e.Participations.Any(f => f.ParticipantId == songSubmission.OwnerId));
+        if (eventTeams.Count == 0) return (eventDivision, null);
+        var eventTeam = eventTeams.First();
+        return (eventDivision, eventTeam);
+    }
+
+    private async Task CreateEventResource(EventDivision eventDivision, EventTeam eventTeam, Guid resourceId, User user)
+    {
+        var eventResource = new EventResource
+        {
+            DivisionId = eventDivision.Id,
+            ResourceId = resourceId,
+            Type = EventResourceType.Entry,
+            IsAnonymous = eventDivision.Anonymization,
+            TeamId = eventTeam.Id,
+            DateCreated = DateTimeOffset.UtcNow
+        };
+        await eventResourceRepository.CreateEventResourceAsync(eventResource);
+        await scriptService.RunEventTaskAsync(eventTeam.DivisionId, eventResource, eventTeam.Id, user,
+            [EventTaskType.OnApproval]);
     }
 }

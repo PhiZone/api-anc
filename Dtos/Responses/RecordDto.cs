@@ -40,9 +40,9 @@ public class RecordDto
 
     public int LikeCount { get; set; }
 
-    public int OwnerId { get; set; }
+    public int? OwnerId { get; set; }
 
-    public UserDto Owner { get; set; } = null!;
+    public UserDto? Owner { get; set; }
 
     public DateTimeOffset DateCreated { get; set; }
 

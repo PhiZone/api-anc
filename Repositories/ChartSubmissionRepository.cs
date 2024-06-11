@@ -12,8 +12,10 @@ namespace PhiZoneApi.Repositories;
 public class ChartSubmissionRepository(ApplicationDbContext context, IMeilisearchService meilisearchService)
     : IChartSubmissionRepository
 {
-    public async Task<ICollection<ChartSubmission>> GetChartSubmissionsAsync(List<string> order, List<bool> desc,
-        int position, int take, Expression<Func<ChartSubmission, bool>>? predicate = null, int? currentUserId = null)
+    public async Task<ICollection<ChartSubmission>> GetChartSubmissionsAsync(List<string>? order = null,
+        List<bool>? desc = null,
+        int? position = 0, int? take = -1, Expression<Func<ChartSubmission, bool>>? predicate = null,
+        int? currentUserId = null)
     {
         var result = context.ChartSubmissions.Include(e => e.Song)
             .ThenInclude(e => e!.Charts)
@@ -24,12 +26,12 @@ public class ChartSubmissionRepository(ApplicationDbContext context, IMeilisearc
         if (predicate != null) result = result.Where(predicate);
         if (currentUserId != null)
             result = result.Include(e => e.VolunteerVotes.Where(vote => vote.OwnerId == currentUserId).Take(1));
-        result = result.Skip(position);
-        return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
+        result = result.Skip(position ?? 0);
+        return take >= 0 ? await result.Take(take.Value).ToListAsync() : await result.ToListAsync();
     }
 
-    public async Task<ICollection<ChartSubmission>> GetUserChartSubmissionsAsync(int userId, List<string> order,
-        List<bool> desc, int position, int take, Expression<Func<ChartSubmission, bool>>? predicate = null,
+    public async Task<ICollection<ChartSubmission>> GetUserChartSubmissionsAsync(int userId, List<string>? order,
+        List<bool>? desc, int? position = 0, int? take = -1, Expression<Func<ChartSubmission, bool>>? predicate = null,
         int? currentUserId = null)
     {
         var result = context.ChartSubmissions.Include(e => e.Song)
@@ -42,8 +44,8 @@ public class ChartSubmissionRepository(ApplicationDbContext context, IMeilisearc
         if (predicate != null) result = result.Where(predicate);
         if (currentUserId != null)
             result = result.Include(e => e.VolunteerVotes.Where(vote => vote.OwnerId == currentUserId).Take(1));
-        result = result.Skip(position);
-        return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
+        result = result.Skip(position ?? 0);
+        return take >= 0 ? await result.Take(take.Value).ToListAsync() : await result.ToListAsync();
     }
 
     public async Task<ChartSubmission> GetChartSubmissionAsync(Guid id, int? currentUserId = null)

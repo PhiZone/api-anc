@@ -6,7 +6,7 @@ public class Authorship
 
     public Guid ResourceId { get; set; }
 
-    public PublicResource Resource { get; set; } = null!;
+    public SignificantResource Resource { get; set; } = null!;
 
     public int AuthorId { get; set; }
 

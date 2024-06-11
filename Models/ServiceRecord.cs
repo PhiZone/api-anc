@@ -1,6 +1,6 @@
 ﻿namespace PhiZoneApi.Models;
 
-public class ApplicationServiceRecord
+public class ServiceRecord
 {
     public Guid Id { get; set; }
 
@@ -10,7 +10,7 @@ public class ApplicationServiceRecord
 
     public Guid ServiceId { get; set; }
 
-    public ApplicationService Service { get; set; } = null!;
+    public ServiceScript ServiceScript { get; set; } = null!;
 
     public string? Description { get; set; }
 

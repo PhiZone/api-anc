@@ -15,11 +15,11 @@ public class EventDivisionCreationDto
     [MaxLength(80, ErrorMessage = ResponseCodes.ValueTooLong)]
     [UserInputValidator(ErrorMessage = ResponseCodes.ContentProhibited)]
     public string? Subtitle { get; set; }
-    
+
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     [Range(0, 2, ErrorMessage = ResponseCodes.ValueOutOfRange)]
     public EventDivisionType Type { get; set; }
-    
+
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     [Range(0, 3, ErrorMessage = ResponseCodes.ValueOutOfRange)]
     public EventDivisionStatus Status { get; set; }
@@ -35,9 +35,9 @@ public class EventDivisionCreationDto
     [MaxLength(2000, ErrorMessage = ResponseCodes.ValueTooLong)]
     [UserInputValidator(ErrorMessage = ResponseCodes.ContentProhibited)]
     public string? Description { get; set; }
-    
+
     public Guid? TagId { get; set; }
-    
+
     public int? MinTeamCount { get; set; }
 
     public int? MaxTeamCount { get; set; }
@@ -49,6 +49,11 @@ public class EventDivisionCreationDto
     public int? MinSubmissionCount { get; set; }
 
     public int? MaxSubmissionCount { get; set; }
+    
+    [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
+    public bool Anonymization { get; set; }
+    
+    public List<string?> Preserved { get; set; } = [];
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     [Range(0, 2, ErrorMessage = ResponseCodes.ValueOutOfRange)]
@@ -70,5 +75,8 @@ public class EventDivisionCreationDto
     public DateTimeOffset DateUnveiled { get; set; }
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
-    public List<int> Administrators { get; set; } = [];
+    public DateTimeOffset DateStarted { get; set; }
+
+    [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
+    public DateTimeOffset DateEnded { get; set; }
 }

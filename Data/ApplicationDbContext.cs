@@ -27,8 +27,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Vote> Votes { get; set; } = null!;
     public DbSet<PlayConfiguration> PlayConfigurations { get; set; } = null!;
     public DbSet<Application> Applications { get; set; } = null!;
-    public DbSet<ApplicationService> ApplicationServices { get; set; } = null!;
-    public DbSet<ApplicationServiceRecord> ApplicationServiceRecords { get; set; } = null!;
+    public DbSet<ServiceScript> ServiceScripts { get; set; } = null!;
+    public DbSet<ServiceRecord> ServiceRecords { get; set; } = null!;
     public DbSet<Announcement> Announcements { get; set; } = null!;
     public DbSet<VolunteerVote> VolunteerVotes { get; set; } = null!;
     public DbSet<SongSubmission> SongSubmissions { get; set; } = null!;
@@ -45,7 +45,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<EventDivision> EventDivisions { get; set; } = null!;
     public DbSet<EventTask> EventTasks { get; set; } = null!;
     public DbSet<EventTeam> EventTeams { get; set; } = null!;
+    public DbSet<EventResource> EventResources { get; set; } = null!;
     public DbSet<Participation> Participations { get; set; } = null!;
+    public DbSet<Hostship> Hostships { get; set; } = null!;
 
     protected override void OnConfiguring(DbContextOptionsBuilder builder)
     {
@@ -74,7 +76,14 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasMany(e => e.Participants)
             .WithMany(e => e.EventTeams)
             .UsingEntity<Participation>(l => l.HasOne<User>(e => e.Participant).WithMany(e => e.Participations),
-                r => r.HasOne<EventTeam>(e => e.EventTeam).WithMany(e => e.Participations));
+                r => r.HasOne<EventTeam>(e => e.Team).WithMany(e => e.Participations));
+
+        builder.Entity<Event>()
+            .HasMany(e => e.Hosts)
+            .WithMany(e => e.Events)
+            .UsingEntity<Hostship>(
+                l => l.HasOne<User>(e => e.User).WithMany(e => e.Hostships),
+                r => r.HasOne<Event>(e => e.Event).WithMany(e => e.Hostships));
 
         builder.Entity<Song>().HasMany(e => e.Tags).WithMany(e => e.Songs);
 

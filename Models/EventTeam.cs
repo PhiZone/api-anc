@@ -7,7 +7,9 @@ public class EventTeam : LikeableResource, IComparable<EventTeam>
 {
     public string Name { get; set; } = null!;
 
-    public string Icon { get; set; } = null!;
+    public string? Icon { get; set; }
+
+    public string? Description { get; set; }
 
     public ParticipationStatus Status { get; set; }
 
@@ -15,7 +17,11 @@ public class EventTeam : LikeableResource, IComparable<EventTeam>
 
     public int? ClaimedSubmissionCount { get; set; }
 
+    public bool IsUnveiled { get; set; }
+
     public double? Score { get; set; }
+
+    [JsonIgnore] public List<string?> Preserved { get; set; } = [];
 
     public Guid DivisionId { get; set; }
 

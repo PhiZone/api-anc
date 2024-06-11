@@ -1,8 +1,8 @@
 ﻿using PhiZoneApi.Enums;
 
-namespace PhiZoneApi.Dtos.Responses;
+namespace PhiZoneApi.Models;
 
-public class ApplicationServiceDto
+public class ServiceScript
 {
     public Guid Id { get; set; }
 
@@ -16,9 +16,9 @@ public class ApplicationServiceDto
 
     public List<string> Parameters { get; set; } = [];
 
-    public Guid ApplicationId { get; set; }
+    public Guid ResourceId { get; set; }
 
-    public ApplicationDto Application { get; set; } = null!;
+    public LikeableResource Resource { get; set; } = null!;
 
     public DateTimeOffset DateCreated { get; set; }
 

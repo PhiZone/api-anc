@@ -9,6 +9,10 @@ public class PlayInfoDto
     public Guid ApplicationId { get; set; }
 
     public int PlayerId { get; set; }
+    
+    public Guid? DivisionId { get; set; }
+    
+    public Guid? TeamId { get; set; }
 
     public DateTimeOffset EarliestEndTime { get; set; }
 

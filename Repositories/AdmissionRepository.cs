@@ -9,34 +9,37 @@ namespace PhiZoneApi.Repositories;
 
 public class AdmissionRepository(ApplicationDbContext context) : IAdmissionRepository
 {
-    public async Task<ICollection<Admission>> GetAdmittersAsync(Guid admitteeId, List<string> order, List<bool> desc,
-        int position,
-        int take, Expression<Func<Admission, bool>>? predicate = null)
+    public async Task<ICollection<Admission>> GetAdmittersAsync(Guid admitteeId, List<string>? order = null,
+        List<bool>? desc = null,
+        int? position = 0,
+        int? take = -1, Expression<Func<Admission, bool>>? predicate = null)
     {
         var result = context.Admissions.Where(admission => admission.AdmitteeId == admitteeId).OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
-        result = result.Skip(position);
-        return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
+        result = result.Skip(position ?? 0);
+        return take >= 0 ? await result.Take(take.Value).ToListAsync() : await result.ToListAsync();
     }
 
-    public async Task<ICollection<Admission>> GetAdmitteesAsync(Guid admitterId, List<string> order, List<bool> desc,
-        int position,
-        int take, Expression<Func<Admission, bool>>? predicate = null)
+    public async Task<ICollection<Admission>> GetAdmitteesAsync(Guid admitterId, List<string>? order = null,
+        List<bool>? desc = null,
+        int? position = 0,
+        int? take = -1, Expression<Func<Admission, bool>>? predicate = null)
     {
         var result = context.Admissions.Where(admission => admission.AdmitterId == admitterId).OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
-        result = result.Skip(position);
-        return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
+        result = result.Skip(position ?? 0);
+        return take >= 0 ? await result.Take(take.Value).ToListAsync() : await result.ToListAsync();
     }
 
-    public async Task<ICollection<Admission>> GetAdmissionsAsync(List<string> order, List<bool> desc, int position,
-        int take,
+    public async Task<ICollection<Admission>> GetAdmissionsAsync(List<string>? order = null, List<bool>? desc = null,
+        int? position = 0,
+        int? take = -1,
         Expression<Func<Admission, bool>>? predicate = null)
     {
         var result = context.Admissions.OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
-        result = result.Skip(position);
-        return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
+        result = result.Skip(position ?? 0);
+        return take >= 0 ? await result.Take(take.Value).ToListAsync() : await result.ToListAsync();
     }
 
     public async Task<Admission> GetAdmissionAsync(Guid admitterId, Guid admitteeId)

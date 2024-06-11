@@ -12,18 +12,27 @@ namespace PhiZoneApi.Repositories;
 public class EventTeamRepository(ApplicationDbContext context, IMeilisearchService meilisearchService)
     : IEventTeamRepository
 {
-    public async Task<ICollection<EventTeam>> GetEventTeamsAsync(List<string> order, List<bool> desc,
-        int position, int take, Expression<Func<EventTeam, bool>>? predicate = null)
+    public async Task<ICollection<EventTeam>> GetEventTeamsAsync(List<string>? order = null, List<bool>? desc = null,
+        int? position = 0,
+        int? take = -1, Expression<Func<EventTeam, bool>>? predicate = null, int? currentUserId = null)
     {
-        var result = context.EventTeams.OrderBy(order, desc);
+        var result = context.EventTeams.Include(e => e.Participations)
+            .ThenInclude(e => e.Participant)
+            .OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
-        result = result.Skip(position);
-        return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
+        if (currentUserId != null)
+            result = result.Include(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
+        result = result.Skip(position ?? 0);
+        return take >= 0 ? await result.Take(take.Value).ToListAsync() : await result.ToListAsync();
     }
 
-    public async Task<EventTeam> GetEventTeamAsync(Guid id)
+    public async Task<EventTeam> GetEventTeamAsync(Guid id, int? currentUserId = null)
     {
-        return (await context.EventTeams.FirstOrDefaultAsync(eventTeam => eventTeam.Id == id))!;
+        IQueryable<EventTeam> result = context.EventTeams.Include(e => e.Participations)
+            .ThenInclude(e => e.Participant);
+        if (currentUserId != null)
+            result = result.Include(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
+        return (await result.FirstOrDefaultAsync(eventTeam => eventTeam.Id == id))!;
     }
 
     public async Task<bool> EventTeamExistsAsync(Guid id)
@@ -47,8 +56,7 @@ public class EventTeamRepository(ApplicationDbContext context, IMeilisearchServi
 
     public async Task<bool> RemoveEventTeamAsync(Guid id)
     {
-        context.EventTeams.Remove(
-            (await context.EventTeams.FirstOrDefaultAsync(eventTeam => eventTeam.Id == id))!);
+        context.EventTeams.Remove((await context.EventTeams.FirstOrDefaultAsync(eventTeam => eventTeam.Id == id))!);
         await meilisearchService.DeleteAsync<EventTeam>(id);
         return await SaveAsync();
     }

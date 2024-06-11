@@ -1,4 +1,3 @@
-using System.Text.Json.Serialization;
 using PhiZoneApi.Enums;
 
 namespace PhiZoneApi.Dtos.Responses;
@@ -6,7 +5,7 @@ namespace PhiZoneApi.Dtos.Responses;
 public class EventDivisionDto
 {
     public Guid Id { get; set; }
-    
+
     public string Title { get; set; } = null!;
 
     public string? Subtitle { get; set; }
@@ -18,7 +17,7 @@ public class EventDivisionDto
     public string? Illustration { get; set; }
 
     public string? Illustrator { get; set; }
-    
+
     public string? Description { get; set; }
 
     public Accessibility Accessibility { get; set; }
@@ -26,7 +25,7 @@ public class EventDivisionDto
     public bool IsHidden { get; set; }
 
     public bool IsLocked { get; set; }
-    
+
     public Guid? TagId { get; set; }
 
     public int? MinTeamCount { get; set; }
@@ -40,14 +39,14 @@ public class EventDivisionDto
     public int? MinSubmissionCount { get; set; }
 
     public int? MaxSubmissionCount { get; set; }
+    
+    public bool Anonymization { get; set; }
 
     public int LikeCount { get; set; }
 
     public int OwnerId { get; set; }
 
     public Guid EventId { get; set; }
-
-    public EventDto Event { get; set; } = null!;
 
     public DateTimeOffset DateCreated { get; set; }
 
@@ -58,6 +57,6 @@ public class EventDivisionDto
     public DateTimeOffset DateEnded { get; set; }
 
     public DateTimeOffset? DateLiked { get; set; }
-
-    public List<UserDto> Administrators { get; set; } = [];
+    
+    public EventTeamDto? Team { get; set; }
 }

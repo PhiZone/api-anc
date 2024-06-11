@@ -26,6 +26,8 @@ public interface ILikeService
 
     Task<bool> CreateLikeAsync(EventDivision eventDivision, int userId);
 
+    Task<bool> CreateLikeAsync(EventTeam eventTeam, int userId);
+
     Task<bool> RemoveLikeAsync(Chapter chapter, int userId);
 
     Task<bool> RemoveLikeAsync(Collection collection, int userId);
@@ -47,4 +49,6 @@ public interface ILikeService
     Task<bool> RemoveLikeAsync(Event eventEntity, int userId);
 
     Task<bool> RemoveLikeAsync(EventDivision eventDivision, int userId);
+
+    Task<bool> RemoveLikeAsync(EventTeam eventTeam, int userId);
 }

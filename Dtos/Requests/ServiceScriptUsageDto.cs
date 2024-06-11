@@ -3,7 +3,7 @@ using PhiZoneApi.Constants;
 
 namespace PhiZoneApi.Dtos.Requests;
 
-public class ApplicationServiceUsageDto
+public class ServiceScriptUsageDto
 {
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     public Dictionary<string, string> Parameters { get; set; } = null!;

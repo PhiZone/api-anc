@@ -3,7 +3,7 @@ using PhiZoneApi.Enums;
 
 namespace PhiZoneApi.Models;
 
-public class Song : PublicResource
+public class Song : SignificantResource
 {
     public string Title { get; set; } = null!;
 

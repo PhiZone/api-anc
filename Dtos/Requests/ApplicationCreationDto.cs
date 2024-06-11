@@ -11,13 +11,13 @@ public class ApplicationCreationDto
     [MaxLength(40, ErrorMessage = ResponseCodes.ValueTooLong)]
     [UserInputValidator(ErrorMessage = ResponseCodes.ContentProhibited)]
     public string Name { get; set; } = string.Empty;
-    
+
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     public IFormFile Avatar { get; set; } = null!;
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     public IFormFile Illustration { get; set; } = null!;
-    
+
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     [MaxLength(200, ErrorMessage = ResponseCodes.ValueTooLong)]
     [UserInputValidator(ErrorMessage = ResponseCodes.ContentProhibited)]
@@ -26,7 +26,7 @@ public class ApplicationCreationDto
     [MaxLength(2000, ErrorMessage = ResponseCodes.ValueTooLong)]
     [UserInputValidator(ErrorMessage = ResponseCodes.ContentProhibited)]
     public string? Description { get; set; }
-    
+
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     [Url(ErrorMessage = ResponseCodes.InvalidUrl)]
     [MaxLength(2000, ErrorMessage = ResponseCodes.ValueTooLong)]
@@ -46,7 +46,7 @@ public class ApplicationCreationDto
     [MaxLength(2000, ErrorMessage = ResponseCodes.ValueTooLong)]
     [UserInputValidator(ErrorMessage = ResponseCodes.ContentProhibited)]
     public string Secret { get; set; } = string.Empty;
-    
+
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     public int OwnerId { get; set; }
 }

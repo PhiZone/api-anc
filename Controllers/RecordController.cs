@@ -47,8 +47,12 @@ public class RecordController(
     IConnectionMultiplexer redis,
     IApplicationRepository applicationRepository,
     IPlayConfigurationRepository playConfigurationRepository,
+    IEventDivisionRepository eventDivisionRepository,
+    IEventTeamRepository eventTeamRepository,
+    IEventResourceRepository eventResourceRepository,
     IRecordService recordService,
     ILeaderboardService leaderboardService,
+    IScriptService scriptService,
     IResourceService resourceService,
     ILogger<RecordController> logger,
     INotificationService notificationService) : Controller
@@ -75,7 +79,7 @@ public class RecordController(
         var records = await recordRepository.GetRecordsAsync(dto.Order, dto.Desc, position, dto.PerPage, predicateExpr,
             true, currentUser?.Id);
         var total = await recordRepository.CountRecordsAsync(predicateExpr);
-        var list = records.Select(dtoMapper.MapRecord<RecordDto>).ToList();
+        var list = records.Select(e => dtoMapper.MapRecord<RecordDto>(e)).ToList();
 
         return Ok(new ResponseDto<IEnumerable<RecordDto>>
         {
@@ -278,6 +282,23 @@ public class RecordController(
             DateCreated = DateTimeOffset.UtcNow
         };
 
+        EventDivision? eventDivision = null;
+        EventTeam? eventTeam = null;
+        if (info is { DivisionId: not null, TeamId: not null })
+        {
+            eventDivision = await eventDivisionRepository.GetEventDivisionAsync(info.DivisionId.Value);
+            eventTeam = await eventTeamRepository.GetEventTeamAsync(info.TeamId.Value);
+            
+            var firstFailure = await scriptService.RunEventTaskAsync(eventTeam.DivisionId, record, eventTeam.Id, player,
+                [EventTaskType.PreSubmission]);
+
+            if (firstFailure != null)
+                return BadRequest(new ResponseDto<EventTaskResponseDto>
+                    {
+                        Status = ResponseStatus.ErrorWithData, Code = ResponseCodes.InvalidData, Data = firstFailure
+                    });
+        }
+
         if (!await recordRepository.CreateRecordAsync(record))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
@@ -315,6 +336,24 @@ public class RecordController(
         await userManager.UpdateAsync(player);
 
         leaderboardService.Add(record);
+
+        // ReSharper disable once InvertIf
+        if (eventDivision != null && eventTeam != null)
+        {
+            var eventResource = new EventResource
+            {
+                DivisionId = eventDivision.Id,
+                ResourceId = record.Id,
+                Type = EventResourceType.Entry,
+                IsAnonymous = eventDivision.Anonymization,
+                TeamId = eventTeam.Id,
+                DateCreated = DateTimeOffset.UtcNow
+            };
+            await eventResourceRepository.CreateEventResourceAsync(eventResource);
+            await scriptService.RunEventTaskAsync(eventTeam.DivisionId, record, eventTeam.Id, player,
+                [EventTaskType.PostSubmission]);
+            leaderboardService.Add(eventTeam);
+        }
 
         return StatusCode(StatusCodes.Status201Created,
             new ResponseDto<RecordResponseDto>

@@ -8,9 +8,9 @@ public class EventDivisionFilterDto : PublicResourceFilterDto<EventDivision>
     public string? ContainsSubtitle { get; set; }
 
     public string? EqualsSubtitle { get; set; }
-    
+
     public List<EventDivisionType>? RangeType { get; set; }
-    
+
     public List<EventDivisionStatus>? RangeStatus { get; set; }
 
     public int? MinMinTeamCount { get; set; }
@@ -37,17 +37,19 @@ public class EventDivisionFilterDto : PublicResourceFilterDto<EventDivision>
 
     public int? MaxMaxSubmissionCount { get; set; }
     
+    public bool? HasAnonymization { get; set; }
+
     public List<Guid>? RangeEventId { get; set; }
 
     public DateTimeOffset? EarliestDateUnveiled { get; set; }
-    
+
     public DateTimeOffset? LatestDateUnveiled { get; set; }
 
     public DateTimeOffset? EarliestDateStarted { get; set; }
-    
+
     public DateTimeOffset? LatestDateStarted { get; set; }
 
     public DateTimeOffset? EarliestDateEnded { get; set; }
-    
+
     public DateTimeOffset? LatestDateEnded { get; set; }
 }

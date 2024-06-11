@@ -16,7 +16,9 @@ public class Event : PublicResource
 
     [JsonIgnore] public List<EventDivision> Divisions { get; set; } = [];
 
-    [JsonIgnore] public List<User> Administrators { get; set; } = [];
+    [JsonIgnore] public List<User> Hosts { get; set; } = [];
+
+    [JsonIgnore] public List<Hostship> Hostships { get; set; } = [];
 
     public override string GetDisplay()
     {

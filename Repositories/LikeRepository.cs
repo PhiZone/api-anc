@@ -11,13 +11,14 @@ namespace PhiZoneApi.Repositories;
 
 public class LikeRepository(ApplicationDbContext context) : ILikeRepository
 {
-    public async Task<ICollection<Like>> GetLikesAsync(List<string> order, List<bool> desc, int position, int take,
+    public async Task<ICollection<Like>> GetLikesAsync(List<string>? order = null, List<bool>? desc = null,
+        int? position = 0, int? take = -1,
         Expression<Func<Like, bool>>? predicate = null)
     {
         var result = context.Likes.OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
-        result = result.Skip(position);
-        return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
+        result = result.Skip(position ?? 0);
+        return take >= 0 ? await result.Take(take.Value).ToListAsync() : await result.ToListAsync();
     }
 
     public async Task<Like> GetLikeAsync(Guid id)

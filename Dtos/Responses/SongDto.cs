@@ -12,7 +12,7 @@ public class SongDto
 
     public string Edition { get; set; } = null!;
 
-    public string AuthorName { get; set; } = null!;
+    public string? AuthorName { get; set; }
 
     public string File { get; set; } = null!;
 
@@ -58,7 +58,7 @@ public class SongDto
 
     public int LikeCount { get; set; }
 
-    public int OwnerId { get; set; }
+    public int? OwnerId { get; set; }
 
     public DateTimeOffset DateCreated { get; set; }
 

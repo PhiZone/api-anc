@@ -12,16 +12,17 @@ namespace PhiZoneApi.Repositories;
 public class ApplicationRepository(ApplicationDbContext context, IMeilisearchService meilisearchService)
     : IApplicationRepository
 {
-    public async Task<ICollection<Application>> GetApplicationsAsync(List<string> order, List<bool> desc, int position,
-        int take,
+    public async Task<ICollection<Application>> GetApplicationsAsync(List<string>? order = null,
+        List<bool>? desc = null, int? position = 0,
+        int? take = -1,
         Expression<Func<Application, bool>>? predicate = null, int? currentUserId = null)
     {
         var result = context.Applications.OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
         if (currentUserId != null)
             result = result.Include(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
-        result = result.Skip(position);
-        return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
+        result = result.Skip(position ?? 0);
+        return take >= 0 ? await result.Take(take.Value).ToListAsync() : await result.ToListAsync();
     }
 
     public async Task<Application> GetApplicationAsync(Guid id, int? currentUserId = null)

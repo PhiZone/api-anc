@@ -16,53 +16,58 @@ using PhiZoneApi.Filters;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 using PhiZoneApi.Utils;
+using HP = PhiZoneApi.Constants.HostshipPermissions;
 
 // ReSharper disable RouteTemplates.ActionRoutePrefixCanBeExtractedToControllerRoute
 
 namespace PhiZoneApi.Controllers;
 
-[Route("applications/services")]
+[Route("events/hostships")]
 [ApiVersion("2.0")]
 [ApiController]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme,
     Policy = "AllowAnonymous")]
-public class ApplicationServiceController(
-    IApplicationServiceRepository applicationServiceRepository,
-    IApplicationRepository applicationRepository,
+public class HostshipController(
+    IHostshipRepository hostshipRepository,
+    IEventRepository eventRepository,
     IOptions<DataSettings> dataSettings,
-    IDtoMapper dtoMapper,
     IFilterService filterService,
-    IScriptService scriptService,
     UserManager<User> userManager,
     IMapper mapper,
     IResourceService resourceService) : Controller
 {
     /// <summary>
-    ///     Retrieves application services.
+    ///     Retrieves hostships.
     /// </summary>
-    /// <returns>An array of application services.</returns>
-    /// <response code="200">Returns an array of application services.</response>
+    /// <returns>An array of hostships.</returns>
+    /// <response code="200">Returns an array of hostships.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     [HttpGet]
     [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<ApplicationServiceDto>>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<HostshipDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetApplicationServices([FromQuery] ArrayRequestDto dto,
-        [FromQuery] ApplicationServiceFilterDto? filterDto = null)
+    public async Task<IActionResult> GetHostships([FromQuery] ArrayRequestDto dto,
+        [FromQuery] HostshipFilterDto? filterDto = null)
     {
         var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        var permission = HP.Gen(HP.Retrieve, HP.Hostship);
         dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
             dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
-        var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser);
-        var applicationServices =
-            await applicationServiceRepository.GetApplicationServicesAsync(dto.Order, dto.Desc, position, dto.PerPage,
-                predicateExpr, currentUser?.Id);
-        var total = await applicationServiceRepository.CountApplicationServicesAsync(predicateExpr);
-        var list = applicationServices.Select(dtoMapper.MapApplicationService<ApplicationServiceDto>).ToList();
+        var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser,
+            e => e.IsUnveiled || (currentUser != null &&
+                                  (resourceService.HasPermission(currentUser, UserRole.Administrator) ||
+                                   e.Event.Hostships.Any(f =>
+                                       f.UserId == currentUser.Id &&
+                                       (f.IsAdmin || f.Permissions.Contains(permission))))));
+        var hostships = await hostshipRepository.GetHostshipsAsync(dto.Order, dto.Desc, position,
+            dto.PerPage, predicateExpr);
+        var total = await hostshipRepository.CountHostshipsAsync(predicateExpr);
 
-        return Ok(new ResponseDto<IEnumerable<ApplicationServiceDto>>
+        var list = hostships.Select(mapper.Map<HostshipDto>).ToList();
+
+        return Ok(new ResponseDto<IEnumerable<HostshipDto>>
         {
             Status = ResponseStatus.Ok,
             Code = ResponseCodes.Ok,
@@ -75,42 +80,49 @@ public class ApplicationServiceController(
     }
 
     /// <summary>
-    ///     Retrieves a specific application service.
+    ///     Retrieves a specific hostship.
     /// </summary>
-    /// <param name="id">An application service's ID.</param>
-    /// <returns>An application service.</returns>
-    /// <response code="200">Returns an application service.</response>
+    /// <param name="id">A hostship's ID.</param>
+    /// <returns>A hostship.</returns>
+    /// <response code="200">Returns a hostship.</response>
     /// <response code="304">
     ///     When the resource has not been updated since last retrieval. Requires <c>If-None-Match</c>.
     /// </response>
     /// <response code="400">When any of the parameters is invalid.</response>
-    /// <response code="404">When the specified application service is not found.</response>
-    [HttpGet("{id:guid}")]
+    /// <response code="404">When the specified hostship is not found.</response>
+    [HttpGet("{eventId:guid}/{userId:int}")]
     [ServiceFilter(typeof(ETagFilter))]
     [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<ApplicationServiceDto>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<HostshipDto>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status304NotModified, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetApplicationService([FromRoute] Guid id)
+    public async Task<IActionResult> GetHostship([FromRoute] Guid eventId, [FromRoute] int userId)
     {
         var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        if (!await applicationServiceRepository.ApplicationServiceExistsAsync(id))
+        if (!await hostshipRepository.HostshipExistsAsync(eventId, userId))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        var applicationService = await applicationServiceRepository.GetApplicationServiceAsync(id, currentUser?.Id);
-        var dto = dtoMapper.MapApplicationService<ApplicationServiceDto>(applicationService);
+        var hostship = await hostshipRepository.GetHostshipAsync(eventId, userId);
+        var eventEntity = await eventRepository.GetEventAsync(eventId);
+        var permission = HP.Gen(HP.Retrieve, HP.Hostship);
+        if ((currentUser == null || !(resourceService.HasPermission(currentUser, UserRole.Administrator) ||
+                                      eventEntity.Hostships.Any(f =>
+                                          f.UserId == currentUser.Id &&
+                                          (f.IsAdmin || f.Permissions.Contains(permission))))) && !hostship.IsUnveiled)
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+        var dto = mapper.Map<HostshipDto>(hostship);
 
-        return Ok(new ResponseDto<ApplicationServiceDto>
-        {
-            Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto
-        });
+        return Ok(new ResponseDto<HostshipDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
     }
 
     /// <summary>
-    ///     Creates a new application service.
+    ///     Creates a new hostship.
     /// </summary>
     /// <returns>An empty body.</returns>
     /// <response code="201">Returns an empty body.</response>
@@ -127,53 +139,60 @@ public class ApplicationServiceController(
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> CreateApplicationService([FromBody] ApplicationServiceRequestDto dto)
+    public async Task<IActionResult> CreateHostship([FromBody] HostshipRequestDto dto)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!resourceService.HasPermission(currentUser, UserRole.Administrator))
-            return StatusCode(StatusCodes.Status403Forbidden,
-                new ResponseDto<object>
-                {
-                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
-                });
-        if (!await applicationRepository.ApplicationExistsAsync(dto.ApplicationId))
+
+        if (!await eventRepository.EventExistsAsync(dto.EventId))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
             });
 
-        var applicationService = new ApplicationService
+        var eventEntity = await eventRepository.GetEventAsync(dto.EventId);
+        var permission = HP.Gen(HP.Create, HP.Hostship);
+
+        if (!(resourceService.HasPermission(currentUser, UserRole.Administrator) || eventEntity.Hostships.Any(f =>
+                f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(permission)))))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+
+        var isAdmin = resourceService.HasPermission(currentUser, UserRole.Administrator) ||
+                      eventEntity.Hostships.Any(f => f.UserId == currentUser.Id && f.IsAdmin);
+
+        var hostship = new Hostship
         {
-            Name = dto.Name,
-            TargetType = dto.TargetType,
-            Description = dto.Description,
-            Code = dto.Code,
-            Parameters = dto.Parameters,
-            ApplicationId = dto.ApplicationId,
-            DateCreated = DateTimeOffset.UtcNow
+            EventId = dto.EventId,
+            UserId = dto.UserId,
+            Position = dto.Position,
+            IsUnveiled = dto.IsUnveiled,
+            IsAdmin = eventEntity.OwnerId == currentUser.Id && dto.IsAdmin,
+            Permissions = isAdmin ? dto.Permissions : []
         };
-        if (!await applicationServiceRepository.CreateApplicationServiceAsync(applicationService))
+
+        if (!await hostshipRepository.CreateHostshipAsync(hostship))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
-
-        scriptService.Compile(applicationService.Id, applicationService.Code, applicationService.TargetType);
 
         return StatusCode(StatusCodes.Status201Created);
     }
 
     /// <summary>
-    ///     Updates an application service.
+    ///     Updates a hostship.
     /// </summary>
-    /// <param name="id">An application service's ID.</param>
+    /// <param name="id">A hostship's ID.</param>
     /// <param name="patchDocument">A JSON Patch Document.</param>
     /// <returns>An empty body.</returns>
     /// <response code="204">Returns an empty body.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="403">When the user does not have sufficient permission.</response>
-    /// <response code="404">When the specified application service is not found.</response>
+    /// <response code="404">When the specified hostship is not found.</response>
     /// <response code="500">When an internal server error has occurred.</response>
-    [HttpPatch("{id:guid}")]
+    [HttpPatch("{eventId:guid}/{userId:int}")]
     [Consumes("application/json")]
     [Produces("application/json")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
@@ -183,26 +202,29 @@ public class ApplicationServiceController(
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> UpdateApplicationService([FromRoute] Guid id,
-        [FromBody] JsonPatchDocument<ApplicationServiceRequestDto> patchDocument)
+    public async Task<IActionResult> UpdateHostship([FromRoute] Guid eventId, [FromRoute] int userId,
+        [FromBody] JsonPatchDocument<HostshipRequestDto> patchDocument)
     {
-        if (!await applicationServiceRepository.ApplicationServiceExistsAsync(id))
+        if (!await hostshipRepository.HostshipExistsAsync(eventId, userId))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        var applicationService = await applicationServiceRepository.GetApplicationServiceAsync(id);
+        var hostship = await hostshipRepository.GetHostshipAsync(eventId, userId);
+        var eventEntity = await eventRepository.GetEventAsync(eventId);
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!resourceService.HasPermission(currentUser, UserRole.Administrator))
+        var permission = HP.Gen(HP.Update, HP.Hostship);
+        if (!(resourceService.HasPermission(currentUser, UserRole.Administrator) || eventEntity.Hostships.Any(f =>
+                f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(permission)))))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
-        var dto = mapper.Map<ApplicationServiceRequestDto>(applicationService);
+        var dto = mapper.Map<HostshipRequestDto>(hostship);
         patchDocument.ApplyTo(dto, ModelState);
 
         if (!TryValidateModel(dto))
@@ -212,87 +234,36 @@ public class ApplicationServiceController(
                 Code = ResponseCodes.InvalidData,
                 Errors = ModelErrorTranslator.Translate(ModelState)
             });
-        if (!await applicationRepository.ApplicationExistsAsync(dto.ApplicationId))
-            return NotFound(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
-            });
 
-        applicationService.Name = dto.Name;
-        applicationService.TargetType = dto.TargetType;
-        applicationService.Description = dto.Description;
-        applicationService.Code = dto.Code;
-        applicationService.Parameters = dto.Parameters;
-        applicationService.ApplicationId = dto.ApplicationId;
-        applicationService.DateUpdated = DateTimeOffset.UtcNow;
+        var isAdmin = resourceService.HasPermission(currentUser, UserRole.Administrator) ||
+                      eventEntity.Hostships.Any(f => f.UserId == currentUser.Id && f.IsAdmin);
 
-        if (!await applicationServiceRepository.UpdateApplicationServiceAsync(applicationService))
+        hostship.EventId = dto.EventId;
+        hostship.UserId = dto.UserId;
+        hostship.Position = dto.Position;
+        hostship.IsUnveiled = dto.IsUnveiled;
+        hostship.IsAdmin = eventEntity.OwnerId == currentUser.Id && dto.IsAdmin;
+        hostship.Permissions = isAdmin ? dto.Permissions : [];
+
+        if (!await hostshipRepository.UpdateHostshipAsync(hostship))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
-
-        scriptService.Compile(applicationService.Id, applicationService.Code, applicationService.TargetType);
 
         return NoContent();
     }
 
     /// <summary>
-    ///     Uses the specified application service directly without a target resource.
+    ///     Removes a hostship.
     /// </summary>
-    /// <param name="dto">Parameters required by the service.</param>
-    /// <returns>A service response.</returns>
-    /// <response code="200">Returns a service response.</response>
-    /// <response code="400">When any of the parameters is invalid.</response>
-    /// <response code="401">When the user is not authorized.</response>
-    /// <response code="403">When the user does not have sufficient permission.</response>
-    /// <response code="404">When the specified chart submission is not found.</response>
-    [HttpPost("{id:guid}")]
-    [Consumes("application/json")]
-    [Produces("application/json")] 
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<ServiceResponseDto>))]
-    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
-    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
-    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
-    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> UseService([FromRoute] Guid id, [FromBody] ApplicationServiceUsageDto dto)
-    {
-        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!resourceService.HasPermission(currentUser, UserRole.Qualified))
-            return StatusCode(StatusCodes.Status403Forbidden,
-                new ResponseDto<object>
-                {
-                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
-                });
-        if (!await applicationServiceRepository.ApplicationServiceExistsAsync(id))
-            return NotFound(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
-            });
-        var service = await applicationServiceRepository.GetApplicationServiceAsync(id);
-        if (service.TargetType != ServiceTargetType.ChartSubmission)
-            return BadRequest(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
-            });
-        var result = await scriptService.RunAsync<object>(id, dto.Parameters, null!, currentUser);
-
-        return Ok(new ResponseDto<ServiceResponseDto>
-        {
-            Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = result
-        });
-    }
-
-    /// <summary>
-    ///     Removes an application service.
-    /// </summary>
-    /// <param name="id">An application service's ID.</param>
+    /// <param name="id">A hostship's ID.</param>
     /// <returns>An empty body.</returns>
     /// <response code="204">Returns an empty body.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="403">When the user does not have sufficient permission.</response>
-    /// <response code="404">When the specified application service is not found.</response>
+    /// <response code="404">When the specified hostship is not found.</response>
     /// <response code="500">When an internal server error has occurred.</response>
-    [HttpDelete("{id:guid}")]
+    [HttpDelete("{eventId:guid}/{userId:int}")]
     [Produces("application/json")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
@@ -301,26 +272,33 @@ public class ApplicationServiceController(
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> RemoveApplicationService([FromRoute] Guid id)
+    public async Task<IActionResult> RemoveHostship([FromRoute] Guid eventId, [FromRoute] int userId)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!await applicationServiceRepository.ApplicationServiceExistsAsync(id))
+
+        if (!await hostshipRepository.HostshipExistsAsync(eventId, userId))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        if (!resourceService.HasPermission(currentUser, UserRole.Administrator))
+
+        var hostship = await hostshipRepository.GetHostshipAsync(eventId, userId);
+        var eventEntity = await eventRepository.GetEventAsync(eventId);
+
+        var permission = HP.Gen(HP.Remove, HP.Hostship);
+        if (!(resourceService.HasPermission(currentUser, UserRole.Administrator) || eventEntity.Hostships.Any(f =>
+                f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(permission)))) ||
+            (hostship.IsAdmin && eventEntity.OwnerId != currentUser.Id &&
+             !resourceService.HasPermission(currentUser, UserRole.Administrator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
-        if (!await applicationServiceRepository.RemoveApplicationServiceAsync(id))
+        if (!await hostshipRepository.RemoveHostshipAsync(eventId, userId))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
-
-        scriptService.RemoveServiceScript(id);
 
         return NoContent();
     }

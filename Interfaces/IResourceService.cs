@@ -30,4 +30,6 @@ public interface IResourceService
     bool IsEmailValid(string email);
 
     Task<bool> IsUserInputValidAsync(string input, string memberName);
+
+    string GenerateCode(int length);
 }

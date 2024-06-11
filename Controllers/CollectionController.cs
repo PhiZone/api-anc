@@ -70,8 +70,8 @@ public class CollectionController(
                 showHidden: currentUser is { Role: UserRole.Administrator });
             var idList = result.Hits.Select(item => item.Id).ToList();
             collections =
-                (await collectionRepository.GetCollectionsAsync(["DateCreated"], [false], 0, -1,
-                    e => idList.Contains(e.Id), currentUser?.Id)).OrderBy(e => idList.IndexOf(e.Id));
+                (await collectionRepository.GetCollectionsAsync(predicate:
+                    e => idList.Contains(e.Id), currentUserId: currentUser?.Id)).OrderBy(e => idList.IndexOf(e.Id));
             total = result.TotalHits;
         }
         else

@@ -1,9 +1,9 @@
-﻿using PhiZoneApi.Enums;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
+using PhiZoneApi.Enums;
 
 namespace PhiZoneApi.Models;
 
-public class Chart : PublicResource
+public class Chart : SignificantResource
 {
     public string? Title { get; set; }
 
