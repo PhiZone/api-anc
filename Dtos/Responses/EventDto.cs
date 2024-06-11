@@ -5,7 +5,7 @@ namespace PhiZoneApi.Dtos.Responses;
 public class EventDto
 {
     public Guid Id { get; set; }
-    
+
     public string Title { get; set; } = null!;
 
     public string? Subtitle { get; set; }
@@ -21,7 +21,7 @@ public class EventDto
     public bool IsHidden { get; set; }
 
     public bool IsLocked { get; set; }
-    
+
     public List<DivisionDto> Divisions { get; set; } = null!;
 
     public int LikeCount { get; set; }
@@ -36,13 +36,13 @@ public class EventDto
 
     public DateTimeOffset? DateLiked { get; set; }
 
-    public List<UserDto> Administrators { get; set; } = [];
+    public List<PositionalUserDto> Hosts { get; set; } = [];
 }
 
 public class DivisionDto
 {
     public string Title { get; set; } = null!;
-    
+
     public string? Subtitle { get; set; }
 
     public EventDivisionType Type { get; set; }

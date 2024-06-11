@@ -1,4 +1,5 @@
-﻿using System.Text.RegularExpressions;
+﻿using System.Text;
+using System.Text.RegularExpressions;
 using Ganss.Xss;
 using Microsoft.AspNetCore.Identity;
 using Newtonsoft.Json;
@@ -152,6 +153,21 @@ public partial class ResourceService(IServiceProvider serviceProvider, IConfigur
             DateCreated = DateTimeOffset.UtcNow
         });
         return true;
+    }
+
+    public string GenerateCode(int length)
+    {
+        const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        var code = new StringBuilder(length);
+        var random = new Random();
+
+        for (var i = 0; i < length; i++)
+        {
+            var index = random.Next(0, chars.Length);
+            code.Append(chars[index]);
+        }
+
+        return code.ToString();
     }
 
     private bool IsValid(string input, Regex regex)

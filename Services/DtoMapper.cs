@@ -4,6 +4,8 @@ using PhiZoneApi.Enums;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 
+// ReSharper disable InvertIf
+
 namespace PhiZoneApi.Services;
 
 public class DtoMapper(
@@ -123,16 +125,25 @@ public class DtoMapper(
         return dto;
     }
 
-    public T MapSong<T>(Song song) where T : SongDto
+    public T MapSong<T>(Song song, bool anonymize = false) where T : SongDto
     {
         var dto = mapper.Map<T>(song);
-
+        anonymize = anonymize || song.EventPresences.Any(e => e.IsAnonymous != null && e.IsAnonymous.Value) ||
+                    song.Charts.Any(e => e.EventPresences.Any(f =>
+                        f.IsAnonymous != null && f.IsAnonymous.Value && f.Team != null &&
+                        f.Team.Participations.Any(g => g.ParticipantId == song.OwnerId)));
         foreach (var levelType in Enum.GetValues<ChartLevel>())
             dto.ChartLevels.Add(new ChartLevelDto
             {
                 LevelType = levelType, Count = song.Charts.Count(e => e.LevelType == levelType)
             });
         dto.DateLiked = song.Likes.FirstOrDefault()?.DateCreated;
+        if (anonymize)
+        {
+            if (dto.IsOriginal) dto.AuthorName = null;
+            dto.OwnerId = null;
+        }
+
         return dto;
     }
 
@@ -151,11 +162,18 @@ public class DtoMapper(
         return dto;
     }
 
-    public T MapChart<T>(Chart chart) where T : ChartDto
+    public T MapChart<T>(Chart chart, bool anonymize = false) where T : ChartDto
     {
         var dto = mapper.Map<T>(chart);
-        dto.Song = MapSong<SongDto>(chart.Song);
+        anonymize = anonymize || chart.EventPresences.Any(e => e.IsAnonymous != null && e.IsAnonymous.Value);
+        dto.Song = MapSong<SongDto>(chart.Song, anonymize);
         dto.DateLiked = chart.Likes.FirstOrDefault()?.DateCreated;
+        if (anonymize)
+        {
+            dto.AuthorName = null;
+            dto.OwnerId = null;
+        }
+
         return dto;
     }
 
@@ -185,11 +203,18 @@ public class DtoMapper(
         return dto;
     }
 
-    public T MapRecord<T>(Record record) where T : RecordDto
+    public T MapRecord<T>(Record record, bool anonymize = false) where T : RecordDto
     {
         var dto = mapper.Map<T>(record);
+        anonymize = anonymize || record.EventPresences.Any(e => e.IsAnonymous != null && e.IsAnonymous.Value);
         dto.Owner = MapUser<UserDto>(record.Owner);
         dto.DateLiked = record.Likes.FirstOrDefault()?.DateCreated;
+        if (anonymize)
+        {
+            dto.OwnerId = null;
+            dto.Owner = null;
+        }
+
         return dto;
     }
 
@@ -216,13 +241,6 @@ public class DtoMapper(
         return dto;
     }
 
-    public T MapApplicationService<T>(ApplicationService applicationService) where T : ApplicationServiceDto
-    {
-        var dto = mapper.Map<T>(applicationService);
-        dto.Application = MapApplication<ApplicationDto>(applicationService.Application);
-        return dto;
-    }
-
     public T MapAnnouncement<T>(Announcement announcement) where T : AnnouncementDto
     {
         var dto = mapper.Map<T>(announcement);
@@ -234,11 +252,15 @@ public class DtoMapper(
     {
         var dto = mapper.Map<T>(eventEntity);
         dto.Divisions = eventEntity.Divisions.Select(e => new DivisionDto
+            {
+                Title = e.Title, Subtitle = e.Subtitle, Type = e.Type, Status = e.Status
+            })
+            .ToList();
+        dto.Hosts = eventEntity.Hostships.Where(e => e.IsUnveiled).Select(e =>
         {
-            Title = e.Title,
-            Subtitle = e.Subtitle,
-            Type = e.Type,
-            Status = e.Status
+            var host = MapUser<PositionalUserDto>(e.User);
+            host.Position = e.Position;
+            return host;
         }).ToList();
         dto.DateLiked = eventEntity.Likes.FirstOrDefault()?.DateCreated;
         return dto;
@@ -248,6 +270,16 @@ public class DtoMapper(
     {
         var dto = mapper.Map<T>(eventDivision);
         dto.DateLiked = eventDivision.Likes.FirstOrDefault()?.DateCreated;
+        var team = eventDivision.Teams.FirstOrDefault();
+        dto.Team = team != null ? MapEventTeam<EventTeamDto>(team) : null;
+        return dto;
+    }
+
+    public T MapEventTeam<T>(EventTeam eventTeam) where T : EventTeamDto
+    {
+        var dto = mapper.Map<T>(eventTeam);
+        dto.DateLiked = eventTeam.Likes.FirstOrDefault()?.DateCreated;
+        dto.Participants = eventTeam.Participants.Select(MapUser<PositionalUserDto>).ToList();
         return dto;
     }
 

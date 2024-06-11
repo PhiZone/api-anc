@@ -8,6 +8,7 @@ using OpenIddict.Abstractions;
 using OpenIddict.Validation.AspNetCore;
 using PhiZoneApi.Configurations;
 using PhiZoneApi.Constants;
+using PhiZoneApi.Dtos.Deliverers;
 using PhiZoneApi.Dtos.Filters;
 using PhiZoneApi.Dtos.Requests;
 using PhiZoneApi.Dtos.Responses;
@@ -16,6 +17,8 @@ using PhiZoneApi.Filters;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 using PhiZoneApi.Utils;
+
+// ReSharper disable InvertIf
 
 // ReSharper disable RouteTemplates.ActionRoutePrefixCanBeExtractedToControllerRoute
 
@@ -36,12 +39,14 @@ public class SongSubmissionController(
     IMapper mapper,
     ISongService songService,
     IAuthorshipRepository authorshipRepository,
-    IApplicationServiceRepository applicationServiceRepository,
-    IApplicationServiceRecordRepository applicationServiceRecordRepository,
+    IServiceScriptRepository serviceScriptRepository,
+    IServiceRecordRepository serviceRecordRepository,
     ISubmissionService submissionService,
     IScriptService scriptService,
     IResourceService resourceService,
     ICollaborationRepository collaborationRepository,
+    IEventDivisionRepository eventDivisionRepository,
+    IEventTeamRepository eventTeamRepository,
     INotificationService notificationService,
     ITemplateService templateService,
     IFeishuService feishuService,
@@ -252,6 +257,10 @@ public class SongSubmissionController(
             DateUpdated = DateTimeOffset.UtcNow
         };
 
+        var (eventDivision, eventTeam, response) =
+            await CheckForEvent(songSubmission, currentUser, EventTaskType.PreSubmission);
+        if (response != null) return response;
+
         if (!await songSubmissionRepository.CreateSongSubmissionAsync(songSubmission))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
@@ -273,6 +282,10 @@ public class SongSubmissionController(
         {
             await feishuService.Notify(songSubmission, FeishuResources.ContentReviewalChat);
         }
+
+        if (eventDivision != null && eventTeam != null)
+            await scriptService.RunEventTaskAsync(eventTeam.DivisionId, songSubmission, eventTeam.Id, currentUser,
+                [EventTaskType.PostSubmission]);
 
         return StatusCode(StatusCodes.Status201Created);
     }
@@ -366,11 +379,20 @@ public class SongSubmissionController(
         songSubmission.DateUpdated = DateTimeOffset.UtcNow;
         songSubmission.Status = RequestStatus.Waiting;
 
+        var (eventDivision, eventTeam, response) =
+            await CheckForEvent(songSubmission, currentUser, EventTaskType.PreUpdateSubmission);
+        if (response != null) return response;
+
         if (!await songSubmissionRepository.UpdateSongSubmissionAsync(songSubmission))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
         if (notify) await feishuService.Notify(songSubmission, FeishuResources.ContentReviewalChat);
+
+        if (eventDivision != null && eventTeam != null)
+            await scriptService.RunEventTaskAsync(eventTeam.DivisionId, songSubmission, eventTeam.Id, currentUser,
+                [EventTaskType.PostUpdateSubmission]);
+
         return NoContent();
     }
 
@@ -448,11 +470,20 @@ public class SongSubmissionController(
             songSubmission.Status = RequestStatus.Waiting;
         }
 
+        var (eventDivision, eventTeam, response) =
+            await CheckForEvent(songSubmission, currentUser, EventTaskType.PreUpdateSubmission);
+        if (response != null) return response;
+
         if (!await songSubmissionRepository.UpdateSongSubmissionAsync(songSubmission))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
         if (wait && notify) await feishuService.Notify(songSubmission, FeishuResources.ContentReviewalChat);
+
+        if (eventDivision != null && eventTeam != null)
+            await scriptService.RunEventTaskAsync(eventTeam.DivisionId, songSubmission, eventTeam.Id, currentUser,
+                [EventTaskType.PostUpdateSubmission]);
+
         return NoContent();
     }
 
@@ -508,11 +539,20 @@ public class SongSubmissionController(
             songSubmission.Status = RequestStatus.Waiting;
         }
 
+        var (eventDivision, eventTeam, response) =
+            await CheckForEvent(songSubmission, currentUser, EventTaskType.PreUpdateSubmission);
+        if (response != null) return response;
+
         if (!await songSubmissionRepository.UpdateSongSubmissionAsync(songSubmission))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
         if (notify) await feishuService.Notify(songSubmission, FeishuResources.ContentReviewalChat);
+
+        if (eventDivision != null && eventTeam != null)
+            await scriptService.RunEventTaskAsync(eventTeam.DivisionId, songSubmission, eventTeam.Id, currentUser,
+                [EventTaskType.PostUpdateSubmission]);
+
         return NoContent();
     }
 
@@ -566,11 +606,20 @@ public class SongSubmissionController(
             songSubmission.Status = RequestStatus.Waiting;
         }
 
+        var (eventDivision, eventTeam, response) =
+            await CheckForEvent(songSubmission, currentUser, EventTaskType.PreUpdateSubmission);
+        if (response != null) return response;
+
         if (!await songSubmissionRepository.UpdateSongSubmissionAsync(songSubmission))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
         if (notify) await feishuService.Notify(songSubmission, FeishuResources.ContentReviewalChat);
+
+        if (eventDivision != null && eventTeam != null)
+            await scriptService.RunEventTaskAsync(eventTeam.DivisionId, songSubmission, eventTeam.Id, currentUser,
+                [EventTaskType.PostUpdateSubmission]);
+
         return NoContent();
     }
 
@@ -617,11 +666,20 @@ public class SongSubmissionController(
         songSubmission.DateUpdated = DateTimeOffset.UtcNow;
         songSubmission.Status = RequestStatus.Waiting;
 
+        var (eventDivision, eventTeam, response) =
+            await CheckForEvent(songSubmission, currentUser, EventTaskType.PreUpdateSubmission);
+        if (response != null) return response;
+
         if (!await songSubmissionRepository.UpdateSongSubmissionAsync(songSubmission))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
         if (notify) await feishuService.Notify(songSubmission, FeishuResources.ContentReviewalChat);
+
+        if (eventDivision != null && eventTeam != null)
+            await scriptService.RunEventTaskAsync(eventTeam.DivisionId, songSubmission, eventTeam.Id, currentUser,
+                [EventTaskType.PostUpdateSubmission]);
+
         return NoContent();
     }
 
@@ -676,11 +734,20 @@ public class SongSubmissionController(
             songSubmission.Status = RequestStatus.Waiting;
         }
 
+        var (eventDivision, eventTeam, response) =
+            await CheckForEvent(songSubmission, currentUser, EventTaskType.PreUpdateSubmission);
+        if (response != null) return response;
+
         if (!await songSubmissionRepository.UpdateSongSubmissionAsync(songSubmission))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
         if (notify) await feishuService.Notify(songSubmission, FeishuResources.ContentReviewalChat);
+
+        if (eventDivision != null && eventTeam != null)
+            await scriptService.RunEventTaskAsync(eventTeam.DivisionId, songSubmission, eventTeam.Id, currentUser,
+                [EventTaskType.PostUpdateSubmission]);
+
         return NoContent();
     }
 
@@ -727,11 +794,20 @@ public class SongSubmissionController(
         songSubmission.DateUpdated = DateTimeOffset.UtcNow;
         songSubmission.Status = RequestStatus.Waiting;
 
+        var (eventDivision, eventTeam, response) =
+            await CheckForEvent(songSubmission, currentUser, EventTaskType.PreUpdateSubmission);
+        if (response != null) return response;
+
         if (!await songSubmissionRepository.UpdateSongSubmissionAsync(songSubmission))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
         if (notify) await feishuService.Notify(songSubmission, FeishuResources.ContentReviewalChat);
+
+        if (eventDivision != null && eventTeam != null)
+            await scriptService.RunEventTaskAsync(eventTeam.DivisionId, songSubmission, eventTeam.Id, currentUser,
+                [EventTaskType.PostUpdateSubmission]);
+
         return NoContent();
     }
 
@@ -777,11 +853,28 @@ public class SongSubmissionController(
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
+        var normalizedTags = songSubmission.Tags.Select(resourceService.Normalize);
+        var eventDivisions = await eventDivisionRepository.GetEventDivisionsAsync(predicate: e =>
+            e.Type == EventDivisionType.Song && e.IsStarted() && normalizedTags.Contains(e.TagName));
+        if (eventDivisions.Count > 0)
+        {
+            var eventDivision = eventDivisions.First();
+            var eventTeams = await eventTeamRepository.GetEventTeamsAsync(predicate: e =>
+                e.DivisionId == eventDivision.Id && e.Participations.Any(f => f.ParticipantId == currentUser.Id));
+
+            if (eventTeams.Count > 0)
+            {
+                var eventTeam = eventTeams.First();
+                await scriptService.RunEventTaskAsync(eventTeam.DivisionId, songSubmission, eventTeam.Id, currentUser,
+                    [EventTaskType.OnDeletion]);
+            }
+        }
+
         return NoContent();
     }
 
     /// <summary>
-    ///     Applies a specific song submission to an application service.
+    ///     Applies a specific song submission to a service script.
     /// </summary>
     /// <param name="id">A song submission's ID.</param>
     /// <returns>A service response.</returns>
@@ -799,7 +892,7 @@ public class SongSubmissionController(
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> ApplySongSubmissionToService([FromRoute] Guid id, [FromRoute] Guid serviceId,
-        [FromBody] ApplicationServiceUsageDto dto)
+        [FromBody] ServiceScriptUsageDto dto)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if (!resourceService.HasPermission(currentUser, UserRole.Qualified))
@@ -813,19 +906,19 @@ public class SongSubmissionController(
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        if (!await applicationServiceRepository.ApplicationServiceExistsAsync(serviceId))
+        if (!await serviceScriptRepository.ServiceScriptExistsAsync(serviceId))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        var service = await applicationServiceRepository.GetApplicationServiceAsync(serviceId);
+        var service = await serviceScriptRepository.GetServiceScriptAsync(serviceId);
         if (service.TargetType != ServiceTargetType.SongSubmission)
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
             });
         var songSubmission = await songSubmissionRepository.GetSongSubmissionAsync(id);
-        var result = await scriptService.RunAsync(serviceId, dto.Parameters, songSubmission, currentUser);
+        var result = await scriptService.RunAsync(serviceId, songSubmission, dto.Parameters, currentUser);
 
         return Ok(new ResponseDto<ServiceResponseDto>
         {
@@ -841,11 +934,10 @@ public class SongSubmissionController(
     /// <response code="400">When any of the parameters is invalid.</response>
     [HttpGet("{id:guid}/serviceRecords")]
     [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status200OK,
-        Type = typeof(ResponseDto<IEnumerable<ApplicationServiceRecordDto>>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<ServiceRecordDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetApplicationServiceRecords([FromRoute] Guid id, [FromQuery] ArrayRequestDto dto,
-        [FromQuery] ApplicationServiceRecordFilterDto? filterDto = null)
+    public async Task<IActionResult> GetServiceRecords([FromRoute] Guid id, [FromQuery] ArrayRequestDto dto,
+        [FromQuery] ServiceRecordFilterDto? filterDto = null)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if (!resourceService.HasPermission(currentUser, UserRole.Qualified))
@@ -864,13 +956,13 @@ public class SongSubmissionController(
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser, e => e.ResourceId == id);
-        var applicationServiceRecords =
-            await applicationServiceRecordRepository.GetApplicationServiceRecordsAsync(dto.Order, dto.Desc, position,
-                dto.PerPage, predicateExpr);
-        var total = await applicationServiceRecordRepository.CountApplicationServiceRecordsAsync(predicateExpr);
-        var list = applicationServiceRecords.Select(mapper.Map<ApplicationServiceRecordDto>).ToList();
+        var serviceRecords =
+            await serviceRecordRepository.GetServiceRecordsAsync(dto.Order, dto.Desc, position, dto.PerPage,
+                predicateExpr);
+        var total = await serviceRecordRepository.CountServiceRecordsAsync(predicateExpr);
+        var list = serviceRecords.Select(mapper.Map<ServiceRecordDto>).ToList();
 
-        return Ok(new ResponseDto<IEnumerable<ApplicationServiceRecordDto>>
+        return Ok(new ResponseDto<IEnumerable<ServiceRecordDto>>
         {
             Status = ResponseStatus.Ok,
             Code = ResponseCodes.Ok,
@@ -896,11 +988,11 @@ public class SongSubmissionController(
     [HttpGet("{id:guid}/serviceRecords/{recordId:guid}")]
     [ServiceFilter(typeof(ETagFilter))]
     [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<ApplicationServiceRecordDto>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<ServiceRecordDto>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status304NotModified, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetApplicationServiceRecord([FromRoute] Guid id, [FromRoute] Guid recordId)
+    public async Task<IActionResult> GetServiceRecord([FromRoute] Guid id, [FromRoute] Guid recordId)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if (!resourceService.HasPermission(currentUser, UserRole.Qualified))
@@ -914,21 +1006,20 @@ public class SongSubmissionController(
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        if (!await applicationServiceRecordRepository.ApplicationServiceRecordExistsAsync(recordId))
+        if (!await serviceRecordRepository.ServiceRecordExistsAsync(recordId))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        var applicationServiceRecord =
-            await applicationServiceRecordRepository.GetApplicationServiceRecordAsync(recordId);
-        if (applicationServiceRecord.ResourceId != id)
+        var serviceRecord = await serviceRecordRepository.GetServiceRecordAsync(recordId);
+        if (serviceRecord.ResourceId != id)
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        var dto = mapper.Map<ApplicationServiceRecordDto>(applicationServiceRecord);
+        var dto = mapper.Map<ServiceRecordDto>(serviceRecord);
 
-        return Ok(new ResponseDto<ApplicationServiceRecordDto>
+        return Ok(new ResponseDto<ServiceRecordDto>
         {
             Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto
         });
@@ -1094,5 +1185,46 @@ public class SongSubmissionController(
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
         return NoContent();
+    }
+
+    private async Task<(EventDivision?, EventTeam?, IActionResult?)> CheckForEvent(SongSubmission songSubmission,
+        User currentUser, EventTaskType taskType)
+    {
+        var normalizedTags = songSubmission.Tags.Select(resourceService.Normalize);
+        var eventDivisions = await eventDivisionRepository.GetEventDivisionsAsync(predicate: e =>
+            e.Type == EventDivisionType.Song && e.IsAvailable() && normalizedTags.Contains(e.TagName));
+        if (eventDivisions.Count == 0) return (null, null, null);
+
+        var eventDivision = eventDivisions.FirstOrDefault(e => e.IsStarted());
+        if (eventDivision == null)
+            return (null, null,
+                BadRequest(new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.DivisionNotStarted
+                }));
+
+        var eventTeams = await eventTeamRepository.GetEventTeamsAsync(predicate: e =>
+            e.DivisionId == eventDivision.Id && e.Participations.Any(f => f.ParticipantId == currentUser.Id));
+
+        if (eventTeams.Count == 0)
+            return (eventDivision, null,
+                BadRequest(new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.NotEnrolled
+                }));
+
+        var eventTeam = eventTeams.First();
+
+        var firstFailure = await scriptService.RunEventTaskAsync(eventTeam.DivisionId, songSubmission, eventTeam.Id, currentUser,
+            [taskType]);
+
+        if (firstFailure != null)
+            return (eventDivision, eventTeam,
+                BadRequest(new ResponseDto<EventTaskResponseDto>
+                {
+                    Status = ResponseStatus.ErrorWithData, Code = ResponseCodes.InvalidData, Data = firstFailure
+                }));
+
+        return (eventDivision, eventTeam, null);
     }
 }

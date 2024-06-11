@@ -1,5 +1,4 @@
-﻿using System.Text;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
@@ -345,15 +344,7 @@ public class UserInfoController(
         string code;
         do
         {
-            var codeBuilder = new StringBuilder();
-            var random = new Random();
-            for (var i = 0; i < 4; i++)
-            {
-                var type = random.Next(2);
-                codeBuilder.Append(type == 0 ? (char)('A' + random.Next(26)) : (char)('0' + random.Next(10)));
-            }
-
-            code = codeBuilder.ToString();
+            code = resourceService.GenerateCode(4);
         } while (await db.KeyExistsAsync($"phizone:tapghost:inherit:{code}"));
 
         await db.StringSetAsync($"phizone:tapghost:inherit:{code}",

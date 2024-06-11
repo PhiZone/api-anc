@@ -10,41 +10,61 @@ namespace PhiZoneApi.Repositories;
 
 public class AuthorshipRepository(ApplicationDbContext context) : IAuthorshipRepository
 {
-    public async Task<ICollection<Authorship>> GetResourcesAsync(int authorId, List<string> order, List<bool> desc,
-        int position, int take, Expression<Func<Authorship, bool>>? predicate = null)
+    public async Task<ICollection<Authorship>> GetResourcesAsync(int authorId, List<string>? order = null,
+        List<bool>? desc = null,
+        int? position = 0, int? take = -1, Expression<Func<Authorship, bool>>? predicate = null)
     {
-        var result = context.Authorships.Where(authorship => authorship.AuthorId == authorId).OrderBy(order, desc);
+        var result = context.Authorships.Include(e => e.Author)
+            .ThenInclude(e => e.Region)
+            .Where(authorship => authorship.AuthorId == authorId &&
+                                 authorship.Resource.EventPresences.Any(e =>
+                                     e.IsAnonymous != null && e.IsAnonymous.Value))
+            .OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
-        result = result.Skip(position);
-        return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
+        result = result.Skip(position ?? 0);
+        return take >= 0 ? await result.Take(take.Value).ToListAsync() : await result.ToListAsync();
     }
 
-    public async Task<ICollection<Authorship>> GetAuthorsAsync(Guid resourceId, List<string> order, List<bool> desc,
-        int position, int take, Expression<Func<Authorship, bool>>? predicate = null)
+    public async Task<ICollection<Authorship>> GetAuthorsAsync(Guid resourceId, List<string>? order = null,
+        List<bool>? desc = null,
+        int? position = 0, int? take = -1, Expression<Func<Authorship, bool>>? predicate = null)
     {
-        var result = context.Authorships.Where(authorship => authorship.ResourceId == resourceId).OrderBy(order, desc);
+        var result = context.Authorships.Include(e => e.Author)
+            .ThenInclude(e => e.Region)
+            .Where(authorship => authorship.ResourceId == resourceId &&
+                                 authorship.Resource.EventPresences.Any(e =>
+                                     e.IsAnonymous != null && e.IsAnonymous.Value))
+            .OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
-        result = result.Skip(position);
-        return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
+        result = result.Skip(position ?? 0);
+        return take >= 0 ? await result.Take(take.Value).ToListAsync() : await result.ToListAsync();
     }
 
-    public async Task<ICollection<Authorship>> GetAuthorshipsAsync(List<string> order, List<bool> desc, int position,
-        int take, Expression<Func<Authorship, bool>>? predicate = null, int? currentUserId = null)
+    public async Task<ICollection<Authorship>> GetAuthorshipsAsync(List<string>? order = null, List<bool>? desc = null,
+        int? position = 0,
+        int? take = -1, Expression<Func<Authorship, bool>>? predicate = null, int? currentUserId = null)
     {
-        var result = context.Authorships.Include(e => e.Author).ThenInclude(e => e.Region).OrderBy(order, desc);
+        var result = context.Authorships.Include(e => e.Author)
+            .ThenInclude(e => e.Region)
+            .Where(authorship =>
+                authorship.Resource.EventPresences.Any(e => e.IsAnonymous != null && e.IsAnonymous.Value))
+            .OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
         if (currentUserId != null)
             result = result.Include(e => e.Author)
                 .ThenInclude(e => e.FollowerRelations.Where(relation =>
                         relation.FollowerId == currentUserId && relation.Type != UserRelationType.Blacklisted)
                     .Take(1));
-        result = result.Skip(position);
-        return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
+        result = result.Skip(position ?? 0);
+        return take >= 0 ? await result.Take(take.Value).ToListAsync() : await result.ToListAsync();
     }
 
     public async Task<Authorship> GetAuthorshipAsync(Guid resourceId, int authorId, int? currentUserId = null)
     {
-        IQueryable<Authorship> result = context.Authorships.Include(e => e.Author).ThenInclude(e => e.Region);
+        var result = context.Authorships.Include(e => e.Author)
+            .ThenInclude(e => e.Region)
+            .Where(authorship =>
+                authorship.Resource.EventPresences.Any(e => e.IsAnonymous != null && e.IsAnonymous.Value));
         if (currentUserId != null)
             result = result.Include(e => e.Author)
                 .ThenInclude(e => e.FollowerRelations.Where(relation =>
@@ -56,7 +76,10 @@ public class AuthorshipRepository(ApplicationDbContext context) : IAuthorshipRep
 
     public async Task<Authorship> GetAuthorshipAsync(Guid id, int? currentUserId = null)
     {
-        IQueryable<Authorship> result = context.Authorships.Include(e => e.Author).ThenInclude(e => e.Region);
+        var result = context.Authorships.Include(e => e.Author)
+            .ThenInclude(e => e.Region)
+            .Where(authorship =>
+                authorship.Resource.EventPresences.Any(e => e.IsAnonymous != null && e.IsAnonymous.Value));
         if (currentUserId != null)
             result = result.Include(e => e.Author)
                 .ThenInclude(e => e.FollowerRelations.Where(relation =>
@@ -98,38 +121,51 @@ public class AuthorshipRepository(ApplicationDbContext context) : IAuthorshipRep
 
     public async Task<int> CountAuthorshipsAsync(Expression<Func<Authorship, bool>>? predicate = null)
     {
-        if (predicate != null) return await context.Authorships.Where(predicate).CountAsync();
-        return await context.Authorships.CountAsync();
+        if (predicate != null)
+            return await context.Authorships.Where(authorship =>
+                    authorship.Resource.EventPresences.Any(e => e.IsAnonymous != null && e.IsAnonymous.Value))
+                .CountAsync(predicate);
+        return await context.Authorships.CountAsync(authorship =>
+            authorship.Resource.EventPresences.Any(e => e.IsAnonymous != null && e.IsAnonymous.Value));
     }
 
     public async Task<bool> AuthorshipExistsAsync(Guid resourceId, int authorId)
     {
         return await context.Authorships.AnyAsync(authorship =>
-            authorship.ResourceId == resourceId && authorship.AuthorId == authorId);
+            authorship.ResourceId == resourceId && authorship.AuthorId == authorId &&
+            authorship.Resource.EventPresences.Any(e => e.IsAnonymous != null && e.IsAnonymous.Value));
     }
 
     public async Task<bool> AuthorshipExistsAsync(Guid id)
     {
-        return await context.Authorships.AnyAsync(authorship => authorship.Id == id);
+        return await context.Authorships.AnyAsync(authorship =>
+            authorship.Id == id &&
+            authorship.Resource.EventPresences.Any(e => e.IsAnonymous != null && e.IsAnonymous.Value));
     }
 
     public async Task<int> CountResourcesAsync(int authorId, Expression<Func<Authorship, bool>>? predicate = null)
     {
         if (predicate != null)
-            return await context.Authorships.Where(authorship => authorship.Author.Id == authorId)
-                .Where(predicate)
-                .CountAsync();
+            return await context.Authorships.Where(authorship =>
+                    authorship.Author.Id == authorId &&
+                    authorship.Resource.EventPresences.Any(e => e.IsAnonymous != null && e.IsAnonymous.Value))
+                .CountAsync(predicate);
 
-        return await context.Authorships.Where(authorship => authorship.Author.Id == authorId).CountAsync();
+        return await context.Authorships.CountAsync(authorship =>
+            authorship.Author.Id == authorId &&
+            authorship.Resource.EventPresences.Any(e => e.IsAnonymous != null && e.IsAnonymous.Value));
     }
 
     public async Task<int> CountAuthorsAsync(Guid resourceId, Expression<Func<Authorship, bool>>? predicate = null)
     {
         if (predicate != null)
-            return await context.Authorships.Where(authorship => authorship.Resource.Id == resourceId)
-                .Where(predicate)
-                .CountAsync();
+            return await context.Authorships.Where(authorship =>
+                    authorship.Resource.Id == resourceId &&
+                    authorship.Resource.EventPresences.Any(e => e.IsAnonymous != null && e.IsAnonymous.Value))
+                .CountAsync(predicate);
 
-        return await context.Authorships.Where(authorship => authorship.Resource.Id == resourceId).CountAsync();
+        return await context.Authorships.CountAsync(authorship =>
+            authorship.Resource.Id == resourceId &&
+            authorship.Resource.EventPresences.Any(e => e.IsAnonymous != null && e.IsAnonymous.Value));
     }
 }

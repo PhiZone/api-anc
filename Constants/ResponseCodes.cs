@@ -25,7 +25,7 @@ public static class ResponseCodes
     public const string UserNameOccupied = "UserNameOccupied";
 
     /// <summary>
-    ///     User cannot change their user name during cooldown.
+    ///     User cannot change their username during cooldown.
     /// </summary>
     public const string UserNameCooldown = "UserNameCooldown";
 
@@ -252,6 +252,21 @@ public static class ResponseCodes
     ///     A resource with this name already exists.
     /// </summary>
     public const string NameOccupied = "NameOccupied";
+
+    /// <summary>
+    ///     The event division is unavailable.
+    /// </summary>
+    public const string DivisionUnavailable = "DivisionUnavailable";
+
+    /// <summary>
+    ///     The event division is not yet started.
+    /// </summary>
+    public const string DivisionNotStarted = "DivisionNotStarted";
+
+    /// <summary>
+    ///     User hasn't enrolled in the event division.
+    /// </summary>
+    public const string NotEnrolled = "NotEnrolled";
 
     /// <summary>
     ///     There exists prohibited content in user's input text.

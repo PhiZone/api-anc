@@ -5,7 +5,7 @@ using PhiZoneApi.Validators;
 
 namespace PhiZoneApi.Dtos.Requests;
 
-public class ApplicationServiceRequestDto
+public class ServiceScriptRequestDto
 {
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     [MaxLength(40, ErrorMessage = ResponseCodes.ValueTooLong)]
@@ -26,5 +26,6 @@ public class ApplicationServiceRequestDto
     public List<string> Parameters { get; set; } = [];
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
-    public Guid ApplicationId { get; set; }
+
+    public Guid ResourceId { get; set; }
 }

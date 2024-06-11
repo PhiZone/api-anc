@@ -10,7 +10,7 @@ public class MappingProfiles : Profile
     public MappingProfiles()
     {
         CreateMap<User, UserDto>().ForMember(x => x.Role, opt => opt.Ignore());
-        CreateMap<User, AuthorDto>().ForMember(x => x.Role, opt => opt.Ignore());
+        CreateMap<User, PositionalUserDto>().ForMember(x => x.Role, opt => opt.Ignore());
         CreateMap<User, UserDetailedDto>();
         CreateMap<User, UserUpdateDto>();
         CreateMap<UserDetailedDto, UserDto>();
@@ -42,9 +42,9 @@ public class MappingProfiles : Profile
         CreateMap<Reply, ReplyDto>();
         CreateMap<Application, ApplicationDto>();
         CreateMap<Application, ApplicationUpdateDto>();
-        CreateMap<ApplicationService, ApplicationServiceDto>();
-        CreateMap<ApplicationService, ApplicationServiceRequestDto>();
-        CreateMap<ApplicationServiceRecord, ApplicationServiceRecordDto>();
+        CreateMap<ServiceScript, ServiceScriptDto>();
+        CreateMap<ServiceScript, ServiceScriptRequestDto>();
+        CreateMap<ServiceRecord, ServiceRecordDto>();
         CreateMap<ApplicationUser, ApplicationUserDto>();
         CreateMap<Announcement, AnnouncementDto>();
         CreateMap<Announcement, AnnouncementRequestDto>();
@@ -52,6 +52,14 @@ public class MappingProfiles : Profile
         CreateMap<Event, EventUpdateDto>();
         CreateMap<EventDivision, EventDivisionDto>();
         CreateMap<EventDivision, EventDivisionUpdateDto>();
+        CreateMap<EventTeam, EventTeamDto>();
+        CreateMap<EventTeam, EventTeamUpdateDto>();
+        CreateMap<EventTask, EventTaskDto>();
+        CreateMap<EventTask, EventTaskRequestDto>();
+        CreateMap<Hostship, HostshipDto>();
+        CreateMap<Hostship, HostshipRequestDto>();
+        CreateMap<EventResource, EventResourceDto>();
+        CreateMap<EventResource, EventResourceRequestDto>();
         CreateMap<PlayConfiguration, PlayConfigurationResponseDto>();
         CreateMap<PlayConfigurationRequestDto, PlayConfiguration>();
         CreateMap<PlayConfiguration, PlayConfigurationRequestDto>();

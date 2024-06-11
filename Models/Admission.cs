@@ -8,9 +8,9 @@ public class Admission
 {
     public Guid AdmitterId { get; set; }
 
-    public Guid AdmitteeId { get; set; }
-
     public Resource Admitter { get; set; } = null!;
+
+    public Guid AdmitteeId { get; set; }
 
     public Resource Admittee { get; set; } = null!;
 

@@ -44,14 +44,13 @@ public class ChartMigrationService(IServiceProvider serviceProvider) : IHostedSe
     private async Task MigrateChartsAsync()
     {
         var charts =
-            await _chartRepository.GetChartsAsync(["DateCreated"], [false], 0, -1);
+            await _chartRepository.GetChartsAsync();
         foreach (var chart in charts)
         {
             _logger.LogInformation(LogEvents.ChartMigration, "[{Now}] Migrating Chart #{Id}",
                 DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), chart.Id);
             var records =
-                await _recordRepository.GetRecordsAsync(["DateCreated"], [false], 0,
-                    -1, e => e.ChartId == chart.Id);
+                await _recordRepository.GetRecordsAsync(predicate: e => e.ChartId == chart.Id);
             foreach (var record in records)
             {
                 var rksFactor = _recordService.CalculateRksFactor(record.PerfectJudgment, record.GoodJudgment);

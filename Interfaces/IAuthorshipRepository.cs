@@ -5,13 +5,16 @@ namespace PhiZoneApi.Interfaces;
 
 public interface IAuthorshipRepository
 {
-    Task<ICollection<Authorship>> GetResourcesAsync(int authorId, List<string> order, List<bool> desc, int position,
-        int take, Expression<Func<Authorship, bool>>? predicate = null);
+    Task<ICollection<Authorship>> GetResourcesAsync(int authorId, List<string>? order = null, List<bool>? desc = null,
+        int? position = 0,
+        int? take = -1, Expression<Func<Authorship, bool>>? predicate = null);
 
-    Task<ICollection<Authorship>> GetAuthorsAsync(Guid resourceId, List<string> order, List<bool> desc, int position,
-        int take, Expression<Func<Authorship, bool>>? predicate = null);
+    Task<ICollection<Authorship>> GetAuthorsAsync(Guid resourceId, List<string>? order = null, List<bool>? desc = null,
+        int? position = 0,
+        int? take = -1, Expression<Func<Authorship, bool>>? predicate = null);
 
-    Task<ICollection<Authorship>> GetAuthorshipsAsync(List<string> order, List<bool> desc, int position, int take,
+    Task<ICollection<Authorship>> GetAuthorshipsAsync(List<string>? order = null, List<bool>? desc = null,
+        int? position = 0, int? take = -1,
         Expression<Func<Authorship, bool>>? predicate = null, int? currentUserId = null);
 
     Task<Authorship> GetAuthorshipAsync(Guid resourceId, int authorId, int? currentUserId = null);

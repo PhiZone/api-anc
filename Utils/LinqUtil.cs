@@ -5,9 +5,9 @@ namespace PhiZoneApi.Utils;
 
 public static class LinqUtil
 {
-    public static IQueryable<T> OrderBy<T>(this IQueryable<T> query, List<string> fields, List<bool> desc)
+    public static IQueryable<T> OrderBy<T>(this IQueryable<T> query, List<string>? fields, List<bool>? desc)
     {
-        if (fields.Count == 0) fields = ["DateCreated"];
+        if (fields == null || fields.Count == 0) fields = ["DateCreated"];
 
         var sourceType = typeof(T);
         var parameter = Expression.Parameter(sourceType, "x");
@@ -16,7 +16,7 @@ public static class LinqUtil
         for (var i = 0; i < fields.Count; i++)
         {
             var field = fields[i];
-            var isDescending = desc.Count > i && desc[i];
+            var isDescending = desc != null && desc.Count > i && desc[i];
 
             if (string.IsNullOrWhiteSpace(field)) continue;
 

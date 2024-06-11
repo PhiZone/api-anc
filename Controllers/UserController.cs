@@ -927,7 +927,7 @@ public class UserController(
             r => r.OwnerId == id && r.Score == 1000000 && r.Chart.IsRanked, true, currentUser?.Id)).FirstOrDefault();
         var phi1Dto = phi1 != null ? dtoMapper.MapRecord<RecordDto>(phi1) : null;
         var b19 = await recordRepository.GetPersonalBests(id, queryChart: true, currentUserId: currentUser?.Id);
-        var b19Dto = b19.Select(dtoMapper.MapRecord<RecordDto>).ToList();
+        var b19Dto = b19.Select(e => dtoMapper.MapRecord<RecordDto>(e)).ToList();
         return Ok(new ResponseDto<UserPersonalBestsDto>
         {
             Status = ResponseStatus.Ok,

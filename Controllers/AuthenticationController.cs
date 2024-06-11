@@ -255,7 +255,7 @@ public class AuthenticationController(
             }
 
             await db.StringSetAsync(key, JsonConvert.SerializeObject(ghost), TimeSpan.FromDays(180));
-            
+
             var identity = new ClaimsIdentity(TokenValidationParameters.DefaultAuthenticationType, Claims.Name,
                 Claims.Role);
 
@@ -632,7 +632,7 @@ public class AuthenticationController(
     /// <summary>
     ///     Revokes user's account.
     /// </summary>
-    /// <param name="dto">Code from the confirmation email.</param>
+    /// <param name="codeDto">Code from the confirmation email.</param>
     /// <returns>An empty body.</returns>
     /// <response code="204">Returns an empty body.</response>
     /// <response code="400">When the input code is invalid.</response>
@@ -641,9 +641,9 @@ public class AuthenticationController(
     [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> RevokeAccount([FromBody] ConfirmationCodeDto dto)
+    public async Task<IActionResult> RevokeAccount([FromBody] CodeRequestDto codeDto)
     {
-        var user = await RedeemCode(dto.Code, EmailRequestMode.AccountRevocation);
+        var user = await RedeemCode(codeDto.Code, EmailRequestMode.AccountRevocation);
         if (user == null)
             return BadRequest(new ResponseDto<object>
             {
@@ -671,28 +671,28 @@ public class AuthenticationController(
         {
             case Claims.Name:
                 yield return Destinations.AccessToken;
-    
+
                 if (claim.Subject!.HasScope(Scopes.Profile)) yield return Destinations.IdentityToken;
-    
+
                 yield break;
-    
+
             case Claims.Email:
                 yield return Destinations.AccessToken;
-    
+
                 if (claim.Subject!.HasScope(Scopes.Email)) yield return Destinations.IdentityToken;
-    
+
                 yield break;
-    
+
             case Claims.Role:
                 yield return Destinations.AccessToken;
-    
+
                 if (claim.Subject!.HasScope(Scopes.Roles)) yield return Destinations.IdentityToken;
-    
+
                 yield break;
-    
+
             case "AspNet.Identity.SecurityStamp":
                 yield break;
-    
+
             default:
                 yield return Destinations.AccessToken;
                 yield break;

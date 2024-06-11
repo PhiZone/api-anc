@@ -12,13 +12,13 @@ namespace PhiZoneApi.Repositories;
 public class EventTaskRepository(ApplicationDbContext context, IMeilisearchService meilisearchService)
     : IEventTaskRepository
 {
-    public async Task<ICollection<EventTask>> GetEventTasksAsync(List<string> order, List<bool> desc,
-        int position, int take, Expression<Func<EventTask, bool>>? predicate = null)
+    public async Task<ICollection<EventTask>> GetEventTasksAsync(List<string>? order = null, List<bool>? desc = null,
+        int? position = 0, int? take = -1, Expression<Func<EventTask, bool>>? predicate = null)
     {
         var result = context.EventTasks.OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
-        result = result.Skip(position);
-        return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
+        result = result.Skip(position ?? 0);
+        return take >= 0 ? await result.Take(take.Value).ToListAsync() : await result.ToListAsync();
     }
 
     public async Task<EventTask> GetEventTaskAsync(Guid id)

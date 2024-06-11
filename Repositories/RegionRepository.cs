@@ -12,13 +12,14 @@ namespace PhiZoneApi.Repositories;
 
 public class RegionRepository(ApplicationDbContext context, IMeilisearchService meilisearchService) : IRegionRepository
 {
-    public async Task<ICollection<Region>> GetRegionsAsync(List<string> order, List<bool> desc, int position, int take,
+    public async Task<ICollection<Region>> GetRegionsAsync(List<string>? order = null, List<bool>? desc = null,
+        int? position = 0, int? take = -1,
         Expression<Func<Region, bool>>? predicate = null)
     {
         var result = context.Regions.OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
-        result = result.Skip(position);
-        return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
+        result = result.Skip(position ?? 0);
+        return take >= 0 ? await result.Take(take.Value).ToListAsync() : await result.ToListAsync();
     }
 
     public async Task<Region> GetRegionAsync(int id)
@@ -31,8 +32,9 @@ public class RegionRepository(ApplicationDbContext context, IMeilisearchService 
         return (await context.Regions.FirstOrDefaultAsync(region => string.Equals(region.Code, code.ToUpper())))!;
     }
 
-    public async Task<ICollection<User>> GetRegionUsersAsync(int id, List<string> order, List<bool> desc, int position,
-        int take, Expression<Func<User, bool>>? predicate = null, int? currentUserId = null)
+    public async Task<ICollection<User>> GetRegionUsersAsync(int id, List<string>? order = null,
+        List<bool>? desc = null, int? position = 0,
+        int? take = -1, Expression<Func<User, bool>>? predicate = null, int? currentUserId = null)
     {
         var region = (await context.Regions.FirstOrDefaultAsync(region => region.Id == id))!;
         var result = context.Users.Where(user => user.Region == region).OrderBy(order, desc);
@@ -41,13 +43,14 @@ public class RegionRepository(ApplicationDbContext context, IMeilisearchService 
             result = result.Include(e => e.FollowerRelations.Where(relation =>
                     relation.FollowerId == currentUserId && relation.Type != UserRelationType.Blacklisted)
                 .Take(1));
-        result = result.Skip(position);
-        return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
+        result = result.Skip(position ?? 0);
+        return take >= 0 ? await result.Take(take.Value).ToListAsync() : await result.ToListAsync();
     }
 
-    public async Task<ICollection<User>> GetRegionUsersAsync(string code, List<string> order, List<bool> desc,
-        int position,
-        int take, Expression<Func<User, bool>>? predicate = null, int? currentUserId = null)
+    public async Task<ICollection<User>> GetRegionUsersAsync(string code, List<string>? order = null,
+        List<bool>? desc = null,
+        int? position = 0,
+        int? take = -1, Expression<Func<User, bool>>? predicate = null, int? currentUserId = null)
     {
         var region = (await context.Regions.FirstOrDefaultAsync(region =>
             string.Equals(region.Code, code.ToUpper())))!;
@@ -57,8 +60,8 @@ public class RegionRepository(ApplicationDbContext context, IMeilisearchService 
             result = result.Include(e => e.FollowerRelations.Where(relation =>
                     relation.FollowerId == currentUserId && relation.Type != UserRelationType.Blacklisted)
                 .Take(1));
-        result = result.Skip(position);
-        return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
+        result = result.Skip(position ?? 0);
+        return take >= 0 ? await result.Take(take.Value).ToListAsync() : await result.ToListAsync();
     }
 
     public async Task<bool> RegionExistsAsync(int id)

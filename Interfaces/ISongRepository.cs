@@ -7,7 +7,8 @@ namespace PhiZoneApi.Interfaces;
 
 public interface ISongRepository
 {
-    Task<ICollection<Song>> GetSongsAsync(List<string> order, List<bool> desc, int position, int take,
+    Task<ICollection<Song>> GetSongsAsync(List<string>? order = null, List<bool>? desc = null, int? position = 0,
+        int? take = -1,
         Expression<Func<Song, bool>>? predicate = null, int? currentUserId = null);
 
     Task<Song> GetSongAsync(Guid id, int? currentUserId = null);

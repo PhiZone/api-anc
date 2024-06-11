@@ -9,6 +9,6 @@ public class EventFilterDto : PublicResourceFilterDto<Event>
     public string? EqualsSubtitle { get; set; }
 
     public DateTimeOffset? EarliestDateUnveiled { get; set; }
-    
+
     public DateTimeOffset? LatestDateUnveiled { get; set; }
 }

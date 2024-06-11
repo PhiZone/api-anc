@@ -70,6 +70,22 @@
       "Content": "{User} 拒絕了你的合作邀請。{Collaboration}"
     },
     {
+      "Key": "event-team-join",
+      "Content": "{User} 加入了活动 {Event} 的队伍 {EventTeam}！"
+    },
+    {
+      "Key": "event-team-leave",
+      "Content": "{User} 退出了活动 {Event} 的队伍 {EventTeam}。"
+    },
+    {
+      "Key": "event-team-remove",
+      "Content": "{User} 将你移出了活动 {Event} 的队伍 {EventTeam}。"
+    },
+    {
+      "Key": "event-team-disband",
+      "Content": "{User} 解散了活动 {Event} 的队伍 {EventTeam}。"
+    },
+    {
       "Key": "chapter-admission",
       "Content": "{User} 申請將曲目 {Song} 收錄於章節 {Chapter}。{Admission}"
     },

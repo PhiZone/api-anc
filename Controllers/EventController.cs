@@ -39,6 +39,9 @@ public class EventController(
     IFileStorageService fileStorageService,
     IEventDivisionRepository eventDivisionRepository,
     IResourceService resourceService,
+    IServiceScriptRepository serviceScriptRepository,
+    IHostshipRepository hostshipRepository,
+    IScriptService scriptService,
     INotificationService notificationService,
     IMeilisearchService meilisearchService) : Controller
 {
@@ -64,7 +67,7 @@ public class EventController(
             e => e.DateUnveiled <= DateTimeOffset.UtcNow || (currentUser != null &&
                                                              (resourceService.HasPermission(currentUser,
                                                                   UserRole.Administrator) ||
-                                                              e.Administrators.Contains(currentUser))));
+                                                              e.Hosts.Contains(currentUser))));
         IEnumerable<Event> eventEntities;
         int total;
         if (dto.Search != null)
@@ -72,8 +75,8 @@ public class EventController(
             var result = await meilisearchService.SearchAsync<Event>(dto.Search, dto.PerPage, dto.Page);
             var idList = result.Hits.Select(item => item.Id).ToList();
             eventEntities =
-                (await eventRepository.GetEventsAsync(["DateCreated"], [false], 0, -1, e => idList.Contains(e.Id),
-                    currentUser?.Id)).OrderBy(e => idList.IndexOf(e.Id));
+                (await eventRepository.GetEventsAsync(predicate: e => idList.Contains(e.Id),
+                    currentUserId: currentUser?.Id)).OrderBy(e => idList.IndexOf(e.Id));
             total = result.TotalHits;
         }
         else
@@ -124,9 +127,9 @@ public class EventController(
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
         var eventEntity = await eventRepository.GetEventAsync(id, currentUser?.Id);
-        if ((currentUser == null || !eventEntity.Administrators.Contains(currentUser) ||
+        if ((currentUser == null || !eventEntity.Hosts.Contains(currentUser) ||
              !resourceService.HasPermission(currentUser, UserRole.Administrator)) &&
-            eventEntity.DateUnveiled <= DateTimeOffset.UtcNow)
+            eventEntity.DateUnveiled >= DateTimeOffset.UtcNow)
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
@@ -135,7 +138,7 @@ public class EventController(
 
         return Ok(new ResponseDto<EventDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
     }
-    
+
     /// <summary>
     ///     Retrieves divisions of a specific event.
     /// </summary>
@@ -144,7 +147,7 @@ public class EventController(
     /// <response code="400">When any of the parameters is invalid.</response>
     [HttpGet("{id:guid}/divisions")]
     [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<EventDto>>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<EventDivisionDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetEventDivisions([FromRoute] Guid id, [FromQuery] ArrayRequestDto dto,
         [FromQuery] EventDivisionFilterDto? filterDto = null)
@@ -163,7 +166,8 @@ public class EventController(
             e => e.DateUnveiled <= DateTimeOffset.UtcNow || (currentUser != null &&
                                                              (resourceService.HasPermission(currentUser,
                                                                   UserRole.Administrator) ||
-                                                              e.Administrators.Contains(currentUser))));
+                                                              e.Event.Hostships.Any(f =>
+                                                                  f.UserId == currentUser.Id))));
         IEnumerable<EventDivision> eventDivisions;
         int total;
         if (dto.Search != null)
@@ -171,14 +175,14 @@ public class EventController(
             var result = await meilisearchService.SearchAsync<EventDivision>(dto.Search, dto.PerPage, dto.Page);
             var idList = result.Hits.Select(item => item.Id).ToList();
             eventDivisions =
-                (await eventDivisionRepository.GetEventDivisionsAsync(["DateCreated"], [false], 0, -1, e => idList.Contains(e.Id),
-                    currentUser?.Id)).OrderBy(e => idList.IndexOf(e.Id));
+                (await eventDivisionRepository.GetEventDivisionsAsync(predicate:
+                    e => idList.Contains(e.Id), currentUserId: currentUser?.Id)).OrderBy(e => idList.IndexOf(e.Id));
             total = result.TotalHits;
         }
         else
         {
-            eventDivisions = await eventDivisionRepository.GetEventDivisionsAsync(dto.Order, dto.Desc, position, dto.PerPage,
-                predicateExpr, currentUser?.Id);
+            eventDivisions = await eventDivisionRepository.GetEventDivisionsAsync(dto.Order, dto.Desc, position,
+                dto.PerPage, predicateExpr, currentUser?.Id);
             total = await eventDivisionRepository.CountEventDivisionsAsync(predicateExpr);
         }
 
@@ -206,7 +210,7 @@ public class EventController(
     /// <response code="403">When the user does not have sufficient permission.</response>
     /// <response code="500">When an internal server error has occurred.</response>
     [HttpPost]
-    [Consumes("application/json")]
+    [Consumes("multipart/form-data")]
     [Produces("application/json")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
@@ -214,7 +218,7 @@ public class EventController(
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> CreateEvent([FromBody] EventCreationDto dto)
+    public async Task<IActionResult> CreateEvent([FromForm] EventCreationDto dto)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if (!resourceService.HasPermission(currentUser, UserRole.Administrator))
@@ -223,13 +227,10 @@ public class EventController(
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        
-        var illustrationUrl = (await fileStorageService.UploadImage<Chart>(dto.Title, dto.Illustration, (16, 9))).Item1;
+
+        var illustrationUrl = (await fileStorageService.UploadImage<Event>(dto.Title, dto.Illustration, (16, 9))).Item1;
         await fileStorageService.SendUserInput(illustrationUrl, "Illustration", Request, currentUser);
-        
-        var administratorTasks = dto.Administrators.Select(id => userManager.FindByIdAsync(id.ToString())).ToList();
-        await Task.WhenAll(administratorTasks);
-        
+
         var eventEntity = new Event
         {
             Title = dto.Title,
@@ -242,13 +243,20 @@ public class EventController(
             IsLocked = dto.IsLocked,
             OwnerId = dto.OwnerId,
             DateUnveiled = dto.DateUnveiled,
-            Administrators = administratorTasks.Where(t => t.Result != null).Select(t => t.Result!).ToList(),
             DateCreated = DateTimeOffset.UtcNow,
             DateUpdated = DateTimeOffset.UtcNow
         };
         if (!await eventRepository.CreateEventAsync(eventEntity))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+
+        await hostshipRepository.CreateHostshipAsync(new Hostship
+        {
+            EventId = eventEntity.Id,
+            UserId = dto.OwnerId,
+            IsAdmin = true,
+            IsUnveiled = true
+        });
 
         return StatusCode(StatusCodes.Status201Created);
     }
@@ -305,9 +313,6 @@ public class EventController(
                 Code = ResponseCodes.InvalidData,
                 Errors = ModelErrorTranslator.Translate(ModelState)
             });
-        
-        var administratorTasks = dto.Administrators.Select(userId => userManager.FindByIdAsync(userId.ToString())).ToList();
-        await Task.WhenAll(administratorTasks);
 
         eventEntity.Title = dto.Title;
         eventEntity.Subtitle = dto.Subtitle;
@@ -318,7 +323,6 @@ public class EventController(
         eventEntity.IsLocked = dto.IsLocked;
         eventEntity.OwnerId = dto.OwnerId;
         eventEntity.DateUnveiled = dto.DateUnveiled;
-        eventEntity.Administrators = administratorTasks.Where(t => t.Result != null).Select(t => t.Result!).ToList();
         eventEntity.DateUpdated = DateTimeOffset.UtcNow;
 
         if (!await eventRepository.UpdateEventAsync(eventEntity))
@@ -643,5 +647,136 @@ public class EventController(
             resourceService.GetRichText<Comment>(comment.Id.ToString(), dto.Content));
 
         return StatusCode(StatusCodes.Status201Created);
+    }
+
+    /// <summary>
+    ///     Creates a new service script.
+    /// </summary>
+    /// <returns>An empty body.</returns>
+    /// <response code="201">Returns an empty body.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
+    /// <response code="500">When an internal server error has occurred.</response>
+    [HttpPost("{id:guid}/services")]
+    [Consumes("application/json")]
+    [Produces("application/json")]
+    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
+    [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> CreateServiceScript([FromRoute] Guid id, [FromBody] ServiceScriptRequestDto dto)
+    {
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!resourceService.HasPermission(currentUser, UserRole.Administrator))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+        if (!await eventRepository.EventExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
+            });
+
+        var serviceScript = new ServiceScript
+        {
+            Name = dto.Name,
+            TargetType = dto.TargetType,
+            Description = dto.Description,
+            Code = dto.Code,
+            Parameters = dto.Parameters,
+            ResourceId = id,
+            DateCreated = DateTimeOffset.UtcNow
+        };
+        if (!await serviceScriptRepository.CreateServiceScriptAsync(serviceScript))
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+
+        scriptService.Compile(serviceScript.Id, serviceScript.Code, serviceScript.TargetType);
+
+        return StatusCode(StatusCodes.Status201Created);
+    }
+
+    /// <summary>
+    ///     Updates a service script.
+    /// </summary>
+    /// <param name="serviceId">A service script's ID.</param>
+    /// <param name="patchDocument">A JSON Patch Document.</param>
+    /// <returns>An empty body.</returns>
+    /// <response code="204">Returns an empty body.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
+    /// <response code="404">When the specified service script is not found.</response>
+    /// <response code="500">When an internal server error has occurred.</response>
+    [HttpPatch("{id:guid}/services/{serviceId:guid}")]
+    [Consumes("application/json")]
+    [Produces("application/json")]
+    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
+    [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> UpdateServiceScript([FromRoute] Guid id, [FromRoute] Guid serviceId,
+        [FromBody] JsonPatchDocument<ServiceScriptRequestDto> patchDocument)
+    {
+        if (!await eventRepository.EventExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
+            });
+        if (!await serviceScriptRepository.ServiceScriptExistsAsync(serviceId))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+
+        var serviceScript = await serviceScriptRepository.GetServiceScriptAsync(serviceId);
+
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!resourceService.HasPermission(currentUser, UserRole.Administrator))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+
+        var dto = mapper.Map<ServiceScriptRequestDto>(serviceScript);
+        patchDocument.ApplyTo(dto, ModelState);
+
+        if (!TryValidateModel(dto))
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorDetailed,
+                Code = ResponseCodes.InvalidData,
+                Errors = ModelErrorTranslator.Translate(ModelState)
+            });
+        if (!await eventRepository.EventExistsAsync(serviceId))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
+            });
+
+        serviceScript.Name = dto.Name;
+        serviceScript.TargetType = dto.TargetType;
+        serviceScript.Description = dto.Description;
+        serviceScript.Code = dto.Code;
+        serviceScript.Parameters = dto.Parameters;
+        serviceScript.ResourceId = serviceId;
+        serviceScript.DateUpdated = DateTimeOffset.UtcNow;
+
+        if (!await serviceScriptRepository.UpdateServiceScriptAsync(serviceScript))
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+
+        scriptService.Compile(serviceScript.Id, serviceScript.Code, serviceScript.TargetType);
+
+        return NoContent();
     }
 }

@@ -40,6 +40,9 @@ public class PlayerController(
     IApplicationRepository applicationRepository,
     IConnectionMultiplexer redis,
     ISongRepository songRepository,
+    IEventDivisionRepository eventDivisionRepository,
+    IEventTeamRepository eventTeamRepository,
+    IParticipationRepository participationRepository,
     IResourceService resourceService) : Controller
 {
     /// <summary>
@@ -301,8 +304,14 @@ public class PlayerController(
     /// <summary>
     ///     Obtains a play token.
     /// </summary>
-    /// <returns>An object containing a play token and a timestamp of the current time in UTC, along with necessary resources required for the play.</returns>
-    /// <response code="200">Returns an object containing a play token and a timestamp of the current time in UTC, along with necessary resources required for the play.</response>
+    /// <returns>
+    ///     An object containing a play token and a timestamp of the current time in UTC, along with necessary resources
+    ///     required for the play.
+    /// </returns>
+    /// <response code="200">
+    ///     Returns an object containing a play token and a timestamp of the current time in UTC, along with
+    ///     necessary resources required for the play.
+    /// </response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="403">When the user does not have sufficient permission.</response>
@@ -315,7 +324,7 @@ public class PlayerController(
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> Play([FromQuery] Guid chartId, Guid configurationId, Guid applicationId)
+    public async Task<IActionResult> Play([FromQuery] Guid chartId, Guid configurationId, Guid applicationId, Guid? teamId)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if (!resourceService.HasPermission(currentUser, UserRole.Member))
@@ -364,27 +373,60 @@ public class PlayerController(
         var song = await songRepository.GetSongAsync(chart.SongId);
         var timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
 
+        Guid? divisionId = null;
+        if (teamId != null)
+        {
+            if (!await eventTeamRepository.EventTeamExistsAsync(teamId.Value))
+                return NotFound(new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.RelationNotFound
+                });
+            var eventTeam = await eventTeamRepository.GetEventTeamAsync(teamId.Value);
+            if (!await participationRepository.ParticipationExistsAsync(eventTeam.Id, currentUser.Id))
+                return BadRequest(new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.NotEnrolled
+                });
+            var eventDivision = await eventDivisionRepository.GetEventDivisionAsync(eventTeam.DivisionId);
+            if (!eventDivision.IsStarted())
+                return BadRequest(new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.DivisionNotStarted
+                });
+            divisionId = eventDivision.Id;
+        }
+
         var info = new PlayInfoDto
         {
             ChartId = chartId,
             ConfigurationId = configurationId,
             ApplicationId = applicationId,
             PlayerId = currentUser.Id,
+            DivisionId = divisionId,
+            TeamId = teamId,
             EarliestEndTime = DateTimeOffset.UtcNow.Add(song.Duration!.Value),
             Timestamp = timestamp
         };
         await db.StringSetAsync($"phizone:play:{token}", JsonConvert.SerializeObject(info), TimeSpan.FromHours(18));
         return Ok(new ResponseDto<PlayResponseDto>
         {
-            Status = ResponseStatus.Ok, Data = new PlayResponseDto { Token = token, Timestamp = timestamp, Chart = dtoMapper.MapChart<ChartDto>(chart) }
+            Status = ResponseStatus.Ok,
+            Data = new PlayResponseDto
+                { Token = token, Timestamp = timestamp, Chart = dtoMapper.MapChart<ChartDto>(chart) }
         });
     }
 
     /// <summary>
     ///     Obtains a play token using a TapTap ghost account.
     /// </summary>
-    /// <returns>An object containing a play token and a timestamp of the current time in UTC, along with necessary resources required for the play.</returns>
-    /// <response code="200">Returns an object containing a play token and a timestamp of the current time in UTC, along with necessary resources required for the play.</response>
+    /// <returns>
+    ///     An object containing a play token and a timestamp of the current time in UTC, along with necessary resources
+    ///     required for the play.
+    /// </returns>
+    /// <response code="200">
+    ///     Returns an object containing a play token and a timestamp of the current time in UTC, along with
+    ///     necessary resources required for the play.
+    /// </response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="404">When the chart is not found.</response>
@@ -395,7 +437,8 @@ public class PlayerController(
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> PlayTapTapGhost([FromQuery] Guid chartId, [FromQuery] int perfectJudgment, [FromQuery] int goodJudgment)
+    public async Task<IActionResult> PlayTapTapGhost([FromQuery] Guid chartId, [FromQuery] int perfectJudgment,
+        [FromQuery] int goodJudgment)
     {
         var db = redis.GetDatabase();
         var key =
@@ -433,10 +476,13 @@ public class PlayerController(
             GoodJudgment = goodJudgment,
             Timestamp = timestamp
         };
-        await db.StringSetAsync($"phizone:play:tapghost:{token}", JsonConvert.SerializeObject(info), TimeSpan.FromHours(18));
+        await db.StringSetAsync($"phizone:play:tapghost:{token}", JsonConvert.SerializeObject(info),
+            TimeSpan.FromHours(18));
         return Ok(new ResponseDto<PlayResponseDto>
         {
-            Status = ResponseStatus.Ok, Data = new PlayResponseDto { Token = token, Timestamp = timestamp, Chart = dtoMapper.MapChart<ChartDto>(chart) }
+            Status = ResponseStatus.Ok,
+            Data = new PlayResponseDto
+                { Token = token, Timestamp = timestamp, Chart = dtoMapper.MapChart<ChartDto>(chart) }
         });
     }
 

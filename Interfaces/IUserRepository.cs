@@ -5,7 +5,8 @@ namespace PhiZoneApi.Interfaces;
 
 public interface IUserRepository
 {
-    Task<ICollection<User>> GetUsersAsync(List<string> order, List<bool> desc, int position, int take,
+    Task<ICollection<User>> GetUsersAsync(List<string>? order = null, List<bool>? desc = null, int? position = 0,
+        int? take = -1,
         Expression<Func<User, bool>>? predicate = null, int? currentUserId = null);
 
     Task<User?> GetUserByIdAsync(int id, int? currentUserId = null);

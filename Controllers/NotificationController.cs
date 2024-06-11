@@ -61,8 +61,8 @@ public class NotificationController(
                 currentUser.Id);
             var idList = result.Hits.Select(item => item.Id).ToList();
             notifications =
-                (await notificationRepository.GetNotificationsAsync(["DateCreated"], [false], 0, -1,
-                    e => idList.Contains(e.Id), currentUser.Id)).OrderBy(e => idList.IndexOf(e.Id));
+                (await notificationRepository.GetNotificationsAsync(predicate:
+                    e => idList.Contains(e.Id), currentUserId: currentUser.Id)).OrderBy(e => idList.IndexOf(e.Id));
             total = result.TotalHits;
         }
         else

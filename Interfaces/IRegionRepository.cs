@@ -5,18 +5,21 @@ namespace PhiZoneApi.Interfaces;
 
 public interface IRegionRepository
 {
-    Task<ICollection<Region>> GetRegionsAsync(List<string> order, List<bool> desc, int position, int take,
+    Task<ICollection<Region>> GetRegionsAsync(List<string>? order = null, List<bool>? desc = null, int? position = 0,
+        int? take = -1,
         Expression<Func<Region, bool>>? predicate = null);
 
     Task<Region> GetRegionAsync(int id);
 
     Task<Region> GetRegionAsync(string code);
 
-    Task<ICollection<User>> GetRegionUsersAsync(int id, List<string> order, List<bool> desc, int position, int take,
+    Task<ICollection<User>> GetRegionUsersAsync(int id, List<string>? order = null, List<bool>? desc = null,
+        int? position = 0, int? take = -1,
         Expression<Func<User, bool>>? predicate = null, int? currentUserId = null);
 
-    Task<ICollection<User>> GetRegionUsersAsync(string code, List<string> order, List<bool> desc, int position,
-        int take, Expression<Func<User, bool>>? predicate = null, int? currentUserId = null);
+    Task<ICollection<User>> GetRegionUsersAsync(string code, List<string>? order = null, List<bool>? desc = null,
+        int? position = 0,
+        int? take = -1, Expression<Func<User, bool>>? predicate = null, int? currentUserId = null);
 
     Task<bool> RegionExistsAsync(int id);
 

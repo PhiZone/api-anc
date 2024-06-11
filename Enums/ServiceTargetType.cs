@@ -4,5 +4,5 @@ public enum ServiceTargetType
 {
     SongSubmission,
     ChartSubmission,
-    FreeTarget
+    Free
 }

@@ -30,8 +30,8 @@ namespace PhiZoneApi.Controllers;
 public class EventTaskController(
     IEventTaskRepository eventTaskRepository,
     IEventDivisionRepository eventDivisionRepository,
+    IEventRepository eventRepository,
     IOptions<DataSettings> dataSettings,
-    IDtoMapper dtoMapper,
     IFilterService filterService,
     UserManager<User> userManager,
     EventTaskScheduler eventTaskScheduler,
@@ -59,9 +59,10 @@ public class EventTaskController(
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser,
             e => e.Division.DateUnveiled <= DateTimeOffset.UtcNow || (currentUser != null &&
-                                                             (resourceService.HasPermission(currentUser,
-                                                                  UserRole.Administrator) ||
-                                                              e.Division.Administrators.Contains(currentUser))));
+                                                                      (resourceService.HasPermission(currentUser,
+                                                                           UserRole.Administrator) ||
+                                                                       e.Division.Event.Hostships.Any(f =>
+                                                                           f.UserId == currentUser.Id))));
         IEnumerable<EventTask> eventTasks;
         int total;
         if (dto.Search != null)
@@ -69,7 +70,7 @@ public class EventTaskController(
             var result = await meilisearchService.SearchAsync<EventTask>(dto.Search, dto.PerPage, dto.Page);
             var idList = result.Hits.Select(item => item.Id).ToList();
             eventTasks =
-                (await eventTaskRepository.GetEventTasksAsync(["DateCreated"], [false], 0, -1,
+                (await eventTaskRepository.GetEventTasksAsync(predicate:
                     e => idList.Contains(e.Id))).OrderBy(e => idList.IndexOf(e.Id));
             total = result.TotalHits;
         }
@@ -121,75 +122,19 @@ public class EventTaskController(
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
         var eventTask = await eventTaskRepository.GetEventTaskAsync(id);
-        if ((currentUser == null || !eventTask.Division.Administrators.Contains(currentUser) ||
+        var eventDivision = await eventDivisionRepository.GetEventDivisionAsync(eventTask.DivisionId);
+        var eventEntity = await eventRepository.GetEventAsync(eventDivision.EventId);
+        if ((currentUser == null ||
+             eventEntity.Hostships.All(f => f.UserId != currentUser.Id) ||
              !resourceService.HasPermission(currentUser, UserRole.Administrator)) &&
-            eventTask.Division.DateUnveiled <= DateTimeOffset.UtcNow)
+            eventDivision.DateUnveiled >= DateTimeOffset.UtcNow)
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
         var dto = mapper.Map<EventTaskDto>(eventTask);
 
-        return Ok(new ResponseDto<EventTaskDto>
-        {
-            Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto
-        });
-    }
-
-    /// <summary>
-    ///     Retrieves tasks of a specific event task.
-    /// </summary>
-    /// <returns>An array of event tasks.</returns>
-    /// <response code="200">Returns an array of event tasks.</response>
-    /// <response code="400">When any of the parameters is invalid.</response>
-    [HttpGet("{id:guid}/tasks")]
-    [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<EventDto>>))]
-    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetEventTasks([FromRoute] Guid id, [FromQuery] ArrayRequestDto dto,
-        [FromQuery] EventTaskFilterDto? filterDto = null)
-    {
-        var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        if (!await eventTaskRepository.EventTaskExistsAsync(id))
-            return NotFound(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
-            });
-        dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
-            dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
-        dto.Page = dto.Page > 1 ? dto.Page : 1;
-        var position = dto.PerPage * (dto.Page - 1);
-        var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser);
-        IEnumerable<EventTask> eventTasks;
-        int total;
-        if (dto.Search != null)
-        {
-            var result = await meilisearchService.SearchAsync<EventTask>(dto.Search, dto.PerPage, dto.Page);
-            var idList = result.Hits.Select(item => item.Id).ToList();
-            eventTasks =
-                (await eventTaskRepository.GetEventTasksAsync(["DateCreated"], [false], 0, -1,
-                    e => idList.Contains(e.Id))).OrderBy(e => idList.IndexOf(e.Id));
-            total = result.TotalHits;
-        }
-        else
-        {
-            eventTasks = await eventTaskRepository.GetEventTasksAsync(dto.Order, dto.Desc, position, dto.PerPage,
-                predicateExpr);
-            total = await eventTaskRepository.CountEventTasksAsync(predicateExpr);
-        }
-
-        var list = eventTasks.Select(mapper.Map<EventTaskDto>).ToList();
-
-        return Ok(new ResponseDto<IEnumerable<EventTaskDto>>
-        {
-            Status = ResponseStatus.Ok,
-            Code = ResponseCodes.Ok,
-            Total = total,
-            PerPage = dto.PerPage,
-            HasPrevious = position > 0,
-            HasNext = dto.PerPage > 0 && dto.PerPage * dto.Page < total,
-            Data = list
-        });
+        return Ok(new ResponseDto<EventTaskDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
     }
 
     /// <summary>
@@ -219,10 +164,12 @@ public class EventTaskController(
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
             });
-        
+
         var eventDivision = await eventDivisionRepository.GetEventDivisionAsync(dto.DivisionId);
+        var eventEntity = await eventRepository.GetEventAsync(eventDivision.EventId);
+
         if (!(resourceService.HasPermission(currentUser, UserRole.Administrator) ||
-              eventDivision.Administrators.Contains(currentUser)))
+              eventEntity.Hostships.Any(f => f.UserId == currentUser.Id)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -241,15 +188,12 @@ public class EventTaskController(
             DateCreated = DateTimeOffset.UtcNow,
             DateUpdated = DateTimeOffset.UtcNow
         };
-        
+
         if (!await eventTaskRepository.CreateEventTaskAsync(eventTask))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
-        if (eventTask.Type == TaskType.Scheduled)
-        {
-            eventTaskScheduler.Schedule(eventTask);
-        }
+        if (eventTask.Type == EventTaskType.Scheduled) eventTaskScheduler.Schedule(eventTask);
 
         return StatusCode(StatusCodes.Status201Created);
     }
@@ -287,10 +231,11 @@ public class EventTaskController(
 
         var eventTask = await eventTaskRepository.GetEventTaskAsync(id);
         var eventDivision = await eventDivisionRepository.GetEventDivisionAsync(eventTask.DivisionId);
+        var eventEntity = await eventRepository.GetEventAsync(eventDivision.EventId);
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if (!(resourceService.HasPermission(currentUser, UserRole.Administrator) ||
-              eventDivision.Administrators.Contains(currentUser)))
+              eventEntity.Hostships.Any(f => f.UserId == currentUser.Id)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -314,6 +259,11 @@ public class EventTaskController(
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
             });
 
+        var updateSchedule = false;
+        if (dto.Type == EventTaskType.Scheduled)
+            updateSchedule = true;
+        else if (eventTask.Type == EventTaskType.Scheduled) eventTaskScheduler.Cancel(eventTask.Id);
+
         eventTask.Name = dto.Name;
         eventTask.Type = dto.Type;
         eventTask.Code = dto.Code;
@@ -327,10 +277,7 @@ public class EventTaskController(
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
-        if (eventTask.Type == TaskType.Scheduled)
-        {
-            eventTaskScheduler.Schedule(eventTask, true);
-        }
+        if (updateSchedule) eventTaskScheduler.Schedule(eventTask, true);
 
         return NoContent();
     }
@@ -367,14 +314,17 @@ public class EventTaskController(
 
         var eventTask = await eventTaskRepository.GetEventTaskAsync(id);
         var eventDivision = await eventDivisionRepository.GetEventDivisionAsync(eventTask.DivisionId);
+        var eventEntity = await eventRepository.GetEventAsync(eventDivision.EventId);
 
         if (!(resourceService.HasPermission(currentUser, UserRole.Administrator) ||
-              eventDivision.Administrators.Contains(currentUser)))
+              eventEntity.Hostships.Any(f => f.UserId == currentUser.Id)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
+
+        if (eventTask.Type == EventTaskType.Scheduled) eventTaskScheduler.Cancel(eventTask.Id);
 
         if (!await eventTaskRepository.RemoveEventTaskAsync(id))
             return StatusCode(StatusCodes.Status500InternalServerError,

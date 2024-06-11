@@ -1,6 +1,6 @@
 ﻿namespace PhiZoneApi.Dtos.Responses;
 
-public class ApplicationServiceRecordDto
+public class ServiceRecordDto
 {
     public Guid Id { get; set; }
 

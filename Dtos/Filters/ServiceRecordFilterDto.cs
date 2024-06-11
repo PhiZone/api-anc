@@ -2,7 +2,7 @@
 
 namespace PhiZoneApi.Dtos.Filters;
 
-public class ApplicationServiceRecordFilterDto : FilterDto<ApplicationServiceRecord>
+public class ServiceRecordFilterDto : FilterDto<ServiceRecord>
 {
     public List<Guid>? RangeId { get; set; }
 

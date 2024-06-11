@@ -53,4 +53,8 @@ public class User : IdentityUser<int>
     [JsonIgnore] public List<EventTeam> EventTeams { get; } = [];
 
     [JsonIgnore] public List<Participation> Participations { get; } = [];
+
+    [JsonIgnore] public List<Event> Events { get; set; } = [];
+
+    [JsonIgnore] public List<Hostship> Hostships { get; set; } = [];
 }

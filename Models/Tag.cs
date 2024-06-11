@@ -17,4 +17,6 @@ public class Tag
     [JsonIgnore] public List<Song> Songs { get; } = [];
 
     [JsonIgnore] public List<Chart> Charts { get; } = [];
+
+    [JsonIgnore] public List<EventResource> EventPresences { get; } = [];
 }

@@ -25,13 +25,13 @@ public interface IDtoMapper
 
     T MapCollection<T>(Collection collection) where T : CollectionDto;
 
-    T MapSong<T>(Song song) where T : SongDto;
+    T MapSong<T>(Song song, bool anonymize = false) where T : SongDto;
 
     Task<T> MapSongChapterAsync<T>(Admission admission, User? currentUser = null) where T : ChapterAdmitterDto;
 
     Task<T> MapChapterSongAsync<T>(Admission admission, User? currentUser) where T : SongAdmitteeDto;
 
-    T MapChart<T>(Chart chart) where T : ChartDto;
+    T MapChart<T>(Chart chart, bool anonymize = false) where T : ChartDto;
 
     Task<T> MapChartCollectionAsync<T>(Admission admission, User? currentUser = null) where T : CollectionAdmitterDto;
 
@@ -39,7 +39,7 @@ public interface IDtoMapper
 
     T MapChartSubmission<T>(ChartSubmission chart) where T : ChartSubmissionDto;
 
-    T MapRecord<T>(Record record) where T : RecordDto;
+    T MapRecord<T>(Record record, bool anonymize = false) where T : RecordDto;
 
     T MapComment<T>(Comment comment) where T : CommentDto;
 
@@ -47,13 +47,13 @@ public interface IDtoMapper
 
     T MapApplication<T>(Application application) where T : ApplicationDto;
 
-    T MapApplicationService<T>(ApplicationService applicationService) where T : ApplicationServiceDto;
-
     T MapAnnouncement<T>(Announcement announcement) where T : AnnouncementDto;
 
     T MapEvent<T>(Event eventEntity) where T : EventDto;
 
     T MapEventDivision<T>(EventDivision eventDivision) where T : EventDivisionDto;
+    
+    T MapEventTeam<T>(EventTeam eventTeam) where T : EventTeamDto;
 
     T MapNotification<T>(Notification notification) where T : NotificationDto;
 

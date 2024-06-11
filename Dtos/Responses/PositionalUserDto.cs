@@ -1,6 +1,6 @@
 ﻿namespace PhiZoneApi.Dtos.Responses;
 
-public class AuthorDto : UserDto
+public class PositionalUserDto : UserDto
 {
     public string? Position { get; set; }
 }

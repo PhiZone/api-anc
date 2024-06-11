@@ -14,24 +14,24 @@ public class TagRepository(
     IMeilisearchService meilisearchService,
     IResourceService resourceService) : ITagRepository
 {
-    public async Task<ICollection<Tag>> GetTagsAsync(List<string> order, List<bool> desc,
-        int position, int take, Expression<Func<Tag, bool>>? predicate = null)
+    public async Task<ICollection<Tag>> GetTagsAsync(List<string>? order = null, List<bool>? desc = null,
+        int? position = 0, int? take = -1, Expression<Func<Tag, bool>>? predicate = null)
     {
-        var result = context.Tags.OrderBy(order, desc);
+        var result = context.Tags.Include(e => e.EventPresences).OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
-        result = result.Skip(position);
-        return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
+        result = result.Skip(position ?? 0);
+        return take >= 0 ? await result.Take(take.Value).ToListAsync() : await result.ToListAsync();
     }
 
     public async Task<Tag> GetTagAsync(Guid id)
     {
-        IQueryable<Tag> result = context.Tags;
+        IQueryable<Tag> result = context.Tags.Include(e => e.EventPresences);
         return (await result.FirstOrDefaultAsync(tag => tag.Id == id))!;
     }
 
     public async Task<Tag> GetTagAsync(string name)
     {
-        IQueryable<Tag> result = context.Tags;
+        IQueryable<Tag> result = context.Tags.Include(e => e.EventPresences);
         return (await result.FirstOrDefaultAsync(tag => tag.NormalizedName == name))!;
     }
 
@@ -39,7 +39,7 @@ public class TagRepository(
     {
         return await context.Tags.AnyAsync(tag => tag.Id == id);
     }
-    
+
     public async Task<bool> TagExistsAsync(string name)
     {
         return await context.Tags.AnyAsync(tag => tag.NormalizedName == name);

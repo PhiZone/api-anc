@@ -82,8 +82,8 @@ public class SongController(
             var result = await meilisearchService.SearchAsync<Song>(dto.Search, dto.PerPage, dto.Page,
                 showHidden: currentUser is { Role: UserRole.Administrator });
             var idList = result.Hits.Select(item => item.Id).ToList();
-            songs = (await songRepository.GetSongsAsync(["DateCreated"], [false], 0, -1, e => idList.Contains(e.Id),
-                currentUser?.Id)).OrderBy(e => idList.IndexOf(e.Id));
+            songs = (await songRepository.GetSongsAsync(predicate: e => idList.Contains(e.Id),
+                currentUserId: currentUser?.Id)).OrderBy(e => idList.IndexOf(e.Id));
             total = result.TotalHits;
         }
         else
@@ -93,7 +93,7 @@ public class SongController(
             total = await songRepository.CountSongsAsync(predicateExpr);
         }
 
-        var list = songs.Select(dtoMapper.MapSong<SongDto>).ToList();
+        var list = songs.Select(e => dtoMapper.MapSong<SongDto>(e)).ToList();
 
         return Ok(new ResponseDto<IEnumerable<SongDto>>
         {
@@ -1007,7 +1007,7 @@ public class SongController(
         var charts = await chartRepository.GetChartsAsync(dto.Order, dto.Desc, position, dto.PerPage, predicateExpr,
             currentUser?.Id);
         var total = await chartRepository.CountChartsAsync(predicateExpr);
-        var list = charts.Select(dtoMapper.MapChart<ChartDto>).ToList();
+        var list = charts.Select(e => dtoMapper.MapChart<ChartDto>(e)).ToList();
 
         return Ok(new ResponseDto<IEnumerable<ChartDto>>
         {

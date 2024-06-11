@@ -20,7 +20,7 @@ public class ChartDto
 
     public string? FileChecksum { get; set; }
 
-    public string AuthorName { get; set; } = null!;
+    public string? AuthorName { get; set; }
 
     public string? Illustration { get; set; }
 
@@ -66,7 +66,7 @@ public class ChartDto
 
     public int LikeCount { get; set; }
 
-    public int OwnerId { get; set; }
+    public int? OwnerId { get; set; }
 
     public DateTimeOffset DateCreated { get; set; }
 

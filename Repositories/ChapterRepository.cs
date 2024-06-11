@@ -13,15 +13,16 @@ namespace PhiZoneApi.Repositories;
 public class ChapterRepository(ApplicationDbContext context, IMeilisearchService meilisearchService)
     : IChapterRepository
 {
-    public async Task<ICollection<Chapter>> GetChaptersAsync(List<string> order, List<bool> desc, int position,
-        int take, Expression<Func<Chapter, bool>>? predicate = null, int? currentUserId = null)
+    public async Task<ICollection<Chapter>> GetChaptersAsync(List<string>? order = null, List<bool>? desc = null,
+        int? position = 0,
+        int? take = -1, Expression<Func<Chapter, bool>>? predicate = null, int? currentUserId = null)
     {
         var result = context.Chapters.OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
         if (currentUserId != null)
             result = result.Include(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
-        result = result.Skip(position);
-        return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
+        result = result.Skip(position ?? 0);
+        return take >= 0 ? await result.Take(take.Value).ToListAsync() : await result.ToListAsync();
     }
 
     public async Task<Chapter> GetChapterAsync(Guid id, int? currentUserId = null)
@@ -32,15 +33,16 @@ public class ChapterRepository(ApplicationDbContext context, IMeilisearchService
         return (await result.FirstOrDefaultAsync(chapter => chapter.Id == id))!;
     }
 
-    public async Task<ICollection<Admission>> GetChapterSongsAsync(Guid id, List<string> order, List<bool> desc,
-        int position, int take, Expression<Func<Admission, bool>>? predicate = null)
+    public async Task<ICollection<Admission>> GetChapterSongsAsync(Guid id, List<string>? order = null,
+        List<bool>? desc = null,
+        int? position = 0, int? take = -1, Expression<Func<Admission, bool>>? predicate = null)
     {
         var result = context.Admissions
             .Where(admission => admission.AdmitterId == id && admission.Status == RequestStatus.Approved)
             .OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
-        result = result.Skip(position);
-        return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
+        result = result.Skip(position ?? 0);
+        return take >= 0 ? await result.Take(take.Value).ToListAsync() : await result.ToListAsync();
     }
 
     public async Task<bool> ChapterExistsAsync(Guid id)
