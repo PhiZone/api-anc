@@ -17,7 +17,7 @@ public class EventTeamRepository(ApplicationDbContext context, IMeilisearchServi
         int? take = -1, Expression<Func<EventTeam, bool>>? predicate = null, int? currentUserId = null)
     {
         var result = context.EventTeams.Include(e => e.Participations)
-            .ThenInclude(e => e.Participant)
+            .ThenInclude(e => e.Participant).ThenInclude(e => e.Region)
             .OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
         if (currentUserId != null)
@@ -29,7 +29,7 @@ public class EventTeamRepository(ApplicationDbContext context, IMeilisearchServi
     public async Task<EventTeam> GetEventTeamAsync(Guid id, int? currentUserId = null)
     {
         IQueryable<EventTeam> result = context.EventTeams.Include(e => e.Participations)
-            .ThenInclude(e => e.Participant);
+            .ThenInclude(e => e.Participant).ThenInclude(e => e.Region);
         if (currentUserId != null)
             result = result.Include(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
         return (await result.FirstOrDefaultAsync(eventTeam => eventTeam.Id == id))!;

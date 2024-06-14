@@ -16,7 +16,8 @@ public class LeaderboardService : ILeaderboardService
         foreach (var chart in await context.Charts.ToListAsync(cancellationToken))
         {
             var leaderboard = ObtainChartLeaderboard(chart.Id);
-            foreach (var record in context.Records.Include(e => e.Owner).ThenInclude(e => e.Region)
+            foreach (var record in context.Records.Include(e => e.Owner)
+                         .ThenInclude(e => e.Region)
                          .Where(e => e.ChartId == chart.Id)
                          .GroupBy(e => e.OwnerId)
                          .Select(g => g.OrderByDescending(e => e.Rks).ThenBy(e => e.DateCreated).First()))
@@ -27,7 +28,10 @@ public class LeaderboardService : ILeaderboardService
         foreach (var eventDivision in await context.EventDivisions.ToListAsync(cancellationToken))
         {
             var leaderboard = ObtainEventDivisionLeaderboard(eventDivision.Id);
-            foreach (var eventTeam in context.EventTeams.Where(e => e.DivisionId == eventDivision.Id))
+            foreach (var eventTeam in context.EventTeams.Include(e => e.Participations)
+                         .ThenInclude(e => e.Participant)
+                         .ThenInclude(e => e.Region)
+                         .Where(e => e.DivisionId == eventDivision.Id && e.IsUnveiled))
                 leaderboard.Add(eventTeam, false);
             leaderboard.RenewImmutable();
         }
