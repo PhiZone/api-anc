@@ -288,15 +288,15 @@ public class RecordController(
         {
             eventDivision = await eventDivisionRepository.GetEventDivisionAsync(info.DivisionId.Value);
             eventTeam = await eventTeamRepository.GetEventTeamAsync(info.TeamId.Value);
-            
+
             var firstFailure = await scriptService.RunEventTaskAsync(eventTeam.DivisionId, record, eventTeam.Id, player,
                 [EventTaskType.PreSubmission]);
 
             if (firstFailure != null)
                 return BadRequest(new ResponseDto<EventTaskResponseDto>
-                    {
-                        Status = ResponseStatus.ErrorWithData, Code = ResponseCodes.InvalidData, Data = firstFailure
-                    });
+                {
+                    Status = ResponseStatus.ErrorWithData, Code = ResponseCodes.InvalidData, Data = firstFailure
+                });
         }
 
         if (!await recordRepository.CreateRecordAsync(record))

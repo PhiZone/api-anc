@@ -324,7 +324,8 @@ public class PlayerController(
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> Play([FromQuery] Guid chartId, Guid configurationId, Guid applicationId, Guid? teamId)
+    public async Task<IActionResult> Play([FromQuery] Guid chartId, Guid configurationId, Guid applicationId,
+        Guid? teamId)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if (!resourceService.HasPermission(currentUser, UserRole.Member))

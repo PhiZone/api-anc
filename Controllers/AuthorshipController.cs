@@ -106,7 +106,8 @@ public class AuthorshipController(
         var dto = dtoMapper.MapUser<PositionalUserDto>(authorship.Author);
         dto.Position = authorship.Position;
 
-        return Ok(new ResponseDto<PositionalUserDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
+        return Ok(new ResponseDto<PositionalUserDto>
+            { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
     }
 
     /// <summary>

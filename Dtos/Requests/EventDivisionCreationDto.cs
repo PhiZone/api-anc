@@ -49,10 +49,10 @@ public class EventDivisionCreationDto
     public int? MinSubmissionCount { get; set; }
 
     public int? MaxSubmissionCount { get; set; }
-    
+
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     public bool Anonymization { get; set; }
-    
+
     public List<string?> Preserved { get; set; } = [];
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]

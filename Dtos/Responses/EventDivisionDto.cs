@@ -39,7 +39,7 @@ public class EventDivisionDto
     public int? MinSubmissionCount { get; set; }
 
     public int? MaxSubmissionCount { get; set; }
-    
+
     public bool Anonymization { get; set; }
 
     public int LikeCount { get; set; }
@@ -57,6 +57,6 @@ public class EventDivisionDto
     public DateTimeOffset DateEnded { get; set; }
 
     public DateTimeOffset? DateLiked { get; set; }
-    
+
     public EventTeamDto? Team { get; set; }
 }

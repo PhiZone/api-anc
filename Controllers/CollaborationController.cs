@@ -349,11 +349,9 @@ public class CollaborationController(
 
         var chartSubmission = await chartSubmissionRepository.GetChartSubmissionAsync(collaboration.SubmissionId);
         if (collaboration.Status == RequestStatus.Approved && chartSubmission.RepresentationId != null)
-        {
             await authorshipRepository.RemoveAuthorshipAsync(chartSubmission.RepresentationId.Value,
                 collaboration.InviteeId);
-        }
-        
+
         if (!await collaborationRepository.RemoveCollaborationAsync(id))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });

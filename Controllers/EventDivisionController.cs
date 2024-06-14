@@ -141,8 +141,8 @@ public class EventDivisionController(
         var permission = HP.Gen(HP.Retrieve, HP.Division);
         if ((currentUser == null ||
              !(eventEntity.Hostships.Any(f =>
-                 f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(permission))) ||
-             resourceService.HasPermission(currentUser, UserRole.Administrator))) &&
+                   f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(permission))) ||
+               resourceService.HasPermission(currentUser, UserRole.Administrator))) &&
             eventDivision.DateUnveiled >= DateTimeOffset.UtcNow)
             return NotFound(new ResponseDto<object>
             {
@@ -181,20 +181,18 @@ public class EventDivisionController(
         var permission = HP.Gen(HP.Retrieve, HP.Division);
         if ((currentUser == null ||
              !(eventEntity.Hostships.Any(f =>
-                 f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(permission))) ||
-             resourceService.HasPermission(currentUser, UserRole.Administrator))) &&
+                   f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(permission))) ||
+               resourceService.HasPermission(currentUser, UserRole.Administrator))) &&
             eventDivision.DateUnveiled >= DateTimeOffset.UtcNow)
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
         if (eventDivision.Type != EventDivisionType.Chart)
-        {
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
             });
-        }
 
         dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
             dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
@@ -263,20 +261,18 @@ public class EventDivisionController(
         var permission = HP.Gen(HP.Retrieve, HP.Division);
         if ((currentUser == null ||
              !(eventEntity.Hostships.Any(f =>
-                 f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(permission))) ||
-             resourceService.HasPermission(currentUser, UserRole.Administrator))) &&
+                   f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(permission))) ||
+               resourceService.HasPermission(currentUser, UserRole.Administrator))) &&
             eventDivision.DateUnveiled >= DateTimeOffset.UtcNow)
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
         if (eventDivision.Type != EventDivisionType.Play)
-        {
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
             });
-        }
 
         dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
             dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
@@ -345,8 +341,8 @@ public class EventDivisionController(
         var permission = HP.Gen(HP.Retrieve, HP.Division);
         if ((currentUser == null ||
              !(eventEntity.Hostships.Any(f =>
-                 f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(permission))) ||
-             resourceService.HasPermission(currentUser, UserRole.Administrator))) &&
+                   f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(permission))) ||
+               resourceService.HasPermission(currentUser, UserRole.Administrator))) &&
             eventDivision.DateUnveiled >= DateTimeOffset.UtcNow)
             return NotFound(new ResponseDto<object>
             {
@@ -419,20 +415,18 @@ public class EventDivisionController(
         var permission = HP.Gen(HP.Retrieve, HP.Division);
         if ((currentUser == null ||
              !(eventEntity.Hostships.Any(f =>
-                 f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(permission))) ||
-             resourceService.HasPermission(currentUser, UserRole.Administrator))) &&
+                   f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(permission))) ||
+               resourceService.HasPermission(currentUser, UserRole.Administrator))) &&
             eventDivision.DateUnveiled >= DateTimeOffset.UtcNow)
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
         if (eventDivision.Type != EventDivisionType.Song)
-        {
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
             });
-        }
 
         dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
             dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
@@ -500,20 +494,18 @@ public class EventDivisionController(
         var permission = HP.Gen(HP.Retrieve, HP.Division);
         if ((currentUser == null ||
              !(eventEntity.Hostships.Any(f =>
-                 f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(permission))) ||
-             resourceService.HasPermission(currentUser, UserRole.Administrator))) &&
+                   f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(permission))) ||
+               resourceService.HasPermission(currentUser, UserRole.Administrator))) &&
             eventDivision.DateUnveiled >= DateTimeOffset.UtcNow)
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
         if (eventDivision.Type != EventDivisionType.Chart)
-        {
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
             });
-        }
 
         dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
             dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
@@ -581,8 +573,8 @@ public class EventDivisionController(
         var permission = HP.Gen(HP.Retrieve, HP.Division);
         if ((currentUser == null ||
              !(eventEntity.Hostships.Any(f =>
-                 f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(permission))) ||
-             resourceService.HasPermission(currentUser, UserRole.Administrator))) &&
+                   f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(permission))) ||
+               resourceService.HasPermission(currentUser, UserRole.Administrator))) &&
             eventDivision.DateUnveiled >= DateTimeOffset.UtcNow)
             return NotFound(new ResponseDto<object>
             {
@@ -732,8 +724,8 @@ public class EventDivisionController(
         var permission = HP.Gen(HP.Retrieve, HP.Division);
         if ((currentUser == null ||
              !(eventEntity.Hostships.Any(f =>
-                 f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(permission))) ||
-             resourceService.HasPermission(currentUser, UserRole.Administrator))) &&
+                   f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(permission))) ||
+               resourceService.HasPermission(currentUser, UserRole.Administrator))) &&
             eventDivision.DateUnveiled >= DateTimeOffset.UtcNow)
             return NotFound(new ResponseDto<object>
             {
@@ -799,10 +791,10 @@ public class EventDivisionController(
         var eventEntity = await eventRepository.GetEventAsync(eventDivision.EventId);
         var permission = HP.Gen(HP.Retrieve, HP.Division);
         if (currentUser == null ||
-            !(eventEntity.Hostships.Any(f =>
-                  f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(permission))) ||
-              resourceService.HasPermission(currentUser, UserRole.Administrator)) &&
-            eventDivision.DateUnveiled >= DateTimeOffset.UtcNow)
+            (!(eventEntity.Hostships.Any(f =>
+                   f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(permission))) ||
+               resourceService.HasPermission(currentUser, UserRole.Administrator)) &&
+             eventDivision.DateUnveiled >= DateTimeOffset.UtcNow))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
@@ -818,16 +810,12 @@ public class EventDivisionController(
                 f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(permission)));
             permission = HP.Gen(HP.Retrieve, HP.PreservedField);
             if (hostship == null)
-            {
                 list = [];
-            }
             else if (hostship.Permissions.All(e => e != permission))
-            {
                 list = hostship.Permissions.Where(e => e.SameAs(permission))
                     .Select(HP.GetIndex)
                     .Select(index => list.ElementAtOrDefault(index - 1))
                     .ToList();
-            }
         }
 
         return Ok(new ResponseDto<IEnumerable<string?>>
@@ -1224,9 +1212,9 @@ public class EventDivisionController(
         var eventDivision = await eventDivisionRepository.GetEventDivisionAsync(id);
         var eventEntity = await eventRepository.GetEventAsync(eventDivision.EventId);
         var permission = HP.Gen(HP.Retrieve, HP.Division);
-        if ((!(eventEntity.Hostships.Any(f =>
-                 f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(permission))) ||
-             resourceService.HasPermission(currentUser, UserRole.Administrator))) &&
+        if (!(eventEntity.Hostships.Any(f =>
+                  f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(permission))) ||
+              resourceService.HasPermission(currentUser, UserRole.Administrator)) &&
             eventDivision.DateUnveiled >= DateTimeOffset.UtcNow)
             return NotFound(new ResponseDto<object>
             {
@@ -1273,9 +1261,9 @@ public class EventDivisionController(
         var eventDivision = await eventDivisionRepository.GetEventDivisionAsync(id);
         var eventEntity = await eventRepository.GetEventAsync(eventDivision.EventId);
         var permission = HP.Gen(HP.Retrieve, HP.Division);
-        if ((!(eventEntity.Hostships.Any(f =>
-                 f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(permission))) ||
-             resourceService.HasPermission(currentUser, UserRole.Administrator))) &&
+        if (!(eventEntity.Hostships.Any(f =>
+                  f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(permission))) ||
+              resourceService.HasPermission(currentUser, UserRole.Administrator)) &&
             eventDivision.DateUnveiled >= DateTimeOffset.UtcNow)
             return NotFound(new ResponseDto<object>
             {
@@ -1319,8 +1307,9 @@ public class EventDivisionController(
         var eventEntity = await eventRepository.GetEventAsync(eventDivision.EventId);
         var permission = HP.Gen(HP.Retrieve, HP.Division);
         if ((currentUser == null || !(eventEntity.Hostships.Any(f =>
-                 f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(permission))) ||
-             resourceService.HasPermission(currentUser, UserRole.Administrator))) &&
+                                          f.UserId == currentUser.Id &&
+                                          (f.IsAdmin || f.Permissions.Contains(permission))) ||
+                                      resourceService.HasPermission(currentUser, UserRole.Administrator))) &&
             eventDivision.DateUnveiled >= DateTimeOffset.UtcNow)
             return NotFound(new ResponseDto<object>
             {
@@ -1380,9 +1369,9 @@ public class EventDivisionController(
         var eventDivision = await eventDivisionRepository.GetEventDivisionAsync(id);
         var eventEntity = await eventRepository.GetEventAsync(eventDivision.EventId);
         var permission = HP.Gen(HP.Retrieve, HP.Division);
-        if ((!(eventEntity.Hostships.Any(f =>
-                 f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(permission))) ||
-             resourceService.HasPermission(currentUser, UserRole.Administrator))) &&
+        if (!(eventEntity.Hostships.Any(f =>
+                  f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(permission))) ||
+              resourceService.HasPermission(currentUser, UserRole.Administrator)) &&
             eventDivision.DateUnveiled >= DateTimeOffset.UtcNow)
             return NotFound(new ResponseDto<object>
             {

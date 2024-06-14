@@ -116,7 +116,7 @@ public class ScriptService(IServiceProvider serviceProvider) : IScriptService
     {
         await using var scope = serviceProvider.CreateAsyncScope();
         var eventTaskRepository = scope.ServiceProvider.GetRequiredService<IEventTaskRepository>();
-        foreach (var task in await eventTaskRepository.GetEventTasksAsync(order: ["DateUpdated"],
+        foreach (var task in await eventTaskRepository.GetEventTasksAsync(["DateUpdated"],
                      predicate: e => e.DivisionId == divisionId && types.Contains(e.Type)))
         {
             var response = await RunAsync(task.Id, target, teamId, currentUser);

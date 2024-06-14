@@ -36,7 +36,7 @@ public class EventDivisionFilterDto : PublicResourceFilterDto<EventDivision>
     public int? MinMaxSubmissionCount { get; set; }
 
     public int? MaxMaxSubmissionCount { get; set; }
-    
+
     public bool? HasAnonymization { get; set; }
 
     public List<Guid>? RangeEventId { get; set; }

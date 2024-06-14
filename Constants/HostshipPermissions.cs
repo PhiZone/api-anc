@@ -18,8 +18,10 @@ public static class HostshipPermissions
     public const uint Hostship = 0b0011u;
     public const uint PreservedField = 0b0100u;
 
-    public static bool HasPermission(this Hostship hostship, uint permission) =>
-        hostship.Permissions.Contains(permission);
+    public static bool HasPermission(this Hostship hostship, uint permission)
+    {
+        return hostship.Permissions.Contains(permission);
+    }
 
     public static uint Gen(uint operation, uint scope, int? index = null)
     {
@@ -28,8 +30,13 @@ public static class HostshipPermissions
         return (operation << Operation) | (scope << Scope) | ((uint?)index ?? 0u);
     }
 
-    public static int GetIndex(uint permission) => (int)(permission - ((permission >> Operation) << Operation));
-    
-    public static bool SameAs(this uint permission, uint other) =>
-        permission >> Operation == other >> Operation;
+    public static int GetIndex(uint permission)
+    {
+        return (int)(permission - ((permission >> Operation) << Operation));
+    }
+
+    public static bool SameAs(this uint permission, uint other)
+    {
+        return permission >> Operation == other >> Operation;
+    }
 }
