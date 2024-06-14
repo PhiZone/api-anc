@@ -11,7 +11,6 @@ public class EventTeamCreationDto
     [UserInputValidator(ErrorMessage = ResponseCodes.ContentProhibited)]
     public string Name { get; set; } = null!;
 
-    [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     public IFormFile? Icon { get; set; }
 
     [MaxLength(2000, ErrorMessage = ResponseCodes.ValueTooLong)]
