@@ -74,9 +74,10 @@ public class SubmissionService(
                          e.SongSubmissionId == songSubmission.Id && e.Status == RequestStatus.Approved))
                 await ApproveChart(chartSubmission, song.Id);
 
-            var broadcast = isOriginal && !isHidden && await chartRepository.CountChartsAsync(e => e.SongId == song.Id && e.EventPresences.Any(f =>
-                f.IsAnonymous != null && f.IsAnonymous.Value && f.Team != null &&
-                f.Team.Participations.Any(g => g.ParticipantId == song.OwnerId))) == 0;
+            var broadcast = isOriginal && !isHidden && await chartRepository.CountChartsAsync(e =>
+                e.SongId == song.Id && e.EventPresences.Any(f =>
+                    f.IsAnonymous != null && f.IsAnonymous.Value && f.Team != null &&
+                    f.Team.Participations.Any(g => g.ParticipantId == song.OwnerId))) == 0;
             var (eventDivision, eventTeam) = await GetEventInfo(songSubmission);
             if (eventDivision != null && eventTeam != null)
             {
@@ -135,15 +136,12 @@ public class SubmissionService(
             var (eventDivision, eventTeam) = await GetEventInfo(songSubmission);
             if (eventDivision != null && eventTeam != null)
             {
-                foreach (var existingEventResource in existingEventResources.Where(e => e.DivisionId != eventDivision.Id))
-                {
+                foreach (var existingEventResource in
+                         existingEventResources.Where(e => e.DivisionId != eventDivision.Id))
                     await eventResourceRepository.RemoveEventResourceAsync(existingEventResource.DivisionId, song.Id);
-                }
 
                 if (existingEventResources.All(e => e.DivisionId != eventDivision.Id))
-                {
                     await CreateEventResource(eventDivision, eventTeam, song.Id, owner);
-                }
             }
         }
 
@@ -315,15 +313,12 @@ public class SubmissionService(
             var (eventDivision, eventTeam) = await GetEventInfo(chartSubmission);
             if (eventDivision != null && eventTeam != null)
             {
-                foreach (var existingEventResource in existingEventResources.Where(e => e.DivisionId != eventDivision.Id))
-                {
+                foreach (var existingEventResource in
+                         existingEventResources.Where(e => e.DivisionId != eventDivision.Id))
                     await eventResourceRepository.RemoveEventResourceAsync(existingEventResource.DivisionId, chart.Id);
-                }
 
                 if (existingEventResources.All(e => e.DivisionId != eventDivision.Id))
-                {
                     await CreateEventResource(eventDivision, eventTeam, chart.Id, owner);
-                }
             }
         }
 

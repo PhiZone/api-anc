@@ -1622,7 +1622,8 @@ public class ChartSubmissionController(
 
         var eventTeam = eventTeams.First();
 
-        var firstFailure = await scriptService.RunEventTaskAsync(eventTeam.DivisionId, chartSubmission, eventTeam.Id, currentUser,
+        var firstFailure = await scriptService.RunEventTaskAsync(eventTeam.DivisionId, chartSubmission, eventTeam.Id,
+            currentUser,
             [taskType]);
 
         if (firstFailure != null)

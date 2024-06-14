@@ -52,7 +52,7 @@ public interface IDtoMapper
     T MapEvent<T>(Event eventEntity) where T : EventDto;
 
     T MapEventDivision<T>(EventDivision eventDivision) where T : EventDivisionDto;
-    
+
     T MapEventTeam<T>(EventTeam eventTeam) where T : EventTeamDto;
 
     T MapNotification<T>(Notification notification) where T : NotificationDto;

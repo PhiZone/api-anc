@@ -152,12 +152,12 @@ public class EventResourceController(
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser,
             e => currentUser != null &&
-                                                                      (resourceService.HasPermission(currentUser,
-                                                                           UserRole.Administrator) ||
-                                                                       e.Division.Event.Hostships.Any(f =>
-                                                                           f.UserId == currentUser.Id &&
-                                                                           (f.IsAdmin ||
-                                                                            f.Permissions.Contains(permission)))));
+                 (resourceService.HasPermission(currentUser,
+                      UserRole.Administrator) ||
+                  e.Division.Event.Hostships.Any(f =>
+                      f.UserId == currentUser.Id &&
+                      (f.IsAdmin ||
+                       f.Permissions.Contains(permission)))));
         var eventResources = await eventResourceRepository.GetEventResourcesAsync(dto.Order, dto.Desc, position,
             dto.PerPage, predicateExpr);
         var total = await eventResourceRepository.CountEventResourcesAsync(predicateExpr);
@@ -166,31 +166,24 @@ public class EventResourceController(
 
         // ReSharper disable once InvertIf
         if (currentUser == null || !resourceService.HasPermission(currentUser, UserRole.Administrator))
-        {
             foreach (var eventResource in eventResources)
             {
                 var eventDivision = await eventDivisionRepository.GetEventDivisionAsync(eventResource.DivisionId);
                 var eventEntity = await eventRepository.GetEventAsync(eventDivision.EventId);
                 var hostship = eventEntity.Hostships.FirstOrDefault(f =>
-                    currentUser != null && f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(permission)));
+                    currentUser != null && f.UserId == currentUser.Id &&
+                    (f.IsAdmin || f.Permissions.Contains(permission)));
                 permission = HP.Gen(HP.Retrieve, HP.PreservedField);
                 if (hostship == null)
-                {
                     matrix.Add([]);
-                }
                 else if (hostship.Permissions.All(e => e != permission))
-                {
                     matrix.Add(hostship.Permissions.Where(e => e.SameAs(permission))
                         .Select(HP.GetIndex)
                         .Select(index => eventResource.Preserved.ElementAtOrDefault(index - 1))
                         .ToList());
-                }
                 else
-                {
                     matrix.Add(eventResource.Preserved);
-                }
             }
-        }
 
         return Ok(new ResponseDto<List<List<string?>>>
         {
@@ -229,10 +222,10 @@ public class EventResourceController(
         var eventEntity = await eventRepository.GetEventAsync(eventDivision.EventId);
         var permission = HP.Gen(HP.Retrieve, HP.Resource);
         if (currentUser == null ||
-            !(eventEntity.Hostships.Any(f =>
-                  f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(permission))) ||
-              resourceService.HasPermission(currentUser, UserRole.Administrator)) &&
-            eventDivision.DateUnveiled >= DateTimeOffset.UtcNow)
+            (!(eventEntity.Hostships.Any(f =>
+                   f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(permission))) ||
+               resourceService.HasPermission(currentUser, UserRole.Administrator)) &&
+             eventDivision.DateUnveiled >= DateTimeOffset.UtcNow))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
@@ -248,16 +241,12 @@ public class EventResourceController(
                 f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(permission)));
             permission = HP.Gen(HP.Retrieve, HP.PreservedField);
             if (hostship == null)
-            {
                 list = [];
-            }
             else if (hostship.Permissions.All(e => e != permission))
-            {
                 list = hostship.Permissions.Where(e => e.SameAs(permission))
                     .Select(HP.GetIndex)
                     .Select(index => list.ElementAtOrDefault(index - 1))
                     .ToList();
-            }
         }
 
         return Ok(new ResponseDto<IEnumerable<string?>>
@@ -289,7 +278,8 @@ public class EventResourceController(
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> UpdatePreservedField([FromRoute] Guid divisionId, [FromRoute] Guid resourceId, [FromRoute] int index, [FromBody] StringDto dto)
+    public async Task<IActionResult> UpdatePreservedField([FromRoute] Guid divisionId, [FromRoute] Guid resourceId,
+        [FromRoute] int index, [FromBody] StringDto dto)
     {
         var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         if (!await eventResourceRepository.EventResourceExistsAsync(divisionId, resourceId))
@@ -299,20 +289,18 @@ public class EventResourceController(
             });
         var eventResource = await eventResourceRepository.GetEventResourceAsync(divisionId, resourceId);
         if (eventResource.TeamId == null)
-        {
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
             });
-        }
         var eventDivision = await eventDivisionRepository.GetEventDivisionAsync(divisionId);
         var eventEntity = await eventRepository.GetEventAsync(eventDivision.EventId);
         var permission = HP.Gen(HP.Update, HP.Resource);
         if (currentUser == null ||
-            !(eventEntity.Hostships.Any(f =>
-                  f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(permission))) ||
-              resourceService.HasPermission(currentUser, UserRole.Administrator)) &&
-            eventDivision.DateUnveiled >= DateTimeOffset.UtcNow)
+            (!(eventEntity.Hostships.Any(f =>
+                   f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(permission))) ||
+               resourceService.HasPermission(currentUser, UserRole.Administrator)) &&
+             eventDivision.DateUnveiled >= DateTimeOffset.UtcNow))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
@@ -328,13 +316,11 @@ public class EventResourceController(
             var permissionWithIndex = HP.Gen(HP.Update, HP.PreservedField, index);
             if (hostship == null || (hostship.Permissions.All(e => e != permission) &&
                                      !hostship.HasPermission(permissionWithIndex)))
-            {
                 return StatusCode(StatusCodes.Status403Forbidden,
                     new ResponseDto<object>
                     {
                         Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                     });
-            }
         }
 
         eventResource.Preserved[index - 1] = dto.Content;
@@ -343,7 +329,8 @@ public class EventResourceController(
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
-        await scriptService.RunEventTaskAsync(eventResource.DivisionId, (eventResource, index), eventResource.TeamId.Value, currentUser,
+        await scriptService.RunEventTaskAsync(eventResource.DivisionId, (eventResource, index),
+            eventResource.TeamId.Value, currentUser,
             [EventTaskType.OnEntryEvaluation]);
 
         return NoContent();

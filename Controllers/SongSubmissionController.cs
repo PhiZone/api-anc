@@ -1215,7 +1215,8 @@ public class SongSubmissionController(
 
         var eventTeam = eventTeams.First();
 
-        var firstFailure = await scriptService.RunEventTaskAsync(eventTeam.DivisionId, songSubmission, eventTeam.Id, currentUser,
+        var firstFailure = await scriptService.RunEventTaskAsync(eventTeam.DivisionId, songSubmission, eventTeam.Id,
+            currentUser,
             [taskType]);
 
         if (firstFailure != null)

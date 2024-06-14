@@ -32,7 +32,7 @@ public class EventDivision : PublicResource
     public int? MinSubmissionCount { get; set; }
 
     public int? MaxSubmissionCount { get; set; }
-    
+
     public bool Anonymization { get; set; }
 
     [JsonIgnore] public List<string?> Preserved { get; set; } = [];

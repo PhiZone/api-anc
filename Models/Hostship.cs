@@ -11,10 +11,10 @@ public class Hostship
     public User User { get; set; } = null!;
 
     public string? Position { get; set; }
-    
+
     public bool IsUnveiled { get; set; }
-    
+
     public bool IsAdmin { get; set; }
-    
+
     public List<uint> Permissions { get; set; } = [];
 }
