@@ -53,7 +53,7 @@ public class EventDivision : PublicResource
 
     public override string GetDisplay()
     {
-        return Subtitle != null ? $"{Title} - {Subtitle}" : Title;
+        return Title;
     }
 
     public bool IsInStatus(params EventDivisionStatus[] statuses)

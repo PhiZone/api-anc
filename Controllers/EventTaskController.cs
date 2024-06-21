@@ -36,6 +36,7 @@ public class EventTaskController(
     UserManager<User> userManager,
     EventTaskScheduler eventTaskScheduler,
     IMapper mapper,
+    IScriptService scriptService,
     IResourceService resourceService,
     IMeilisearchService meilisearchService) : Controller
 {
@@ -70,8 +71,8 @@ public class EventTaskController(
             var result = await meilisearchService.SearchAsync<EventTask>(dto.Search, dto.PerPage, dto.Page);
             var idList = result.Hits.Select(item => item.Id).ToList();
             eventTasks =
-                (await eventTaskRepository.GetEventTasksAsync(predicate:
-                    e => idList.Contains(e.Id))).OrderBy(e => idList.IndexOf(e.Id));
+                (await eventTaskRepository.GetEventTasksAsync(predicate: e => idList.Contains(e.Id))).OrderBy(e =>
+                    idList.IndexOf(e.Id));
             total = result.TotalHits;
         }
         else
@@ -124,8 +125,7 @@ public class EventTaskController(
         var eventTask = await eventTaskRepository.GetEventTaskAsync(id);
         var eventDivision = await eventDivisionRepository.GetEventDivisionAsync(eventTask.DivisionId);
         var eventEntity = await eventRepository.GetEventAsync(eventDivision.EventId);
-        if ((currentUser == null ||
-             eventEntity.Hostships.All(f => f.UserId != currentUser.Id) ||
+        if ((currentUser == null || eventEntity.Hostships.All(f => f.UserId != currentUser.Id) ||
              !resourceService.HasPermission(currentUser, UserRole.Administrator)) &&
             eventDivision.DateUnveiled >= DateTimeOffset.UtcNow)
             return NotFound(new ResponseDto<object>
@@ -194,6 +194,7 @@ public class EventTaskController(
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
         if (eventTask.Type == EventTaskType.Scheduled) eventTaskScheduler.Schedule(eventTask);
+        if (eventTask.Code != null) scriptService.Compile(eventTask.Id, eventTask.Code);
 
         return StatusCode(StatusCodes.Status201Created);
     }
@@ -260,9 +261,13 @@ public class EventTaskController(
             });
 
         var updateSchedule = false;
+        var updateScript = false;
         if (dto.Type == EventTaskType.Scheduled)
             updateSchedule = true;
         else if (eventTask.Type == EventTaskType.Scheduled) eventTaskScheduler.Cancel(eventTask.Id);
+        if (dto.Code != null)
+            updateScript = true;
+        else if (eventTask.Code != null) scriptService.RemoveEventTaskScript(eventTask.Id);
 
         eventTask.Name = dto.Name;
         eventTask.Type = dto.Type;
@@ -278,6 +283,7 @@ public class EventTaskController(
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
         if (updateSchedule) eventTaskScheduler.Schedule(eventTask, true);
+        if (updateScript) scriptService.Compile(eventTask.Id, eventTask.Code!);
 
         return NoContent();
     }
@@ -325,6 +331,7 @@ public class EventTaskController(
                 });
 
         if (eventTask.Type == EventTaskType.Scheduled) eventTaskScheduler.Cancel(eventTask.Id);
+        if (eventTask.Code != null) scriptService.RemoveEventTaskScript(eventTask.Id);
 
         if (!await eventTaskRepository.RemoveEventTaskAsync(id))
             return StatusCode(StatusCodes.Status500InternalServerError,

@@ -14,6 +14,8 @@ public class DtoMapper(
     ICollectionRepository collectionRepository,
     ISongRepository songRepository,
     IChartRepository chartRepository,
+    IEventTeamRepository eventTeamRepository,
+    IEventResourceRepository eventResourceRepository,
     ISongSubmissionRepository songSubmissionRepository,
     IChartSubmissionRepository chartSubmissionRepository,
     IPetQuestionRepository petQuestionRepository) : IDtoMapper
@@ -251,24 +253,28 @@ public class DtoMapper(
     public T MapEvent<T>(Event eventEntity) where T : EventDto
     {
         var dto = mapper.Map<T>(eventEntity);
-        dto.Divisions = eventEntity.Divisions.Select(e => new DivisionDto
+        dto.Divisions = eventEntity.Divisions.Where(e => e.DateUnveiled <= DateTimeOffset.UtcNow)
+            .Select(e => new DivisionDto { Title = e.Title, Subtitle = e.Subtitle, Type = e.Type, Status = e.Status })
+            .ToList();
+        dto.Hosts = eventEntity.Hostships.Where(e => e.IsUnveiled)
+            .Select(e =>
             {
-                Title = e.Title, Subtitle = e.Subtitle, Type = e.Type, Status = e.Status
+                var host = MapUser<PositionalUserDto>(e.User);
+                host.Position = e.Position;
+                return host;
             })
             .ToList();
-        dto.Hosts = eventEntity.Hostships.Where(e => e.IsUnveiled).Select(e =>
-        {
-            var host = MapUser<PositionalUserDto>(e.User);
-            host.Position = e.Position;
-            return host;
-        }).ToList();
         dto.DateLiked = eventEntity.Likes.FirstOrDefault()?.DateCreated;
         return dto;
     }
 
-    public T MapEventDivision<T>(EventDivision eventDivision) where T : EventDivisionDto
+    public async Task<T> MapEventDivisionAsync<T>(EventDivision eventDivision) where T : EventDivisionDto
     {
         var dto = mapper.Map<T>(eventDivision);
+        dto.TeamCount = await eventTeamRepository.CountEventTeamsAsync(e => e.Status != ParticipationStatus.Banned &&
+                                                                            e.DivisionId == eventDivision.Id);
+        dto.EntryCount =
+            await eventResourceRepository.CountResourcesAsync(eventDivision.Id, e => e.Type == EventResourceType.Entry);
         dto.DateLiked = eventDivision.Likes.FirstOrDefault()?.DateCreated;
         var team = eventDivision.Teams.FirstOrDefault();
         dto.Team = team != null ? MapEventTeam<EventTeamDto>(team) : null;
@@ -279,7 +285,13 @@ public class DtoMapper(
     {
         var dto = mapper.Map<T>(eventTeam);
         dto.DateLiked = eventTeam.Likes.FirstOrDefault()?.DateCreated;
-        dto.Participants = eventTeam.Participants.Select(MapUser<PositionalUserDto>).ToList();
+        dto.Participants = eventTeam.Participations.Select(e =>
+            {
+                var userDto = MapUser<PositionalUserDto>(e.Participant);
+                userDto.Position = e.Position;
+                return userDto;
+            })
+            .ToList();
         return dto;
     }
 

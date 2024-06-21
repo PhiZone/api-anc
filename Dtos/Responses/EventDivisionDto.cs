@@ -56,6 +56,10 @@ public class EventDivisionDto
 
     public DateTimeOffset DateEnded { get; set; }
 
+    public int TeamCount { get; set; }
+
+    public int EntryCount { get; set; }
+
     public DateTimeOffset? DateLiked { get; set; }
 
     public EventTeamDto? Team { get; set; }

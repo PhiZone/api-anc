@@ -9,7 +9,7 @@ public interface IChartRepository
 {
     Task<ICollection<Chart>> GetChartsAsync(List<string>? order = null, List<bool>? desc = null, int? position = 0,
         int? take = -1,
-        Expression<Func<Chart, bool>>? predicate = null, int? currentUserId = null);
+        Expression<Func<Chart, bool>>? predicate = null, int? currentUserId = null, bool? showAnonymous = false);
 
     Task<Chart> GetChartAsync(Guid id, int? currentUserId = null, bool includeAssets = false);
 
@@ -27,5 +27,5 @@ public interface IChartRepository
 
     Task<bool> SaveAsync();
 
-    Task<int> CountChartsAsync(Expression<Func<Chart, bool>>? predicate = null);
+    Task<int> CountChartsAsync(Expression<Func<Chart, bool>>? predicate = null, bool? showAnonymous = false);
 }

@@ -1,6 +1,7 @@
 ﻿using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using PhiZoneApi.Data;
+using PhiZoneApi.Enums;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 using PhiZoneApi.Utils;
@@ -12,15 +13,19 @@ namespace PhiZoneApi.Repositories;
 public class ChartRepository(ApplicationDbContext context, IMeilisearchService meilisearchService) : IChartRepository
 {
     public async Task<ICollection<Chart>> GetChartsAsync(List<string>? order = null, List<bool>? desc = null,
-        int? position = 0, int? take = -1,
-        Expression<Func<Chart, bool>>? predicate = null, int? currentUserId = null)
+        int? position = 0, int? take = -1, Expression<Func<Chart, bool>>? predicate = null, int? currentUserId = null,
+        bool? showAnonymous = false)
     {
-        var result = context.Charts.Include(e => e.Tags)
+        var result = context.Charts
+            .Where(e => (showAnonymous != null && showAnonymous.Value) || !e.EventPresences.Any(f =>
+                f.Type == EventResourceType.Entry && f.IsAnonymous != null && f.IsAnonymous.Value))
+            .Include(e => e.Tags)
             .Include(e => e.Song)
             .ThenInclude(e => e.Charts)
             .Include(e => e.Song)
             .ThenInclude(e => e.Tags)
             .Include(e => e.EventPresences)
+            .ThenInclude(e => e.Team)
             .Include(e => e.Song)
             .ThenInclude(e => e.EventPresences)
             .OrderBy(order, desc);
@@ -39,6 +44,7 @@ public class ChartRepository(ApplicationDbContext context, IMeilisearchService m
             .Include(e => e.Song)
             .ThenInclude(e => e.Tags)
             .Include(e => e.EventPresences)
+            .ThenInclude(e => e.Team)
             .Include(e => e.Song)
             .ThenInclude(e => e.EventPresences);
         if (includeAssets) result = result.Include(e => e.Assets);
@@ -50,7 +56,10 @@ public class ChartRepository(ApplicationDbContext context, IMeilisearchService m
     public async Task<Chart?> GetRandomChartAsync(Expression<Func<Chart, bool>>? predicate = null,
         int? currentUserId = null)
     {
-        IQueryable<Chart> result = context.Charts.Include(e => e.Tags)
+        IQueryable<Chart> result = context.Charts
+            .Where(e => !e.EventPresences.Any(f =>
+                f.Type == EventResourceType.Entry && f.IsAnonymous != null && f.IsAnonymous.Value))
+            .Include(e => e.Tags)
             .Include(e => e.Song)
             .ThenInclude(e => e.Charts)
             .Include(e => e.Song)
@@ -105,9 +114,12 @@ public class ChartRepository(ApplicationDbContext context, IMeilisearchService m
         return saved > 0;
     }
 
-    public async Task<int> CountChartsAsync(Expression<Func<Chart, bool>>? predicate = null)
+    public async Task<int> CountChartsAsync(Expression<Func<Chart, bool>>? predicate = null,
+        bool? showAnonymous = false)
     {
-        var result = context.Charts.AsQueryable();
+        var result = context.Charts.Where(e =>
+            (showAnonymous != null && showAnonymous.Value) || !e.EventPresences.Any(f =>
+                f.Type == EventResourceType.Entry && f.IsAnonymous != null && f.IsAnonymous.Value));
         if (predicate != null) result = result.Where(predicate);
         return await result.CountAsync();
     }

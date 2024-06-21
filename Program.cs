@@ -157,6 +157,7 @@ builder.Services.AddSingleton<IMessengerService, MessengerService>();
 builder.Services.AddSingleton<IMeilisearchService, MeilisearchService>();
 builder.Services.AddSingleton<ILeaderboardService, LeaderboardService>();
 builder.Services.AddSingleton<IScriptService, ScriptService>();
+builder.Services.AddSingleton<EventTaskScheduler>();
 builder.Services.AddSingleton<AuthProviderFactory>();
 builder.Services.AddSingleton<IAuthProvider, GitHubAuthProvider>();
 builder.Services.AddSingleton<IAuthProvider, PhiraAuthProvider>();

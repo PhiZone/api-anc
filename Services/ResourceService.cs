@@ -78,6 +78,18 @@ public partial class ResourceService(IServiceProvider serviceProvider, IConfigur
         if (!await userRelationRepository.RelationExistsAsync(user2, user1)) return false;
         return (await userRelationRepository.GetRelationAsync(user2, user1)).Type == UserRelationType.Blacklisted;
     }
+    
+    public async Task<(bool, bool)> IsPreparedOrFinished(EventTeam eventTeam)
+    {
+        await using var scope = serviceProvider.CreateAsyncScope();
+        var participationRepository = scope.ServiceProvider.GetRequiredService<IParticipationRepository>();
+        var eventResourceRepository = scope.ServiceProvider.GetRequiredService<IEventResourceRepository>();
+        return (
+            eventTeam.ClaimedParticipantCount ==
+            await participationRepository.CountParticipationsAsync(e => e.TeamId == eventTeam.Id),
+            eventTeam.ClaimedSubmissionCount == await eventResourceRepository.CountResourcesAsync(eventTeam.DivisionId,
+                e => e.Type == EventResourceType.Entry && e.TeamId == eventTeam.Id));
+    }
 
     public bool HasPermission(User user, UserRole role)
     {
@@ -121,7 +133,7 @@ public partial class ResourceService(IServiceProvider serviceProvider, IConfigur
     {
         if (input.Trim() == string.Empty) return true;
 
-        if (input.Contains('<') && input.Contains('>'))
+        if (!memberName.Equals("Code") && input.Contains('<') && input.Contains('>'))
         {
             var sanitizer = new HtmlSanitizer();
             if (sanitizer.Sanitize(input) != input) return false;

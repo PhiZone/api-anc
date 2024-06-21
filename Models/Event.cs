@@ -22,6 +22,6 @@ public class Event : PublicResource
 
     public override string GetDisplay()
     {
-        return Subtitle != null ? $"{Title} - {Subtitle}" : Title;
+        return Title;
     }
 }

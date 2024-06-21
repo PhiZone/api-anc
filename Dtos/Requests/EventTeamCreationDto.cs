@@ -18,10 +18,10 @@ public class EventTeamCreationDto
     public string? Description { get; set; }
 
     [Range(0, int.MaxValue, ErrorMessage = ResponseCodes.ValueOutOfRange)]
-    public int? ClaimedParticipantCount { get; set; }
+    public int ClaimedParticipantCount { get; set; }
 
     [Range(0, int.MaxValue, ErrorMessage = ResponseCodes.ValueOutOfRange)]
-    public int? ClaimedSubmissionCount { get; set; }
+    public int ClaimedSubmissionCount { get; set; }
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     public Guid DivisionId { get; set; }

@@ -247,6 +247,9 @@ public class ChartSubmissionController(
                 Message = "Must enter one and only one field between song and song submission."
             });
 
+        var (eventDivision, eventTeam, response) = await GetEvent(dto.Tags, currentUser);
+        if (response != null) return response;
+
         var illustrationUrl = dto.Illustration != null
             ? (await fileStorageService.UploadImage<Chart>(
                 dto.Title ?? (song != null ? song.Title : songSubmission!.Title), dto.Illustration, (16, 9))).Item1
@@ -255,7 +258,10 @@ public class ChartSubmissionController(
             await fileStorageService.SendUserInput(illustrationUrl, "Illustration", Request, currentUser);
 
         var chartSubmissionInfo = dto.File != null
-            ? await chartService.Upload(dto.Title ?? (song != null ? song.Title : songSubmission!.Title), dto.File)
+            ? await chartService.Upload(dto.Title ?? (song != null ? song.Title : songSubmission!.Title), dto.File,
+                eventDivision is { Anonymization: true },
+                eventDivision is { Anonymization: true } && (song is { IsOriginal: true } ||
+                                                             songSubmission is { OriginalityProof: not null }))
             : null;
 
         if (dto.File != null && chartSubmissionInfo == null)
@@ -287,7 +293,8 @@ public class ChartSubmissionController(
             VolunteerStatus = RequestStatus.Waiting,
             AdmissionStatus =
                 song != null
-                    ? song.OwnerId == currentUser.Id || song.Accessibility == Accessibility.AllowAny
+                    ?
+                    song.OwnerId == currentUser.Id || song.Accessibility == Accessibility.AllowAny
                         ? RequestStatus.Approved
                         : RequestStatus.Waiting
                     : songSubmission!.OwnerId == currentUser.Id ||
@@ -299,9 +306,17 @@ public class ChartSubmissionController(
             DateUpdated = DateTimeOffset.UtcNow
         };
 
-        var (eventDivision, eventTeam, response) =
-            await CheckForEvent(chartSubmission, currentUser, EventTaskType.PreSubmission);
-        if (response != null) return response;
+        if (eventTeam != null)
+        {
+            var firstFailure = await scriptService.RunEventTaskAsync(eventTeam.DivisionId, chartSubmission,
+                eventTeam.Id, currentUser, [EventTaskType.PreSubmission]);
+
+            if (firstFailure != null)
+                return BadRequest(new ResponseDto<EventTaskResponseDto>
+                {
+                    Status = ResponseStatus.ErrorWithData, Code = ResponseCodes.InvalidData, Data = firstFailure
+                });
+        }
 
         if (!await chartSubmissionRepository.CreateChartSubmissionAsync(chartSubmission))
             return StatusCode(StatusCodes.Status500InternalServerError,
@@ -524,15 +539,33 @@ public class ChartSubmissionController(
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
+
+        var (eventDivision, eventTeam, response) = await GetEvent(chartSubmission.Tags, currentUser);
+        if (response != null) return response;
+
         var notify = chartSubmission.VolunteerStatus != RequestStatus.Waiting;
 
         if (dto.File != null)
         {
+            Song? song = null;
+            SongSubmission? songSubmission = null;
+            if (chartSubmission.SongId != null)
+            {
+                song = await songRepository.GetSongAsync(chartSubmission.SongId.Value);
+            }
+            else if (chartSubmission.SongSubmissionId != null)
+            {
+                songSubmission =
+                    await songSubmissionRepository.GetSongSubmissionAsync(chartSubmission.SongSubmissionId.Value);
+            }
+
             var chartSubmissionInfo = await chartService.Upload(
                 chartSubmission.Title ?? (chartSubmission.SongId != null
                     ? (await songRepository.GetSongAsync(chartSubmission.SongId.Value)).Title
                     : (await songSubmissionRepository.GetSongSubmissionAsync(chartSubmission.SongSubmissionId!.Value))
-                    .Title), dto.File);
+                    .Title), dto.File, eventDivision is { Anonymization: true },
+                eventDivision is { Anonymization: true } && (song is { IsOriginal: true } ||
+                                                             songSubmission is { OriginalityProof: not null }));
             if (chartSubmissionInfo == null)
                 return BadRequest(new ResponseDto<object>
                 {
@@ -548,9 +581,17 @@ public class ChartSubmissionController(
             chartSubmission.DateUpdated = DateTimeOffset.UtcNow;
         }
 
-        var (eventDivision, eventTeam, response) =
-            await CheckForEvent(chartSubmission, currentUser, EventTaskType.PreUpdateSubmission);
-        if (response != null) return response;
+        if (eventTeam != null)
+        {
+            var firstFailure = await scriptService.RunEventTaskAsync(eventTeam.DivisionId, chartSubmission,
+                eventTeam.Id, currentUser, [EventTaskType.PreUpdateSubmission]);
+
+            if (firstFailure != null)
+                return BadRequest(new ResponseDto<EventTaskResponseDto>
+                {
+                    Status = ResponseStatus.ErrorWithData, Code = ResponseCodes.InvalidData, Data = firstFailure
+                });
+        }
 
         if (!await chartSubmissionRepository.UpdateChartSubmissionAsync(chartSubmission))
             return StatusCode(StatusCodes.Status500InternalServerError,
@@ -747,7 +788,8 @@ public class ChartSubmissionController(
 
         var normalizedTags = chartSubmission.Tags.Select(resourceService.Normalize);
         var eventDivisions = await eventDivisionRepository.GetEventDivisionsAsync(predicate: e =>
-            e.Type == EventDivisionType.Chart && e.IsStarted() && normalizedTags.Contains(e.TagName));
+            e.Type == EventDivisionType.Chart && e.Status == EventDivisionStatus.Started &&
+            normalizedTags.Contains(e.TagName));
         if (eventDivisions.Count > 0)
         {
             var eventDivision = eventDivisions.First();
@@ -1594,15 +1636,17 @@ public class ChartSubmissionController(
         return NoContent();
     }
 
-    private async Task<(EventDivision?, EventTeam?, IActionResult?)> CheckForEvent(ChartSubmission chartSubmission,
-        User currentUser, EventTaskType taskType)
+    private async Task<(EventDivision?, EventTeam?, IActionResult?)> GetEvent(IEnumerable<string> tags,
+        User currentUser)
     {
-        var normalizedTags = chartSubmission.Tags.Select(resourceService.Normalize);
+        var normalizedTags = tags.Select(resourceService.Normalize);
         var eventDivisions = await eventDivisionRepository.GetEventDivisionsAsync(predicate: e =>
-            e.Type == EventDivisionType.Chart && e.IsAvailable() && normalizedTags.Contains(e.TagName));
+            e.Type == EventDivisionType.Chart &&
+            (e.Status == EventDivisionStatus.Unveiled || e.Status == EventDivisionStatus.Started) &&
+            normalizedTags.Contains(e.TagName));
         if (eventDivisions.Count == 0) return (null, null, null);
 
-        var eventDivision = eventDivisions.FirstOrDefault(e => e.IsStarted());
+        var eventDivision = eventDivisions.FirstOrDefault(e => e.Status == EventDivisionStatus.Started);
         if (eventDivision == null)
             return (null, null,
                 BadRequest(new ResponseDto<object>
@@ -1621,10 +1665,23 @@ public class ChartSubmissionController(
                 }));
 
         var eventTeam = eventTeams.First();
+        return (eventDivision, eventTeam, null);
+    }
+
+    private async Task<(EventDivision?, EventTeam?, IActionResult?)> CheckForEvent(ChartSubmission chartSubmission,
+        User currentUser, EventTaskType taskType)
+    {
+        var result = await GetEvent(chartSubmission.Tags, currentUser);
+        if (result.Item3 != null)
+        {
+            return result;
+        }
+
+        var eventDivision = result.Item1!;
+        var eventTeam = result.Item2!;
 
         var firstFailure = await scriptService.RunEventTaskAsync(eventTeam.DivisionId, chartSubmission, eventTeam.Id,
-            currentUser,
-            [taskType]);
+            currentUser, [taskType]);
 
         if (firstFailure != null)
             return (eventDivision, eventTeam,

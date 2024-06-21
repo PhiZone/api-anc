@@ -29,7 +29,8 @@ public class EventDivisionRepository(ApplicationDbContext context, IMeilisearchS
     {
         IQueryable<EventDivision> result = context.EventDivisions;
         if (currentUserId != null)
-            result = result.Include(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
+            result = result.Include(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1))
+                .Include(e => e.Teams.Where(team => team.Participants.Any(f => f.Id == currentUserId)).Take(1));
         return (await result.FirstOrDefaultAsync(eventDivision => eventDivision.Id == id))!;
     }
 

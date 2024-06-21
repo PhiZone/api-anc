@@ -1,6 +1,7 @@
 ﻿using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using PhiZoneApi.Data;
+using PhiZoneApi.Enums;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 using PhiZoneApi.Utils;
@@ -10,12 +11,16 @@ namespace PhiZoneApi.Repositories;
 public class RecordRepository(ApplicationDbContext context, IMeilisearchService meilisearchService) : IRecordRepository
 {
     public async Task<ICollection<Record>> GetRecordsAsync(List<string>? order = null, List<bool>? desc = null,
-        int? position = 0, int? take = -1,
-        Expression<Func<Record, bool>>? predicate = null, bool queryChart = false, int? currentUserId = null)
+        int? position = 0, int? take = -1, Expression<Func<Record, bool>>? predicate = null, bool queryChart = false,
+        int? currentUserId = null, bool? showAnonymous = false)
     {
-        var result = context.Records.Include(e => e.Owner)
+        var result = context.Records
+            .Where(e => (showAnonymous != null && showAnonymous.Value) || !e.EventPresences.Any(f =>
+                f.Type == EventResourceType.Entry && f.IsAnonymous != null && f.IsAnonymous.Value))
+            .Include(e => e.Owner)
             .ThenInclude(e => e.Region)
             .Include(e => e.EventPresences)
+            .ThenInclude(e => e.Team)
             .OrderBy(order, desc);
         if (queryChart)
             result = result.Include(e => e.Chart)
@@ -52,12 +57,16 @@ public class RecordRepository(ApplicationDbContext context, IMeilisearchService 
                 .Include(e => e.Owner)
                 .ThenInclude(e => e.Region)
                 .Include(e => e.EventPresences)
+                .ThenInclude(e => e.Team)
                 .Include(e => e.Chart)
                 .ThenInclude(e => e.Song)
                 .ThenInclude(e => e.EventPresences)
                 .Include(e => e.Chart)
                 .ThenInclude(e => e.EventPresences)
-            : context.Records.Include(e => e.Owner).ThenInclude(e => e.Region).Include(e => e.EventPresences);
+            : context.Records.Include(e => e.Owner)
+                .ThenInclude(e => e.Region)
+                .Include(e => e.EventPresences)
+                .ThenInclude(e => e.Team);
         if (currentUserId != null)
             result = result.Include(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
         return (await result.FirstOrDefaultAsync(record => record.Id == id))!;
@@ -115,9 +124,12 @@ public class RecordRepository(ApplicationDbContext context, IMeilisearchService 
         return saved > 0;
     }
 
-    public async Task<int> CountRecordsAsync(Expression<Func<Record, bool>>? predicate = null)
+    public async Task<int> CountRecordsAsync(Expression<Func<Record, bool>>? predicate = null,
+        bool? showAnonymous = false)
     {
-        var result = context.Records.AsQueryable();
+        var result = context.Records.Where(e =>
+            (showAnonymous != null && showAnonymous.Value) || !e.EventPresences.Any(f =>
+                f.Type == EventResourceType.Entry && f.IsAnonymous != null && f.IsAnonymous.Value));
 
         if (predicate != null) result = result.Where(predicate);
 
@@ -127,7 +139,10 @@ public class RecordRepository(ApplicationDbContext context, IMeilisearchService 
     public async Task<ICollection<Record>> GetPersonalBests(int ownerId, int take = 19, bool queryChart = false,
         int? currentUserId = null)
     {
-        IQueryable<Record> result = context.Records.Include(e => e.Owner)
+        IQueryable<Record> result = context.Records
+            .Where(e => !e.EventPresences.Any(f =>
+                f.Type == EventResourceType.Entry && f.IsAnonymous != null && f.IsAnonymous.Value))
+            .Include(e => e.Owner)
             .ThenInclude(e => e.Region)
             .Include(e => e.EventPresences);
         if (queryChart)

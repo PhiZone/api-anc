@@ -14,9 +14,9 @@ public class EventTeamDto
 
     public ParticipationStatus Status { get; set; }
 
-    public int? ClaimedParticipantCount { get; set; }
+    public int ClaimedParticipantCount { get; set; }
 
-    public int? ClaimedSubmissionCount { get; set; }
+    public int ClaimedSubmissionCount { get; set; }
 
     public double? Score { get; set; }
 

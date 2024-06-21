@@ -76,9 +76,10 @@ public class RecordController(
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser);
+        var showAnonymous = filterDto is { RangeId: not null, RangeOwnerId: null, MinOwnerId: null, MaxOwnerId: null };
         var records = await recordRepository.GetRecordsAsync(dto.Order, dto.Desc, position, dto.PerPage, predicateExpr,
-            true, currentUser?.Id);
-        var total = await recordRepository.CountRecordsAsync(predicateExpr);
+            true, currentUser?.Id, showAnonymous);
+        var total = await recordRepository.CountRecordsAsync(predicateExpr, showAnonymous);
         var list = records.Select(e => dtoMapper.MapRecord<RecordDto>(e)).ToList();
 
         return Ok(new ResponseDto<IEnumerable<RecordDto>>
@@ -343,16 +344,24 @@ public class RecordController(
             var eventResource = new EventResource
             {
                 DivisionId = eventDivision.Id,
-                ResourceId = record.Id,
+                Resource = record,
                 Type = EventResourceType.Entry,
                 IsAnonymous = eventDivision.Anonymization,
                 TeamId = eventTeam.Id,
                 DateCreated = DateTimeOffset.UtcNow
             };
             await eventResourceRepository.CreateEventResourceAsync(eventResource);
+            if (await eventResourceRepository.CountResourcesAsync(eventDivision.Id,
+                    e => e.Type == EventResourceType.Entry && e.TeamId == eventTeam.Id) ==
+                eventTeam.ClaimedSubmissionCount)
+            {
+                eventTeam.Status = ParticipationStatus.Finished;
+                await eventTeamRepository.UpdateEventTeamAsync(eventTeam);
+            }
+
             await scriptService.RunEventTaskAsync(eventTeam.DivisionId, record, eventTeam.Id, player,
                 [EventTaskType.PostSubmission]);
-            leaderboardService.Add(eventTeam);
+            if (eventTeam.IsUnveiled) leaderboardService.Add(eventTeam);
         }
 
         return StatusCode(StatusCodes.Status201Created,

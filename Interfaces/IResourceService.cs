@@ -19,6 +19,8 @@ public interface IResourceService
 
     Task<bool> IsBlacklisted(int user1, int user2);
 
+    Task<(bool, bool)> IsPreparedOrFinished(EventTeam eventTeam);
+
     bool HasPermission(User user, UserRole role);
 
     Task<(string, List<User>)> ParseUserContent(string content);
