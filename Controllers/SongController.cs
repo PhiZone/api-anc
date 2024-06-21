@@ -75,6 +75,7 @@ public class SongController(
                       tagDto.TagsToInclude.Select(resourceService.Normalize).ToList().Contains(tag.NormalizedName))) &&
                   (tagDto.TagsToExclude == null || e.Tags.All(tag =>
                       !tagDto.TagsToExclude.Select(resourceService.Normalize).ToList().Contains(tag.NormalizedName)))));
+        var showAnonymous = filterDto is { RangeId: not null, ContainsAuthorName: null, EqualsAuthorName: null, RangeOwnerId: null, MinOwnerId: null, MaxOwnerId: null };
         IEnumerable<Song> songs;
         int total;
         if (dto.Search != null)
@@ -89,8 +90,8 @@ public class SongController(
         else
         {
             songs = await songRepository.GetSongsAsync(dto.Order, dto.Desc, position, dto.PerPage, predicateExpr,
-                currentUser?.Id);
-            total = await songRepository.CountSongsAsync(predicateExpr);
+                currentUser?.Id, showAnonymous);
+            total = await songRepository.CountSongsAsync(predicateExpr, showAnonymous);
         }
 
         var list = songs.Select(e => dtoMapper.MapSong<SongDto>(e)).ToList();

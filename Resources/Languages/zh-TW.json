@@ -71,19 +71,19 @@
     },
     {
       "Key": "event-team-join",
-      "Content": "{User} 加入了活动 {Event} 的队伍 {EventTeam}！"
+      "Content": "{User} 加入了活动 {Event}（{EventDivision}）的队伍 {EventTeam}！"
     },
     {
       "Key": "event-team-leave",
-      "Content": "{User} 退出了活动 {Event} 的队伍 {EventTeam}。"
+      "Content": "{User} 退出了活动 {Event}（{EventDivision}）的队伍 {EventTeam}。"
     },
     {
       "Key": "event-team-remove",
-      "Content": "{User} 将你移出了活动 {Event} 的队伍 {EventTeam}。"
+      "Content": "{User} 将你移出了活动 {Event}（{EventDivision}）的队伍 {EventTeam}。"
     },
     {
       "Key": "event-team-disband",
-      "Content": "{User} 解散了活动 {Event} 的队伍 {EventTeam}。"
+      "Content": "{User} 解散了活动 {Event}（{EventDivision}）的队伍 {EventTeam}。"
     },
     {
       "Key": "chapter-admission",

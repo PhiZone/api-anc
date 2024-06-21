@@ -33,7 +33,6 @@ namespace PhiZoneApi.Controllers;
 public class EventTeamController(
     IEventTeamRepository eventTeamRepository,
     IEventDivisionRepository eventDivisionRepository,
-    IEventResourceRepository eventResourceRepository,
     IEventRepository eventRepository,
     IOptions<DataSettings> dataSettings,
     IFilterService filterService,
@@ -42,6 +41,7 @@ public class EventTeamController(
     IDtoMapper dtoMapper,
     IResourceService resourceService,
     IFileStorageService fileStorageService,
+    ILeaderboardService leaderboardService,
     ILikeService likeService,
     ILikeRepository likeRepository,
     IParticipationRepository participationRepository,
@@ -150,6 +150,8 @@ public class EventTeamController(
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
         var dto = dtoMapper.MapEventTeam<EventTeamDto>(eventTeam);
+        var leaderboard = leaderboardService.ObtainEventDivisionLeaderboard(eventDivision.Id);
+        dto.Position = leaderboard.GetRank(eventTeam);
 
         return Ok(new ResponseDto<EventTeamDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
     }
@@ -345,6 +347,8 @@ public class EventTeamController(
         await scriptService.RunEventTaskAsync(eventTeam.DivisionId, (eventTeam, index), eventTeam.Id, currentUser,
             [EventTaskType.OnTeamEvaluation]);
 
+        if (eventTeam.IsUnveiled) leaderboardService.Add(eventTeam);
+
         return NoContent();
     }
 
@@ -396,8 +400,8 @@ public class EventTeamController(
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
             });
 
-        if (await eventTeamRepository.CountEventTeamsAsync(e => e.DivisionId == dto.DivisionId) >=
-            eventDivision.MaxTeamCount)
+        if (await eventTeamRepository.CountEventTeamsAsync(e =>
+                e.Status != ParticipationStatus.Banned && e.DivisionId == dto.DivisionId) >= eventDivision.MaxTeamCount)
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -557,7 +561,10 @@ public class EventTeamController(
         eventTeam.ClaimedParticipantCount = dto.ClaimedParticipantCount;
         eventTeam.ClaimedSubmissionCount = dto.ClaimedSubmissionCount;
 
-        if (await IsPrepared(eventTeam)) eventTeam.Status = ParticipationStatus.Prepared;
+        var status = await resourceService.IsPreparedOrFinished(eventTeam);
+        if (status.Item2)
+            eventTeam.Status = ParticipationStatus.Finished;
+        else if (status.Item1) eventTeam.Status = ParticipationStatus.Prepared;
 
         var firstFailure = await scriptService.RunEventTaskAsync(eventTeam.DivisionId, eventTeam, eventTeam.Id,
             currentUser, [EventTaskType.PreUpdateTeam]);
@@ -574,6 +581,8 @@ public class EventTeamController(
 
         await scriptService.RunEventTaskAsync(eventTeam.DivisionId, eventTeam, eventTeam.Id, currentUser,
             [EventTaskType.PostUpdateTeam]);
+
+        if (eventTeam.IsUnveiled) leaderboardService.Add(eventTeam);
 
         return NoContent();
     }
@@ -652,6 +661,8 @@ public class EventTeamController(
         await scriptService.RunEventTaskAsync(eventTeam.DivisionId, eventTeam, eventTeam.Id, currentUser,
             [EventTaskType.PostUpdateTeam]);
 
+        if (eventTeam.IsUnveiled) leaderboardService.Add(eventTeam);
+
         return NoContent();
     }
 
@@ -723,6 +734,8 @@ public class EventTeamController(
         await scriptService.RunEventTaskAsync(eventTeam.DivisionId, eventTeam, eventTeam.Id, currentUser,
             [EventTaskType.PostUpdateTeam]);
 
+        if (eventTeam.IsUnveiled) leaderboardService.Add(eventTeam);
+
         return NoContent();
     }
 
@@ -788,6 +801,11 @@ public class EventTeamController(
                         resourceService.GetRichText<Event>(eventEntity.Id.ToString(), eventEntity.GetDisplay())
                     },
                     {
+                        "EventDivision",
+                        resourceService.GetRichText<EventDivision>(eventDivision.Id.ToString(),
+                            eventDivision.GetDisplay())
+                    },
+                    {
                         "EventTeam",
                         resourceService.GetRichText<EventTeam>(eventTeam.Id.ToString(), eventTeam.GetDisplay())
                     }
@@ -795,6 +813,8 @@ public class EventTeamController(
 
         await scriptService.RunEventTaskAsync(eventTeam.DivisionId, eventTeam, eventTeam.Id, currentUser,
             [EventTaskType.OnDisbandment]);
+
+        leaderboardService.Remove(eventTeam);
 
         return NoContent();
     }
@@ -1011,7 +1031,7 @@ public class EventTeamController(
             key = $"phizone:eventteam:{code}";
         } while (await db.KeyExistsAsync(key));
 
-        var dto = new EventTeamInviteDto
+        var dto = new EventTeamInviteDelivererDto
         {
             TeamId = id, InviterId = currentUser.Id, Code = code, DateExpired = DateTimeOffset.UtcNow.AddHours(12)
         };
@@ -1057,16 +1077,18 @@ public class EventTeamController(
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        var invite = JsonConvert.DeserializeObject<EventTeamInviteDto>((await db.StringGetAsync(key))!)!;
+        var invite = JsonConvert.DeserializeObject<EventTeamInviteDelivererDto>((await db.StringGetAsync(key))!)!;
 
+        var inviter = (await userRepository.GetUserByIdAsync(invite.InviterId))!;
         var eventTeam = await eventTeamRepository.GetEventTeamAsync(invite.TeamId);
         var eventDivision = await eventDivisionRepository.GetEventDivisionAsync(eventTeam.DivisionId);
         var eventEntity = await eventRepository.GetEventAsync(eventDivision.EventId);
 
-        var permission = HP.Gen(HP.Update, HP.Team);
+        var permission = HP.Gen(HP.Retrieve, HP.Team);
         if (currentUser.Id != eventTeam.OwnerId &&
             !(resourceService.HasPermission(currentUser, UserRole.Administrator) || eventEntity.Hostships.Any(f =>
-                f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(permission)))))
+                f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(permission)))) &&
+            eventDivision.DateUnveiled >= DateTimeOffset.UtcNow)
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -1075,7 +1097,14 @@ public class EventTeamController(
 
         return Ok(new ResponseDto<EventTeamInviteDto>
         {
-            Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = invite
+            Status = ResponseStatus.Ok,
+            Code = ResponseCodes.Ok,
+            Data = new EventTeamInviteDto
+            {
+                Team = dtoMapper.MapEventTeam<EventTeamDto>(eventTeam),
+                Inviter = dtoMapper.MapUser<UserDto>(inviter),
+                DateExpired = invite.DateExpired
+            }
         });
     }
 
@@ -1111,7 +1140,7 @@ public class EventTeamController(
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        var invite = JsonConvert.DeserializeObject<EventTeamInviteDto>((await db.StringGetAsync(key))!)!;
+        var invite = JsonConvert.DeserializeObject<EventTeamInviteDelivererDto>((await db.StringGetAsync(key))!)!;
 
         var eventTeam = await eventTeamRepository.GetEventTeamAsync(invite.TeamId);
         var eventDivision = await eventDivisionRepository.GetEventDivisionAsync(eventTeam.DivisionId);
@@ -1120,7 +1149,8 @@ public class EventTeamController(
         var permission = HP.Gen(HP.Retrieve, HP.Team);
         if (currentUser.Id != eventTeam.OwnerId &&
             !(resourceService.HasPermission(currentUser, UserRole.Administrator) || eventEntity.Hostships.Any(f =>
-                f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(permission)))))
+                f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(permission)))) &&
+            eventDivision.DateUnveiled >= DateTimeOffset.UtcNow)
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -1155,7 +1185,13 @@ public class EventTeamController(
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
-        if (await IsPrepared(eventTeam))
+        var status = await resourceService.IsPreparedOrFinished(eventTeam);
+        if (status.Item2)
+        {
+            eventTeam.Status = ParticipationStatus.Finished;
+            await eventTeamRepository.UpdateEventTeamAsync(eventTeam);
+        }
+        else if (status.Item1)
         {
             eventTeam.Status = ParticipationStatus.Prepared;
             await eventTeamRepository.UpdateEventTeamAsync(eventTeam);
@@ -1173,6 +1209,11 @@ public class EventTeamController(
                     {
                         "Event",
                         resourceService.GetRichText<Event>(eventEntity.Id.ToString(), eventEntity.GetDisplay())
+                    },
+                    {
+                        "EventDivision",
+                        resourceService.GetRichText<EventDivision>(eventDivision.Id.ToString(),
+                            eventDivision.GetDisplay())
                     },
                     {
                         "EventTeam",
@@ -1234,7 +1275,7 @@ public class EventTeamController(
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
-        var dto = mapper.Map<ParticipationUpdateDto>(eventTeam);
+        var dto = mapper.Map<ParticipationUpdateDto>(participation);
         patchDocument.ApplyTo(dto, ModelState);
 
         if (!TryValidateModel(dto))
@@ -1343,6 +1384,11 @@ public class EventTeamController(
                         "Event", resourceService.GetRichText<Event>(eventEntity.Id.ToString(), eventEntity.GetDisplay())
                     },
                     {
+                        "EventDivision",
+                        resourceService.GetRichText<EventDivision>(eventDivision.Id.ToString(),
+                            eventDivision.GetDisplay())
+                    },
+                    {
                         "EventTeam",
                         resourceService.GetRichText<EventTeam>(eventTeam.Id.ToString(), eventTeam.GetDisplay())
                     }
@@ -1352,14 +1398,5 @@ public class EventTeamController(
             [EventTaskType.OnWithdrawal]);
 
         return NoContent();
-    }
-
-    private async Task<bool> IsPrepared(EventTeam eventTeam)
-    {
-        return eventTeam.ClaimedParticipantCount ==
-               await participationRepository.CountParticipationsAsync(e => e.TeamId == eventTeam.Id) &&
-               eventTeam.ClaimedSubmissionCount == await eventResourceRepository.CountResourcesAsync(
-                   eventTeam.DivisionId,
-                   e => e.Type == EventResourceType.Entry && e.TeamId == eventTeam.Id);
     }
 }

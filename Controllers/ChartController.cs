@@ -86,6 +86,7 @@ public class ChartController(
                   (tagDto.TagsToExclude == null || (e.Tags.All(tag => !tagsToExclude!.Contains(tag.NormalizedName)) &&
                                                     e.Song.Tags.All(tag =>
                                                         !tagsToExclude!.Contains(tag.NormalizedName))))));
+        var showAnonymous = filterDto is { RangeId: not null, ContainsAuthorName: null, EqualsAuthorName: null, RangeOwnerId: null, MinOwnerId: null, MaxOwnerId: null };
         IEnumerable<Chart> charts;
         int total;
         if (dto.Search != null)
@@ -100,8 +101,8 @@ public class ChartController(
         else
         {
             charts = await chartRepository.GetChartsAsync(dto.Order, dto.Desc, position, dto.PerPage, predicateExpr,
-                currentUser?.Id);
-            total = await chartRepository.CountChartsAsync(predicateExpr);
+                currentUser?.Id, showAnonymous);
+            total = await chartRepository.CountChartsAsync(predicateExpr, showAnonymous);
         }
 
         var list = charts.Select(e => dtoMapper.MapChart<ChartDto>(e)).ToList();
@@ -188,8 +189,7 @@ public class ChartController(
     public async Task<IActionResult> GetChartTapTapGhost([FromRoute] Guid id)
     {
         var db = redis.GetDatabase();
-        var key =
-            $"phizone:tapghost:{User.GetClaim("appId")}:{User.GetClaim("unionId")}";
+        var key = $"phizone:tapghost:{User.GetClaim("appId")}:{User.GetClaim("unionId")}";
         if (!await db.KeyExistsAsync(key)) return Unauthorized();
         var currentUser = JsonConvert.DeserializeObject<UserDetailedDto>((await db.StringGetAsync(key))!)!;
         if (!await chartRepository.ChartExistsAsync(id))

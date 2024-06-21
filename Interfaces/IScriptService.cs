@@ -18,7 +18,7 @@ public interface IScriptService
 
     void Compile(Guid id, string code, ServiceTargetType type);
 
-    void Compile(Guid id, string code, EventDivisionType type);
+    void Compile(Guid id, string code);
 
     void RemoveServiceScript(Guid id);
 

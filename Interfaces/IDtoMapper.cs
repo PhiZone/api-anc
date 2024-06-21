@@ -51,7 +51,7 @@ public interface IDtoMapper
 
     T MapEvent<T>(Event eventEntity) where T : EventDto;
 
-    T MapEventDivision<T>(EventDivision eventDivision) where T : EventDivisionDto;
+    Task<T> MapEventDivisionAsync<T>(EventDivision eventDivision) where T : EventDivisionDto;
 
     T MapEventTeam<T>(EventTeam eventTeam) where T : EventTeamDto;
 

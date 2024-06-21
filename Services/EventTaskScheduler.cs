@@ -26,7 +26,7 @@ public class EventTaskScheduler(IServiceProvider serviceProvider, ILogger<EventT
         await using var scope = serviceProvider.CreateAsyncScope();
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var tasks = await context.EventTasks
-            .Where(e => e.Type == EventTaskType.Scheduled && e.DateExecuted != null &&
+            .Where(e => e.Type == EventTaskType.Scheduled && e.Code != null && e.DateExecuted != null &&
                         e.DateExecuted > DateTimeOffset.UtcNow)
             .ToListAsync(cancellationToken);
         foreach (var task in tasks) Schedule(task);
@@ -54,11 +54,16 @@ public class EventTaskScheduler(IServiceProvider serviceProvider, ILogger<EventT
             _schedules.Remove(task.Id);
         }
 
+        if (task.DateExecuted == null) return;
+        var delay = task.DateExecuted.Value - DateTimeOffset.UtcNow;
+        if (delay.CompareTo(TimeSpan.Zero) < 0) return;
+
         _schedules.Add(task.Id,
-            new Timer(Execute, (task.Id, task.DivisionId), (task.DateExecuted! - DateTimeOffset.UtcNow).Value,
+            new Timer(Execute, (task.Id, task.DivisionId), delay,
                 Timeout.InfiniteTimeSpan));
         logger.LogInformation(LogEvents.SchedulerInfo, "[{Now}] Successfully scheduled Task \"{Name}\" at {Date}",
-            DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), task.Name, task.DateExecuted);
+            DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), task.Name,
+            task.DateExecuted.Value.LocalDateTime.ToString("yyyy-MM-dd HH:mm:ss"));
     }
 
     public void Cancel(Guid taskId)
@@ -72,7 +77,7 @@ public class EventTaskScheduler(IServiceProvider serviceProvider, ILogger<EventT
 
     private async void Execute(object? state)
     {
-        var (id, divisionId) = (KeyValuePair<Guid, Guid>)state!;
+        var (id, divisionId) = (ValueTuple<Guid, Guid>)state!;
         await using var scope = serviceProvider.CreateAsyncScope();
         var scriptService = scope.ServiceProvider.GetRequiredService<IScriptService>();
         var eventDivisionRepository = scope.ServiceProvider.GetRequiredService<IEventDivisionRepository>();

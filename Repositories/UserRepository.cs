@@ -30,7 +30,8 @@ public class UserRepository(ApplicationDbContext context) : IUserRepository
     {
         IQueryable<User> result = context.Users.Include(e => e.Region)
             .Include(e => e.ApplicationLinks.Where(link => link.RemoteUserId != null))
-            .ThenInclude(e => e.Application);
+            .ThenInclude(e => e.Application)
+            .Include(e => e.Hostships);
         if (currentUserId != null)
             result = result.Include(e => e.FollowerRelations.Where(relation =>
                     relation.FollowerId == currentUserId && relation.Type != UserRelationType.Blacklisted)

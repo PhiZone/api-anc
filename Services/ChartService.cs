@@ -11,15 +11,14 @@ using PhiZoneApi.Models;
 
 namespace PhiZoneApi.Services;
 
-public class ChartService(IFileStorageService fileStorageService, ILogger<ChartService> logger) : IChartService
+public partial class ChartService(IFileStorageService fileStorageService, ILogger<ChartService> logger) : IChartService
 {
-    private static readonly Regex PecCommandRegex = new("^(-?[0-9]+)|(n[1-4]|bp|cp|cm|cd|cr|ca|cf|cv|#|&)[ -.0-9]+$");
-
-    public async Task<(string, string, ChartFormat, int)?> Upload(string fileName, IFormFile file)
+    public async Task<(string, string, ChartFormat, int)?> Upload(string fileName, IFormFile file,
+        bool anonymizeChart = false, bool anonymizeSong = false)
     {
         var validationResult = await Validate(file);
         if (validationResult == null) return null;
-        return await Upload(validationResult.Value, fileName);
+        return await Upload(validationResult.Value, fileName, anonymizeChart, anonymizeSong);
     }
 
     public async Task<(string, string, ChartFormat, int)?> Upload(string fileName, string filePath)
@@ -42,10 +41,10 @@ public class ChartService(IFileStorageService fileStorageService, ILogger<ChartS
     }
 
     private async Task<(string, string, ChartFormat, int)> Upload((ChartFormat, ChartFormatDto, int) validationResult,
-        string fileName)
+        string fileName, bool anonymizeChart = false, bool anonymizeSong = false)
     {
         var serialized = validationResult.Item1 == ChartFormat.RpeJson
-            ? Serialize(Standardize((RpeJsonDto)validationResult.Item2))
+            ? Serialize(Standardize((RpeJsonDto)validationResult.Item2, anonymizeChart, anonymizeSong))
             : Serialize(Standardize((PecDto)validationResult.Item2));
         var stream = new MemoryStream(Encoding.UTF8.GetBytes(serialized));
         var uploadResult =
@@ -66,16 +65,24 @@ public class ChartService(IFileStorageService fileStorageService, ILogger<ChartS
         return null;
     }
 
-    private static RpeJsonDto Standardize(RpeJsonDto dto)
+    private static RpeJsonDto Standardize(RpeJsonDto dto, bool anonymizeChart = false, bool anonymizeSong = false)
     {
-        dto.BpmList.Sort();
-        foreach (var line in dto.JudgeLineList)
+        if (anonymizeChart)
         {
-            if (line == null) continue;
+            dto.Meta.Charter = "Anonymous";
+        }
+
+        if (anonymizeSong)
+        {
+            dto.Meta.Composer = "Anonymous";
+        }
+
+        dto.BpmList.Sort();
+        foreach (var line in dto.JudgeLineList.OfType<JudgeLine>())
+        {
             if (line.EventLayers != null)
-                foreach (var layer in line.EventLayers)
+                foreach (var layer in line.EventLayers.OfType<EventLayer>())
                 {
-                    if (layer == null) continue;
                     layer.AlphaEvents?.Sort();
                     layer.MoveXEvents?.Sort();
                     layer.MoveYEvents?.Sort();
@@ -197,7 +204,7 @@ public class ChartService(IFileStorageService fileStorageService, ILogger<ChartS
         return dto.NoteCommands.Count(command => !command.IsFake);
     }
 
-    private RpeJsonDto? ReadRpe(string input)
+    private static RpeJsonDto? ReadRpe(string input)
     {
         try
         {
@@ -453,7 +460,7 @@ public class ChartService(IFileStorageService fileStorageService, ILogger<ChartS
         {
             foreach (var line in input.Split(GetLineSeparator(input)))
             {
-                if (line == string.Empty || !PecCommandRegex.IsMatch(line)) continue;
+                if (line == string.Empty || !PecCommandRegex().IsMatch(line)) continue;
 
                 if (int.TryParse(line, out var number))
                 {
@@ -611,4 +618,7 @@ public class ChartService(IFileStorageService fileStorageService, ILogger<ChartS
     {
         return input.Contains("\r\n") ? "\r\n" : input.Contains('\r') ? "\r" : "\n";
     }
+
+    [GeneratedRegex("^(-?[0-9]+)|(n[1-4]|bp|cp|cm|cd|cr|ca|cf|cv|#|&)[ -.0-9]+$")]
+    private static partial Regex PecCommandRegex();
 }

@@ -9,7 +9,7 @@ public interface ISongRepository
 {
     Task<ICollection<Song>> GetSongsAsync(List<string>? order = null, List<bool>? desc = null, int? position = 0,
         int? take = -1,
-        Expression<Func<Song, bool>>? predicate = null, int? currentUserId = null);
+        Expression<Func<Song, bool>>? predicate = null, int? currentUserId = null, bool? showAnonymous = false);
 
     Task<Song> GetSongAsync(Guid id, int? currentUserId = null);
 
@@ -27,7 +27,5 @@ public interface ISongRepository
 
     Task<bool> SaveAsync();
 
-    Task<int> CountSongsAsync(Expression<Func<Song, bool>>? predicate = null);
-
-    Task<int> CountSongChartsAsync(Guid id, Expression<Func<Chart, bool>>? predicate = null);
+    Task<int> CountSongsAsync(Expression<Func<Song, bool>>? predicate = null, bool? showAnonymous = false);
 }

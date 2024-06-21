@@ -855,7 +855,7 @@ public class SongSubmissionController(
 
         var normalizedTags = songSubmission.Tags.Select(resourceService.Normalize);
         var eventDivisions = await eventDivisionRepository.GetEventDivisionsAsync(predicate: e =>
-            e.Type == EventDivisionType.Song && e.IsStarted() && normalizedTags.Contains(e.TagName));
+            e.Type == EventDivisionType.Song && e.Status == EventDivisionStatus.Started && normalizedTags.Contains(e.TagName));
         if (eventDivisions.Count > 0)
         {
             var eventDivision = eventDivisions.First();
@@ -1192,10 +1192,12 @@ public class SongSubmissionController(
     {
         var normalizedTags = songSubmission.Tags.Select(resourceService.Normalize);
         var eventDivisions = await eventDivisionRepository.GetEventDivisionsAsync(predicate: e =>
-            e.Type == EventDivisionType.Song && e.IsAvailable() && normalizedTags.Contains(e.TagName));
+            e.Type == EventDivisionType.Song &&
+            (e.Status == EventDivisionStatus.Unveiled || e.Status == EventDivisionStatus.Started) &&
+            normalizedTags.Contains(e.TagName));
         if (eventDivisions.Count == 0) return (null, null, null);
 
-        var eventDivision = eventDivisions.FirstOrDefault(e => e.IsStarted());
+        var eventDivision = eventDivisions.FirstOrDefault(e => e.Status == EventDivisionStatus.Started);
         if (eventDivision == null)
             return (null, null,
                 BadRequest(new ResponseDto<object>
@@ -1216,8 +1218,7 @@ public class SongSubmissionController(
         var eventTeam = eventTeams.First();
 
         var firstFailure = await scriptService.RunEventTaskAsync(eventTeam.DivisionId, songSubmission, eventTeam.Id,
-            currentUser,
-            [taskType]);
+            currentUser, [taskType]);
 
         if (firstFailure != null)
             return (eventDivision, eventTeam,

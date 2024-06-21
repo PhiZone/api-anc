@@ -31,10 +31,4 @@ public class EventTaskRequestDto
     public Guid DivisionId { get; set; }
 
     public DateTimeOffset? DateExecuted { get; set; }
-
-    [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
-    public DateTimeOffset DateCreated { get; set; }
-
-    [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
-    public DateTimeOffset DateUpdated { get; set; }
 }

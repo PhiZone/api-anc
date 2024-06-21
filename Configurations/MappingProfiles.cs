@@ -9,8 +9,8 @@ public class MappingProfiles : Profile
 {
     public MappingProfiles()
     {
-        CreateMap<User, UserDto>().ForMember(x => x.Role, opt => opt.Ignore());
-        CreateMap<User, PositionalUserDto>().ForMember(x => x.Role, opt => opt.Ignore());
+        CreateMap<User, UserDto>();
+        CreateMap<User, PositionalUserDto>();
         CreateMap<User, UserDetailedDto>();
         CreateMap<User, UserUpdateDto>();
         CreateMap<UserDetailedDto, UserDto>();
@@ -24,9 +24,13 @@ public class MappingProfiles : Profile
         CreateMap<Collection, CollectionAdmitterDto>();
         CreateMap<Collection, CollectionUpdateDto>();
         CreateMap<Song, SongDto>();
+        CreateMap<Song, EventSongPromptDto>();
+        CreateMap<Song, EventSongEntryDto>();
         CreateMap<Song, SongAdmitteeDto>();
         CreateMap<Song, SongUpdateDto>().ForMember(x => x.Tags, opt => opt.Ignore());
         CreateMap<Chart, ChartDto>();
+        CreateMap<Chart, EventChartPromptDto>();
+        CreateMap<Chart, EventChartEntryDto>();
         CreateMap<Chart, ChartDetailedDto>();
         CreateMap<Chart, ChartAdmitteeDto>();
         CreateMap<Chart, ChartUpdateDto>().ForMember(x => x.Tags, opt => opt.Ignore());
@@ -35,6 +39,7 @@ public class MappingProfiles : Profile
         CreateMap<ChartAssetSubmission, ChartAssetSubmissionDto>();
         CreateMap<ChartAssetSubmission, ChartAssetUpdateDto>();
         CreateMap<Record, RecordDto>();
+        CreateMap<Chart, EventRecordEntryDto>();
         CreateMap<Tag, TagDto>();
         CreateMap<TagRequestDto, Tag>();
         CreateMap<Like, LikeDto>();
@@ -57,6 +62,7 @@ public class MappingProfiles : Profile
         CreateMap<EventTask, EventTaskDto>();
         CreateMap<EventTask, EventTaskRequestDto>();
         CreateMap<Hostship, HostshipDto>();
+        CreateMap<Hostship, HostshipDetailedDto>();
         CreateMap<Hostship, HostshipRequestDto>();
         CreateMap<EventResource, EventResourceDto>();
         CreateMap<EventResource, EventResourceRequestDto>();

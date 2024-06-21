@@ -28,7 +28,7 @@ public class LeaderboardService : ILeaderboardService
         foreach (var eventDivision in await context.EventDivisions.ToListAsync(cancellationToken))
         {
             var leaderboard = ObtainEventDivisionLeaderboard(eventDivision.Id);
-            foreach (var eventTeam in context.EventTeams.Include(e => e.Participations)
+            foreach (var eventTeam in context.EventTeams.Include(e => e.Participations.OrderBy(f => f.DateCreated))
                          .ThenInclude(e => e.Participant)
                          .ThenInclude(e => e.Region)
                          .Where(e => e.DivisionId == eventDivision.Id && e.IsUnveiled))
@@ -40,7 +40,6 @@ public class LeaderboardService : ILeaderboardService
     public Leaderboard<Record> ObtainChartLeaderboard(Guid chart)
     {
         if (_chartLeaderboards.TryGetValue(chart, out var leaderboard)) return leaderboard;
-
         leaderboard = new Leaderboard<Record>();
         _chartLeaderboards.Add(chart, leaderboard);
         return leaderboard;
@@ -49,7 +48,6 @@ public class LeaderboardService : ILeaderboardService
     public Leaderboard<EventTeam> ObtainEventDivisionLeaderboard(Guid eventDivision)
     {
         if (_eventDivisionLeaderboards.TryGetValue(eventDivision, out var leaderboard)) return leaderboard;
-
         leaderboard = new Leaderboard<EventTeam>();
         _eventDivisionLeaderboards.Add(eventDivision, leaderboard);
         return leaderboard;
@@ -60,9 +58,7 @@ public class LeaderboardService : ILeaderboardService
         var leaderboard = ObtainChartLeaderboard(record.ChartId);
         var existingItem = leaderboard.FirstOrDefault(e => e.OwnerId == record.OwnerId);
         if (existingItem == null) return leaderboard.Add(record);
-
         if (existingItem.CompareTo(record) <= 0) return false;
-
         return leaderboard.Remove(existingItem, false) && leaderboard.Add(record);
     }
 
@@ -76,9 +72,6 @@ public class LeaderboardService : ILeaderboardService
         var leaderboard = ObtainEventDivisionLeaderboard(eventTeam.DivisionId);
         var existingItem = leaderboard.FirstOrDefault(e => e.Id == eventTeam.Id);
         if (existingItem == null) return leaderboard.Add(eventTeam);
-
-        if (existingItem.CompareTo(eventTeam) <= 0) return false;
-
         return leaderboard.Remove(existingItem, false) && leaderboard.Add(eventTeam);
     }
 

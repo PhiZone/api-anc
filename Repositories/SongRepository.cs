@@ -1,6 +1,7 @@
 ﻿using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using PhiZoneApi.Data;
+using PhiZoneApi.Enums;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 using PhiZoneApi.Utils;
@@ -12,13 +13,23 @@ namespace PhiZoneApi.Repositories;
 public class SongRepository(ApplicationDbContext context, IMeilisearchService meilisearchService) : ISongRepository
 {
     public async Task<ICollection<Song>> GetSongsAsync(List<string>? order = null, List<bool>? desc = null,
-        int? position = 0, int? take = -1,
-        Expression<Func<Song, bool>>? predicate = null, int? currentUserId = null)
+        int? position = 0, int? take = -1, Expression<Func<Song, bool>>? predicate = null, int? currentUserId = null,
+        bool? showAnonymous = false)
     {
-        var result = context.Songs.Include(e => e.Charts)
-            .ThenInclude(e => e.EventPresences).ThenInclude(e => e.Team).ThenInclude(e => e!.Participations)
+        var result = context.Songs
+            .Where(e => (showAnonymous != null && showAnonymous.Value) ||
+                        (!e.EventPresences.Any(f =>
+                             f.Type == EventResourceType.Entry && f.IsAnonymous != null && f.IsAnonymous.Value) &&
+                         !e.Charts.Any(f => f.EventPresences.Any(g =>
+                             g.Type == EventResourceType.Entry && g.IsAnonymous != null && g.IsAnonymous.Value &&
+                             g.Team != null && g.Team.Participants.Any(h => h.Id == e.OwnerId)))))
+            .Include(e => e.Charts)
+            .ThenInclude(e => e.EventPresences)
+            .ThenInclude(e => e.Team)
+            .ThenInclude(e => e!.Participations)
             .Include(e => e.Tags)
             .Include(e => e.EventPresences)
+            .ThenInclude(e => e.Team)
             .OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
         if (currentUserId != null)
@@ -30,9 +41,12 @@ public class SongRepository(ApplicationDbContext context, IMeilisearchService me
     public async Task<Song> GetSongAsync(Guid id, int? currentUserId = null)
     {
         IQueryable<Song> result = context.Songs.Include(e => e.Charts)
-            .ThenInclude(e => e.EventPresences).ThenInclude(e => e.Team).ThenInclude(e => e!.Participations)
+            .ThenInclude(e => e.EventPresences)
+            .ThenInclude(e => e.Team)
+            .ThenInclude(e => e!.Participations)
             .Include(e => e.Tags)
-            .Include(e => e.EventPresences);
+            .Include(e => e.EventPresences)
+            .ThenInclude(e => e.Team);
         if (currentUserId != null)
             result = result.Include(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
         return (await result.FirstOrDefaultAsync(song => song.Id == id))!;
@@ -41,8 +55,17 @@ public class SongRepository(ApplicationDbContext context, IMeilisearchService me
     public async Task<Song?> GetRandomSongAsync(Expression<Func<Song, bool>>? predicate = null,
         int? currentUserId = null)
     {
-        IQueryable<Song> result = context.Songs.Include(e => e.Charts)
-            .ThenInclude(e => e.EventPresences).ThenInclude(e => e.Team).ThenInclude(e => e!.Participations)
+        IQueryable<Song> result = context.Songs
+            .Where(e =>
+                (!e.EventPresences.Any(f =>
+                     f.Type == EventResourceType.Entry && f.IsAnonymous != null && f.IsAnonymous.Value) &&
+                 !e.Charts.Any(f => f.EventPresences.Any(g =>
+                     g.Type == EventResourceType.Entry && g.IsAnonymous != null && g.IsAnonymous.Value &&
+                     g.Team != null && g.Team.Participants.Any(h => h.Id == e.OwnerId)))))
+            .Include(e => e.Charts)
+            .ThenInclude(e => e.EventPresences)
+            .ThenInclude(e => e.Team)
+            .ThenInclude(e => e!.Participations)
             .Include(e => e.Tags)
             .Include(e => e.EventPresences)
             .OrderBy(song => EF.Functions.Random());
@@ -92,17 +115,15 @@ public class SongRepository(ApplicationDbContext context, IMeilisearchService me
         return saved > 0;
     }
 
-    public async Task<int> CountSongsAsync(Expression<Func<Song, bool>>? predicate = null)
+    public async Task<int> CountSongsAsync(Expression<Func<Song, bool>>? predicate = null, bool? showAnonymous = false)
     {
-        var result = context.Songs.AsQueryable();
-        if (predicate != null) result = result.Where(predicate);
-        return await result.CountAsync();
-    }
-
-    public async Task<int> CountSongChartsAsync(Guid id, Expression<Func<Chart, bool>>? predicate = null)
-    {
-        var song = (await context.Songs.FirstOrDefaultAsync(song => song.Id == id))!;
-        var result = context.Charts.Where(chart => chart.Song.Id == song.Id);
+        var result = context.Songs.Where(e =>
+            (showAnonymous != null && showAnonymous.Value) ||
+            (!e.EventPresences.Any(f =>
+                f.Type == EventResourceType.Entry && f.IsAnonymous != null && f.IsAnonymous.Value) && !e.Charts.Any(f =>
+                f.EventPresences.Any(g =>
+                    g.Type == EventResourceType.Entry && g.IsAnonymous != null && g.IsAnonymous.Value &&
+                    g.Team != null && g.Team.Participants.Any(h => h.Id == e.OwnerId)))));
         if (predicate != null) result = result.Where(predicate);
         return await result.CountAsync();
     }

@@ -4,7 +4,7 @@ public enum ParticipationStatus
 {
     Registered,
     Prepared,
-    Submitted,
-    Disqualified,
+    Finished,
+    Eliminated,
     Banned
 }

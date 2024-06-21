@@ -13,4 +13,6 @@ public class UserDetailedDto : UserDto
     public bool TwoFactorEnabled { get; set; }
 
     public int Notifications { get; set; }
+
+    public List<HostshipDetailedDto> Hostships { get; set; } = [];
 }

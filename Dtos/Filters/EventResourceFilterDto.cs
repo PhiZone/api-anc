@@ -9,7 +9,7 @@ public class EventResourceFilterDto : FilterDto<EventResource>
 
     public List<Guid>? RangeResourceId { get; set; }
 
-    public List<EventResourceType>? Type { get; set; }
+    public List<EventResourceType>? RangeType { get; set; }
 
     public string? ContainsLabel { get; set; }
 

@@ -22,4 +22,7 @@ public static class LogEvents
     public const int FileMigration = 4002;
 
     public const int DataConsistencyMaintenance = 5000;
+
+    public const int ScriptInfo = 6000;
+    public const int ScriptFailure = 6001;
 }

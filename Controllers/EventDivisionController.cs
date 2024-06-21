@@ -96,7 +96,9 @@ public class EventDivisionController(
             total = await eventDivisionRepository.CountEventDivisionsAsync(predicateExpr);
         }
 
-        var list = eventDivisions.Select(dtoMapper.MapEventDivision<EventDivisionDto>).ToList();
+        List<EventDivisionDto> list = [];
+        foreach (var eventDivision in eventDivisions)
+            list.Add(await dtoMapper.MapEventDivisionAsync<EventDivisionDto>(eventDivision));
 
         return Ok(new ResponseDto<IEnumerable<EventDivisionDto>>
         {
@@ -148,7 +150,7 @@ public class EventDivisionController(
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        var dto = dtoMapper.MapEventDivision<EventDivisionDto>(eventDivision);
+        var dto = await dtoMapper.MapEventDivisionAsync<EventDivisionDto>(eventDivision);
 
         return Ok(new ResponseDto<EventDivisionDto>
         {
@@ -391,7 +393,8 @@ public class EventDivisionController(
     }
 
     /// <summary>
-    ///     Retrieves song entries of a specific event division.
+    ///     Retrieves song entries of a specific event division. Note that the search string and authorship-related filters are
+    ///     disabled for divisions that require anonymization.
     /// </summary>
     /// <param name="id">An event division's ID.</param>
     /// <returns>An array of songs.</returns>
@@ -428,32 +431,32 @@ public class EventDivisionController(
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
             });
 
+        if (filterDto != null && eventDivision.Anonymization)
+        {
+            filterDto.RangeOwnerId = null;
+            filterDto.MinOwnerId = null;
+            filterDto.MaxOwnerId = null;
+            filterDto.ContainsAuthorName = null;
+            filterDto.EqualsAuthorName = null;
+        }
+
         dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
             dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser,
             e => e.EventPresences.Any(f => f.DivisionId == id));
-        IEnumerable<Song> songs;
-        int total;
-        if (dto.Search != null)
-        {
-            var result = await meilisearchService.SearchAsync<Song>(dto.Search, dto.PerPage, dto.Page);
-            var idList = result.Hits.Select(item => item.Id).ToList();
-            songs = (await songRepository.GetSongsAsync(predicate: e => idList.Contains(e.Id))).OrderBy(e =>
-                idList.IndexOf(e.Id));
-            total = result.TotalHits;
-        }
-        else
-        {
-            songs = await songRepository.GetSongsAsync(dto.Order, dto.Desc, position, dto.PerPage, predicateExpr);
-            total = await songRepository.CountSongsAsync(predicateExpr);
-        }
+        IEnumerable<Song> songs = await songRepository.GetSongsAsync(dto.Order, dto.Desc, position, dto.PerPage,
+            predicateExpr, showAnonymous: true);
+        var total = await songRepository.CountSongsAsync(predicateExpr, showAnonymous: true);
 
         var list = songs.Select(song =>
         {
-            var songDto = mapper.Map<EventSongEntryDto>(song);
-            songDto.TeamId = song.EventPresences.First(f => f.DivisionId == id).TeamId!.Value;
+            var songDto = dtoMapper.MapSong<EventSongEntryDto>(song);
+            var team = song.EventPresences
+                .FirstOrDefault(f => f.IsAnonymous != null && !f.IsAnonymous.Value && f.DivisionId == id)
+                ?.Team;
+            songDto.Team = team != null ? dtoMapper.MapEventTeam<EventTeamDto>(team) : null;
             return songDto;
         });
 
@@ -470,7 +473,8 @@ public class EventDivisionController(
     }
 
     /// <summary>
-    ///     Retrieves chart entries of a specific event division.
+    ///     Retrieves chart entries of a specific event division. Note that the search string and authorship-related filters
+    ///     are disabled for divisions that require anonymization.
     /// </summary>
     /// <param name="id">An event division's ID.</param>
     /// <returns>An array of charts.</returns>
@@ -507,32 +511,32 @@ public class EventDivisionController(
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
             });
 
+        if (filterDto != null && eventDivision.Anonymization)
+        {
+            filterDto.RangeOwnerId = null;
+            filterDto.MinOwnerId = null;
+            filterDto.MaxOwnerId = null;
+            filterDto.ContainsAuthorName = null;
+            filterDto.EqualsAuthorName = null;
+        }
+
         dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
             dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser,
             e => e.EventPresences.Any(f => f.DivisionId == id));
-        IEnumerable<Chart> charts;
-        int total;
-        if (dto.Search != null)
-        {
-            var result = await meilisearchService.SearchAsync<Chart>(dto.Search, dto.PerPage, dto.Page);
-            var idList = result.Hits.Select(item => item.Id).ToList();
-            charts = (await chartRepository.GetChartsAsync(predicate: e => idList.Contains(e.Id))).OrderBy(e =>
-                idList.IndexOf(e.Id));
-            total = result.TotalHits;
-        }
-        else
-        {
-            charts = await chartRepository.GetChartsAsync(dto.Order, dto.Desc, position, dto.PerPage, predicateExpr);
-            total = await chartRepository.CountChartsAsync(predicateExpr);
-        }
+        IEnumerable<Chart> charts = await chartRepository.GetChartsAsync(dto.Order, dto.Desc, position, dto.PerPage,
+            predicateExpr, showAnonymous: true);
+        var total = await chartRepository.CountChartsAsync(predicateExpr, showAnonymous: true);
 
         var list = charts.Select(chart =>
         {
-            var chartDto = mapper.Map<EventChartEntryDto>(chart);
-            chartDto.TeamId = chart.EventPresences.First(f => f.DivisionId == id).TeamId!.Value;
+            var chartDto = dtoMapper.MapChart<EventChartEntryDto>(chart);
+            var team = chart.EventPresences
+                .FirstOrDefault(f => f.IsAnonymous != null && !f.IsAnonymous.Value && f.DivisionId == id)
+                ?.Team;
+            chartDto.Team = team != null ? dtoMapper.MapEventTeam<EventTeamDto>(team) : null;
             return chartDto;
         });
 
@@ -549,7 +553,8 @@ public class EventDivisionController(
     }
 
     /// <summary>
-    ///     Retrieves record entries of a specific event division.
+    ///     Retrieves record entries of a specific event division. Note that the search string and authorship-related filters
+    ///     are disabled for divisions that require anonymization.
     /// </summary>
     /// <param name="id">An event division's ID.</param>
     /// <returns>An array of records.</returns>
@@ -580,32 +585,31 @@ public class EventDivisionController(
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
+
+        if (filterDto != null && eventDivision.Anonymization)
+        {
+            filterDto.RangeOwnerId = null;
+            filterDto.MinOwnerId = null;
+            filterDto.MaxOwnerId = null;
+        }
+
         dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
             dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser,
             e => e.EventPresences.Any(f => f.DivisionId == id));
-        IEnumerable<Record> records;
-        int total;
-        if (dto.Search != null)
-        {
-            var result = await meilisearchService.SearchAsync<Record>(dto.Search, dto.PerPage, dto.Page);
-            var idList = result.Hits.Select(item => item.Id).ToList();
-            records = (await recordRepository.GetRecordsAsync(predicate: e => idList.Contains(e.Id))).OrderBy(e =>
-                idList.IndexOf(e.Id));
-            total = result.TotalHits;
-        }
-        else
-        {
-            records = await recordRepository.GetRecordsAsync(dto.Order, dto.Desc, position, dto.PerPage, predicateExpr);
-            total = await recordRepository.CountRecordsAsync(predicateExpr);
-        }
+        IEnumerable<Record> records = await recordRepository.GetRecordsAsync(dto.Order, dto.Desc, position, dto.PerPage,
+            predicateExpr, showAnonymous: true);
+        var total = await recordRepository.CountRecordsAsync(predicateExpr, showAnonymous: true);
 
         var list = records.Select(record =>
         {
-            var recordDto = mapper.Map<EventRecordEntryDto>(record);
-            recordDto.TeamId = record.EventPresences.First(f => f.DivisionId == id).TeamId!.Value;
+            var recordDto = dtoMapper.MapRecord<EventRecordEntryDto>(record);
+            var team = record.EventPresences
+                .FirstOrDefault(f => f.IsAnonymous != null && !f.IsAnonymous.Value && f.DivisionId == id)
+                ?.Team;
+            recordDto.Team = team != null ? dtoMapper.MapEventTeam<EventTeamDto>(team) : null;
             return recordDto;
         });
 

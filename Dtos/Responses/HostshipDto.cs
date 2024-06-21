@@ -8,7 +8,5 @@ public class HostshipDto
 
     public bool IsAdmin { get; set; }
 
-    public bool IsUnveiled { get; set; }
-
     public string? Position { get; set; }
 }

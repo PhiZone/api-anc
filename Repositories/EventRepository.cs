@@ -12,12 +12,12 @@ namespace PhiZoneApi.Repositories;
 public class EventRepository(ApplicationDbContext context, IMeilisearchService meilisearchService) : IEventRepository
 {
     public async Task<ICollection<Event>> GetEventsAsync(List<string>? order = null, List<bool>? desc = null,
-        int? position = 0, int? take = -1,
-        Expression<Func<Event, bool>>? predicate = null, int? currentUserId = null)
+        int? position = 0, int? take = -1, Expression<Func<Event, bool>>? predicate = null, int? currentUserId = null)
     {
-        var result = context.Events.Include(e => e.Divisions)
+        var result = context.Events.Include(e => e.Divisions.OrderBy(f => f.DateCreated))
             .Include(e => e.Hostships)
-            .ThenInclude(e => e.User).ThenInclude(e => e.Region)
+            .ThenInclude(e => e.User)
+            .ThenInclude(e => e.Region)
             .OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
         if (currentUserId != null)
@@ -28,9 +28,10 @@ public class EventRepository(ApplicationDbContext context, IMeilisearchService m
 
     public async Task<Event> GetEventAsync(Guid id, int? currentUserId = null)
     {
-        IQueryable<Event> result = context.Events.Include(e => e.Divisions)
+        IQueryable<Event> result = context.Events.Include(e => e.Divisions.OrderBy(f => f.DateCreated))
             .Include(e => e.Hostships)
-            .ThenInclude(e => e.User).ThenInclude(e => e.Region);
+            .ThenInclude(e => e.User)
+            .ThenInclude(e => e.Region);
         if (currentUserId != null)
             result = result.Include(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
         return (await result.FirstOrDefaultAsync(eventEntity => eventEntity.Id == id))!;

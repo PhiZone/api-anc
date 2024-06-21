@@ -2,5 +2,5 @@ namespace PhiZoneApi.Dtos.Responses;
 
 public class EventRecordEntryDto : RecordDto
 {
-    public Guid TeamId { get; set; }
+    public EventTeamDto? Team { get; set; }
 }

@@ -30,6 +30,7 @@ namespace PhiZoneApi.Controllers;
 public class EventResourceController(
     IEventResourceRepository eventResourceRepository,
     IEventDivisionRepository eventDivisionRepository,
+    IEventTeamRepository eventTeamRepository,
     IEventRepository eventRepository,
     IOptions<DataSettings> dataSettings,
     IScriptService scriptService,
@@ -58,13 +59,13 @@ public class EventResourceController(
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser,
-            e => e.Division.DateUnveiled <= DateTimeOffset.UtcNow || (currentUser != null &&
-                                                                      (resourceService.HasPermission(currentUser,
-                                                                           UserRole.Administrator) ||
-                                                                       e.Division.Event.Hostships.Any(f =>
-                                                                           f.UserId == currentUser.Id &&
-                                                                           (f.IsAdmin ||
-                                                                            f.Permissions.Contains(permission))))));
+            e => currentUser != null && (resourceService.HasPermission(currentUser, UserRole.Administrator) ||
+                                         e.Division.Event.Hostships.Any(f =>
+                                             f.UserId == currentUser.Id &&
+                                             (f.IsAdmin || f.Permissions.Contains(permission))) ||
+                                         (e.Type == EventResourceType.Entry &&
+                                          ((e.IsAnonymous != null && !e.IsAnonymous.Value) || (e.Team != null &&
+                                              e.Team.Participants.Any(f => f.Id == currentUser.Id))))));
         var eventResources = await eventResourceRepository.GetEventResourcesAsync(dto.Order, dto.Desc, position,
             dto.PerPage, predicateExpr);
         var total = await eventResourceRepository.CountEventResourcesAsync(predicateExpr);
@@ -113,12 +114,21 @@ public class EventResourceController(
         var eventResource = await eventResourceRepository.GetEventResourceAsync(divisionId, resourceId);
         var eventDivision = await eventDivisionRepository.GetEventDivisionAsync(eventResource.DivisionId);
         var eventEntity = await eventRepository.GetEventAsync(eventDivision.EventId);
+        EventTeam? eventTeam = null;
+        if (eventResource.TeamId != null)
+        {
+            eventTeam = await eventTeamRepository.GetEventTeamAsync(eventResource.TeamId.Value);
+        }
+
         var permission = HP.Gen(HP.Retrieve, HP.Resource);
-        if ((currentUser == null || !(resourceService.HasPermission(currentUser, UserRole.Administrator) ||
-                                      eventEntity.Hostships.Any(f =>
-                                          f.UserId == currentUser.Id &&
-                                          (f.IsAdmin || f.Permissions.Contains(permission))))) &&
-            eventDivision.DateUnveiled >= DateTimeOffset.UtcNow)
+        if (currentUser == null || !(resourceService.HasPermission(currentUser, UserRole.Administrator) ||
+                                     eventEntity.Hostships.Any(f =>
+                                         f.UserId == currentUser.Id &&
+                                         (f.IsAdmin || f.Permissions.Contains(permission))) ||
+                                     (eventResource.Type == EventResourceType.Entry &&
+                                      ((eventResource.IsAnonymous != null && !eventResource.IsAnonymous.Value) ||
+                                       (eventTeam != null &&
+                                        eventTeam.Participants.Any(f => f.Id == currentUser.Id))))))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
@@ -151,13 +161,10 @@ public class EventResourceController(
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser,
-            e => currentUser != null &&
-                 (resourceService.HasPermission(currentUser,
-                      UserRole.Administrator) ||
-                  e.Division.Event.Hostships.Any(f =>
-                      f.UserId == currentUser.Id &&
-                      (f.IsAdmin ||
-                       f.Permissions.Contains(permission)))));
+            e => currentUser != null && (resourceService.HasPermission(currentUser, UserRole.Administrator) ||
+                                         e.Division.Event.Hostships.Any(f =>
+                                             f.UserId == currentUser.Id &&
+                                             (f.IsAdmin || f.Permissions.Contains(permission)))));
         var eventResources = await eventResourceRepository.GetEventResourcesAsync(dto.Order, dto.Desc, position,
             dto.PerPage, predicateExpr);
         var total = await eventResourceRepository.CountEventResourcesAsync(predicateExpr);
@@ -330,8 +337,7 @@ public class EventResourceController(
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
         await scriptService.RunEventTaskAsync(eventResource.DivisionId, (eventResource, index),
-            eventResource.TeamId.Value, currentUser,
-            [EventTaskType.OnEntryEvaluation]);
+            eventResource.TeamId.Value, currentUser, [EventTaskType.OnEntryEvaluation]);
 
         return NoContent();
     }
@@ -368,10 +374,8 @@ public class EventResourceController(
         var eventEntity = await eventRepository.GetEventAsync(eventDivision.EventId);
         var permission = HP.Gen(HP.Create, HP.Resource);
 
-        if (!(resourceService.HasPermission(currentUser, UserRole.Administrator) ||
-              eventEntity.Hostships.Any(f =>
-                  f.UserId == currentUser.Id &&
-                  (f.IsAdmin || f.Permissions.Contains(permission)))))
+        if (!(resourceService.HasPermission(currentUser, UserRole.Administrator) || eventEntity.Hostships.Any(f =>
+                f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(permission)))))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -434,10 +438,8 @@ public class EventResourceController(
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         var permission = HP.Gen(HP.Update, HP.Resource);
-        if (!(resourceService.HasPermission(currentUser, UserRole.Administrator) ||
-              eventEntity.Hostships.Any(f =>
-                  f.UserId == currentUser.Id &&
-                  (f.IsAdmin || f.Permissions.Contains(permission)))))
+        if (!(resourceService.HasPermission(currentUser, UserRole.Administrator) || eventEntity.Hostships.Any(f =>
+                f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(permission)))))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -468,7 +470,6 @@ public class EventResourceController(
         eventResource.Description = dto.Description;
         eventResource.IsAnonymous = dto.IsAnonymous;
         eventResource.TeamId = dto.TeamId;
-        eventResource.DateCreated = DateTimeOffset.UtcNow;
 
         if (!await eventResourceRepository.UpdateEventResourceAsync(eventResource))
             return StatusCode(StatusCodes.Status500InternalServerError,
@@ -512,10 +513,8 @@ public class EventResourceController(
         var eventEntity = await eventRepository.GetEventAsync(eventDivision.EventId);
 
         var permission = HP.Gen(HP.Remove, HP.Resource);
-        if (!(resourceService.HasPermission(currentUser, UserRole.Administrator) ||
-              eventEntity.Hostships.Any(f =>
-                  f.UserId == currentUser.Id &&
-                  (f.IsAdmin || f.Permissions.Contains(permission)))))
+        if (!(resourceService.HasPermission(currentUser, UserRole.Administrator) || eventEntity.Hostships.Any(f =>
+                f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(permission)))))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {

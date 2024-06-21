@@ -164,10 +164,8 @@ public class EventController(
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser,
             e => (e.EventId == id && e.DateUnveiled <= DateTimeOffset.UtcNow) || (currentUser != null &&
-                (resourceService.HasPermission(currentUser,
-                     UserRole.Administrator) ||
-                 e.Event.Hostships.Any(f =>
-                     f.UserId == currentUser.Id))));
+                (resourceService.HasPermission(currentUser, UserRole.Administrator) ||
+                 e.Event.Hostships.Any(f => f.UserId == currentUser.Id))));
         IEnumerable<EventDivision> eventDivisions;
         int total;
         if (dto.Search != null)
@@ -175,8 +173,8 @@ public class EventController(
             var result = await meilisearchService.SearchAsync<EventDivision>(dto.Search, dto.PerPage, dto.Page);
             var idList = result.Hits.Select(item => item.Id).ToList();
             eventDivisions =
-                (await eventDivisionRepository.GetEventDivisionsAsync(predicate:
-                    e => idList.Contains(e.Id), currentUserId: currentUser?.Id)).OrderBy(e => idList.IndexOf(e.Id));
+                (await eventDivisionRepository.GetEventDivisionsAsync(predicate: e => idList.Contains(e.Id),
+                    currentUserId: currentUser?.Id)).OrderBy(e => idList.IndexOf(e.Id));
             total = result.TotalHits;
         }
         else
@@ -186,7 +184,9 @@ public class EventController(
             total = await eventDivisionRepository.CountEventDivisionsAsync(predicateExpr);
         }
 
-        var list = eventDivisions.Select(dtoMapper.MapEventDivision<EventDivisionDto>).ToList();
+        List<EventDivisionDto> list = [];
+        foreach (var eventDivision in eventDivisions)
+            list.Add(await dtoMapper.MapEventDivisionAsync<EventDivisionDto>(eventDivision));
 
         return Ok(new ResponseDto<IEnumerable<EventDivisionDto>>
         {
@@ -252,10 +252,7 @@ public class EventController(
 
         await hostshipRepository.CreateHostshipAsync(new Hostship
         {
-            EventId = eventEntity.Id,
-            UserId = dto.OwnerId,
-            IsAdmin = true,
-            IsUnveiled = true
+            EventId = eventEntity.Id, UserId = dto.OwnerId, IsAdmin = true, IsUnveiled = true
         });
 
         return StatusCode(StatusCodes.Status201Created);

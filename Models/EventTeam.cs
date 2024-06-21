@@ -5,6 +5,7 @@ namespace PhiZoneApi.Models;
 
 public class EventTeam : LikeableResource, IComparable<EventTeam>
 {
+    private readonly List<int> _statusPriorities = [2, 1, 0, 3, 4];
     public string Name { get; set; } = null!;
 
     public string? Icon { get; set; }
@@ -13,9 +14,9 @@ public class EventTeam : LikeableResource, IComparable<EventTeam>
 
     public ParticipationStatus Status { get; set; }
 
-    public int? ClaimedParticipantCount { get; set; }
+    public int ClaimedParticipantCount { get; set; }
 
-    public int? ClaimedSubmissionCount { get; set; }
+    public int ClaimedSubmissionCount { get; set; }
 
     public bool IsUnveiled { get; set; }
 
@@ -35,6 +36,13 @@ public class EventTeam : LikeableResource, IComparable<EventTeam>
     {
         if (ReferenceEquals(this, other)) return 0;
         if (ReferenceEquals(null, other)) return 1;
+        // ReSharper disable once ConvertIfStatementToSwitchStatement
+        if (Score == null && other.Score == null)
+        {
+            var result = _statusPriorities.IndexOf((int)Status).CompareTo(_statusPriorities.IndexOf((int)other.Status));
+            return result != 0 ? result : DateCreated.CompareTo(other.DateCreated);
+        }
+
         if (Score == null) return 1;
         if (other.Score == null) return -1;
         if (Math.Abs(Score.Value - other.Score.Value) < 1e-5) return 0;

@@ -81,7 +81,7 @@ public class SubmissionService(
             var (eventDivision, eventTeam) = await GetEventInfo(songSubmission);
             if (eventDivision != null && eventTeam != null)
             {
-                await CreateEventResource(eventDivision, eventTeam, song.Id, owner);
+                await CreateEventResource(eventDivision, eventTeam, song, owner);
                 broadcast = broadcast && !eventDivision.Anonymization;
             }
 
@@ -141,7 +141,7 @@ public class SubmissionService(
                     await eventResourceRepository.RemoveEventResourceAsync(existingEventResource.DivisionId, song.Id);
 
                 if (existingEventResources.All(e => e.DivisionId != eventDivision.Id))
-                    await CreateEventResource(eventDivision, eventTeam, song.Id, owner);
+                    await CreateEventResource(eventDivision, eventTeam, song, owner);
             }
         }
 
@@ -260,7 +260,7 @@ public class SubmissionService(
             var (eventDivision, eventTeam) = await GetEventInfo(chartSubmission);
             if (eventDivision != null && eventTeam != null)
             {
-                await CreateEventResource(eventDivision, eventTeam, chart.Id, owner);
+                await CreateEventResource(eventDivision, eventTeam, chart, owner);
                 broadcast = broadcast && !chart.IsHidden && !eventDivision.Anonymization;
             }
 
@@ -318,7 +318,7 @@ public class SubmissionService(
                     await eventResourceRepository.RemoveEventResourceAsync(existingEventResource.DivisionId, chart.Id);
 
                 if (existingEventResources.All(e => e.DivisionId != eventDivision.Id))
-                    await CreateEventResource(eventDivision, eventTeam, chart.Id, owner);
+                    await CreateEventResource(eventDivision, eventTeam, chart, owner);
             }
         }
 
@@ -426,7 +426,7 @@ public class SubmissionService(
     {
         var normalizedTags = chartSubmission.Tags.Select(resourceService.Normalize);
         var eventDivisions = await eventDivisionRepository.GetEventDivisionsAsync(predicate: e =>
-            e.Type == EventDivisionType.Chart && e.IsStarted() && normalizedTags.Contains(e.TagName));
+            e.Type == EventDivisionType.Chart && e.Status == EventDivisionStatus.Started && normalizedTags.Contains(e.TagName));
         if (eventDivisions.Count == 0) return (null, null);
         var eventDivision = eventDivisions.First();
         var eventTeams = await eventTeamRepository.GetEventTeamsAsync(predicate: e =>
@@ -440,7 +440,7 @@ public class SubmissionService(
     {
         var normalizedTags = songSubmission.Tags.Select(resourceService.Normalize);
         var eventDivisions = await eventDivisionRepository.GetEventDivisionsAsync(predicate: e =>
-            e.Type == EventDivisionType.Song && e.IsStarted() && normalizedTags.Contains(e.TagName));
+            e.Type == EventDivisionType.Song && e.Status == EventDivisionStatus.Started && normalizedTags.Contains(e.TagName));
         if (eventDivisions.Count == 0) return (null, null);
         var eventDivision = eventDivisions.First();
         var eventTeams = await eventTeamRepository.GetEventTeamsAsync(predicate: e =>
@@ -450,18 +450,25 @@ public class SubmissionService(
         return (eventDivision, eventTeam);
     }
 
-    private async Task CreateEventResource(EventDivision eventDivision, EventTeam eventTeam, Guid resourceId, User user)
+    private async Task CreateEventResource(EventDivision eventDivision, EventTeam eventTeam, LikeableResource resource, User user)
     {
         var eventResource = new EventResource
         {
             DivisionId = eventDivision.Id,
-            ResourceId = resourceId,
+            Resource = resource,
             Type = EventResourceType.Entry,
             IsAnonymous = eventDivision.Anonymization,
             TeamId = eventTeam.Id,
             DateCreated = DateTimeOffset.UtcNow
         };
         await eventResourceRepository.CreateEventResourceAsync(eventResource);
+        if (await eventResourceRepository.CountResourcesAsync(eventDivision.Id,
+                e => e.Type == EventResourceType.Entry && e.TeamId == eventTeam.Id) ==
+            eventTeam.ClaimedSubmissionCount)
+        {
+            eventTeam.Status = ParticipationStatus.Finished;
+            await eventTeamRepository.UpdateEventTeamAsync(eventTeam);
+        }
         await scriptService.RunEventTaskAsync(eventTeam.DivisionId, eventResource, eventTeam.Id, user,
             [EventTaskType.OnApproval]);
     }
