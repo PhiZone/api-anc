@@ -6,9 +6,9 @@ public class ServiceRecordFilterDto : FilterDto<ServiceRecord>
 {
     public List<Guid>? RangeId { get; set; }
 
-    public List<Guid>? RangeResourceId { get; set; }
+    public string? ContainsName { get; set; }
 
-    public List<Guid>? RangeServiceId { get; set; }
+    public string? EqualsName { get; set; }
 
     public string? ContainsDescription { get; set; }
 
@@ -23,6 +23,8 @@ public class ServiceRecordFilterDto : FilterDto<ServiceRecord>
     public int? MaxOwnerId { get; set; }
 
     public List<int>? RangeOwnerId { get; set; }
+
+    public List<Guid>? RangeServiceId { get; set; }
 
     public DateTimeOffset? EarliestDateCreated { get; set; }
 

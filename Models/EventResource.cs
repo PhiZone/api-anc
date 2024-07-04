@@ -12,8 +12,18 @@ public class EventResource
     public EventDivision Division { get; set; } = null!;
 
     public Guid ResourceId { get; set; }
-
-    public LikeableResource Resource { get; set; } = null!;
+    
+    public Guid? SignificantResourceId { get; set; }
+    
+    public SignificantResource? SignificantResource { get; set; }
+    
+    public Guid? TagId { get; set; }
+    
+    public Tag? Tag { get; set; }
+    
+    public Guid? RecordId { get; set; }
+    
+    public Record? Record { get; set; }
 
     public EventResourceType Type { get; set; }
 

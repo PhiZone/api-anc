@@ -6,8 +6,6 @@ public class EventResourceRequestDto
 {
     public Guid DivisionId { get; set; }
 
-    public Guid ResourceId { get; set; }
-
     public EventResourceType Type { get; set; }
 
     public string? Label { get; set; }

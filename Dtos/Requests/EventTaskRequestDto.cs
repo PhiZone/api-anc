@@ -13,7 +13,7 @@ public class EventTaskRequestDto
     public string Name { get; set; } = null!;
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
-    [Range(0, 4, ErrorMessage = ResponseCodes.ValueOutOfRange)]
+    [Range(0, 20, ErrorMessage = ResponseCodes.ValueOutOfRange)]
     public EventTaskType Type { get; set; }
 
     [MaxLength(50000, ErrorMessage = ResponseCodes.ValueTooLong)]

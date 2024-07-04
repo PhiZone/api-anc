@@ -17,16 +17,20 @@ namespace PhiZoneApi.Services;
 
 public class ScriptService(IServiceProvider serviceProvider, ILogger<ScriptService> logger) : IScriptService
 {
-    private readonly Dictionary<Guid, Script<EventTaskResponseDto?>> _eventTaskScripts = new();
     private readonly Dictionary<Guid, Script<ServiceResponseDto>> _serviceScripts = new();
+    private readonly Dictionary<Guid, Script<EventTaskResponseDto?>> _eventTaskScripts = new();
+
+    private static readonly ScriptOptions ScriptOptions = ScriptOptions.Default
+        .AddReferences(AppDomain.CurrentDomain.GetAssemblies()
+            .SelectMany(a => a.GetTypes())
+            .Where(t => t is { IsClass: true, Namespace: not null } && t.Namespace.StartsWith("PhiZoneApi")).Select(t => t.Assembly));
 
     public async Task InitializeAsync(ApplicationDbContext context, CancellationToken cancellationToken)
     {
         foreach (var service in await context.ServiceScripts.ToListAsync(cancellationToken))
         {
             var script = CSharpScript.Create<ServiceResponseDto>(service.Code,
-                ScriptOptions.Default.AddReferences(typeof(ServiceResponseDto).Assembly,
-                    typeof(ILogger<ScriptService>).Assembly), GetGlobalsType(service.TargetType));
+                ScriptOptions, typeof(ServiceScriptGlobals));
             script.Compile(cancellationToken);
             _serviceScripts.Add(service.Id, script);
         }
@@ -36,8 +40,7 @@ public class ScriptService(IServiceProvider serviceProvider, ILogger<ScriptServi
                      .ToListAsync(cancellationToken))
         {
             var script = CSharpScript.Create<EventTaskResponseDto?>(task.Code,
-                ScriptOptions.Default.AddReferences(typeof(EventTaskResponseDto).Assembly,
-                    typeof(ILogger<ScriptService>).Assembly), typeof(EventTaskScriptGlobals));
+                ScriptOptions, typeof(EventTaskScriptGlobals));
             script.Compile(cancellationToken);
             _eventTaskScripts.Add(task.Id, script);
         }
@@ -46,14 +49,13 @@ public class ScriptService(IServiceProvider serviceProvider, ILogger<ScriptServi
     public async Task<ServiceResponseDto> RunAsync<T>(Guid id, T? target, Dictionary<string, string> parameters,
         User currentUser, CancellationToken? cancellationToken = null)
     {
-        if (!_eventTaskScripts.ContainsKey(id))
+        if (!_serviceScripts.ContainsKey(id))
         {
             await using var scope = serviceProvider.CreateAsyncScope();
             var serviceScriptRepository = scope.ServiceProvider.GetRequiredService<IServiceScriptRepository>();
             var service = await serviceScriptRepository.GetServiceScriptAsync(id);
             var script = CSharpScript.Create<ServiceResponseDto>(service.Code,
-                ScriptOptions.Default.AddReferences(typeof(ServiceResponseDto).Assembly,
-                    typeof(ILogger<ScriptService>).Assembly), GetGlobalsType(service.TargetType));
+                ScriptOptions, typeof(ServiceScriptGlobals));
             script.Compile(cancellationToken ?? CancellationToken.None);
             _serviceScripts.Add(service.Id, script);
         }
@@ -64,7 +66,7 @@ public class ScriptService(IServiceProvider serviceProvider, ILogger<ScriptServi
                 {
                     return (await _serviceScripts[id]
                         .RunAsync(
-                            new ServiceScriptGlobals<T>
+                            new ServiceScriptGlobals
                             {
                                 Parameters = parameters,
                                 Target = target,
@@ -76,7 +78,7 @@ public class ScriptService(IServiceProvider serviceProvider, ILogger<ScriptServi
                 catch (Exception ex)
                 {
                     logger.LogError(LogEvents.ScriptFailure, ex, "Failed to run Service {Id}", id);
-                    return new ServiceResponseDto { Type = ServiceResponseType.Failed, Message = ex.ToString() };
+                    return new ServiceResponseDto { Type = ServiceResponseType.Failed, Message = ex.Message };
                 }
             })
             .Result;
@@ -92,8 +94,7 @@ public class ScriptService(IServiceProvider serviceProvider, ILogger<ScriptServi
             var task = await eventTaskRepository.GetEventTaskAsync(id);
             if (task.Code == null) return null;
             var script = CSharpScript.Create<EventTaskResponseDto?>(task.Code,
-                ScriptOptions.Default.AddReferences(typeof(EventTaskResponseDto).Assembly,
-                    typeof(ILogger<ScriptService>).Assembly), typeof(EventTaskScriptGlobals));
+                ScriptOptions, typeof(EventTaskScriptGlobals));
             script.Compile(cancellationToken ?? CancellationToken.None);
             _eventTaskScripts.Add(task.Id, script);
         }
@@ -119,7 +120,7 @@ public class ScriptService(IServiceProvider serviceProvider, ILogger<ScriptServi
                     logger.LogError(LogEvents.ScriptFailure, ex, "Failed to run Event Task {Id}", id);
                     return new EventTaskResponseDto
                     {
-                        Status = ResponseStatus.Failed, Code = ResponseCodes.InternalError, Message = ex.ToString()
+                        Status = ResponseStatus.Failed, Code = ResponseCodes.InternalError, Message = ex.Message
                     };
                 }
             })
@@ -128,16 +129,14 @@ public class ScriptService(IServiceProvider serviceProvider, ILogger<ScriptServi
 
     public void Compile(Guid id, string code, ServiceTargetType type)
     {
-        _serviceScripts[id] = CSharpScript.Create<ServiceResponseDto>(code,
-            ScriptOptions.Default.AddReferences(typeof(ServiceResponseDto).Assembly,
-                typeof(ILogger<ScriptService>).Assembly), GetGlobalsType(type));
+        _serviceScripts[id] = CSharpScript.Create<ServiceResponseDto>(code, ScriptOptions,
+            typeof(ServiceScriptGlobals));
     }
 
     public void Compile(Guid id, string code)
     {
         _eventTaskScripts[id] = CSharpScript.Create<EventTaskResponseDto?>(code,
-            ScriptOptions.Default.AddReferences(typeof(EventTaskResponseDto).Assembly,
-                typeof(ILogger<ScriptService>).Assembly), typeof(EventTaskScriptGlobals));
+            ScriptOptions, typeof(EventTaskScriptGlobals));
     }
 
     public void RemoveServiceScript(Guid id)
@@ -147,7 +146,7 @@ public class ScriptService(IServiceProvider serviceProvider, ILogger<ScriptServi
 
     public void RemoveEventTaskScript(Guid id)
     {
-        _serviceScripts.Remove(id);
+        _eventTaskScripts.Remove(id);
     }
 
     public async Task<EventTaskResponseDto?> RunEventTaskAsync<T>(Guid divisionId, T target, Guid teamId,
@@ -166,26 +165,16 @@ public class ScriptService(IServiceProvider serviceProvider, ILogger<ScriptServi
         return null;
     }
 
-    private static Type GetGlobalsType(ServiceTargetType type)
-    {
-        return type switch
-        {
-            ServiceTargetType.SongSubmission => typeof(ServiceScriptGlobals<SongSubmission>),
-            ServiceTargetType.ChartSubmission => typeof(ServiceScriptGlobals<ChartSubmission>),
-            _ => typeof(ServiceScriptGlobals<object>)
-        };
-    }
-
     public void Log(string? message, params object?[] args)
     {
         logger.LogInformation(message);
     }
 
-    public class ServiceScriptGlobals<T> : ScriptGlobals
+    public class ServiceScriptGlobals : ScriptGlobals
     {
         public Dictionary<string, string> Parameters { get; set; } = null!;
 
-        public T? Target { get; set; }
+        public object? Target { get; set; }
 
         public User CurrentUser { get; set; } = null!;
     }

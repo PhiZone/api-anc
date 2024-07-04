@@ -37,10 +37,10 @@ public class SongSubmissionController(
     IFilterService filterService,
     IFileStorageService fileStorageService,
     IMapper mapper,
+    IDtoMapper dtoMapper,
     ISongService songService,
     IAuthorshipRepository authorshipRepository,
     IServiceScriptRepository serviceScriptRepository,
-    IServiceRecordRepository serviceRecordRepository,
     ISubmissionService submissionService,
     IScriptService scriptService,
     IResourceService resourceService,
@@ -927,105 +927,6 @@ public class SongSubmissionController(
     }
 
     /// <summary>
-    ///     Retrieves service records.
-    /// </summary>
-    /// <returns>An array of service records.</returns>
-    /// <response code="200">Returns an array of service records.</response>
-    /// <response code="400">When any of the parameters is invalid.</response>
-    [HttpGet("{id:guid}/serviceRecords")]
-    [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<ServiceRecordDto>>))]
-    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetServiceRecords([FromRoute] Guid id, [FromQuery] ArrayRequestDto dto,
-        [FromQuery] ServiceRecordFilterDto? filterDto = null)
-    {
-        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!resourceService.HasPermission(currentUser, UserRole.Qualified))
-            return StatusCode(StatusCodes.Status403Forbidden,
-                new ResponseDto<object>
-                {
-                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
-                });
-        if (!await songSubmissionRepository.SongSubmissionExistsAsync(id))
-            return NotFound(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
-            });
-        dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
-            dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
-        dto.Page = dto.Page > 1 ? dto.Page : 1;
-        var position = dto.PerPage * (dto.Page - 1);
-        var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser, e => e.ResourceId == id);
-        var serviceRecords =
-            await serviceRecordRepository.GetServiceRecordsAsync(dto.Order, dto.Desc, position, dto.PerPage,
-                predicateExpr);
-        var total = await serviceRecordRepository.CountServiceRecordsAsync(predicateExpr);
-        var list = serviceRecords.Select(mapper.Map<ServiceRecordDto>).ToList();
-
-        return Ok(new ResponseDto<IEnumerable<ServiceRecordDto>>
-        {
-            Status = ResponseStatus.Ok,
-            Code = ResponseCodes.Ok,
-            Total = total,
-            PerPage = dto.PerPage,
-            HasPrevious = position > 0,
-            HasNext = dto.PerPage > 0 && dto.PerPage * dto.Page < total,
-            Data = list
-        });
-    }
-
-    /// <summary>
-    ///     Retrieves a specific service record.
-    /// </summary>
-    /// <param name="id">A service record's ID.</param>
-    /// <returns>A service record.</returns>
-    /// <response code="200">Returns a service record.</response>
-    /// <response code="304">
-    ///     When the resource has not been updated since last retrieval. Requires <c>If-None-Match</c>.
-    /// </response>
-    /// <response code="400">When any of the parameters is invalid.</response>
-    /// <response code="404">When the specified service record is not found.</response>
-    [HttpGet("{id:guid}/serviceRecords/{recordId:guid}")]
-    [ServiceFilter(typeof(ETagFilter))]
-    [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<ServiceRecordDto>))]
-    [ProducesResponseType(typeof(void), StatusCodes.Status304NotModified, "text/plain")]
-    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
-    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetServiceRecord([FromRoute] Guid id, [FromRoute] Guid recordId)
-    {
-        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!resourceService.HasPermission(currentUser, UserRole.Qualified))
-            return StatusCode(StatusCodes.Status403Forbidden,
-                new ResponseDto<object>
-                {
-                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
-                });
-        if (!await songSubmissionRepository.SongSubmissionExistsAsync(id))
-            return NotFound(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
-            });
-        if (!await serviceRecordRepository.ServiceRecordExistsAsync(recordId))
-            return NotFound(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
-            });
-        var serviceRecord = await serviceRecordRepository.GetServiceRecordAsync(recordId);
-        if (serviceRecord.ResourceId != id)
-            return NotFound(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
-            });
-        var dto = mapper.Map<ServiceRecordDto>(serviceRecord);
-
-        return Ok(new ResponseDto<ServiceRecordDto>
-        {
-            Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto
-        });
-    }
-
-    /// <summary>
     ///     Creates a new collaboration for a song.
     /// </summary>
     /// <returns>An empty body.</returns>
@@ -1187,10 +1088,47 @@ public class SongSubmissionController(
         return NoContent();
     }
 
-    private async Task<(EventDivision?, EventTeam?, IActionResult?)> CheckForEvent(SongSubmission songSubmission,
-        User currentUser, EventTaskType taskType)
+    /// <summary>
+    ///     Checks for any event participation with provided tags.
+    /// </summary>
+    /// <returns>An event division and a team, if found.</returns>
+    /// <response code="200">Returns an event division and a team, if found.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="500">When an internal server error has occurred.</response>
+    [HttpPost("checkEvent")]
+    [Consumes("application/json")]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(void), StatusCodes.Status200OK, Type = typeof(ResponseDto<EventParticipationInfoDto>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> CheckForEvent([FromBody] StringArrayDto dto)
     {
-        var normalizedTags = songSubmission.Tags.Select(resourceService.Normalize);
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        var result = await GetEvent(dto.Strings, currentUser);
+
+        if (result.Item3 != null)
+        {
+            return result.Item3;
+        }
+
+        return Ok(new ResponseDto<EventParticipationInfoDto>
+        {
+            Status = ResponseStatus.Ok, Code = ResponseCodes.Ok,
+            Data = new EventParticipationInfoDto
+            {
+                Division = result.Item1 != null ? await dtoMapper.MapEventDivisionAsync<EventDivisionDto>(result.Item1) : null,
+                Team = result.Item2 != null ? dtoMapper.MapEventTeam<EventTeamDto>(result.Item2) : null
+            }
+        });
+    }
+
+    private async Task<(EventDivision?, EventTeam?, IActionResult?)> GetEvent(IEnumerable<string> tags,
+        User currentUser)
+    {
+        var normalizedTags = tags.Select(resourceService.Normalize);
         var eventDivisions = await eventDivisionRepository.GetEventDivisionsAsync(predicate: e =>
             e.Type == EventDivisionType.Song &&
             (e.Status == EventDivisionStatus.Unveiled || e.Status == EventDivisionStatus.Started) &&
@@ -1216,6 +1154,20 @@ public class SongSubmissionController(
                 }));
 
         var eventTeam = eventTeams.First();
+        return (eventDivision, eventTeam, null);
+    }
+
+    private async Task<(EventDivision?, EventTeam?, IActionResult?)> CheckForEvent(SongSubmission songSubmission,
+        User currentUser, EventTaskType taskType)
+    {
+        var result = await GetEvent(songSubmission.Tags, currentUser);
+        if (result.Item3 != null)
+        {
+            return result;
+        }
+
+        var eventDivision = result.Item1!;
+        var eventTeam = result.Item2!;
 
         var firstFailure = await scriptService.RunEventTaskAsync(eventTeam.DivisionId, songSubmission, eventTeam.Id,
             currentUser, [taskType]);

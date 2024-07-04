@@ -2,7 +2,7 @@
 
 namespace PhiZoneApi.Models;
 
-public class ChartAsset : Resource
+public class ChartAsset : OwnedResource
 {
     public Guid ChartId { get; set; }
 

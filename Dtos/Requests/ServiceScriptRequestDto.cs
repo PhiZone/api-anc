@@ -25,7 +25,5 @@ public class ServiceScriptRequestDto
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     public List<string> Parameters { get; set; } = [];
 
-    [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
-
-    public Guid ResourceId { get; set; }
+    public Guid? ResourceId { get; set; }
 }

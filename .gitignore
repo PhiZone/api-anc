@@ -9,8 +9,6 @@
 *.user
 *.userosscache
 *.sln.docstates
-deploy.sh
-Resources/resources.json
 
 # Mono auto generated files
 mono_crash.*
@@ -468,3 +466,5 @@ $RECYCLE.BIN/
 .env
 appsettings.Development.json
 appsettings.Production.json
+deploy.sh
+Resources/resources.json

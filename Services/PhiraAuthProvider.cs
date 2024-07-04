@@ -74,7 +74,7 @@ public class PhiraAuthProvider : IAuthProvider
         return new ServiceResponseDto
         {
             Type = ServiceResponseType.Redirect,
-            RedirectUri = new UriBuilder("https://phira.moe/oauth") { Query = query.ToString() }.Uri,
+            RedirectUri = new UriBuilder("https://phira.moe/oauth") { Query = query.ToString() }.Uri.ToString(),
             Message = null
         };
     }

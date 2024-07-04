@@ -2,7 +2,7 @@
 
 namespace PhiZoneApi.Models;
 
-public abstract class LikeableResource : Resource
+public abstract class LikeableResource : OwnedResource
 {
     public int LikeCount { get; set; }
 
