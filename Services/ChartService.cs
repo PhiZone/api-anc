@@ -40,7 +40,7 @@ public partial class ChartService(IFileStorageService fileStorageService, ILogge
         return null;
     }
 
-    private async Task<(string, string, ChartFormat, int)> Upload((ChartFormat, ChartFormatDto, int) validationResult,
+    public async Task<(string, string, ChartFormat, int)> Upload((ChartFormat, ChartFormatDto, int) validationResult,
         string fileName, bool anonymizeChart = false, bool anonymizeSong = false)
     {
         var serialized = validationResult.Item1 == ChartFormat.RpeJson
@@ -53,7 +53,7 @@ public partial class ChartService(IFileStorageService fileStorageService, ILogge
             validationResult.Item1, validationResult.Item3);
     }
 
-    private async Task<(ChartFormat, ChartFormatDto, int)?> Validate(string filePath)
+    public async Task<(ChartFormat, ChartFormatDto, int)?> Validate(string filePath)
     {
         using var reader = new StreamReader(filePath);
         var content = await reader.ReadToEndAsync();
@@ -65,7 +65,7 @@ public partial class ChartService(IFileStorageService fileStorageService, ILogge
         return null;
     }
 
-    private static RpeJsonDto Standardize(RpeJsonDto dto, bool anonymizeChart = false, bool anonymizeSong = false)
+    public RpeJsonDto Standardize(RpeJsonDto dto, bool anonymizeChart = false, bool anonymizeSong = false)
     {
         if (anonymizeChart)
         {
@@ -107,7 +107,7 @@ public partial class ChartService(IFileStorageService fileStorageService, ILogge
         return dto;
     }
 
-    private static PecDto Standardize(PecDto dto)
+    public PecDto Standardize(PecDto dto)
     {
         dto.BpmCommands.Sort();
         dto.NoteCommands.Sort();
@@ -121,12 +121,12 @@ public partial class ChartService(IFileStorageService fileStorageService, ILogge
         return dto;
     }
 
-    private static string Serialize(RpeJsonDto dto)
+    public string Serialize(RpeJsonDto dto)
     {
         return JsonConvert.SerializeObject(dto);
     }
 
-    private static string Serialize(PecDto dto)
+    public string Serialize(PecDto dto)
     {
         var builder = new StringBuilder($"{dto.Offset}\r\n");
         foreach (var command in dto.BpmCommands) builder.Append($"{BpmCommand.Id} {command.Time} {command.Bpm}\r\n");
@@ -186,7 +186,7 @@ public partial class ChartService(IFileStorageService fileStorageService, ILogge
         return builder.ToString();
     }
 
-    private static int CountNotes(RpeJsonDto dto)
+    public int CountNotes(RpeJsonDto dto)
     {
         var noteCount = 0;
 
@@ -199,12 +199,12 @@ public partial class ChartService(IFileStorageService fileStorageService, ILogge
         return noteCount;
     }
 
-    private static int CountNotes(PecDto dto)
+    public int CountNotes(PecDto dto)
     {
         return dto.NoteCommands.Count(command => !command.IsFake);
     }
 
-    private static RpeJsonDto? ReadRpe(string input)
+    public RpeJsonDto? ReadRpe(string input)
     {
         try
         {
@@ -441,7 +441,7 @@ public partial class ChartService(IFileStorageService fileStorageService, ILogge
         }
     }
 
-    private PecDto? ReadPec(string input)
+    public PecDto? ReadPec(string input)
     {
         var dto = new PecDto
         {

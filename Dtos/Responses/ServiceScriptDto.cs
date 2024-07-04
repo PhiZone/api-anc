@@ -16,7 +16,7 @@ public class ServiceScriptDto
 
     public List<string> Parameters { get; set; } = [];
 
-    public Guid ResourceId { get; set; }
+    public Guid? ResourceId { get; set; }
 
     public DateTimeOffset DateCreated { get; set; }
 

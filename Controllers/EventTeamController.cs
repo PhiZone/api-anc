@@ -84,14 +84,15 @@ public class EventTeamController(
             var result = await meilisearchService.SearchAsync<EventTeam>(dto.Search, dto.PerPage, dto.Page);
             var idList = result.Hits.Select(item => item.Id).ToList();
             eventTeams =
-                (await eventTeamRepository.GetEventTeamsAsync(predicate: e => idList.Contains(e.Id))).OrderBy(e =>
+                (await eventTeamRepository.GetEventTeamsAsync(predicate: e => idList.Contains(e.Id),
+                    currentUserId: currentUser?.Id)).OrderBy(e =>
                     idList.IndexOf(e.Id));
             total = result.TotalHits;
         }
         else
         {
             eventTeams = await eventTeamRepository.GetEventTeamsAsync(dto.Order, dto.Desc, position,
-                dto.PerPage, predicateExpr);
+                dto.PerPage, predicateExpr, currentUser?.Id);
             total = await eventTeamRepository.CountEventTeamsAsync(predicateExpr);
         }
 
@@ -164,7 +165,8 @@ public class EventTeamController(
     /// <response code="400">When any of the parameters is invalid.</response>
     [HttpGet("preservedFields")]
     [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<List<List<string?>>>))]
+    [ProducesResponseType(StatusCodes.Status200OK,
+        Type = typeof(ResponseDto<IEnumerable<IEnumerable<PreservedFieldDto?>>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetPreservedFields([FromQuery] ArrayRequestDto dto,
         [FromQuery] EventTeamFilterDto? filterDto = null)
@@ -184,30 +186,53 @@ public class EventTeamController(
             dto.PerPage, predicateExpr);
         var total = await eventTeamRepository.CountEventTeamsAsync(predicateExpr);
 
-        List<List<string?>> matrix = [];
+        List<IEnumerable<PreservedFieldDto?>> matrix = [];
+        Dictionary<Guid, Hostship?> cache = [];
+        permission = HP.Gen(HP.Retrieve, HP.PreservedField);
 
         // ReSharper disable once InvertIf
         if (currentUser == null || !resourceService.HasPermission(currentUser, UserRole.Administrator))
             foreach (var eventTeam in eventTeams)
             {
-                var eventDivision = await eventDivisionRepository.GetEventDivisionAsync(eventTeam.DivisionId);
-                var eventEntity = await eventRepository.GetEventAsync(eventDivision.EventId);
-                var hostship = eventEntity.Hostships.FirstOrDefault(f =>
-                    currentUser != null && f.UserId == currentUser.Id &&
-                    (f.IsAdmin || f.Permissions.Contains(permission)));
-                permission = HP.Gen(HP.Retrieve, HP.PreservedField);
+                Hostship? hostship;
+                if (cache.TryGetValue(eventTeam.DivisionId, out var value))
+                {
+                    hostship = value;
+                }
+                else
+                {
+                    var eventDivision = await eventDivisionRepository.GetEventDivisionAsync(eventTeam.DivisionId);
+                    var eventEntity = await eventRepository.GetEventAsync(eventDivision.EventId);
+                    hostship = eventEntity.Hostships.FirstOrDefault(f =>
+                        currentUser != null && f.UserId == currentUser.Id &&
+                        (f.IsAdmin || f.Permissions.Contains(permission)));
+                    cache.Add(eventTeam.DivisionId, hostship);
+                }
+
                 if (hostship == null)
                     matrix.Add([]);
-                else if (hostship.Permissions.All(e => e != permission))
-                    matrix.Add(hostship.Permissions.Where(e => e.SameAs(permission))
-                        .Select(HP.GetIndex)
-                        .Select(index => eventTeam.Preserved.ElementAtOrDefault(index - 1))
-                        .ToList());
                 else
-                    matrix.Add(eventTeam.Preserved);
-            }
+                {
+                    IEnumerable<PreservedFieldDto?> list =
+                        eventTeam.Preserved.Select((e, i) => new PreservedFieldDto { Index = i + 1, Content = e });
 
-        return Ok(new ResponseDto<List<List<string?>>>
+                    if (hostship.Permissions.All(e => e != permission))
+                        matrix.Add(hostship.Permissions.Where(e => e.SameAs(permission))
+                            .Select(HP.GetIndex)
+                            .Select(index => list.ElementAtOrDefault(index - 1))
+                            .ToList());
+                    else
+                        matrix.Add(list);
+                }
+            }
+        else
+        {
+            matrix = eventTeams.Select(e =>
+                    e.Preserved.Select((f, i) => new PreservedFieldDto { Index = i + 1, Content = f }))
+                .ToList()!;
+        }
+
+        return Ok(new ResponseDto<IEnumerable<IEnumerable<PreservedFieldDto?>>>
         {
             Status = ResponseStatus.Ok,
             Code = ResponseCodes.Ok,
@@ -228,7 +253,7 @@ public class EventTeamController(
     /// <response code="400">When any of the parameters is invalid.</response>
     [HttpGet("{teamId:guid}/preservedFields")]
     [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<string?>>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<PreservedFieldDto?>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetPreservedFields([FromRoute] Guid teamId)
     {
@@ -252,7 +277,10 @@ public class EventTeamController(
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        var list = eventTeam.Preserved;
+        IEnumerable<PreservedFieldDto?> list = eventTeam.Preserved.Select((e, i) => new PreservedFieldDto
+        {
+            Index = i + 1, Content = e
+        });
 
         // ReSharper disable once InvertIf
         if (!(eventEntity.Hostships.Any(f => f.UserId == currentUser.Id && f.IsAdmin) ||
@@ -270,7 +298,7 @@ public class EventTeamController(
                     .ToList();
         }
 
-        return Ok(new ResponseDto<IEnumerable<string?>>
+        return Ok(new ResponseDto<IEnumerable<PreservedFieldDto?>>
         {
             Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = list
         });
@@ -336,6 +364,11 @@ public class EventTeamController(
                     {
                         Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                     });
+        }
+
+        while (index > eventTeam.Preserved.Count)
+        {
+            eventTeam.Preserved.Add(null);
         }
 
         eventTeam.Preserved[index - 1] = dto.Content;
@@ -1070,7 +1103,7 @@ public class EventTeamController(
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         var db = redis.GetDatabase();
-        var key = $"phizone:eventteam:{code}";
+        var key = $"phizone:eventteam:{code.ToUpper()}";
         if (!await db.KeyExistsAsync(key))
             return NotFound(new ResponseDto<object>
             {

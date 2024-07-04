@@ -39,7 +39,7 @@ public class MappingProfiles : Profile
         CreateMap<ChartAssetSubmission, ChartAssetSubmissionDto>();
         CreateMap<ChartAssetSubmission, ChartAssetUpdateDto>();
         CreateMap<Record, RecordDto>();
-        CreateMap<Chart, EventRecordEntryDto>();
+        CreateMap<Record, EventRecordEntryDto>();
         CreateMap<Tag, TagDto>();
         CreateMap<TagRequestDto, Tag>();
         CreateMap<Like, LikeDto>();

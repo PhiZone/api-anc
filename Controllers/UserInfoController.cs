@@ -385,7 +385,7 @@ public class UserInfoController(
                 });
 
         var db = redis.GetDatabase();
-        var key = $"phizone:tapghost:inherit:{dto.Code}";
+        var key = $"phizone:tapghost:inherit:{dto.Code.ToUpper()}";
         if (!await db.KeyExistsAsync(key))
             return BadRequest(new ResponseDto<object>
             {

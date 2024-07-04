@@ -11,7 +11,7 @@ public class EventTaskFilterDto : FilterDto<EventTask>
 
     public string? EqualsName { get; set; }
 
-    public List<EventTaskType>? Type { get; set; }
+    public List<EventTaskType>? RangeType { get; set; }
 
     public string? ContainsDescription { get; set; }
 

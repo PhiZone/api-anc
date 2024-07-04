@@ -18,6 +18,7 @@ using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 using PhiZoneApi.Utils;
 using StackExchange.Redis;
+using HP = PhiZoneApi.Constants.HostshipPermissions;
 
 // ReSharper disable RouteTemplates.ActionRoutePrefixCanBeExtractedToControllerRoute
 
@@ -53,6 +54,9 @@ public class ChartController(
     ICollectionRepository collectionRepository,
     IAdmissionRepository admissionRepository,
     ITagRepository tagRepository,
+    IEventResourceRepository eventResourceRepository,
+    IEventDivisionRepository eventDivisionRepository,
+    IEventRepository eventRepository,
     ITemplateService templateService,
     ILeaderboardService leaderboardService,
     IConnectionMultiplexer redis,
@@ -1879,5 +1883,70 @@ public class ChartController(
             });
 
         return NoContent();
+    }
+
+    /// <summary>
+    ///     Links a chart to a specific event division.
+    /// </summary>
+    /// <returns>An empty body.</returns>
+    /// <response code="201">Returns an empty body.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
+    /// <response code="500">When an internal server error has occurred.</response>
+    [HttpPost("{id:guid}/event")]
+    [Consumes("application/json")]
+    [Produces("application/json")]
+    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
+    [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> CreateEventResource([FromRoute] Guid id, [FromBody] EventResourceRequestDto dto)
+    {
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!await chartRepository.ChartExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+        var chart = await chartRepository.GetChartAsync(id);
+
+        if (!await eventDivisionRepository.EventDivisionExistsAsync(dto.DivisionId))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
+            });
+
+        var eventDivision = await eventDivisionRepository.GetEventDivisionAsync(dto.DivisionId);
+        var eventEntity = await eventRepository.GetEventAsync(eventDivision.EventId);
+        var permission = HP.Gen(HP.Create, HP.Resource);
+
+        if (!(resourceService.HasPermission(currentUser, UserRole.Administrator) || eventEntity.Hostships.Any(f =>
+                f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(permission)))))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+
+        var eventResource = new EventResource
+        {
+            DivisionId = dto.DivisionId,
+            SignificantResourceId = chart.Id,
+            Type = dto.Type,
+            Label = dto.Label,
+            Description = dto.Description,
+            IsAnonymous = dto.IsAnonymous,
+            TeamId = dto.TeamId,
+            DateCreated = DateTimeOffset.UtcNow
+        };
+
+        if (!await eventResourceRepository.CreateEventResourceAsync(eventResource))
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+
+        return StatusCode(StatusCodes.Status201Created);
     }
 }

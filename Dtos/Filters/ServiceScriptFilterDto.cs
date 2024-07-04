@@ -17,7 +17,7 @@ public class ServiceScriptFilterDto : FilterDto<ServiceScript>
 
     public string? EqualsDescription { get; set; }
 
-    public List<Guid>? RangeApplicationId { get; set; }
+    public List<Guid>? RangeResourceId { get; set; }
 
     public DateTimeOffset? EarliestDateCreated { get; set; }
 

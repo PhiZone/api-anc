@@ -2,7 +2,7 @@
 
 namespace PhiZoneApi.Models;
 
-public class PlayConfiguration : Resource
+public class PlayConfiguration : OwnedResource
 {
     public string? Name { get; set; }
 

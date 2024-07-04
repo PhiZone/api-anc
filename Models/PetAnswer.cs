@@ -1,9 +1,9 @@
-﻿namespace PhiZoneApi.Models;
+﻿using System.Text.Json.Serialization;
 
-public class PetAnswer
+namespace PhiZoneApi.Models;
+
+public class PetAnswer : Resource
 {
-    public Guid Id { get; set; }
-
     public Guid Question1 { get; set; }
 
     public string Answer1 { get; set; } = null!;
@@ -26,13 +26,11 @@ public class PetAnswer
 
     public int OwnerId { get; set; }
 
-    public User Owner { get; set; } = null!;
+    [JsonIgnore] public User Owner { get; set; } = null!;
 
     public int? AssessorId { get; set; }
 
-    public User? Assessor { get; set; }
-
-    public DateTimeOffset DateCreated { get; set; }
+    [JsonIgnore] public User? Assessor { get; set; }
 
     public DateTimeOffset DateUpdated { get; set; }
 }

@@ -1,11 +1,10 @@
-﻿using PhiZoneApi.Enums;
+﻿using System.Text.Json.Serialization;
+using PhiZoneApi.Enums;
 
 namespace PhiZoneApi.Models;
 
-public class ServiceScript
+public class ServiceScript : Resource
 {
-    public Guid Id { get; set; }
-
     public string Name { get; set; } = null!;
 
     public ServiceTargetType TargetType { get; set; }
@@ -16,11 +15,9 @@ public class ServiceScript
 
     public List<string> Parameters { get; set; } = [];
 
-    public Guid ResourceId { get; set; }
+    public Guid? ResourceId { get; set; }
 
-    public LikeableResource Resource { get; set; } = null!;
-
-    public DateTimeOffset DateCreated { get; set; }
+    [JsonIgnore] public LikeableResource? Resource { get; set; }
 
     public DateTimeOffset DateUpdated { get; set; }
 }

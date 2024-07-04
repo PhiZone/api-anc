@@ -16,6 +16,8 @@ public class EventResourceDto
 
     public bool? IsAnonymous { get; set; }
 
+    public double? Score { get; set; }
+
     public Guid? TeamId { get; set; }
 
     public DateTimeOffset DateCreated { get; set; }

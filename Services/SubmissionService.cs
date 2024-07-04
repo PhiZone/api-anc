@@ -450,12 +450,12 @@ public class SubmissionService(
         return (eventDivision, eventTeam);
     }
 
-    private async Task CreateEventResource(EventDivision eventDivision, EventTeam eventTeam, LikeableResource resource, User user)
+    private async Task CreateEventResource(EventDivision eventDivision, EventTeam eventTeam, SignificantResource resource, User user)
     {
         var eventResource = new EventResource
         {
             DivisionId = eventDivision.Id,
-            Resource = resource,
+            SignificantResourceId = resource.Id,
             Type = EventResourceType.Entry,
             IsAnonymous = eventDivision.Anonymization,
             TeamId = eventTeam.Id,

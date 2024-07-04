@@ -81,7 +81,7 @@ public class GitHubAuthProvider : IAuthProvider
         {
             Type = ServiceResponseType.Redirect,
             RedirectUri =
-                new UriBuilder("https://github.com/login/oauth/authorize") { Query = query.ToString() }.Uri,
+                new UriBuilder("https://github.com/login/oauth/authorize") { Query = query.ToString() }.Uri.ToString(),
             Message = null
         };
     }

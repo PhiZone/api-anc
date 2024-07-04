@@ -24,13 +24,13 @@ public class ServiceRecordRepository(ApplicationDbContext context)
     public async Task<ServiceRecord> GetServiceRecordAsync(Guid id)
     {
         IQueryable<ServiceRecord> result = context.ServiceRecords;
-        return (await result.FirstOrDefaultAsync(ServiceRecord => ServiceRecord.Id == id))!;
+        return (await result.FirstOrDefaultAsync(serviceRecord => serviceRecord.Id == id))!;
     }
 
     public async Task<bool> ServiceRecordExistsAsync(Guid id)
     {
-        return await context.ServiceRecords.AnyAsync(ServiceRecord =>
-            ServiceRecord.Id == id);
+        return await context.ServiceRecords.AnyAsync(serviceRecord =>
+            serviceRecord.Id == id);
     }
 
     public async Task<bool> CreateServiceRecordAsync(ServiceRecord serviceRecord)
@@ -48,8 +48,8 @@ public class ServiceRecordRepository(ApplicationDbContext context)
     public async Task<bool> RemoveServiceRecordAsync(Guid id)
     {
         context.ServiceRecords.Remove(
-            (await context.ServiceRecords.FirstOrDefaultAsync(ServiceRecord =>
-                ServiceRecord.Id == id))!);
+            (await context.ServiceRecords.FirstOrDefaultAsync(serviceRecord =>
+                serviceRecord.Id == id))!);
         return await SaveAsync();
     }
 
