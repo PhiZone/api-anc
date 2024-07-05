@@ -82,7 +82,8 @@ public class DiscordAuthProvider : IAuthProvider
         return new ServiceResponseDto
         {
             Type = ServiceResponseType.Redirect,
-            RedirectUri = new UriBuilder("https://discord.com/oauth2/authorize") { Query = query.ToString() }.Uri.ToString(),
+            RedirectUri = new UriBuilder("https://discord.com/oauth2/authorize") { Query = query.ToString() }.Uri
+                .ToString(),
             Message = null
         };
     }

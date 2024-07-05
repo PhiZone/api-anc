@@ -5,10 +5,11 @@ namespace PhiZoneApi.Interfaces;
 
 public interface IChartService
 {
-    Task<(string, string, ChartFormat, int)?> Upload(string fileName, IFormFile file, bool anonymizeChart = false, bool anonymizeSong = false);
+    Task<(string, string, ChartFormat, int)?> Upload(string fileName, IFormFile file, bool anonymizeChart = false,
+        bool anonymizeSong = false);
 
     Task<(string, string, ChartFormat, int)?> Upload(string fileName, string filePath);
-    
+
     Task<(ChartFormat, ChartFormatDto, int)?> Validate(IFormFile file);
 
     Task<(string, string, ChartFormat, int)> Upload((ChartFormat, ChartFormatDto, int) validationResult,

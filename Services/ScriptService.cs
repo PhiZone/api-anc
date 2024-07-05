@@ -17,13 +17,14 @@ namespace PhiZoneApi.Services;
 
 public class ScriptService(IServiceProvider serviceProvider, ILogger<ScriptService> logger) : IScriptService
 {
-    private readonly Dictionary<Guid, Script<ServiceResponseDto>> _serviceScripts = new();
-    private readonly Dictionary<Guid, Script<EventTaskResponseDto?>> _eventTaskScripts = new();
-
     private static readonly ScriptOptions ScriptOptions = ScriptOptions.Default
         .AddReferences(AppDomain.CurrentDomain.GetAssemblies()
             .SelectMany(a => a.GetTypes())
-            .Where(t => t is { IsClass: true, Namespace: not null } && t.Namespace.StartsWith("PhiZoneApi")).Select(t => t.Assembly));
+            .Where(t => t is { IsClass: true, Namespace: not null } && t.Namespace.StartsWith("PhiZoneApi"))
+            .Select(t => t.Assembly));
+
+    private readonly Dictionary<Guid, Script<EventTaskResponseDto?>> _eventTaskScripts = new();
+    private readonly Dictionary<Guid, Script<ServiceResponseDto>> _serviceScripts = new();
 
     public async Task InitializeAsync(ApplicationDbContext context, CancellationToken cancellationToken)
     {

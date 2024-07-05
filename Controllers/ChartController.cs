@@ -90,7 +90,11 @@ public class ChartController(
                   (tagDto.TagsToExclude == null || (e.Tags.All(tag => !tagsToExclude!.Contains(tag.NormalizedName)) &&
                                                     e.Song.Tags.All(tag =>
                                                         !tagsToExclude!.Contains(tag.NormalizedName))))));
-        var showAnonymous = filterDto is { RangeId: not null, ContainsAuthorName: null, EqualsAuthorName: null, RangeOwnerId: null, MinOwnerId: null, MaxOwnerId: null };
+        var showAnonymous = filterDto is
+        {
+            RangeId: not null, ContainsAuthorName: null, EqualsAuthorName: null, RangeOwnerId: null, MinOwnerId: null,
+            MaxOwnerId: null
+        };
         IEnumerable<Chart> charts;
         int total;
         if (dto.Search != null)
@@ -1934,6 +1938,7 @@ public class ChartController(
         var eventResource = new EventResource
         {
             DivisionId = dto.DivisionId,
+            ResourceId = chart.Id,
             SignificantResourceId = chart.Id,
             Type = dto.Type,
             Label = dto.Label,

@@ -210,7 +210,9 @@ public class EventTeamController(
                 }
 
                 if (hostship == null)
+                {
                     matrix.Add([]);
+                }
                 else
                 {
                     IEnumerable<PreservedFieldDto?> list =
@@ -226,11 +228,9 @@ public class EventTeamController(
                 }
             }
         else
-        {
             matrix = eventTeams.Select(e =>
                     e.Preserved.Select((f, i) => new PreservedFieldDto { Index = i + 1, Content = f }))
                 .ToList()!;
-        }
 
         return Ok(new ResponseDto<IEnumerable<IEnumerable<PreservedFieldDto?>>>
         {
@@ -366,10 +366,7 @@ public class EventTeamController(
                     });
         }
 
-        while (index > eventTeam.Preserved.Count)
-        {
-            eventTeam.Preserved.Add(null);
-        }
+        while (index > eventTeam.Preserved.Count) eventTeam.Preserved.Add(null);
 
         eventTeam.Preserved[index - 1] = dto.Content;
 

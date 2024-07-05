@@ -426,7 +426,8 @@ public class SubmissionService(
     {
         var normalizedTags = chartSubmission.Tags.Select(resourceService.Normalize);
         var eventDivisions = await eventDivisionRepository.GetEventDivisionsAsync(predicate: e =>
-            e.Type == EventDivisionType.Chart && e.Status == EventDivisionStatus.Started && normalizedTags.Contains(e.TagName));
+            e.Type == EventDivisionType.Chart && e.Status == EventDivisionStatus.Started &&
+            normalizedTags.Contains(e.TagName));
         if (eventDivisions.Count == 0) return (null, null);
         var eventDivision = eventDivisions.First();
         var eventTeams = await eventTeamRepository.GetEventTeamsAsync(predicate: e =>
@@ -440,7 +441,8 @@ public class SubmissionService(
     {
         var normalizedTags = songSubmission.Tags.Select(resourceService.Normalize);
         var eventDivisions = await eventDivisionRepository.GetEventDivisionsAsync(predicate: e =>
-            e.Type == EventDivisionType.Song && e.Status == EventDivisionStatus.Started && normalizedTags.Contains(e.TagName));
+            e.Type == EventDivisionType.Song && e.Status == EventDivisionStatus.Started &&
+            normalizedTags.Contains(e.TagName));
         if (eventDivisions.Count == 0) return (null, null);
         var eventDivision = eventDivisions.First();
         var eventTeams = await eventTeamRepository.GetEventTeamsAsync(predicate: e =>
@@ -450,11 +452,13 @@ public class SubmissionService(
         return (eventDivision, eventTeam);
     }
 
-    private async Task CreateEventResource(EventDivision eventDivision, EventTeam eventTeam, SignificantResource resource, User user)
+    private async Task CreateEventResource(EventDivision eventDivision, EventTeam eventTeam,
+        SignificantResource resource, User user)
     {
         var eventResource = new EventResource
         {
             DivisionId = eventDivision.Id,
+            ResourceId = resource.Id,
             SignificantResourceId = resource.Id,
             Type = EventResourceType.Entry,
             IsAnonymous = eventDivision.Anonymization,
@@ -469,6 +473,7 @@ public class SubmissionService(
             eventTeam.Status = ParticipationStatus.Finished;
             await eventTeamRepository.UpdateEventTeamAsync(eventTeam);
         }
+
         await scriptService.RunEventTaskAsync(eventTeam.DivisionId, eventResource, eventTeam.Id, user,
             [EventTaskType.OnApproval]);
     }

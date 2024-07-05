@@ -78,7 +78,7 @@ public partial class ResourceService(IServiceProvider serviceProvider, IConfigur
         if (!await userRelationRepository.RelationExistsAsync(user2, user1)) return false;
         return (await userRelationRepository.GetRelationAsync(user2, user1)).Type == UserRelationType.Blacklisted;
     }
-    
+
     public async Task<(bool, bool)> IsPreparedOrFinished(EventTeam eventTeam)
     {
         await using var scope = serviceProvider.CreateAsyncScope();

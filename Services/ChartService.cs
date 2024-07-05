@@ -67,15 +67,9 @@ public partial class ChartService(IFileStorageService fileStorageService, ILogge
 
     public RpeJsonDto Standardize(RpeJsonDto dto, bool anonymizeChart = false, bool anonymizeSong = false)
     {
-        if (anonymizeChart)
-        {
-            dto.Meta.Charter = "Anonymous";
-        }
+        if (anonymizeChart) dto.Meta.Charter = "Anonymous";
 
-        if (anonymizeSong)
-        {
-            dto.Meta.Composer = "Anonymous";
-        }
+        if (anonymizeSong) dto.Meta.Composer = "Anonymous";
 
         dto.BpmList.Sort();
         foreach (var line in dto.JudgeLineList.OfType<JudgeLine>())
