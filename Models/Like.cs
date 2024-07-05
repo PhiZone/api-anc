@@ -1,6 +1,6 @@
 ﻿namespace PhiZoneApi.Models;
 
-public class Like : Resource
+public class Like : OwnedResource
 {
     public Guid ResourceId { get; set; }
 

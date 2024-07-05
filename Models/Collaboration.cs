@@ -2,10 +2,8 @@
 
 namespace PhiZoneApi.Models;
 
-public class Collaboration
+public class Collaboration : Resource
 {
-    public Guid Id { get; set; }
-
     public Guid SubmissionId { get; set; }
 
     public Submission Submission { get; set; } = null!;
@@ -21,6 +19,4 @@ public class Collaboration
     public string? Position { get; set; }
 
     public RequestStatus Status { get; set; }
-
-    public DateTimeOffset DateCreated { get; set; }
 }

@@ -31,14 +31,14 @@ public class NotificationService(
     public async Task NotifyLike<T>(T resource, int userId, string display) where T : LikeableResource
     {
         var sender = (await userManager.FindByIdAsync(userId.ToString()))!;
-        var relations = await userRelationRepository.GetRelationsAsync(["DateCreated"],
-            [false], 0, -1,
-            e => e.FolloweeId == userId && e.Type == UserRelationType.Special);
+        var relations =
+            await userRelationRepository.GetRelationsAsync(predicate: e =>
+                e.FolloweeId == userId && e.Type == UserRelationType.Special);
         var receivers = new HashSet<User> { (await userManager.FindByIdAsync(resource.OwnerId.ToString()))! };
         foreach (var relation in relations)
             receivers.Add((await userManager.FindByIdAsync(relation.FollowerId.ToString()))!);
 
-        foreach (var receiver in receivers)
+        foreach (var receiver in receivers.Where(receiver => receiver.Id != userId))
             await Notify(receiver, sender, NotificationType.Likes, "new-like",
                 new Dictionary<string, string>
                 {
@@ -51,9 +51,8 @@ public class NotificationService(
         where T : LikeableResource
     {
         var sender = (await userManager.FindByIdAsync(comment.OwnerId.ToString()))!;
-        var relations = await userRelationRepository.GetRelationsAsync(["DateCreated"],
-            [false], 0, -1,
-            e => e.FolloweeId == comment.OwnerId && e.Type == UserRelationType.Special);
+        var relations = await userRelationRepository.GetRelationsAsync(predicate: e =>
+            e.FolloweeId == comment.OwnerId && e.Type == UserRelationType.Special);
         var receivers = new HashSet<User> { (await userManager.FindByIdAsync(resource.OwnerId.ToString()))! };
         foreach (var relation in relations)
             receivers.Add((await userManager.FindByIdAsync(relation.FollowerId.ToString()))!);

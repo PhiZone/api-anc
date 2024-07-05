@@ -18,7 +18,9 @@ public class ChartDto
 
     public string? File { get; set; }
 
-    public string AuthorName { get; set; } = null!;
+    public string? FileChecksum { get; set; }
+
+    public string? AuthorName { get; set; }
 
     public string? Illustration { get; set; }
 
@@ -54,15 +56,17 @@ public class ChartDto
 
     public List<TagDto> Tags { get; set; } = null!;
 
+    public List<ChartAssetDto> Assets { get; set; } = null!;
+
     public Guid SongId { get; set; }
 
     public SongDto Song { get; set; } = null!;
 
-    public int PlayCount { get; set; }
+    public long PlayCount { get; set; }
 
     public int LikeCount { get; set; }
 
-    public int OwnerId { get; set; }
+    public int? OwnerId { get; set; }
 
     public DateTimeOffset DateCreated { get; set; }
 

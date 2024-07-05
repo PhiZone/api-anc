@@ -12,13 +12,14 @@ namespace PhiZoneApi.Repositories;
 public class ResourceRecordRepository(ApplicationDbContext context, IMeilisearchService meilisearchService)
     : IResourceRecordRepository
 {
-    public async Task<ICollection<ResourceRecord>> GetResourceRecordsAsync(List<string> order, List<bool> desc,
-        int position, int take, Expression<Func<ResourceRecord, bool>>? predicate = null)
+    public async Task<ICollection<ResourceRecord>> GetResourceRecordsAsync(List<string>? order = null,
+        List<bool>? desc = null,
+        int? position = 0, int? take = -1, Expression<Func<ResourceRecord, bool>>? predicate = null)
     {
         var result = context.ResourceRecords.OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
-        result = result.Skip(position);
-        return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
+        result = result.Skip(position ?? 0);
+        return take >= 0 ? await result.Take(take.Value).ToListAsync() : await result.ToListAsync();
     }
 
     public async Task<ResourceRecord> GetResourceRecordAsync(Guid id)

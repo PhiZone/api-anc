@@ -59,12 +59,12 @@ public class MeilisearchService : IMeilisearchService
         await _client.Index(typeof(T).Name).UpdateDocumentsAsync(documents);
     }
 
-    public async Task DeleteAsync<T>(T document) where T : Resource
+    public async Task DeleteAsync<T>(T document) where T : OwnedResource
     {
         await _client.Index(typeof(T).Name).DeleteOneDocumentAsync(document.Id.ToString());
     }
 
-    public async Task DeleteBatchAsync<T>(IEnumerable<T> documents) where T : Resource
+    public async Task DeleteBatchAsync<T>(IEnumerable<T> documents) where T : OwnedResource
     {
         await _client.Index(typeof(T).Name).DeleteDocumentsAsync(documents.Select(document => document.Id.ToString()));
     }
@@ -123,12 +123,7 @@ public class MeilisearchService : IMeilisearchService
                 "title", "subtitle", "illustrator", "description", "event.title", "event.subtitle", "event.illustrator",
                 "event.description"
             ]);
-        await _client.Index("EventTask")
-            .UpdateSearchableAttributesAsync([
-                "name", "code", "description", "division.title", "division.subtitle", "division.illustrator",
-                "division.description", "division.event.title", "division.event.subtitle", "division.event.illustrator",
-                "division.event.description"
-            ]);
+        await _client.Index("ServiceScript").UpdateSearchableAttributesAsync(["name", "code", "description"]);
         await _client.Index("EventTeam").UpdateSearchableAttributesAsync(["name"]);
         await _client.Index("Notification").UpdateSearchableAttributesAsync(["content"]);
         await _client.Index("PetAnswer").UpdateSearchableAttributesAsync(["answer1", "answer2", "answer3"]);
@@ -173,8 +168,7 @@ public class MeilisearchService : IMeilisearchService
         await _client.Index("Collection").AddDocumentsAsync(context.Collections, "id");
         await _client.Index("Event").AddDocumentsAsync(context.Events, "id");
         await _client.Index("EventDivision").AddDocumentsAsync(context.EventDivisions.Include(e => e.Event), "id");
-        await _client.Index("EventTask")
-            .AddDocumentsAsync(context.EventTasks.Include(e => e.Division).ThenInclude(e => e.Event), "id");
+        await _client.Index("ServiceScript").AddDocumentsAsync(context.ServiceScripts, "id");
         await _client.Index("EventTeam").AddDocumentsAsync(context.EventTeams, "id");
         await _client.Index("Notification").AddDocumentsAsync(context.Notifications, "id");
         await _client.Index("PetAnswer").AddDocumentsAsync(context.PetAnswers, "id");

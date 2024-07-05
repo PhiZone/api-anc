@@ -68,8 +68,9 @@ public class ApplicationController(
         {
             var result = await meilisearchService.SearchAsync<Application>(dto.Search, dto.PerPage, dto.Page);
             var idList = result.Hits.Select(item => item.Id).ToList();
-            applications = (await applicationRepository.GetApplicationsAsync(["DateCreated"], [false], position,
-                dto.PerPage, e => idList.Contains(e.Id), currentUser?.Id)).OrderBy(e => idList.IndexOf(e.Id));
+            applications =
+                (await applicationRepository.GetApplicationsAsync(predicate:
+                    e => idList.Contains(e.Id), currentUserId: currentUser?.Id)).OrderBy(e => idList.IndexOf(e.Id));
             total = result.TotalHits;
         }
         else

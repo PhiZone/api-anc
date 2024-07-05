@@ -18,7 +18,7 @@ namespace PhiZoneApi.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.1")
+                .HasAnnotation("ProductVersion", "8.0.5")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -394,81 +394,6 @@ namespace PhiZoneApi.Migrations
                     b.ToTable("Admissions");
                 });
 
-            modelBuilder.Entity("PhiZoneApi.Models.ApplicationService", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("ApplicationId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Code")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTimeOffset>("DateCreated")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTimeOffset>("DateUpdated")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<List<string>>("Parameters")
-                        .IsRequired()
-                        .HasColumnType("text[]");
-
-                    b.Property<int>("TargetType")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ApplicationId");
-
-                    b.ToTable("ApplicationServices");
-                });
-
-            modelBuilder.Entity("PhiZoneApi.Models.ApplicationServiceRecord", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTimeOffset>("DateCreated")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("text");
-
-                    b.Property<int>("OwnerId")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("ResourceId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Result")
-                        .HasColumnType("text");
-
-                    b.Property<Guid>("ServiceId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("OwnerId");
-
-                    b.HasIndex("ResourceId");
-
-                    b.HasIndex("ServiceId");
-
-                    b.ToTable("ApplicationServiceRecords");
-                });
-
             modelBuilder.Entity("PhiZoneApi.Models.ApplicationUser", b =>
                 {
                     b.Property<Guid>("ApplicationId")
@@ -498,6 +423,9 @@ namespace PhiZoneApi.Migrations
                     b.Property<string>("RemoteUserId")
                         .HasColumnType("text");
 
+                    b.Property<string>("RemoteUserName")
+                        .HasColumnType("text");
+
                     b.Property<string>("TapUnionId")
                         .HasColumnType("text");
 
@@ -508,117 +436,96 @@ namespace PhiZoneApi.Migrations
                     b.ToTable("ApplicationUsers");
                 });
 
-            modelBuilder.Entity("PhiZoneApi.Models.Authorship", b =>
+            modelBuilder.Entity("PhiZoneApi.Models.EventResource", b =>
                 {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
+                    b.Property<Guid>("DivisionId")
                         .HasColumnType("uuid");
-
-                    b.Property<int>("AuthorId")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTimeOffset>("DateCreated")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Position")
-                        .HasColumnType("text");
 
                     b.Property<Guid>("ResourceId")
                         .HasColumnType("uuid");
 
-                    b.HasKey("Id");
-
-                    b.HasIndex("AuthorId");
-
-                    b.HasIndex("ResourceId");
-
-                    b.ToTable("Authorships");
-                });
-
-            modelBuilder.Entity("PhiZoneApi.Models.Collaboration", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
                     b.Property<DateTimeOffset>("DateCreated")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("InviteeId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("InviterId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Position")
-                        .HasColumnType("text");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("SubmissionId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("InviteeId");
-
-                    b.HasIndex("InviterId");
-
-                    b.HasIndex("SubmissionId");
-
-                    b.ToTable("Collaborations");
-                });
-
-            modelBuilder.Entity("PhiZoneApi.Models.EventTask", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Code")
-                        .HasColumnType("text");
-
-                    b.Property<DateTimeOffset>("DateCreated")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTimeOffset?>("DateExecuted")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTimeOffset>("DateUpdated")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Description")
-                        .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<Guid>("DivisionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<bool>("IsHidden")
+                    b.Property<bool?>("IsAnonymous")
                         .HasColumnType("boolean");
 
-                    b.Property<string>("Name")
-                        .IsRequired()
+                    b.Property<string>("Label")
                         .HasColumnType("text");
+
+                    b.Property<List<string>>("Preserved")
+                        .IsRequired()
+                        .HasColumnType("text[]");
+
+                    b.Property<Guid?>("RecordId")
+                        .HasColumnType("uuid");
+
+                    b.Property<double?>("Score")
+                        .HasColumnType("double precision");
+
+                    b.Property<Guid?>("SignificantResourceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("TagId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("TeamId")
+                        .HasColumnType("uuid");
 
                     b.Property<int>("Type")
                         .HasColumnType("integer");
 
-                    b.HasKey("Id");
+                    b.HasKey("DivisionId", "ResourceId");
 
-                    b.HasIndex("DivisionId");
+                    b.HasIndex("RecordId");
 
-                    b.ToTable("EventTasks");
+                    b.HasIndex("SignificantResourceId");
+
+                    b.HasIndex("TagId");
+
+                    b.HasIndex("TeamId");
+
+                    b.ToTable("EventResources");
+                });
+
+            modelBuilder.Entity("PhiZoneApi.Models.Hostship", b =>
+                {
+                    b.Property<Guid>("EventId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("IsAdmin")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsUnveiled")
+                        .HasColumnType("boolean");
+
+                    b.Property<long[]>("Permissions")
+                        .IsRequired()
+                        .HasColumnType("bigint[]");
+
+                    b.Property<string>("Position")
+                        .HasColumnType("text");
+
+                    b.HasKey("EventId", "UserId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Hostships");
                 });
 
             modelBuilder.Entity("PhiZoneApi.Models.Participation", b =>
                 {
-                    b.Property<Guid>("EventTeamId")
-                        .HasColumnType("uuid");
-
                     b.Property<int>("ParticipantId")
                         .HasColumnType("integer");
+
+                    b.Property<Guid>("TeamId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTimeOffset>("DateCreated")
                         .HasColumnType("timestamp with time zone");
@@ -626,72 +533,11 @@ namespace PhiZoneApi.Migrations
                     b.Property<string>("Position")
                         .HasColumnType("text");
 
-                    b.HasKey("EventTeamId", "ParticipantId");
+                    b.HasKey("ParticipantId", "TeamId");
 
-                    b.HasIndex("ParticipantId");
+                    b.HasIndex("TeamId");
 
                     b.ToTable("Participations");
-                });
-
-            modelBuilder.Entity("PhiZoneApi.Models.PetAnswer", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Answer1")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Answer2")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Answer3")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int?>("AssessorId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Chart")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTimeOffset>("DateCreated")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTimeOffset>("DateUpdated")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("ObjectiveScore")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("OwnerId")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("Question1")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("Question2")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("Question3")
-                        .HasColumnType("uuid");
-
-                    b.Property<int?>("SubjectiveScore")
-                        .HasColumnType("integer");
-
-                    b.Property<int?>("TotalScore")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AssessorId");
-
-                    b.HasIndex("OwnerId");
-
-                    b.ToTable("PetAnswers");
                 });
 
             modelBuilder.Entity("PhiZoneApi.Models.PetChoice", b =>
@@ -772,64 +618,11 @@ namespace PhiZoneApi.Migrations
                     b.Property<DateTimeOffset>("DateCreated")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("OwnerId")
-                        .HasColumnType("integer");
-
                     b.HasKey("Id");
-
-                    b.HasIndex("OwnerId");
 
                     b.ToTable((string)null);
 
                     b.UseTpcMappingStrategy();
-                });
-
-            modelBuilder.Entity("PhiZoneApi.Models.ResourceRecord", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("AuthorName")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("CopyrightOwner")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTimeOffset>("DateCreated")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTimeOffset>("DateUpdated")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Edition")
-                        .HasColumnType("text");
-
-                    b.Property<int>("EditionType")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Source")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("Strategy")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("ResourceRecords");
                 });
 
             modelBuilder.Entity("PhiZoneApi.Models.Role", b =>
@@ -859,31 +652,6 @@ namespace PhiZoneApi.Migrations
                         .HasDatabaseName("RoleNameIndex");
 
                     b.ToTable("Roles", (string)null);
-                });
-
-            modelBuilder.Entity("PhiZoneApi.Models.Tag", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTimeOffset>("DateCreated")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("NormalizedName")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Tags");
                 });
 
             modelBuilder.Entity("PhiZoneApi.Models.User", b =>
@@ -926,20 +694,14 @@ namespace PhiZoneApi.Migrations
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("boolean");
 
-                    b.Property<Guid?>("EventDivisionId")
-                        .HasColumnType("uuid");
+                    b.Property<decimal>("Experience")
+                        .HasColumnType("numeric(20,0)");
 
-                    b.Property<Guid?>("EventId")
-                        .HasColumnType("uuid");
+                    b.Property<long>("FolloweeCount")
+                        .HasColumnType("bigint");
 
-                    b.Property<int>("Experience")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("FolloweeCount")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("FollowerCount")
-                        .HasColumnType("integer");
+                    b.Property<long>("FollowerCount")
+                        .HasColumnType("bigint");
 
                     b.Property<int>("Gender")
                         .HasColumnType("integer");
@@ -995,10 +757,6 @@ namespace PhiZoneApi.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("EventDivisionId");
-
-                    b.HasIndex("EventId");
-
                     b.HasIndex("NormalizedEmail")
                         .HasDatabaseName("EmailIndex");
 
@@ -1047,9 +805,277 @@ namespace PhiZoneApi.Migrations
                     b.ToTable("SongTag");
                 });
 
-            modelBuilder.Entity("PhiZoneApi.Models.ChartAsset", b =>
+            modelBuilder.Entity("PhiZoneApi.Models.Authorship", b =>
                 {
                     b.HasBaseType("PhiZoneApi.Models.Resource");
+
+                    b.Property<int>("AuthorId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Position")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("ResourceId")
+                        .HasColumnType("uuid");
+
+                    b.HasIndex("AuthorId");
+
+                    b.HasIndex("ResourceId");
+
+                    b.ToTable("Authorships");
+                });
+
+            modelBuilder.Entity("PhiZoneApi.Models.Collaboration", b =>
+                {
+                    b.HasBaseType("PhiZoneApi.Models.Resource");
+
+                    b.Property<int>("InviteeId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("InviterId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Position")
+                        .HasColumnType("text");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("SubmissionId")
+                        .HasColumnType("uuid");
+
+                    b.HasIndex("InviteeId");
+
+                    b.HasIndex("InviterId");
+
+                    b.HasIndex("SubmissionId");
+
+                    b.ToTable("Collaborations");
+                });
+
+            modelBuilder.Entity("PhiZoneApi.Models.EventTask", b =>
+                {
+                    b.HasBaseType("PhiZoneApi.Models.Resource");
+
+                    b.Property<string>("Code")
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset?>("DateExecuted")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset>("DateUpdated")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("DivisionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsHidden")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
+
+                    b.HasIndex("DivisionId");
+
+                    b.ToTable("EventTasks");
+                });
+
+            modelBuilder.Entity("PhiZoneApi.Models.OwnedResource", b =>
+                {
+                    b.HasBaseType("PhiZoneApi.Models.Resource");
+
+                    b.Property<int>("OwnerId")
+                        .HasColumnType("integer");
+
+                    b.HasIndex("OwnerId");
+
+                    b.ToTable((string)null);
+                });
+
+            modelBuilder.Entity("PhiZoneApi.Models.PetAnswer", b =>
+                {
+                    b.HasBaseType("PhiZoneApi.Models.Resource");
+
+                    b.Property<string>("Answer1")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Answer2")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Answer3")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int?>("AssessorId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Chart")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("DateUpdated")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("ObjectiveScore")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("OwnerId")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("Question1")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("Question2")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("Question3")
+                        .HasColumnType("uuid");
+
+                    b.Property<int?>("SubjectiveScore")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("TotalScore")
+                        .HasColumnType("integer");
+
+                    b.HasIndex("AssessorId");
+
+                    b.HasIndex("OwnerId");
+
+                    b.ToTable("PetAnswers");
+                });
+
+            modelBuilder.Entity("PhiZoneApi.Models.ResourceRecord", b =>
+                {
+                    b.HasBaseType("PhiZoneApi.Models.Resource");
+
+                    b.Property<string>("AuthorName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("CopyrightOwner")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("DateUpdated")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Edition")
+                        .HasColumnType("text");
+
+                    b.Property<int>("EditionType")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Strategy")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
+
+                    b.ToTable("ResourceRecords");
+                });
+
+            modelBuilder.Entity("PhiZoneApi.Models.ServiceRecord", b =>
+                {
+                    b.HasBaseType("PhiZoneApi.Models.Resource");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("OwnerId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Result")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("ServiceId")
+                        .HasColumnType("uuid");
+
+                    b.HasIndex("OwnerId");
+
+                    b.HasIndex("ServiceId");
+
+                    b.ToTable("ServiceRecords");
+                });
+
+            modelBuilder.Entity("PhiZoneApi.Models.ServiceScript", b =>
+                {
+                    b.HasBaseType("PhiZoneApi.Models.Resource");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTimeOffset>("DateUpdated")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<List<string>>("Parameters")
+                        .IsRequired()
+                        .HasColumnType("text[]");
+
+                    b.Property<Guid?>("ResourceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("TargetType")
+                        .HasColumnType("integer");
+
+                    b.HasIndex("ResourceId");
+
+                    b.ToTable("ServiceScripts");
+                });
+
+            modelBuilder.Entity("PhiZoneApi.Models.Tag", b =>
+                {
+                    b.HasBaseType("PhiZoneApi.Models.Resource");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("NormalizedName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.ToTable("Tags");
+                });
+
+            modelBuilder.Entity("PhiZoneApi.Models.ChartAsset", b =>
+                {
+                    b.HasBaseType("PhiZoneApi.Models.OwnedResource");
 
                     b.Property<Guid>("ChartId")
                         .HasColumnType("uuid");
@@ -1075,7 +1101,7 @@ namespace PhiZoneApi.Migrations
 
             modelBuilder.Entity("PhiZoneApi.Models.ChartAssetSubmission", b =>
                 {
-                    b.HasBaseType("PhiZoneApi.Models.Resource");
+                    b.HasBaseType("PhiZoneApi.Models.OwnedResource");
 
                     b.Property<Guid>("ChartSubmissionId")
                         .HasColumnType("uuid");
@@ -1106,7 +1132,7 @@ namespace PhiZoneApi.Migrations
 
             modelBuilder.Entity("PhiZoneApi.Models.Like", b =>
                 {
-                    b.HasBaseType("PhiZoneApi.Models.Resource");
+                    b.HasBaseType("PhiZoneApi.Models.OwnedResource");
 
                     b.Property<Guid>("ResourceId")
                         .HasColumnType("uuid");
@@ -1118,7 +1144,7 @@ namespace PhiZoneApi.Migrations
 
             modelBuilder.Entity("PhiZoneApi.Models.LikeableResource", b =>
                 {
-                    b.HasBaseType("PhiZoneApi.Models.Resource");
+                    b.HasBaseType("PhiZoneApi.Models.OwnedResource");
 
                     b.Property<int>("LikeCount")
                         .HasColumnType("integer");
@@ -1128,7 +1154,7 @@ namespace PhiZoneApi.Migrations
 
             modelBuilder.Entity("PhiZoneApi.Models.Notification", b =>
                 {
-                    b.HasBaseType("PhiZoneApi.Models.Resource");
+                    b.HasBaseType("PhiZoneApi.Models.OwnedResource");
 
                     b.Property<string>("Content")
                         .IsRequired()
@@ -1150,7 +1176,7 @@ namespace PhiZoneApi.Migrations
 
             modelBuilder.Entity("PhiZoneApi.Models.PlayConfiguration", b =>
                 {
-                    b.HasBaseType("PhiZoneApi.Models.Resource");
+                    b.HasBaseType("PhiZoneApi.Models.OwnedResource");
 
                     b.Property<List<int>>("AspectRatio")
                         .HasColumnType("integer[]");
@@ -1196,7 +1222,7 @@ namespace PhiZoneApi.Migrations
 
             modelBuilder.Entity("PhiZoneApi.Models.Submission", b =>
                 {
-                    b.HasBaseType("PhiZoneApi.Models.Resource");
+                    b.HasBaseType("PhiZoneApi.Models.OwnedResource");
 
                     b.Property<int>("Accessibility")
                         .HasColumnType("integer");
@@ -1224,7 +1250,7 @@ namespace PhiZoneApi.Migrations
 
             modelBuilder.Entity("PhiZoneApi.Models.VolunteerVote", b =>
                 {
-                    b.HasBaseType("PhiZoneApi.Models.Resource");
+                    b.HasBaseType("PhiZoneApi.Models.OwnedResource");
 
                     b.Property<Guid>("ChartId")
                         .HasColumnType("uuid");
@@ -1246,7 +1272,7 @@ namespace PhiZoneApi.Migrations
 
             modelBuilder.Entity("PhiZoneApi.Models.Vote", b =>
                 {
-                    b.HasBaseType("PhiZoneApi.Models.Resource");
+                    b.HasBaseType("PhiZoneApi.Models.OwnedResource");
 
                     b.Property<int>("Arrangement")
                         .HasColumnType("integer");
@@ -1378,22 +1404,31 @@ namespace PhiZoneApi.Migrations
                 {
                     b.HasBaseType("PhiZoneApi.Models.LikeableResource");
 
-                    b.Property<int?>("ClaimedParticipantCount")
+                    b.Property<int>("ClaimedParticipantCount")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("ClaimedSubmissionCount")
+                    b.Property<int>("ClaimedSubmissionCount")
                         .HasColumnType("integer");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
 
                     b.Property<Guid>("DivisionId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("Icon")
-                        .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<bool>("IsUnveiled")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<List<string>>("Preserved")
+                        .IsRequired()
+                        .HasColumnType("text[]");
 
                     b.Property<double?>("Score")
                         .HasColumnType("double precision");
@@ -1661,83 +1696,6 @@ namespace PhiZoneApi.Migrations
                     b.ToTable("Chapters");
                 });
 
-            modelBuilder.Entity("PhiZoneApi.Models.Chart", b =>
-                {
-                    b.HasBaseType("PhiZoneApi.Models.PublicResource");
-
-                    b.Property<string>("AuthorName")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<double>("Difficulty")
-                        .HasColumnType("double precision");
-
-                    b.Property<string>("File")
-                        .HasColumnType("text");
-
-                    b.Property<string>("FileChecksum")
-                        .HasColumnType("text");
-
-                    b.Property<int>("Format")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Illustration")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Illustrator")
-                        .HasColumnType("text");
-
-                    b.Property<bool>("IsRanked")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("Level")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("LevelType")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("NoteCount")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("PlayCount")
-                        .HasColumnType("integer");
-
-                    b.Property<double>("Rating")
-                        .HasColumnType("double precision");
-
-                    b.Property<double>("RatingOnArrangement")
-                        .HasColumnType("double precision");
-
-                    b.Property<double>("RatingOnConcord")
-                        .HasColumnType("double precision");
-
-                    b.Property<double>("RatingOnCreativity")
-                        .HasColumnType("double precision");
-
-                    b.Property<double>("RatingOnGameplay")
-                        .HasColumnType("double precision");
-
-                    b.Property<double>("RatingOnImpression")
-                        .HasColumnType("double precision");
-
-                    b.Property<double>("RatingOnVisualEffects")
-                        .HasColumnType("double precision");
-
-                    b.Property<double>("Score")
-                        .HasColumnType("double precision");
-
-                    b.Property<Guid>("SongId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Title")
-                        .HasColumnType("text");
-
-                    b.HasIndex("SongId");
-
-                    b.ToTable("Charts");
-                });
-
             modelBuilder.Entity("PhiZoneApi.Models.Collection", b =>
                 {
                     b.HasBaseType("PhiZoneApi.Models.PublicResource");
@@ -1790,6 +1748,9 @@ namespace PhiZoneApi.Migrations
                 {
                     b.HasBaseType("PhiZoneApi.Models.PublicResource");
 
+                    b.Property<bool>("Anonymization")
+                        .HasColumnType("boolean");
+
                     b.Property<DateTimeOffset>("DateEnded")
                         .HasColumnType("timestamp with time zone");
 
@@ -1826,10 +1787,20 @@ namespace PhiZoneApi.Migrations
                     b.Property<int?>("MinTeamCount")
                         .HasColumnType("integer");
 
+                    b.Property<List<string>>("Preserved")
+                        .IsRequired()
+                        .HasColumnType("text[]");
+
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
                     b.Property<string>("Subtitle")
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("TagId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("TagName")
                         .HasColumnType("text");
 
                     b.Property<string>("Title")
@@ -1844,9 +1815,93 @@ namespace PhiZoneApi.Migrations
                     b.ToTable("EventDivisions");
                 });
 
-            modelBuilder.Entity("PhiZoneApi.Models.Song", b =>
+            modelBuilder.Entity("PhiZoneApi.Models.SignificantResource", b =>
                 {
                     b.HasBaseType("PhiZoneApi.Models.PublicResource");
+
+                    b.ToTable((string)null);
+                });
+
+            modelBuilder.Entity("PhiZoneApi.Models.Chart", b =>
+                {
+                    b.HasBaseType("PhiZoneApi.Models.SignificantResource");
+
+                    b.Property<string>("AuthorName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<double>("Difficulty")
+                        .HasColumnType("double precision");
+
+                    b.Property<string>("File")
+                        .HasColumnType("text");
+
+                    b.Property<string>("FileChecksum")
+                        .HasColumnType("text");
+
+                    b.Property<int>("Format")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Illustration")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Illustrator")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsRanked")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Level")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("LevelType")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("NoteCount")
+                        .HasColumnType("integer");
+
+                    b.Property<long>("PlayCount")
+                        .HasColumnType("bigint");
+
+                    b.Property<double>("Rating")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("RatingOnArrangement")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("RatingOnConcord")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("RatingOnCreativity")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("RatingOnGameplay")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("RatingOnImpression")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("RatingOnVisualEffects")
+                        .HasColumnType("double precision");
+
+                    b.Property<double>("Score")
+                        .HasColumnType("double precision");
+
+                    b.Property<Guid>("SongId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Title")
+                        .HasColumnType("text");
+
+                    b.HasIndex("SongId");
+
+                    b.ToTable("Charts");
+                });
+
+            modelBuilder.Entity("PhiZoneApi.Models.Song", b =>
+                {
+                    b.HasBaseType("PhiZoneApi.Models.SignificantResource");
 
                     b.Property<string>("AuthorName")
                         .IsRequired()
@@ -1896,8 +1951,8 @@ namespace PhiZoneApi.Migrations
                     b.Property<int>("Offset")
                         .HasColumnType("integer");
 
-                    b.Property<int>("PlayCount")
-                        .HasColumnType("integer");
+                    b.Property<long>("PlayCount")
+                        .HasColumnType("bigint");
 
                     b.Property<TimeSpan>("PreviewEnd")
                         .HasColumnType("interval");
@@ -2004,13 +2059,13 @@ namespace PhiZoneApi.Migrations
 
             modelBuilder.Entity("PhiZoneApi.Models.Admission", b =>
                 {
-                    b.HasOne("PhiZoneApi.Models.Resource", "Admittee")
+                    b.HasOne("PhiZoneApi.Models.OwnedResource", "Admittee")
                         .WithMany()
                         .HasForeignKey("AdmitteeId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("PhiZoneApi.Models.Resource", "Admitter")
+                    b.HasOne("PhiZoneApi.Models.OwnedResource", "Admitter")
                         .WithMany()
                         .HasForeignKey("AdmitterId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -2037,44 +2092,6 @@ namespace PhiZoneApi.Migrations
                     b.Navigation("Requester");
                 });
 
-            modelBuilder.Entity("PhiZoneApi.Models.ApplicationService", b =>
-                {
-                    b.HasOne("PhiZoneApi.Models.Application", "Application")
-                        .WithMany()
-                        .HasForeignKey("ApplicationId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Application");
-                });
-
-            modelBuilder.Entity("PhiZoneApi.Models.ApplicationServiceRecord", b =>
-                {
-                    b.HasOne("PhiZoneApi.Models.User", "Owner")
-                        .WithMany()
-                        .HasForeignKey("OwnerId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("PhiZoneApi.Models.PublicResource", "Resource")
-                        .WithMany()
-                        .HasForeignKey("ResourceId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("PhiZoneApi.Models.ApplicationService", "Service")
-                        .WithMany()
-                        .HasForeignKey("ServiceId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Owner");
-
-                    b.Navigation("Resource");
-
-                    b.Navigation("Service");
-                });
-
             modelBuilder.Entity("PhiZoneApi.Models.ApplicationUser", b =>
                 {
                     b.HasOne("PhiZoneApi.Models.Application", "Application")
@@ -2094,6 +2111,135 @@ namespace PhiZoneApi.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("PhiZoneApi.Models.EventResource", b =>
+                {
+                    b.HasOne("PhiZoneApi.Models.EventDivision", "Division")
+                        .WithMany("EventResources")
+                        .HasForeignKey("DivisionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PhiZoneApi.Models.Record", "Record")
+                        .WithMany("EventPresences")
+                        .HasForeignKey("RecordId");
+
+                    b.HasOne("PhiZoneApi.Models.SignificantResource", "SignificantResource")
+                        .WithMany("EventPresences")
+                        .HasForeignKey("SignificantResourceId");
+
+                    b.HasOne("PhiZoneApi.Models.Tag", "Tag")
+                        .WithMany("EventPresences")
+                        .HasForeignKey("TagId");
+
+                    b.HasOne("PhiZoneApi.Models.EventTeam", "Team")
+                        .WithMany()
+                        .HasForeignKey("TeamId");
+
+                    b.Navigation("Division");
+
+                    b.Navigation("Record");
+
+                    b.Navigation("SignificantResource");
+
+                    b.Navigation("Tag");
+
+                    b.Navigation("Team");
+                });
+
+            modelBuilder.Entity("PhiZoneApi.Models.Hostship", b =>
+                {
+                    b.HasOne("PhiZoneApi.Models.Event", "Event")
+                        .WithMany("Hostships")
+                        .HasForeignKey("EventId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PhiZoneApi.Models.User", "User")
+                        .WithMany("Hostships")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Event");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("PhiZoneApi.Models.Participation", b =>
+                {
+                    b.HasOne("PhiZoneApi.Models.User", "Participant")
+                        .WithMany("Participations")
+                        .HasForeignKey("ParticipantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PhiZoneApi.Models.EventTeam", "Team")
+                        .WithMany("Participations")
+                        .HasForeignKey("TeamId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Participant");
+
+                    b.Navigation("Team");
+                });
+
+            modelBuilder.Entity("PhiZoneApi.Models.PetChoice", b =>
+                {
+                    b.HasOne("PhiZoneApi.Models.PetQuestion", "Question")
+                        .WithMany()
+                        .HasForeignKey("QuestionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Question");
+                });
+
+            modelBuilder.Entity("PhiZoneApi.Models.User", b =>
+                {
+                    b.HasOne("PhiZoneApi.Models.Region", "Region")
+                        .WithMany()
+                        .HasForeignKey("RegionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Region");
+                });
+
+            modelBuilder.Entity("PhiZoneApi.Models.UserRelation", b =>
+                {
+                    b.HasOne("PhiZoneApi.Models.User", "Followee")
+                        .WithMany("FollowerRelations")
+                        .HasForeignKey("FolloweeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PhiZoneApi.Models.User", "Follower")
+                        .WithMany("FolloweeRelations")
+                        .HasForeignKey("FollowerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Followee");
+
+                    b.Navigation("Follower");
+                });
+
+            modelBuilder.Entity("SongTag", b =>
+                {
+                    b.HasOne("PhiZoneApi.Models.Song", null)
+                        .WithMany()
+                        .HasForeignKey("SongsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("PhiZoneApi.Models.Tag", null)
+                        .WithMany()
+                        .HasForeignKey("TagsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("PhiZoneApi.Models.Authorship", b =>
                 {
                     b.HasOne("PhiZoneApi.Models.User", "Author")
@@ -2102,7 +2248,7 @@ namespace PhiZoneApi.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("PhiZoneApi.Models.PublicResource", "Resource")
+                    b.HasOne("PhiZoneApi.Models.SignificantResource", "Resource")
                         .WithMany()
                         .HasForeignKey("ResourceId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -2151,23 +2297,15 @@ namespace PhiZoneApi.Migrations
                     b.Navigation("Division");
                 });
 
-            modelBuilder.Entity("PhiZoneApi.Models.Participation", b =>
+            modelBuilder.Entity("PhiZoneApi.Models.OwnedResource", b =>
                 {
-                    b.HasOne("PhiZoneApi.Models.EventTeam", "EventTeam")
-                        .WithMany("Participations")
-                        .HasForeignKey("EventTeamId")
+                    b.HasOne("PhiZoneApi.Models.User", "Owner")
+                        .WithMany()
+                        .HasForeignKey("OwnerId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("PhiZoneApi.Models.User", "Participant")
-                        .WithMany("Participations")
-                        .HasForeignKey("ParticipantId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("EventTeam");
-
-                    b.Navigation("Participant");
+                    b.Navigation("Owner");
                 });
 
             modelBuilder.Entity("PhiZoneApi.Models.PetAnswer", b =>
@@ -2187,18 +2325,7 @@ namespace PhiZoneApi.Migrations
                     b.Navigation("Owner");
                 });
 
-            modelBuilder.Entity("PhiZoneApi.Models.PetChoice", b =>
-                {
-                    b.HasOne("PhiZoneApi.Models.PetQuestion", "Question")
-                        .WithMany()
-                        .HasForeignKey("QuestionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Question");
-                });
-
-            modelBuilder.Entity("PhiZoneApi.Models.Resource", b =>
+            modelBuilder.Entity("PhiZoneApi.Models.ServiceRecord", b =>
                 {
                     b.HasOne("PhiZoneApi.Models.User", "Owner")
                         .WithMany()
@@ -2206,66 +2333,30 @@ namespace PhiZoneApi.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("PhiZoneApi.Models.ServiceScript", "Service")
+                        .WithMany()
+                        .HasForeignKey("ServiceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("Owner");
+
+                    b.Navigation("Service");
                 });
 
-            modelBuilder.Entity("PhiZoneApi.Models.User", b =>
+            modelBuilder.Entity("PhiZoneApi.Models.ServiceScript", b =>
                 {
-                    b.HasOne("PhiZoneApi.Models.EventDivision", null)
-                        .WithMany("Administrators")
-                        .HasForeignKey("EventDivisionId");
-
-                    b.HasOne("PhiZoneApi.Models.Event", null)
-                        .WithMany("Administrators")
-                        .HasForeignKey("EventId");
-
-                    b.HasOne("PhiZoneApi.Models.Region", "Region")
+                    b.HasOne("PhiZoneApi.Models.LikeableResource", "Resource")
                         .WithMany()
-                        .HasForeignKey("RegionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("ResourceId");
 
-                    b.Navigation("Region");
-                });
-
-            modelBuilder.Entity("PhiZoneApi.Models.UserRelation", b =>
-                {
-                    b.HasOne("PhiZoneApi.Models.User", "Followee")
-                        .WithMany("FollowerRelations")
-                        .HasForeignKey("FolloweeId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("PhiZoneApi.Models.User", "Follower")
-                        .WithMany("FolloweeRelations")
-                        .HasForeignKey("FollowerId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Followee");
-
-                    b.Navigation("Follower");
-                });
-
-            modelBuilder.Entity("SongTag", b =>
-                {
-                    b.HasOne("PhiZoneApi.Models.Song", null)
-                        .WithMany()
-                        .HasForeignKey("SongsId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("PhiZoneApi.Models.Tag", null)
-                        .WithMany()
-                        .HasForeignKey("TagsId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                    b.Navigation("Resource");
                 });
 
             modelBuilder.Entity("PhiZoneApi.Models.ChartAsset", b =>
                 {
                     b.HasOne("PhiZoneApi.Models.Chart", "Chart")
-                        .WithMany()
+                        .WithMany("Assets")
                         .HasForeignKey("ChartId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -2364,7 +2455,7 @@ namespace PhiZoneApi.Migrations
             modelBuilder.Entity("PhiZoneApi.Models.EventTeam", b =>
                 {
                     b.HasOne("PhiZoneApi.Models.EventDivision", "Division")
-                        .WithMany()
+                        .WithMany("Teams")
                         .HasForeignKey("DivisionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -2426,6 +2517,17 @@ namespace PhiZoneApi.Migrations
                     b.Navigation("Reviewer");
                 });
 
+            modelBuilder.Entity("PhiZoneApi.Models.EventDivision", b =>
+                {
+                    b.HasOne("PhiZoneApi.Models.Event", "Event")
+                        .WithMany("Divisions")
+                        .HasForeignKey("EventId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Event");
+                });
+
             modelBuilder.Entity("PhiZoneApi.Models.Chart", b =>
                 {
                     b.HasOne("PhiZoneApi.Models.Song", "Song")
@@ -2435,17 +2537,6 @@ namespace PhiZoneApi.Migrations
                         .IsRequired();
 
                     b.Navigation("Song");
-                });
-
-            modelBuilder.Entity("PhiZoneApi.Models.EventDivision", b =>
-                {
-                    b.HasOne("PhiZoneApi.Models.Event", "Event")
-                        .WithMany()
-                        .HasForeignKey("EventId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Event");
                 });
 
             modelBuilder.Entity("OpenIddict.EntityFrameworkCore.Models.OpenIddictEntityFrameworkCoreApplication<int>", b =>
@@ -2468,7 +2559,14 @@ namespace PhiZoneApi.Migrations
 
                     b.Navigation("FollowerRelations");
 
+                    b.Navigation("Hostships");
+
                     b.Navigation("Participations");
+                });
+
+            modelBuilder.Entity("PhiZoneApi.Models.Tag", b =>
+                {
+                    b.Navigation("EventPresences");
                 });
 
             modelBuilder.Entity("PhiZoneApi.Models.LikeableResource", b =>
@@ -2486,6 +2584,11 @@ namespace PhiZoneApi.Migrations
                     b.Navigation("Participations");
                 });
 
+            modelBuilder.Entity("PhiZoneApi.Models.Record", b =>
+                {
+                    b.Navigation("EventPresences");
+                });
+
             modelBuilder.Entity("PhiZoneApi.Models.ChartSubmission", b =>
                 {
                     b.Navigation("VolunteerVotes");
@@ -2493,12 +2596,26 @@ namespace PhiZoneApi.Migrations
 
             modelBuilder.Entity("PhiZoneApi.Models.Event", b =>
                 {
-                    b.Navigation("Administrators");
+                    b.Navigation("Divisions");
+
+                    b.Navigation("Hostships");
                 });
 
             modelBuilder.Entity("PhiZoneApi.Models.EventDivision", b =>
                 {
-                    b.Navigation("Administrators");
+                    b.Navigation("EventResources");
+
+                    b.Navigation("Teams");
+                });
+
+            modelBuilder.Entity("PhiZoneApi.Models.SignificantResource", b =>
+                {
+                    b.Navigation("EventPresences");
+                });
+
+            modelBuilder.Entity("PhiZoneApi.Models.Chart", b =>
+                {
+                    b.Navigation("Assets");
                 });
 
             modelBuilder.Entity("PhiZoneApi.Models.Song", b =>

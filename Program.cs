@@ -63,11 +63,11 @@ builder.Services.AddOpenIddict()
         options.AllowRefreshTokenFlow();
         options.UseReferenceAccessTokens();
         options.UseReferenceRefreshTokens();
-        options.RegisterScopes(OpenIddictConstants.Permissions.Scopes.Email,
-            OpenIddictConstants.Permissions.Scopes.Profile,
-            OpenIddictConstants.Permissions.Scopes.Roles);
+        // options.RegisterScopes(OpenIddictConstants.Permissions.Scopes.Email,
+        //     OpenIddictConstants.Permissions.Scopes.Profile,
+        //     OpenIddictConstants.Permissions.Scopes.Roles);
         options.SetAccessTokenLifetime(TimeSpan.FromHours(6));
-        options.SetRefreshTokenLifetime(TimeSpan.FromDays(14));
+        options.SetRefreshTokenLifetime(TimeSpan.FromDays(31));
         options.AddDevelopmentEncryptionCertificate().AddDevelopmentSigningCertificate();
         options.UseAspNetCore().EnableTokenEndpointPassthrough().DisableTransportSecurityRequirement();
     })
@@ -111,8 +111,8 @@ builder.Services.AddScoped<IVoteRepository, VoteRepository>();
 builder.Services.AddScoped<IVolunteerVoteRepository, VolunteerVoteRepository>();
 builder.Services.AddScoped<ITagRepository, TagRepository>();
 builder.Services.AddScoped<IApplicationRepository, ApplicationRepository>();
-builder.Services.AddScoped<IApplicationServiceRepository, ApplicationServiceRepository>();
-builder.Services.AddScoped<IApplicationServiceRecordRepository, ApplicationServiceRecordRepository>();
+builder.Services.AddScoped<IServiceScriptRepository, ServiceScriptRepository>();
+builder.Services.AddScoped<IServiceRecordRepository, ServiceRecordRepository>();
 builder.Services.AddScoped<IAnnouncementRepository, AnnouncementRepository>();
 builder.Services.AddScoped<IAdmissionRepository, AdmissionRepository>();
 builder.Services.AddScoped<IAuthorshipRepository, AuthorshipRepository>();
@@ -131,7 +131,9 @@ builder.Services.AddScoped<IEventRepository, EventRepository>();
 builder.Services.AddScoped<IEventDivisionRepository, EventDivisionRepository>();
 builder.Services.AddScoped<IEventTaskRepository, EventTaskRepository>();
 builder.Services.AddScoped<IEventTeamRepository, EventTeamRepository>();
+builder.Services.AddScoped<IEventResourceRepository, EventResourceRepository>();
 builder.Services.AddScoped<IParticipationRepository, ParticipationRepository>();
+builder.Services.AddScoped<IHostshipRepository, HostshipRepository>();
 builder.Services.AddScoped<IFilterService, FilterService>();
 builder.Services.AddScoped<ILikeService, LikeService>();
 builder.Services.AddScoped<IVoteService, VoteService>();
@@ -155,8 +157,11 @@ builder.Services.AddSingleton<IMessengerService, MessengerService>();
 builder.Services.AddSingleton<IMeilisearchService, MeilisearchService>();
 builder.Services.AddSingleton<ILeaderboardService, LeaderboardService>();
 builder.Services.AddSingleton<IScriptService, ScriptService>();
+builder.Services.AddSingleton<EventTaskScheduler>();
 builder.Services.AddSingleton<AuthProviderFactory>();
 builder.Services.AddSingleton<IAuthProvider, GitHubAuthProvider>();
+builder.Services.AddSingleton<IAuthProvider, PhiraAuthProvider>();
+builder.Services.AddSingleton<IAuthProvider, DiscordAuthProvider>();
 builder.Services.AddSingleton<IConnectionMultiplexer>(
     ConnectionMultiplexer.Connect(builder.Configuration.GetValue<string>("RedisConnection") ?? "localhost"));
 builder.Services.AddSingleton<IHostedService>(provider => new MailSenderService(
@@ -171,6 +176,7 @@ builder.Services.AddSingleton<IHostedService>(provider => new SongConverterServi
     provider.GetService<ILogger<SongConverterService>>()!));
 builder.Services.AddHostedService<DatabaseSeeder>();
 builder.Services.AddHostedService<DataConsistencyMaintainer>();
+builder.Services.AddHostedService<EventTaskScheduler>();
 
 if (args.Length >= 1)
 {
@@ -241,7 +247,8 @@ var app = builder.Build();
 app.UseForwardedHeaders();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment() ||
+    (args.Length >= 1 && string.Equals(args[0], "docs", StringComparison.InvariantCultureIgnoreCase)))
 {
     app.UseSwagger();
     app.UseSwaggerUI(options => { options.SwaggerEndpoint("/swagger/v2/swagger.json", "PhiZone API v2"); });

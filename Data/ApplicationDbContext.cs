@@ -10,42 +10,44 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     : IdentityDbContext<User, Role, int>(options)
 {
     public override DbSet<User> Users { get; set; } = null!;
-    public DbSet<UserRelation> UserRelations { get; set; } = null!;
-    public DbSet<Region> Regions { get; set; } = null!;
-    public DbSet<Chapter> Chapters { get; set; } = null!;
-    public DbSet<Collection> Collections { get; set; } = null!;
-    public DbSet<Song> Songs { get; set; } = null!;
-    public DbSet<Admission> Admissions { get; set; } = null!;
-    public DbSet<Chart> Charts { get; set; } = null!;
-    public DbSet<ChartAsset> ChartAssets { get; set; } = null!;
-    public DbSet<Authorship> Authorships { get; set; } = null!;
-    public DbSet<Record> Records { get; set; } = null!;
-    public DbSet<Tag> Tags { get; set; } = null!;
-    public DbSet<Comment> Comments { get; set; } = null!;
-    public DbSet<Reply> Replies { get; set; } = null!;
-    public DbSet<Like> Likes { get; set; } = null!;
-    public DbSet<Vote> Votes { get; set; } = null!;
-    public DbSet<PlayConfiguration> PlayConfigurations { get; set; } = null!;
-    public DbSet<Application> Applications { get; set; } = null!;
-    public DbSet<ApplicationService> ApplicationServices { get; set; } = null!;
-    public DbSet<ApplicationServiceRecord> ApplicationServiceRecords { get; set; } = null!;
-    public DbSet<Announcement> Announcements { get; set; } = null!;
-    public DbSet<VolunteerVote> VolunteerVotes { get; set; } = null!;
-    public DbSet<SongSubmission> SongSubmissions { get; set; } = null!;
-    public DbSet<ChartSubmission> ChartSubmissions { get; set; } = null!;
-    public DbSet<ChartAssetSubmission> ChartAssetSubmissions { get; set; } = null!;
-    public DbSet<Collaboration> Collaborations { get; set; } = null!;
-    public DbSet<Notification> Notifications { get; set; } = null!;
-    public DbSet<PetQuestion> PetQuestions { get; set; } = null!;
-    public DbSet<PetChoice> PetChoices { get; set; } = null!;
-    public DbSet<PetAnswer> PetAnswers { get; set; } = null!;
-    public DbSet<ResourceRecord> ResourceRecords { get; set; } = null!;
-    public DbSet<ApplicationUser> ApplicationUsers { get; set; } = null!;
-    public DbSet<Event> Events { get; set; } = null!;
-    public DbSet<EventDivision> EventDivisions { get; set; } = null!;
-    public DbSet<EventTask> EventTasks { get; set; } = null!;
-    public DbSet<EventTeam> EventTeams { get; set; } = null!;
-    public DbSet<Participation> Participations { get; set; } = null!;
+    public DbSet<UserRelation> UserRelations { get; init; } = null!;
+    public DbSet<Region> Regions { get; init; } = null!;
+    public DbSet<Chapter> Chapters { get; init; } = null!;
+    public DbSet<Collection> Collections { get; init; } = null!;
+    public DbSet<Song> Songs { get; init; } = null!;
+    public DbSet<Admission> Admissions { get; init; } = null!;
+    public DbSet<Chart> Charts { get; init; } = null!;
+    public DbSet<ChartAsset> ChartAssets { get; init; } = null!;
+    public DbSet<Authorship> Authorships { get; init; } = null!;
+    public DbSet<Record> Records { get; init; } = null!;
+    public DbSet<Tag> Tags { get; init; } = null!;
+    public DbSet<Comment> Comments { get; init; } = null!;
+    public DbSet<Reply> Replies { get; init; } = null!;
+    public DbSet<Like> Likes { get; init; } = null!;
+    public DbSet<Vote> Votes { get; init; } = null!;
+    public DbSet<PlayConfiguration> PlayConfigurations { get; init; } = null!;
+    public DbSet<Application> Applications { get; init; } = null!;
+    public DbSet<ServiceScript> ServiceScripts { get; init; } = null!;
+    public DbSet<ServiceRecord> ServiceRecords { get; init; } = null!;
+    public DbSet<Announcement> Announcements { get; init; } = null!;
+    public DbSet<VolunteerVote> VolunteerVotes { get; init; } = null!;
+    public DbSet<SongSubmission> SongSubmissions { get; init; } = null!;
+    public DbSet<ChartSubmission> ChartSubmissions { get; init; } = null!;
+    public DbSet<ChartAssetSubmission> ChartAssetSubmissions { get; init; } = null!;
+    public DbSet<Collaboration> Collaborations { get; init; } = null!;
+    public DbSet<Notification> Notifications { get; init; } = null!;
+    public DbSet<PetQuestion> PetQuestions { get; init; } = null!;
+    public DbSet<PetChoice> PetChoices { get; init; } = null!;
+    public DbSet<PetAnswer> PetAnswers { get; init; } = null!;
+    public DbSet<ResourceRecord> ResourceRecords { get; init; } = null!;
+    public DbSet<ApplicationUser> ApplicationUsers { get; init; } = null!;
+    public DbSet<Event> Events { get; init; } = null!;
+    public DbSet<EventDivision> EventDivisions { get; init; } = null!;
+    public DbSet<EventTask> EventTasks { get; init; } = null!;
+    public DbSet<EventTeam> EventTeams { get; init; } = null!;
+    public DbSet<EventResource> EventResources { get; init; } = null!;
+    public DbSet<Participation> Participations { get; init; } = null!;
+    public DbSet<Hostship> Hostships { get; init; } = null!;
 
     protected override void OnConfiguring(DbContextOptionsBuilder builder)
     {
@@ -74,7 +76,14 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasMany(e => e.Participants)
             .WithMany(e => e.EventTeams)
             .UsingEntity<Participation>(l => l.HasOne<User>(e => e.Participant).WithMany(e => e.Participations),
-                r => r.HasOne<EventTeam>(e => e.EventTeam).WithMany(e => e.Participations));
+                r => r.HasOne<EventTeam>(e => e.Team).WithMany(e => e.Participations));
+
+        builder.Entity<Event>()
+            .HasMany(e => e.Hosts)
+            .WithMany(e => e.Events)
+            .UsingEntity<Hostship>(
+                l => l.HasOne<User>(e => e.User).WithMany(e => e.Hostships),
+                r => r.HasOne<Event>(e => e.Event).WithMany(e => e.Hostships));
 
         builder.Entity<Song>().HasMany(e => e.Tags).WithMany(e => e.Songs);
 

@@ -16,6 +16,7 @@ using PhiZoneApi.Filters;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 using PhiZoneApi.Utils;
+using HP = PhiZoneApi.Constants.HostshipPermissions;
 
 // ReSharper disable RouteTemplates.ActionRoutePrefixCanBeExtractedToControllerRoute
 
@@ -30,6 +31,9 @@ public class TagController(
     ITagRepository tagRepository,
     ISongRepository songRepository,
     IChartRepository chartRepository,
+    IEventResourceRepository eventResourceRepository,
+    IEventDivisionRepository eventDivisionRepository,
+    IEventRepository eventRepository,
     IDtoMapper dtoMapper,
     IOptions<DataSettings> dataSettings,
     IFilterService filterService,
@@ -63,8 +67,8 @@ public class TagController(
         {
             var result = await meilisearchService.SearchAsync<Tag>(dto.Search, dto.PerPage, dto.Page);
             var idList = result.Hits.Select(item => item.Id).ToList();
-            tags = (await tagRepository.GetTagsAsync(["DateCreated"], [false], position, dto.PerPage,
-                e => idList.Contains(e.Id))).OrderBy(e => idList.IndexOf(e.Id));
+            tags = (await tagRepository.GetTagsAsync(predicate: e => idList.Contains(e.Id)))
+                .OrderBy(e => idList.IndexOf(e.Id));
             total = result.TotalHits;
         }
         else
@@ -113,6 +117,38 @@ public class TagController(
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
         var tag = await tagRepository.GetTagAsync(id);
+        var dto = mapper.Map<TagDto>(tag);
+
+        return Ok(new ResponseDto<TagDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
+    }
+
+    /// <summary>
+    ///     Retrieves a specific tag by its name.
+    /// </summary>
+    /// <param name="name">A tag's name.</param>
+    /// <returns>A tag.</returns>
+    /// <response code="200">Returns a tag.</response>
+    /// <response code="304">
+    ///     When the resource has not been updated since last retrieval. Requires <c>If-None-Match</c>.
+    /// </response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="404">When the specified tag is not found.</response>
+    [HttpGet("{name}")]
+    [ServiceFilter(typeof(ETagFilter))]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<TagDto>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status304NotModified, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> GetTag([FromRoute] string name)
+    {
+        var normalizedName = resourceService.Normalize(name);
+        if (!await tagRepository.TagExistsAsync(normalizedName))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+        var tag = await tagRepository.GetTagAsync(normalizedName);
         var dto = mapper.Map<TagDto>(tag);
 
         return Ok(new ResponseDto<TagDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
@@ -302,7 +338,7 @@ public class TagController(
         var songs = await songRepository.GetSongsAsync(dto.Order, dto.Desc, position, dto.PerPage,
             e => e.Tags.Any(tag => tag.Id == id), currentUser?.Id);
         var total = await songRepository.CountSongsAsync(e => e.Tags.Any(tag => tag.Id == id));
-        var list = songs.Select(dtoMapper.MapSong<SongDto>).ToList();
+        var list = songs.Select(e => dtoMapper.MapSong<SongDto>(e)).ToList();
 
         return Ok(new ResponseDto<IEnumerable<SongDto>>
         {
@@ -345,7 +381,7 @@ public class TagController(
         var charts = await chartRepository.GetChartsAsync(dto.Order, dto.Desc, position, dto.PerPage,
             e => e.Tags.Any(tag => tag.Id == id), currentUser?.Id);
         var total = await chartRepository.CountChartsAsync(e => e.Tags.Any(tag => tag.Id == id));
-        var list = charts.Select(dtoMapper.MapChart<ChartDto>).ToList();
+        var list = charts.Select(e => dtoMapper.MapChart<ChartDto>(e)).ToList();
 
         return Ok(new ResponseDto<IEnumerable<ChartDto>>
         {
@@ -357,5 +393,71 @@ public class TagController(
             HasNext = dto.PerPage > 0 && dto.PerPage * dto.Page < total,
             Data = list
         });
+    }
+
+    /// <summary>
+    ///     Links a tag to a specific event division.
+    /// </summary>
+    /// <returns>An empty body.</returns>
+    /// <response code="201">Returns an empty body.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
+    /// <response code="500">When an internal server error has occurred.</response>
+    [HttpPost("{id:guid}/event")]
+    [Consumes("application/json")]
+    [Produces("application/json")]
+    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
+    [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> CreateEventResource([FromRoute] Guid id, [FromBody] EventResourceRequestDto dto)
+    {
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!await tagRepository.TagExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+        var tag = await tagRepository.GetTagAsync(id);
+
+        if (!await eventDivisionRepository.EventDivisionExistsAsync(dto.DivisionId))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
+            });
+
+        var eventDivision = await eventDivisionRepository.GetEventDivisionAsync(dto.DivisionId);
+        var eventEntity = await eventRepository.GetEventAsync(eventDivision.EventId);
+        var permission = HP.Gen(HP.Create, HP.Resource);
+
+        if (!(resourceService.HasPermission(currentUser, UserRole.Administrator) || eventEntity.Hostships.Any(f =>
+                f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(permission)))))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+
+        var eventResource = new EventResource
+        {
+            DivisionId = dto.DivisionId,
+            ResourceId = tag.Id,
+            TagId = tag.Id,
+            Type = dto.Type,
+            Label = dto.Label,
+            Description = dto.Description,
+            IsAnonymous = dto.IsAnonymous,
+            TeamId = dto.TeamId,
+            DateCreated = DateTimeOffset.UtcNow
+        };
+
+        if (!await eventResourceRepository.CreateEventResourceAsync(eventResource))
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+
+        return StatusCode(StatusCodes.Status201Created);
     }
 }

@@ -5,12 +5,17 @@ namespace PhiZoneApi.Interfaces;
 
 public interface ITagRepository
 {
-    Task<ICollection<Tag>> GetTagsAsync(List<string> order, List<bool> desc, int position, int take,
+    Task<ICollection<Tag>> GetTagsAsync(List<string>? order = null, List<bool>? desc = null, int? position = 0,
+        int? take = -1,
         Expression<Func<Tag, bool>>? predicate = null);
 
     Task<Tag> GetTagAsync(Guid id);
 
+    Task<Tag> GetTagAsync(string name);
+
     Task<bool> TagExistsAsync(Guid id);
+
+    Task<bool> TagExistsAsync(string name);
 
     Task<bool> CreateTagAsync(Tag tag);
 

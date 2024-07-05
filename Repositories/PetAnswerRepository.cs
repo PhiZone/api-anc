@@ -12,14 +12,15 @@ namespace PhiZoneApi.Repositories;
 public class PetAnswerRepository(ApplicationDbContext context, IMeilisearchService meilisearchService)
     : IPetAnswerRepository
 {
-    public async Task<ICollection<PetAnswer>> GetPetAnswersAsync(List<string> order, List<bool> desc, int position,
-        int take,
+    public async Task<ICollection<PetAnswer>> GetPetAnswersAsync(List<string>? order = null, List<bool>? desc = null,
+        int? position = 0,
+        int? take = -1,
         Expression<Func<PetAnswer, bool>>? predicate = null)
     {
         var result = context.PetAnswers.OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
-        result = result.Skip(position);
-        return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
+        result = result.Skip(position ?? 0);
+        return take >= 0 ? await result.Take(take.Value).ToListAsync() : await result.ToListAsync();
     }
 
     public async Task<PetAnswer> GetPetAnswerAsync(Guid id)

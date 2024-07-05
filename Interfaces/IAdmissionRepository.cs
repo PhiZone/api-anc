@@ -5,13 +5,16 @@ namespace PhiZoneApi.Interfaces;
 
 public interface IAdmissionRepository
 {
-    Task<ICollection<Admission>> GetAdmittersAsync(Guid admitteeId, List<string> order, List<bool> desc, int position,
-        int take, Expression<Func<Admission, bool>>? predicate = null);
+    Task<ICollection<Admission>> GetAdmittersAsync(Guid admitteeId, List<string>? order = null, List<bool>? desc = null,
+        int? position = 0,
+        int? take = -1, Expression<Func<Admission, bool>>? predicate = null);
 
-    Task<ICollection<Admission>> GetAdmitteesAsync(Guid admitterId, List<string> order, List<bool> desc, int position,
-        int take, Expression<Func<Admission, bool>>? predicate = null);
+    Task<ICollection<Admission>> GetAdmitteesAsync(Guid admitterId, List<string>? order = null, List<bool>? desc = null,
+        int? position = 0,
+        int? take = -1, Expression<Func<Admission, bool>>? predicate = null);
 
-    Task<ICollection<Admission>> GetAdmissionsAsync(List<string> order, List<bool> desc, int position, int take,
+    Task<ICollection<Admission>> GetAdmissionsAsync(List<string>? order = null, List<bool>? desc = null,
+        int? position = 0, int? take = -1,
         Expression<Func<Admission, bool>>? predicate = null);
 
     Task<Admission> GetAdmissionAsync(Guid admitterId, Guid admitteeId);

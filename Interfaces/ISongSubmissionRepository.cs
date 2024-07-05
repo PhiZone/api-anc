@@ -7,15 +7,17 @@ namespace PhiZoneApi.Interfaces;
 
 public interface ISongSubmissionRepository
 {
-    Task<ICollection<SongSubmission>> GetSongSubmissionsAsync(List<string> order, List<bool> desc, int position,
-        int take,
+    Task<ICollection<SongSubmission>> GetSongSubmissionsAsync(List<string>? order = null, List<bool>? desc = null,
+        int? position = 0,
+        int? take = -1,
         Expression<Func<SongSubmission, bool>>? predicate = null);
 
     Task<SongSubmission> GetSongSubmissionAsync(Guid id);
 
-    Task<ICollection<SongSubmission>> GetUserSongSubmissionsAsync(int userId, List<string> order, List<bool> desc,
-        int position,
-        int take,
+    Task<ICollection<SongSubmission>> GetUserSongSubmissionsAsync(int userId, List<string>? order = null,
+        List<bool>? desc = null,
+        int? position = 0,
+        int? take = -1,
         Expression<Func<SongSubmission, bool>>? predicate = null);
 
     Task<bool> SongSubmissionExistsAsync(Guid id);

@@ -8,11 +8,11 @@ public class Admission
 {
     public Guid AdmitterId { get; set; }
 
+    public OwnedResource Admitter { get; set; } = null!;
+
     public Guid AdmitteeId { get; set; }
 
-    public Resource Admitter { get; set; } = null!;
-
-    public Resource Admittee { get; set; } = null!;
+    public OwnedResource Admittee { get; set; } = null!;
 
     public RequestStatus Status { get; set; }
 

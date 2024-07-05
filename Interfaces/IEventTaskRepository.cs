@@ -5,7 +5,8 @@ namespace PhiZoneApi.Interfaces;
 
 public interface IEventTaskRepository
 {
-    Task<ICollection<EventTask>> GetEventTasksAsync(List<string> order, List<bool> desc, int position, int take,
+    Task<ICollection<EventTask>> GetEventTasksAsync(List<string>? order = null, List<bool>? desc = null,
+        int? position = 0, int? take = -1,
         Expression<Func<EventTask, bool>>? predicate = null);
 
     Task<EventTask> GetEventTaskAsync(Guid id);

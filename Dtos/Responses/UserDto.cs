@@ -18,15 +18,15 @@ public class UserDto
 
     public string? Role { get; set; }
 
-    public int Experience { get; set; }
+    public ulong Experience { get; set; }
 
     public string? Tag { get; set; }
 
     public double Rks { get; set; }
 
-    public int FollowerCount { get; set; }
+    public long FollowerCount { get; set; }
 
-    public int FolloweeCount { get; set; }
+    public long FolloweeCount { get; set; }
 
     public DateTimeOffset? DateLastLoggedIn { get; set; }
 

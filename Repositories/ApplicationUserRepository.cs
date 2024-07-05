@@ -9,32 +9,33 @@ namespace PhiZoneApi.Repositories;
 
 public class ApplicationUserRepository(ApplicationDbContext context) : IApplicationUserRepository
 {
-    public async Task<ICollection<ApplicationUser>> GetApplicationsAsync(int userId, List<string> order,
-        List<bool> desc, int position, int take, Expression<Func<ApplicationUser, bool>>? predicate = null)
+    public async Task<ICollection<ApplicationUser>> GetApplicationsAsync(int userId, List<string>? order,
+        List<bool>? desc, int? position = 0, int? take = -1, Expression<Func<ApplicationUser, bool>>? predicate = null)
     {
         var result = context.ApplicationUsers.Where(relation => relation.UserId == userId).OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
-        result = result.Skip(position);
-        return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
+        result = result.Skip(position ?? 0);
+        return take >= 0 ? await result.Take(take.Value).ToListAsync() : await result.ToListAsync();
     }
 
-    public async Task<ICollection<ApplicationUser>> GetUsersAsync(Guid applicationId, List<string> order,
-        List<bool> desc, int position, int take, Expression<Func<ApplicationUser, bool>>? predicate = null)
+    public async Task<ICollection<ApplicationUser>> GetUsersAsync(Guid applicationId, List<string>? order,
+        List<bool>? desc, int? position = 0, int? take = -1, Expression<Func<ApplicationUser, bool>>? predicate = null)
     {
         var result = context.ApplicationUsers.Where(relation => relation.ApplicationId == applicationId)
             .OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
-        result = result.Skip(position);
-        return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
+        result = result.Skip(position ?? 0);
+        return take >= 0 ? await result.Take(take.Value).ToListAsync() : await result.ToListAsync();
     }
 
-    public async Task<ICollection<ApplicationUser>> GetRelationsAsync(List<string> order, List<bool> desc, int position,
-        int take, Expression<Func<ApplicationUser, bool>>? predicate = null)
+    public async Task<ICollection<ApplicationUser>> GetRelationsAsync(List<string>? order = null,
+        List<bool>? desc = null, int? position = 0,
+        int? take = -1, Expression<Func<ApplicationUser, bool>>? predicate = null)
     {
         var result = context.ApplicationUsers.OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
-        result = result.Skip(position);
-        return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
+        result = result.Skip(position ?? 0);
+        return take >= 0 ? await result.Take(take.Value).ToListAsync() : await result.ToListAsync();
     }
 
     public async Task<ApplicationUser> GetRelationAsync(Guid applicationId, int userId)

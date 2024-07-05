@@ -46,23 +46,20 @@ public class FileMigrationService(IServiceProvider serviceProvider, int position
 
     private async Task MigrateFilesAsync(CancellationToken cancellationToken)
     {
-        var songs = await _songRepository.GetSongsAsync(["DateCreated"], [false],
-            position, -1);
+        var songs = await _songRepository.GetSongsAsync(position: position);
         var i = 0;
         foreach (var song in songs)
         {
             _logger.LogInformation(LogEvents.FileMigration,
                 "[{Now}] Migrating files for Song #{Id} {Current} / {Total}",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
-                song.Id, ++i, songs.Count);
+                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), song.Id, ++i, songs.Count);
 
             if (song.File != null)
                 (song.File, song.FileChecksum) = await MigrateFileAsync<Song>(song.File, song.Title, cancellationToken);
 
             song.Illustration = (await MigrateFileAsync<Song>(song.Illustration, song.Title, cancellationToken)).Item1;
-            foreach (var submission in await _songSubmissionRepository.GetSongSubmissionsAsync(
-                         ["DateCreated"], [false], 0, -1,
-                         e => e.RepresentationId == song.Id))
+            foreach (var submission in await _songSubmissionRepository.GetSongSubmissionsAsync(predicate: e =>
+                         e.RepresentationId == song.Id))
             {
                 submission.File = song.File;
                 submission.FileChecksum = song.FileChecksum;
@@ -70,21 +67,18 @@ public class FileMigrationService(IServiceProvider serviceProvider, int position
                 await _songSubmissionRepository.UpdateSongSubmissionAsync(submission);
             }
 
-            var charts = await _chartRepository.GetChartsAsync(["DateCreated"],
-                [false], 0, -1, e => e.SongId == song.Id);
+            var charts = await _chartRepository.GetChartsAsync(predicate: e => e.SongId == song.Id);
             var j = 0;
             foreach (var chart in charts)
             {
                 _logger.LogInformation(LogEvents.FileMigration,
                     "[{Now}] Migrating files for Chart #{Id} {Current} / {Total}",
-                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
-                    chart.Id, ++j, charts.Count);
+                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), chart.Id, ++j, charts.Count);
                 if (chart.File == null) continue;
                 (chart.File, chart.FileChecksum) =
                     await MigrateFileAsync<Chart>(chart.File, chart.Title ?? song.Title, cancellationToken);
-                foreach (var submission in await _chartSubmissionRepository.GetChartSubmissionsAsync(
-                             ["DateCreated"], [false], 0, -1,
-                             e => e.RepresentationId == chart.Id))
+                foreach (var submission in await _chartSubmissionRepository.GetChartSubmissionsAsync(predicate: e =>
+                             e.RepresentationId == chart.Id))
                 {
                     submission.File = chart.File;
                     submission.FileChecksum = chart.FileChecksum;

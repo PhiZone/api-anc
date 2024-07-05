@@ -43,7 +43,7 @@ public class AuthorshipController(
     /// <response code="400">When any of the parameters is invalid.</response>
     [HttpGet]
     [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<AuthorDto>>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<PositionalUserDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetAuthorships([FromQuery] ArrayRequestDto dto,
         [FromQuery] AuthorshipFilterDto? filterDto = null)
@@ -58,13 +58,13 @@ public class AuthorshipController(
             predicateExpr, currentUser?.Id);
         var list = authorships.Select(e =>
         {
-            var author = dtoMapper.MapUser<AuthorDto>(e.Author);
+            var author = dtoMapper.MapUser<PositionalUserDto>(e.Author);
             author.Position = e.Position;
             return author;
         });
         var total = await authorshipRepository.CountAuthorshipsAsync(predicateExpr);
 
-        return Ok(new ResponseDto<IEnumerable<AuthorDto>>
+        return Ok(new ResponseDto<IEnumerable<PositionalUserDto>>
         {
             Status = ResponseStatus.Ok,
             Code = ResponseCodes.Ok,
@@ -90,7 +90,7 @@ public class AuthorshipController(
     [HttpGet("{id:guid}")]
     [ServiceFilter(typeof(ETagFilter))]
     [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<AuthorDto>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<PositionalUserDto>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status304NotModified, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
@@ -103,10 +103,11 @@ public class AuthorshipController(
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
         var authorship = await authorshipRepository.GetAuthorshipAsync(id, currentUser?.Id);
-        var dto = dtoMapper.MapUser<AuthorDto>(authorship.Author);
+        var dto = dtoMapper.MapUser<PositionalUserDto>(authorship.Author);
         dto.Position = authorship.Position;
 
-        return Ok(new ResponseDto<AuthorDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
+        return Ok(new ResponseDto<PositionalUserDto>
+            { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
     }
 
     /// <summary>

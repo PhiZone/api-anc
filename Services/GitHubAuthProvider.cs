@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http.Extensions;
+﻿using System.Net;
+using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using PhiZoneApi.Dtos.Deliverers;
@@ -15,7 +16,7 @@ public class GitHubAuthProvider : IAuthProvider
 {
     private readonly Guid _applicationId;
     private readonly string _avatarUrl;
-    private readonly HttpClient _client = new();
+    private readonly HttpClient _client;
     private readonly string _clientId;
     private readonly string _clientSecret;
     private readonly string _illustrationUrl;
@@ -23,7 +24,7 @@ public class GitHubAuthProvider : IAuthProvider
     private readonly IServiceProvider _serviceProvider;
 
     public GitHubAuthProvider(IOptions<List<AuthProvider>> authProviders, IConnectionMultiplexer redis,
-        IServiceProvider serviceProvider)
+        IServiceProvider serviceProvider, IConfiguration config)
     {
         _redis = redis;
         _serviceProvider = serviceProvider;
@@ -33,6 +34,12 @@ public class GitHubAuthProvider : IAuthProvider
         _applicationId = providerSettings.ApplicationId;
         _avatarUrl = providerSettings.AvatarUrl;
         _illustrationUrl = providerSettings.IllustrationUrl;
+        _client = string.IsNullOrEmpty(config["Proxy"])
+            ? new HttpClient()
+            : new HttpClient(new HttpClientHandler
+            {
+                Proxy = new WebProxy { Address = new Uri(config["Proxy"]!) }
+            });
     }
 
     public async Task InitializeAsync()
@@ -64,7 +71,8 @@ public class GitHubAuthProvider : IAuthProvider
         await db.StringSetAsync($"phizone:github:{state}", user?.Id.ToString() ?? string.Empty, TimeSpan.FromHours(2));
         var query = new QueryBuilder
         {
-            { "client_id", _clientId }, { "state", state },
+            { "client_id", _clientId },
+            { "state", state },
             { "redirect_uri", $"https://redirect.phi.zone/?uri={redirectUri}" }
         };
         if (user != null) query.Add("login", user.Email!);
@@ -73,12 +81,13 @@ public class GitHubAuthProvider : IAuthProvider
         {
             Type = ServiceResponseType.Redirect,
             RedirectUri =
-                new UriBuilder("https://github.com/login/oauth/authorize") { Query = query.ToString() }.Uri,
+                new UriBuilder("https://github.com/login/oauth/authorize") { Query = query.ToString() }.Uri.ToString(),
             Message = null
         };
     }
 
-    public async Task<(string, string?)?> RequestTokenAsync(string code, string state, User? user = null)
+    public async Task<(string, string?)?> RequestTokenAsync(string code, string state, User? user = null,
+        string? redirectUri = null)
     {
         var db = _redis.GetDatabase();
         var key = $"phizone:github:{state}";
@@ -121,6 +130,20 @@ public class GitHubAuthProvider : IAuthProvider
         return await userRepository.GetUserByRemoteIdAsync(_applicationId, content.Login);
     }
 
+    public async Task<RemoteUserDto?> GetRemoteIdentityAsync(string accessToken)
+    {
+        var response = await RetrieveIdentityAsync(accessToken);
+        if (!response.IsSuccessStatusCode) return null;
+
+        var content = JsonConvert.DeserializeObject<GitHubUserDto>(await response.Content.ReadAsStringAsync())!;
+
+        return new RemoteUserDto
+        {
+            Id = content.Id.ToString(), UserName = content.Name, Email = content.Email,
+            Avatar = await _client.GetByteArrayAsync(content.AvatarUrl)
+        };
+    }
+
     public async Task<bool> BindIdentityAsync(User user)
     {
         await using var scope = _serviceProvider.CreateAsyncScope();
@@ -139,6 +162,7 @@ public class GitHubAuthProvider : IAuthProvider
         if (existingUser != null && existingUser.Id != user.Id) return false;
 
         applicationUser.RemoteUserId = content.Login;
+        applicationUser.RemoteUserName = content.Name;
         await applicationUserRepository.UpdateRelationAsync(applicationUser);
         return true;
     }
@@ -166,6 +190,15 @@ public class GitHubAuthProvider : IAuthProvider
             applicationUser.DateUpdated = DateTimeOffset.UtcNow;
             await applicationUserRepository.UpdateRelationAsync(applicationUser);
         }
+    }
+
+    public async Task<bool> RefreshTokenAsync(User user)
+    {
+        await using var scope = _serviceProvider.CreateAsyncScope();
+        var applicationUserRepository = scope.ServiceProvider.GetRequiredService<IApplicationUserRepository>();
+        if (!await applicationUserRepository.RelationExistsAsync(_applicationId, user.Id)) return false;
+        var applicationUser = await applicationUserRepository.GetRelationAsync(_applicationId, user.Id);
+        return applicationUser.DateAccessTokenExpires - DateTimeOffset.UtcNow > TimeSpan.FromMinutes(10);
     }
 
     public async Task RevokeTokenAsync(User user)

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using OpenIddict.Abstractions;
 using OpenIddict.Validation.AspNetCore;
 using PhiZoneApi.Configurations;
@@ -16,6 +17,8 @@ using PhiZoneApi.Filters;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 using PhiZoneApi.Utils;
+using StackExchange.Redis;
+using HP = PhiZoneApi.Constants.HostshipPermissions;
 
 // ReSharper disable RouteTemplates.ActionRoutePrefixCanBeExtractedToControllerRoute
 
@@ -51,8 +54,12 @@ public class ChartController(
     ICollectionRepository collectionRepository,
     IAdmissionRepository admissionRepository,
     ITagRepository tagRepository,
+    IEventResourceRepository eventResourceRepository,
+    IEventDivisionRepository eventDivisionRepository,
+    IEventRepository eventRepository,
     ITemplateService templateService,
     ILeaderboardService leaderboardService,
+    IConnectionMultiplexer redis,
     ILogger<ChartController> logger,
     IMeilisearchService meilisearchService) : Controller
 {
@@ -74,12 +81,20 @@ public class ChartController(
             dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
+        var tagsToInclude = tagDto?.TagsToInclude?.Select(resourceService.Normalize).ToList();
+        var tagsToExclude = tagDto?.TagsToExclude?.Select(resourceService.Normalize).ToList();
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser,
             e => tagDto == null ||
-                 ((tagDto.TagsToInclude == null || e.Tags.Any(tag =>
-                      tagDto.TagsToInclude.Select(resourceService.Normalize).ToList().Contains(tag.NormalizedName))) &&
-                  (tagDto.TagsToExclude == null || e.Tags.All(tag =>
-                      !tagDto.TagsToExclude.Select(resourceService.Normalize).ToList().Contains(tag.NormalizedName)))));
+                 ((tagDto.TagsToInclude == null || e.Tags.Any(tag => tagsToInclude!.Contains(tag.NormalizedName)) ||
+                   e.Song.Tags.Any(tag => tagsToInclude!.Contains(tag.NormalizedName))) &&
+                  (tagDto.TagsToExclude == null || (e.Tags.All(tag => !tagsToExclude!.Contains(tag.NormalizedName)) &&
+                                                    e.Song.Tags.All(tag =>
+                                                        !tagsToExclude!.Contains(tag.NormalizedName))))));
+        var showAnonymous = filterDto is
+        {
+            RangeId: not null, ContainsAuthorName: null, EqualsAuthorName: null, RangeOwnerId: null, MinOwnerId: null,
+            MaxOwnerId: null
+        };
         IEnumerable<Chart> charts;
         int total;
         if (dto.Search != null)
@@ -87,18 +102,18 @@ public class ChartController(
             var result = await meilisearchService.SearchAsync<Chart>(dto.Search, dto.PerPage, dto.Page,
                 showHidden: currentUser is { Role: UserRole.Administrator });
             var idList = result.Hits.Select(item => item.Id).ToList();
-            charts = (await chartRepository.GetChartsAsync(["DateCreated"], [false], position, dto.PerPage,
-                e => idList.Contains(e.Id), currentUser?.Id)).OrderBy(e => idList.IndexOf(e.Id));
+            charts = (await chartRepository.GetChartsAsync(predicate: e => idList.Contains(e.Id),
+                currentUserId: currentUser?.Id)).OrderBy(e => idList.IndexOf(e.Id));
             total = result.TotalHits;
         }
         else
         {
             charts = await chartRepository.GetChartsAsync(dto.Order, dto.Desc, position, dto.PerPage, predicateExpr,
-                currentUser?.Id);
-            total = await chartRepository.CountChartsAsync(predicateExpr);
+                currentUser?.Id, showAnonymous);
+            total = await chartRepository.CountChartsAsync(predicateExpr, showAnonymous);
         }
 
-        var list = charts.Select(dtoMapper.MapChart<ChartDto>).ToList();
+        var list = charts.Select(e => dtoMapper.MapChart<ChartDto>(e)).ToList();
 
         return Ok(new ResponseDto<IEnumerable<ChartDto>>
         {
@@ -162,6 +177,55 @@ public class ChartController(
     }
 
     /// <summary>
+    ///     Retrieves a specific chart using a TapTap ghost account.
+    /// </summary>
+    /// <param name="id">A chart's ID.</param>
+    /// <returns>A chart.</returns>
+    /// <response code="200">Returns a chart.</response>
+    /// <response code="304">
+    ///     When the resource has not been updated since last retrieval. Requires <c>If-None-Match</c>.
+    /// </response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="404">When the specified chart is not found.</response>
+    [HttpGet("{id:guid}/tapTap")]
+    [ServiceFilter(typeof(ETagFilter))]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<ChartDetailedDto>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status304NotModified, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> GetChartTapTapGhost([FromRoute] Guid id)
+    {
+        var db = redis.GetDatabase();
+        var key = $"phizone:tapghost:{User.GetClaim("appId")}:{User.GetClaim("unionId")}";
+        if (!await db.KeyExistsAsync(key)) return Unauthorized();
+        var currentUser = JsonConvert.DeserializeObject<UserDetailedDto>((await db.StringGetAsync(key))!)!;
+        if (!await chartRepository.ChartExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+        var chart = await chartRepository.GetChartAsync(id);
+        var dto = dtoMapper.MapChart<ChartDetailedDto>(chart);
+        var records = JsonConvert.DeserializeObject<List<Record>>((await db.StringGetAsync($"{key}:records"))!)!;
+
+        dto.PersonalBestScore = records.OrderByDescending(e => e.Score)
+            .FirstOrDefault(r => r.OwnerId == currentUser.Id && r.ChartId == id)
+            ?.Score;
+        dto.PersonalBestAccuracy = records.OrderByDescending(e => e.Accuracy)
+            .FirstOrDefault(r => r.OwnerId == currentUser.Id && r.ChartId == id)
+            ?.Accuracy;
+        dto.PersonalBestRks = records.OrderByDescending(e => e.Rks)
+            .FirstOrDefault(r => r.OwnerId == currentUser.Id && r.ChartId == id)
+            ?.Rks;
+
+        return Ok(new ResponseDto<ChartDetailedDto>
+        {
+            Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto
+        });
+    }
+
+    /// <summary>
     ///     Retrieves a random chart.
     /// </summary>
     /// <returns>A random chart.</returns>
@@ -175,17 +239,15 @@ public class ChartController(
         [FromQuery] ChartFilterDto? filterDto = null, [FromQuery] ArrayTagDto? tagDto = null)
     {
         var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
+        var tagsToInclude = tagDto?.TagsToInclude?.Select(resourceService.Normalize).ToList();
+        var tagsToExclude = tagDto?.TagsToExclude?.Select(resourceService.Normalize).ToList();
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser,
-            e => !e.IsHidden && (tagDto == null ||
-                                 ((tagDto.TagsToInclude == null || e.Tags.Any(tag =>
-                                     tagDto.TagsToInclude.Select(resourceService.Normalize)
-                                         .ToList()
-                                         .Contains(tag.NormalizedName))) && (tagDto.TagsToExclude == null ||
-                                                                             e.Tags.All(tag =>
-                                                                                 !tagDto.TagsToExclude
-                                                                                     .Select(resourceService.Normalize)
-                                                                                     .ToList()
-                                                                                     .Contains(tag.NormalizedName))))));
+            e => tagDto == null ||
+                 ((tagDto.TagsToInclude == null || e.Tags.Any(tag => tagsToInclude!.Contains(tag.NormalizedName)) ||
+                   e.Song.Tags.Any(tag => tagsToInclude!.Contains(tag.NormalizedName))) &&
+                  (tagDto.TagsToExclude == null || (e.Tags.All(tag => !tagsToExclude!.Contains(tag.NormalizedName)) &&
+                                                    e.Song.Tags.All(tag =>
+                                                        !tagsToExclude!.Contains(tag.NormalizedName))))));
         var chart = await chartRepository.GetRandomChartAsync(predicateExpr, currentUser?.Id);
 
         if (chart == null)
@@ -364,6 +426,8 @@ public class ChartController(
         chart.LevelType = dto.LevelType;
         chart.Level = dto.Level;
         chart.Difficulty = dto.Difficulty;
+        chart.Format = dto.Format;
+        chart.FileChecksum = dto.FileChecksum;
         chart.AuthorName = dto.AuthorName;
         chart.Illustrator = dto.Illustrator;
         chart.Description = dto.Description;
@@ -1847,5 +1911,71 @@ public class ChartController(
             });
 
         return NoContent();
+    }
+
+    /// <summary>
+    ///     Links a chart to a specific event division.
+    /// </summary>
+    /// <returns>An empty body.</returns>
+    /// <response code="201">Returns an empty body.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
+    /// <response code="500">When an internal server error has occurred.</response>
+    [HttpPost("{id:guid}/event")]
+    [Consumes("application/json")]
+    [Produces("application/json")]
+    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
+    [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> CreateEventResource([FromRoute] Guid id, [FromBody] EventResourceRequestDto dto)
+    {
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!await chartRepository.ChartExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+        var chart = await chartRepository.GetChartAsync(id);
+
+        if (!await eventDivisionRepository.EventDivisionExistsAsync(dto.DivisionId))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
+            });
+
+        var eventDivision = await eventDivisionRepository.GetEventDivisionAsync(dto.DivisionId);
+        var eventEntity = await eventRepository.GetEventAsync(eventDivision.EventId);
+        var permission = HP.Gen(HP.Create, HP.Resource);
+
+        if (!(resourceService.HasPermission(currentUser, UserRole.Administrator) || eventEntity.Hostships.Any(f =>
+                f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(permission)))))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+
+        var eventResource = new EventResource
+        {
+            DivisionId = dto.DivisionId,
+            ResourceId = chart.Id,
+            SignificantResourceId = chart.Id,
+            Type = dto.Type,
+            Label = dto.Label,
+            Description = dto.Description,
+            IsAnonymous = dto.IsAnonymous,
+            TeamId = dto.TeamId,
+            DateCreated = DateTimeOffset.UtcNow
+        };
+
+        if (!await eventResourceRepository.CreateEventResourceAsync(eventResource))
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+
+        return StatusCode(StatusCodes.Status201Created);
     }
 }

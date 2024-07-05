@@ -2,7 +2,7 @@
 
 namespace PhiZoneApi.Models;
 
-public class Notification : Resource
+public class Notification : OwnedResource
 {
     public NotificationType Type { get; set; }
 

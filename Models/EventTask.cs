@@ -2,13 +2,11 @@ using PhiZoneApi.Enums;
 
 namespace PhiZoneApi.Models;
 
-public class EventTask
+public class EventTask : Resource
 {
-    public Guid Id { get; set; }
-
     public string Name { get; set; } = null!;
 
-    public TaskType Type { get; set; }
+    public EventTaskType Type { get; set; }
 
     public string? Code { get; set; }
 
@@ -21,8 +19,6 @@ public class EventTask
     public EventDivision Division { get; set; } = null!;
 
     public DateTimeOffset? DateExecuted { get; set; }
-
-    public DateTimeOffset DateCreated { get; set; }
 
     public DateTimeOffset DateUpdated { get; set; }
 

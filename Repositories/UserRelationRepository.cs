@@ -11,8 +11,10 @@ namespace PhiZoneApi.Repositories;
 public class UserRelationRepository(ApplicationDbContext context, IMeilisearchService meilisearchService)
     : IUserRelationRepository
 {
-    public async Task<ICollection<UserRelation>> GetFollowersAsync(int userId, List<string> order, List<bool> desc,
-        int position, int take, Expression<Func<UserRelation, bool>>? predicate = null, int? currentUserId = null)
+    public async Task<ICollection<UserRelation>> GetFollowersAsync(int userId, List<string>? order = null,
+        List<bool>? desc = null,
+        int? position = 0, int? take = -1, Expression<Func<UserRelation, bool>>? predicate = null,
+        int? currentUserId = null)
     {
         var result = context.UserRelations.Include(e => e.Follower)
             .Where(e => e.Type != UserRelationType.Blacklisted && e.FolloweeId == userId)
@@ -23,12 +25,14 @@ public class UserRelationRepository(ApplicationDbContext context, IMeilisearchSe
                 .ThenInclude(e => e.FollowerRelations.Where(relation =>
                         relation.FollowerId == currentUserId && relation.Type != UserRelationType.Blacklisted)
                     .Take(1));
-        result = result.Skip(position);
-        return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
+        result = result.Skip(position ?? 0);
+        return take >= 0 ? await result.Take(take.Value).ToListAsync() : await result.ToListAsync();
     }
 
-    public async Task<ICollection<UserRelation>> GetFolloweesAsync(int userId, List<string> order, List<bool> desc,
-        int position, int take, Expression<Func<UserRelation, bool>>? predicate = null, int? currentUserId = null)
+    public async Task<ICollection<UserRelation>> GetFolloweesAsync(int userId, List<string>? order = null,
+        List<bool>? desc = null,
+        int? position = 0, int? take = -1, Expression<Func<UserRelation, bool>>? predicate = null,
+        int? currentUserId = null)
     {
         var result = context.UserRelations.Include(e => e.Followee)
             .Where(relation => relation.Type != UserRelationType.Blacklisted && relation.FollowerId == userId)
@@ -39,17 +43,18 @@ public class UserRelationRepository(ApplicationDbContext context, IMeilisearchSe
                 .ThenInclude(e => e.FollowerRelations.Where(relation =>
                         relation.FollowerId == currentUserId && relation.Type != UserRelationType.Blacklisted)
                     .Take(1));
-        result = result.Skip(position);
-        return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
+        result = result.Skip(position ?? 0);
+        return take >= 0 ? await result.Take(take.Value).ToListAsync() : await result.ToListAsync();
     }
 
-    public async Task<ICollection<UserRelation>> GetRelationsAsync(List<string> order, List<bool> desc, int position,
-        int take, Expression<Func<UserRelation, bool>>? predicate = null)
+    public async Task<ICollection<UserRelation>> GetRelationsAsync(List<string>? order = null, List<bool>? desc = null,
+        int? position = 0,
+        int? take = -1, Expression<Func<UserRelation, bool>>? predicate = null)
     {
         var result = context.UserRelations.OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
-        result = result.Skip(position);
-        return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
+        result = result.Skip(position ?? 0);
+        return take >= 0 ? await result.Take(take.Value).ToListAsync() : await result.ToListAsync();
     }
 
     public async Task<UserRelation> GetRelationAsync(int followerId, int followeeId)
@@ -62,9 +67,9 @@ public class UserRelationRepository(ApplicationDbContext context, IMeilisearchSe
     {
         var follower = await context.Users.FirstAsync(e => e.Id == userRelation.FollowerId);
         var followee = await context.Users.FirstAsync(e => e.Id == userRelation.FolloweeId);
-        follower.FolloweeCount = await context.UserRelations.CountAsync(e =>
+        follower.FolloweeCount = await context.UserRelations.LongCountAsync(e =>
             e.FollowerId == userRelation.FollowerId && e.Type != UserRelationType.Blacklisted) + 1;
-        followee.FollowerCount = await context.UserRelations.CountAsync(e =>
+        followee.FollowerCount = await context.UserRelations.LongCountAsync(e =>
             e.FolloweeId == userRelation.FolloweeId && e.Type != UserRelationType.Blacklisted) + 1;
         await context.UserRelations.AddAsync(userRelation);
         context.Users.UpdateRange(follower, followee);
@@ -78,9 +83,9 @@ public class UserRelationRepository(ApplicationDbContext context, IMeilisearchSe
         var followee = await context.Users.FirstAsync(e => e.Id == userRelation.FolloweeId);
         context.UserRelations.Update(userRelation);
         var result = await SaveAsync();
-        follower.FolloweeCount = await context.UserRelations.CountAsync(e =>
+        follower.FolloweeCount = await context.UserRelations.LongCountAsync(e =>
             e.FollowerId == userRelation.FollowerId && e.Type != UserRelationType.Blacklisted);
-        followee.FollowerCount = await context.UserRelations.CountAsync(e =>
+        followee.FollowerCount = await context.UserRelations.LongCountAsync(e =>
             e.FolloweeId == userRelation.FolloweeId && e.Type != UserRelationType.Blacklisted);
         context.Users.UpdateRange(follower, followee);
         await meilisearchService.UpdateBatchAsync([follower, followee]);

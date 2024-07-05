@@ -14,6 +14,8 @@ public class ApplicationUser
 
     public string? RemoteUserId { get; set; }
 
+    public string? RemoteUserName { get; set; }
+
     public string? AccessToken { get; set; }
 
     public string? RefreshToken { get; set; }

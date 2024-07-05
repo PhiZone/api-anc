@@ -14,6 +14,9 @@ public class LikeService(
     IReplyRepository replyRepository,
     IApplicationRepository applicationRepository,
     IAnnouncementRepository announcementRepository,
+    IEventRepository eventRepository,
+    IEventDivisionRepository eventDivisionRepository,
+    IEventTeamRepository eventTeamRepository,
     IResourceService resourceService,
     INotificationService notificationService) : ILikeService
 {
@@ -128,6 +131,36 @@ public class LikeService(
         return result && await announcementRepository.UpdateAnnouncementAsync(announcement);
     }
 
+    public async Task<bool> CreateLikeAsync(Event eventEntity, int userId)
+    {
+        if (await likeRepository.LikeExistsAsync(eventEntity.Id, userId)) return false;
+        var like = new Like { ResourceId = eventEntity.Id, OwnerId = userId, DateCreated = DateTimeOffset.UtcNow };
+        var result = await likeRepository.CreateLikeAsync(like);
+        await notificationService.NotifyLike(eventEntity, userId, eventEntity.GetDisplay());
+        eventEntity.LikeCount = await likeRepository.CountLikesAsync(e => e.ResourceId == eventEntity.Id);
+        return result && await eventRepository.UpdateEventAsync(eventEntity);
+    }
+
+    public async Task<bool> CreateLikeAsync(EventDivision eventDivision, int userId)
+    {
+        if (await likeRepository.LikeExistsAsync(eventDivision.Id, userId)) return false;
+        var like = new Like { ResourceId = eventDivision.Id, OwnerId = userId, DateCreated = DateTimeOffset.UtcNow };
+        var result = await likeRepository.CreateLikeAsync(like);
+        await notificationService.NotifyLike(eventDivision, userId, eventDivision.GetDisplay());
+        eventDivision.LikeCount = await likeRepository.CountLikesAsync(e => e.ResourceId == eventDivision.Id);
+        return result && await eventDivisionRepository.UpdateEventDivisionAsync(eventDivision);
+    }
+
+    public async Task<bool> CreateLikeAsync(EventTeam eventTeam, int userId)
+    {
+        if (await likeRepository.LikeExistsAsync(eventTeam.Id, userId)) return false;
+        var like = new Like { ResourceId = eventTeam.Id, OwnerId = userId, DateCreated = DateTimeOffset.UtcNow };
+        var result = await likeRepository.CreateLikeAsync(like);
+        await notificationService.NotifyLike(eventTeam, userId, eventTeam.GetDisplay());
+        eventTeam.LikeCount = await likeRepository.CountLikesAsync(e => e.ResourceId == eventTeam.Id);
+        return result && await eventTeamRepository.UpdateEventTeamAsync(eventTeam);
+    }
+
     public async Task<bool> RemoveLikeAsync(Chapter chapter, int userId)
     {
         if (!await likeRepository.LikeExistsAsync(chapter.Id, userId)) return false;
@@ -207,5 +240,32 @@ public class LikeService(
         var result = await likeRepository.RemoveLikeAsync(like.Id);
         announcement.LikeCount = await likeRepository.CountLikesAsync(e => e.ResourceId == announcement.Id);
         return result && await announcementRepository.UpdateAnnouncementAsync(announcement);
+    }
+
+    public async Task<bool> RemoveLikeAsync(Event eventEntity, int userId)
+    {
+        if (!await likeRepository.LikeExistsAsync(eventEntity.Id, userId)) return false;
+        var like = await likeRepository.GetLikeAsync(eventEntity.Id, userId);
+        var result = await likeRepository.RemoveLikeAsync(like.Id);
+        eventEntity.LikeCount = await likeRepository.CountLikesAsync(e => e.ResourceId == eventEntity.Id);
+        return result && await eventRepository.UpdateEventAsync(eventEntity);
+    }
+
+    public async Task<bool> RemoveLikeAsync(EventDivision eventDivision, int userId)
+    {
+        if (!await likeRepository.LikeExistsAsync(eventDivision.Id, userId)) return false;
+        var like = await likeRepository.GetLikeAsync(eventDivision.Id, userId);
+        var result = await likeRepository.RemoveLikeAsync(like.Id);
+        eventDivision.LikeCount = await likeRepository.CountLikesAsync(e => e.ResourceId == eventDivision.Id);
+        return result && await eventDivisionRepository.UpdateEventDivisionAsync(eventDivision);
+    }
+
+    public async Task<bool> RemoveLikeAsync(EventTeam eventTeam, int userId)
+    {
+        if (!await likeRepository.LikeExistsAsync(eventTeam.Id, userId)) return false;
+        var like = await likeRepository.GetLikeAsync(eventTeam.Id, userId);
+        var result = await likeRepository.RemoveLikeAsync(like.Id);
+        eventTeam.LikeCount = await likeRepository.CountLikesAsync(e => e.ResourceId == eventTeam.Id);
+        return result && await eventTeamRepository.UpdateEventTeamAsync(eventTeam);
     }
 }

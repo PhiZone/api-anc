@@ -3,7 +3,7 @@ using PhiZoneApi.Enums;
 
 namespace PhiZoneApi.Models;
 
-public abstract class Submission : Resource
+public abstract class Submission : OwnedResource
 {
     public string? Description { get; set; }
 

@@ -1,5 +1,4 @@
-﻿using PhiZoneApi.Dtos.Deliverers;
-using PhiZoneApi.Enums;
+﻿using PhiZoneApi.Enums;
 using PhiZoneApi.Models;
 
 namespace PhiZoneApi.Interfaces;
@@ -20,11 +19,19 @@ public interface IResourceService
 
     Task<bool> IsBlacklisted(int user1, int user2);
 
+    Task<(bool, bool)> IsPreparedOrFinished(EventTeam eventTeam);
+
     bool HasPermission(User user, UserRole role);
 
     Task<(string, List<User>)> ParseUserContent(string content);
 
     string Normalize(string input);
 
-    ResourceDto GetResources();
+    bool IsUserNameValid(string userName);
+
+    bool IsEmailValid(string email);
+
+    Task<bool> IsUserInputValidAsync(string input, string memberName);
+
+    string GenerateCode(int length);
 }

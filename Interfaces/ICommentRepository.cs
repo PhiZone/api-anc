@@ -5,13 +5,15 @@ namespace PhiZoneApi.Interfaces;
 
 public interface ICommentRepository
 {
-    Task<ICollection<Comment>> GetCommentsAsync(List<string> order, List<bool> desc, int position, int take,
+    Task<ICollection<Comment>> GetCommentsAsync(List<string>? order = null, List<bool>? desc = null, int? position = 0,
+        int? take = -1,
         Expression<Func<Comment, bool>>? predicate = null, int? currentUserId = null);
 
     Task<Comment> GetCommentAsync(Guid id, int? currentUserId = null);
 
-    Task<ICollection<Reply>> GetCommentRepliesAsync(Guid id, List<string> order, List<bool> desc, int position,
-        int take, Expression<Func<Reply, bool>>? predicate = null, int? currentUserId = null);
+    Task<ICollection<Reply>> GetCommentRepliesAsync(Guid id, List<string>? order = null, List<bool>? desc = null,
+        int? position = 0,
+        int? take = -1, Expression<Func<Reply, bool>>? predicate = null, int? currentUserId = null);
 
     Task<bool> CommentExistsAsync(Guid id);
 

@@ -14,7 +14,7 @@ public class User : IdentityUser<int>
 
     public UserRole Role { get; set; }
 
-    public int Experience { get; set; }
+    public ulong Experience { get; set; }
 
     public string? Tag { get; set; }
 
@@ -30,9 +30,9 @@ public class User : IdentityUser<int>
 
     public DateTimeOffset? DateOfBirth { get; set; }
 
-    public int FollowerCount { get; set; }
+    public long FollowerCount { get; set; }
 
-    public int FolloweeCount { get; set; }
+    public long FolloweeCount { get; set; }
 
     public int RegionId { get; set; }
 
@@ -53,4 +53,8 @@ public class User : IdentityUser<int>
     [JsonIgnore] public List<EventTeam> EventTeams { get; } = [];
 
     [JsonIgnore] public List<Participation> Participations { get; } = [];
+
+    [JsonIgnore] public List<Event> Events { get; set; } = [];
+
+    [JsonIgnore] public List<Hostship> Hostships { get; set; } = [];
 }
