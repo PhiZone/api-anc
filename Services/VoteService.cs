@@ -7,7 +7,7 @@ namespace PhiZoneApi.Services;
 public class VoteService(IVoteRepository voteRepository, IChartRepository chartRepository)
     : IVoteService
 {
-    private readonly List<int> _experienceList =
+    private readonly List<ulong> _experienceList =
     [
         0,
         50,
@@ -88,8 +88,7 @@ public class VoteService(IVoteRepository voteRepository, IChartRepository chartR
 
     public async Task<bool> UpdateChartAsync(Chart chart)
     {
-        var votes = await voteRepository.GetVotesAsync(["DateCreated"], [false], 0,
-            -1, vote => vote.ChartId == chart.Id);
+        var votes = await voteRepository.GetVotesAsync(predicate: vote => vote.ChartId == chart.Id);
         var amount = votes.Sum(vote => vote.Multiplier);
         var r = GetReliability(amount);
         chart.Score = votes.Sum(vote => vote.Total * vote.Multiplier) / 6;

@@ -60,8 +60,9 @@ public class NotificationController(
             var result = await meilisearchService.SearchAsync<Notification>(dto.Search, dto.PerPage, dto.Page,
                 currentUser.Id);
             var idList = result.Hits.Select(item => item.Id).ToList();
-            notifications = (await notificationRepository.GetNotificationsAsync(["DateCreated"], [false], position,
-                dto.PerPage, e => idList.Contains(e.Id), currentUser.Id)).OrderBy(e => idList.IndexOf(e.Id));
+            notifications =
+                (await notificationRepository.GetNotificationsAsync(predicate:
+                    e => idList.Contains(e.Id), currentUserId: currentUser.Id)).OrderBy(e => idList.IndexOf(e.Id));
             total = result.TotalHits;
         }
         else

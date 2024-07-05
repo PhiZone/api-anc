@@ -9,6 +9,7 @@ public class UserEmailRequestDto
 {
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     [EmailAddress(ErrorMessage = ResponseCodes.InvalidEmailAddress)]
+    [RegularExpression(@"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$", ErrorMessage = ResponseCodes.InvalidEmailAddress)]
     [MaxLength(1000, ErrorMessage = ResponseCodes.ValueTooLong)]
     public string Email { get; set; } = null!;
 

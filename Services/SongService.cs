@@ -7,11 +7,12 @@ namespace PhiZoneApi.Services;
 public class SongService(
     IFileStorageService fileStorageService,
     IRabbitMqService rabbitMqService,
-    IMultimediaService multimediaService, IHostEnvironment env)
+    IMultimediaService multimediaService,
+    IHostEnvironment env)
     : ISongService
 {
     private readonly string _queue = env.IsProduction() ? "song" : "song-dev";
-    
+
     public async Task<(string, string, TimeSpan)?> UploadAsync(string fileName, IFormFile file)
     {
         var stream = await multimediaService.ConvertAudio(file);

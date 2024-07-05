@@ -20,6 +20,7 @@ using PhiZoneApi.Filters;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 using StackExchange.Redis;
+using HP = PhiZoneApi.Constants.HostshipPermissions;
 
 // ReSharper disable RouteTemplates.ActionRoutePrefixCanBeExtractedToControllerRoute
 
@@ -47,8 +48,13 @@ public class RecordController(
     IConnectionMultiplexer redis,
     IApplicationRepository applicationRepository,
     IPlayConfigurationRepository playConfigurationRepository,
+    IEventDivisionRepository eventDivisionRepository,
+    IEventTeamRepository eventTeamRepository,
+    IEventResourceRepository eventResourceRepository,
+    IEventRepository eventRepository,
     IRecordService recordService,
     ILeaderboardService leaderboardService,
+    IScriptService scriptService,
     IResourceService resourceService,
     ILogger<RecordController> logger,
     INotificationService notificationService) : Controller
@@ -72,10 +78,11 @@ public class RecordController(
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser);
+        var showAnonymous = filterDto is { RangeId: not null, RangeOwnerId: null, MinOwnerId: null, MaxOwnerId: null };
         var records = await recordRepository.GetRecordsAsync(dto.Order, dto.Desc, position, dto.PerPage, predicateExpr,
-            true, currentUser?.Id);
-        var total = await recordRepository.CountRecordsAsync(predicateExpr);
-        var list = records.Select(dtoMapper.MapRecord<RecordDto>).ToList();
+            true, currentUser?.Id, showAnonymous);
+        var total = await recordRepository.CountRecordsAsync(predicateExpr, showAnonymous);
+        var list = records.Select(e => dtoMapper.MapRecord<RecordDto>(e)).ToList();
 
         return Ok(new ResponseDto<IEnumerable<RecordDto>>
         {
@@ -181,7 +188,7 @@ public class RecordController(
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentIsPrivate
             });
-        if (chart.FileChecksum != null && !chart.FileChecksum.Equals(dto.Checksum))
+        if (chart.FileChecksum != null && !chart.FileChecksum.Equals(dto.Checksum, StringComparison.OrdinalIgnoreCase))
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorWithMessage,
@@ -242,7 +249,7 @@ public class RecordController(
         var rks = recordService.CalculateRks(dto.Perfect, dto.GoodEarly + dto.GoodLate, dto.Bad, dto.Miss,
             chart.Difficulty, dto.StdDeviation) * rksFactor;
         var rksBefore = player.Rks;
-        var experienceDelta = 0;
+        var experienceDelta = 0ul;
         var highestAccuracy = 0d;
         if (await recordRepository.CountRecordsAsync(record =>
                 record.ChartId == info.ChartId && record.OwnerId == player.Id) > 0)
@@ -278,11 +285,28 @@ public class RecordController(
             DateCreated = DateTimeOffset.UtcNow
         };
 
+        EventDivision? eventDivision = null;
+        EventTeam? eventTeam = null;
+        if (info is { DivisionId: not null, TeamId: not null })
+        {
+            eventDivision = await eventDivisionRepository.GetEventDivisionAsync(info.DivisionId.Value);
+            eventTeam = await eventTeamRepository.GetEventTeamAsync(info.TeamId.Value);
+
+            var firstFailure = await scriptService.RunEventTaskAsync(eventTeam.DivisionId, record, eventTeam.Id, player,
+                [EventTaskType.PreSubmission]);
+
+            if (firstFailure != null)
+                return BadRequest(new ResponseDto<EventTaskResponseDto>
+                {
+                    Status = ResponseStatus.ErrorWithData, Code = ResponseCodes.InvalidData, Data = firstFailure
+                });
+        }
+
         if (!await recordRepository.CreateRecordAsync(record))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
-        experienceDelta += (int)(rksFactor * score switch
+        experienceDelta += (ulong)(rksFactor * score switch
         {
             1000000 => 20,
             >= 960000 => 14,
@@ -298,7 +322,7 @@ public class RecordController(
             if (pos <= 1000)
             {
                 var temp = Math.Pow(chart.Difficulty, 7d / 5);
-                experienceDelta += (int)Math.Pow(chart.Difficulty + 2, temp * (Math.Pow(pos, 4d / 7) - temp) / -1152);
+                experienceDelta += (ulong)Math.Pow(chart.Difficulty + 2, temp * (Math.Pow(pos, 4d / 7) - temp) / -1152);
             }
         }
 
@@ -308,19 +332,46 @@ public class RecordController(
         var best19Rks = (await recordRepository.GetPersonalBests(player.Id)).Sum(r => r.Rks);
         var rksAfter = (phiRks + best19Rks) / 20;
 
-        if (!chart.IsRanked) experienceDelta = (int)(experienceDelta * 0.1);
+        if (!chart.IsRanked) experienceDelta = (ulong)(experienceDelta * 0.5);
 
         player.Experience += experienceDelta;
         player.Rks = rksAfter;
         await userManager.UpdateAsync(player);
 
         leaderboardService.Add(record);
-        // leaderboardService.Add(await recordRepository.GetRecordAsync(record.Id));
+
+        // ReSharper disable once InvertIf
+        if (eventDivision != null && eventTeam != null)
+        {
+            var eventResource = new EventResource
+            {
+                DivisionId = eventDivision.Id,
+                ResourceId = record.Id,
+                RecordId = record.Id,
+                Type = EventResourceType.Entry,
+                IsAnonymous = eventDivision.Anonymization,
+                TeamId = eventTeam.Id,
+                DateCreated = DateTimeOffset.UtcNow
+            };
+            await eventResourceRepository.CreateEventResourceAsync(eventResource);
+            if (await eventResourceRepository.CountResourcesAsync(eventDivision.Id,
+                    e => e.Type == EventResourceType.Entry && e.TeamId == eventTeam.Id) ==
+                eventTeam.ClaimedSubmissionCount)
+            {
+                eventTeam.Status = ParticipationStatus.Finished;
+                await eventTeamRepository.UpdateEventTeamAsync(eventTeam);
+            }
+
+            await scriptService.RunEventTaskAsync(eventTeam.DivisionId, record, eventTeam.Id, player,
+                [EventTaskType.PostSubmission]);
+            if (eventTeam.IsUnveiled) leaderboardService.Add(eventTeam);
+        }
 
         return StatusCode(StatusCodes.Status201Created,
             new ResponseDto<RecordResponseDto>
             {
                 Status = ResponseStatus.Ok,
+                Code = ResponseCodes.Ok,
                 Data = new RecordResponseDto
                 {
                     Id = record.Id,
@@ -328,6 +379,201 @@ public class RecordController(
                     Accuracy = accuracy,
                     IsFullCombo = record.IsFullCombo,
                     Player = dtoMapper.MapUser<UserDto>(player),
+                    ExperienceDelta = experienceDelta,
+                    RksBefore = rksBefore,
+                    DateCreated = record.DateCreated
+                }
+            });
+    }
+
+    /// <summary>
+    ///     Creates a new record using a TapTap ghost account.
+    /// </summary>
+    /// <returns>An object containing calculated results related to the play.</returns>
+    /// <response code="201">Returns an object containing calculated results related to the play.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="404">When either the token, the application, the chart, the user, or the configuration is not found.</response>
+    /// <response code="500">When an internal server error has occurred.</response>
+    [HttpPost("tapTap")]
+    [Consumes("application/json")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ResponseDto<RecordResponseDto>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> CreateRecordTapTapGhost([FromBody] RecordCreationDto dto)
+    {
+        var db = redis.GetDatabase();
+        if (!await db.KeyExistsAsync($"phizone:play:tapghost:{dto.Token}"))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidToken
+            });
+
+        var info = JsonConvert.DeserializeObject<PlayInfoTapTapDto>(
+            (await db.StringGetAsync($"phizone:play:tapghost:{dto.Token}"))!)!;
+        if (DateTimeOffset.UtcNow < info.EarliestEndTime)
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorWithMessage,
+                Code = ResponseCodes.InvalidData,
+                Message = "Your request is made earlier than expected."
+            });
+
+        if (!await applicationRepository.ApplicationExistsAsync(info.ApplicationId))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ApplicationNotFound
+            });
+        var key = $"phizone:tapghost:{info.ApplicationId}:{info.PlayerId}";
+        if (!await db.KeyExistsAsync(key))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNotFound
+            });
+        var player = JsonConvert.DeserializeObject<UserDetailedDto>((await db.StringGetAsync(key))!)!;
+
+        if (!await chartRepository.ChartExistsAsync(info.ChartId))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+
+        var chart = await chartRepository.GetChartAsync(info.ChartId);
+        if (chart.Accessibility == Accessibility.RefuseAny)
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentIsPrivate
+            });
+        if (chart.FileChecksum != null && !chart.FileChecksum.Equals(dto.Checksum, StringComparison.OrdinalIgnoreCase))
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorWithMessage,
+                Code = ResponseCodes.InvalidData,
+                Message = "File checksum validation has failed."
+            });
+
+        var secret = (await applicationRepository.GetApplicationAsync(info.ApplicationId)).Secret!;
+        var digest =
+            $"{info.ChartId}:{info.PlayerId}:{dto.MaxCombo}:{dto.Perfect}:{dto.GoodEarly}:{dto.GoodLate}:{dto.Bad}:{dto.Miss}:{info.Timestamp}";
+        using var hasher = new HMACSHA256(Encoding.UTF8.GetBytes(secret));
+        var hmac = Convert.ToBase64String(
+            await hasher.ComputeHashAsync(new MemoryStream(Encoding.UTF8.GetBytes(digest))));
+        logger.LogDebug(LogEvents.RecordDebug, "{Digest} - {Hmac}", digest, hmac);
+        if (!dto.Hmac.Equals(hmac, StringComparison.OrdinalIgnoreCase))
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorWithMessage,
+                Code = ResponseCodes.InvalidData,
+                Message = "HMAC validation has failed."
+            });
+
+        var judgmentCount = dto.Perfect + dto.GoodEarly + dto.GoodLate + dto.Bad + dto.Miss;
+        if (judgmentCount != chart.NoteCount)
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorWithMessage,
+                Code = ResponseCodes.InvalidData,
+                Message =
+                    $"The number of judgments ({judgmentCount}) is not equal to the number of notes ({chart.NoteCount})."
+            });
+
+        var minExpectation = judgmentCount / (dto.Bad + dto.Miss + 1);
+        var maxExpectation = judgmentCount - dto.Bad - dto.Miss;
+        if (dto.MaxCombo < minExpectation || dto.MaxCombo > maxExpectation)
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorWithMessage,
+                Code = ResponseCodes.InvalidData,
+                Message =
+                    $"Max combo ({dto.MaxCombo}) is not within the expected range [{minExpectation}, {maxExpectation}]."
+            });
+
+        db.KeyDelete($"phizone:play:tapghost:{dto.Token}");
+
+        var score = recordService.CalculateScore(dto.Perfect, dto.GoodEarly + dto.GoodLate, dto.Bad, dto.Miss,
+            dto.MaxCombo);
+        var accuracy = recordService.CalculateAccuracy(dto.Perfect, dto.GoodEarly + dto.GoodLate, dto.Bad, dto.Miss);
+        var rksFactor = recordService.CalculateRksFactor(80, 160);
+        var rks = recordService.CalculateRks(dto.Perfect, dto.GoodEarly + dto.GoodLate, dto.Bad, dto.Miss,
+            chart.Difficulty, dto.StdDeviation) * rksFactor;
+        var rksBefore = player.Rks;
+        var experienceDelta = 0ul;
+
+        var culture = (CultureInfo)CultureInfo.CurrentCulture.Clone();
+        culture.NumberFormat.PercentPositivePattern = 1;
+        logger.LogInformation(LogEvents.RecordInfo,
+            "[{Now}] New record: {User} - {Chart} {Score} {Accuracy} {Rks} {StdDeviation}ms",
+            DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), player.UserName, await resourceService.GetDisplayName(chart),
+            score, accuracy.ToString("P2", culture), rks.ToString("N3"), dto.StdDeviation.ToString("N3"));
+
+        var record = new Record
+        {
+            ChartId = info.ChartId,
+            Chart = chart,
+            OwnerId = -1,
+            ApplicationId = info.ApplicationId,
+            Score = score,
+            Accuracy = accuracy,
+            IsFullCombo = dto.MaxCombo == judgmentCount,
+            MaxCombo = dto.MaxCombo,
+            Perfect = dto.Perfect,
+            GoodEarly = dto.GoodEarly,
+            GoodLate = dto.GoodLate,
+            Bad = dto.Bad,
+            Miss = dto.Miss,
+            StdDeviation = dto.StdDeviation,
+            Rks = rks,
+            PerfectJudgment = info.PerfectJudgment,
+            GoodJudgment = info.GoodJudgment,
+            DateCreated = DateTimeOffset.UtcNow
+        };
+
+        var records = await db.KeyExistsAsync($"{key}:records")
+            ? JsonConvert.DeserializeObject<List<Record>>((await db.StringGetAsync($"{key}:records"))!)!
+            : [];
+        records.Add(record);
+        await db.StringSetAsync($"{key}:records", (RedisValue)JsonConvert.SerializeObject(records),
+            TimeSpan.FromDays(180));
+
+        experienceDelta += (ulong)(rksFactor * score switch
+        {
+            1000000 => 20,
+            >= 960000 => 14,
+            >= 920000 => 9,
+            >= 880000 => 5,
+            _ => 1
+        });
+
+        var phiRks = records.OrderByDescending(e => e.Rks)
+            .FirstOrDefault(r => r.OwnerId == player.Id && r is { Score: 1000000, Chart.IsRanked: true })
+            ?.Rks ?? 0d;
+        var best19Rks = records.Where(e => e.Chart.IsRanked && e.OwnerId == player.Id)
+            .GroupBy(e => e.ChartId)
+            .Select(g => g.OrderByDescending(e => e.Rks).ThenBy(e => e.DateCreated).First())
+            .Sum(r => r.Rks);
+        var rksAfter = (phiRks + best19Rks) / 20;
+
+        if (!chart.IsRanked) experienceDelta = (ulong)(experienceDelta * 0.5);
+
+        player.Experience += experienceDelta;
+        player.Rks = rksAfter;
+        await db.StringSetAsync(key, JsonConvert.SerializeObject(player), TimeSpan.FromDays(180));
+
+        return StatusCode(StatusCodes.Status201Created,
+            new ResponseDto<RecordResponseDto>
+            {
+                Status = ResponseStatus.Ok,
+                Code = ResponseCodes.Ok,
+                Data = new RecordResponseDto
+                {
+                    Id = record.Id,
+                    Score = score,
+                    Accuracy = accuracy,
+                    IsFullCombo = record.IsFullCombo,
+                    Player = mapper.Map<UserDto>(player),
                     ExperienceDelta = experienceDelta,
                     RksBefore = rksBefore,
                     DateCreated = record.DateCreated
@@ -611,5 +857,71 @@ public class RecordController(
                 Code = ResponseCodes.Ok,
                 Data = new CreatedResponseDto<Guid> { Id = comment.Id }
             });
+    }
+
+    /// <summary>
+    ///     Links a record to a specific event division.
+    /// </summary>
+    /// <returns>An empty body.</returns>
+    /// <response code="201">Returns an empty body.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
+    /// <response code="500">When an internal server error has occurred.</response>
+    [HttpPost("{id:guid}/event")]
+    [Consumes("application/json")]
+    [Produces("application/json")]
+    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
+    [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> CreateEventResource([FromRoute] Guid id, [FromBody] EventResourceRequestDto dto)
+    {
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!await recordRepository.RecordExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+        var record = await recordRepository.GetRecordAsync(id);
+
+        if (!await eventDivisionRepository.EventDivisionExistsAsync(dto.DivisionId))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
+            });
+
+        var eventDivision = await eventDivisionRepository.GetEventDivisionAsync(dto.DivisionId);
+        var eventEntity = await eventRepository.GetEventAsync(eventDivision.EventId);
+        var permission = HP.Gen(HP.Create, HP.Resource);
+
+        if (!(resourceService.HasPermission(currentUser, UserRole.Administrator) || eventEntity.Hostships.Any(f =>
+                f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(permission)))))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+
+        var eventResource = new EventResource
+        {
+            DivisionId = dto.DivisionId,
+            ResourceId = record.Id,
+            RecordId = record.Id,
+            Type = dto.Type,
+            Label = dto.Label,
+            Description = dto.Description,
+            IsAnonymous = dto.IsAnonymous,
+            TeamId = dto.TeamId,
+            DateCreated = DateTimeOffset.UtcNow
+        };
+
+        if (!await eventResourceRepository.CreateEventResourceAsync(eventResource))
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+
+        return StatusCode(StatusCodes.Status201Created);
     }
 }

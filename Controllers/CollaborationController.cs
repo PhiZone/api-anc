@@ -38,8 +38,7 @@ public class CollaborationController(
     IChartSubmissionRepository chartSubmissionRepository,
     IAuthorshipRepository authorshipRepository,
     ISongRepository songRepository,
-    IChartRepository chartRepository)
-    : Controller
+    IChartRepository chartRepository) : Controller
 {
     /// <summary>
     ///     Retrieves collaborations.
@@ -181,6 +180,15 @@ public class CollaborationController(
             });
 
         collaboration.Position = dto.Position;
+
+        var chartSubmission = await chartSubmissionRepository.GetChartSubmissionAsync(collaboration.SubmissionId);
+        if (collaboration.Status == RequestStatus.Approved && chartSubmission.RepresentationId != null)
+        {
+            var authorship = await authorshipRepository.GetAuthorshipAsync(chartSubmission.RepresentationId.Value,
+                collaboration.InviteeId);
+            authorship.Position = collaboration.Position;
+            await authorshipRepository.UpdateAuthorshipAsync(authorship);
+        }
 
         if (!await collaborationRepository.UpdateCollaborationAsync(collaboration))
             return StatusCode(StatusCodes.Status500InternalServerError,
@@ -338,6 +346,12 @@ public class CollaborationController(
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
+
+        var chartSubmission = await chartSubmissionRepository.GetChartSubmissionAsync(collaboration.SubmissionId);
+        if (collaboration.Status == RequestStatus.Approved && chartSubmission.RepresentationId != null)
+            await authorshipRepository.RemoveAuthorshipAsync(chartSubmission.RepresentationId.Value,
+                collaboration.InviteeId);
+
         if (!await collaborationRepository.RemoveCollaborationAsync(id))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });

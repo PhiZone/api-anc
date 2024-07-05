@@ -10,6 +10,10 @@ public class PlayInfoDto
 
     public int PlayerId { get; set; }
 
+    public Guid? DivisionId { get; set; }
+
+    public Guid? TeamId { get; set; }
+
     public DateTimeOffset EarliestEndTime { get; set; }
 
     public long Timestamp { get; set; }

@@ -12,23 +12,24 @@ namespace PhiZoneApi.Repositories;
 public class SongSubmissionRepository(ApplicationDbContext context, IMeilisearchService meilisearchService)
     : ISongSubmissionRepository
 {
-    public async Task<ICollection<SongSubmission>> GetSongSubmissionsAsync(List<string> order, List<bool> desc,
-        int position, int take, Expression<Func<SongSubmission, bool>>? predicate = null)
+    public async Task<ICollection<SongSubmission>> GetSongSubmissionsAsync(List<string>? order = null,
+        List<bool>? desc = null,
+        int? position = 0, int? take = -1, Expression<Func<SongSubmission, bool>>? predicate = null)
     {
         var result = context.SongSubmissions.OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
-        result = result.Skip(position);
-        return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
+        result = result.Skip(position ?? 0);
+        return take >= 0 ? await result.Take(take.Value).ToListAsync() : await result.ToListAsync();
     }
 
-    public async Task<ICollection<SongSubmission>> GetUserSongSubmissionsAsync(int userId, List<string> order,
-        List<bool> desc, int position, int take,
+    public async Task<ICollection<SongSubmission>> GetUserSongSubmissionsAsync(int userId, List<string>? order,
+        List<bool>? desc, int? position = 0, int? take = -1,
         Expression<Func<SongSubmission, bool>>? predicate = null)
     {
         var result = context.SongSubmissions.Where(song => song.OwnerId == userId).OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
-        result = result.Skip(position);
-        return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
+        result = result.Skip(position ?? 0);
+        return take >= 0 ? await result.Take(take.Value).ToListAsync() : await result.ToListAsync();
     }
 
     public async Task<SongSubmission> GetSongSubmissionAsync(Guid id)

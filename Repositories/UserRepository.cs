@@ -12,36 +12,39 @@ namespace PhiZoneApi.Repositories;
 
 public class UserRepository(ApplicationDbContext context) : IUserRepository
 {
-    public async Task<ICollection<User>> GetUsersAsync(List<string> order, List<bool> desc, int position, int take,
+    public async Task<ICollection<User>> GetUsersAsync(List<string>? order = null, List<bool>? desc = null,
+        int? position = 0, int? take = -1,
         Expression<Func<User, bool>>? predicate = null, int? currentUserId = null)
     {
-        var result = context.Users.Include(e => e.Region).OrderBy(order, desc);
+        var result = context.Users.Include(e => e.Region).OrderBy(order, desc).Where(user => user.Id > 0);
         if (predicate != null) result = result.Where(predicate);
         if (currentUserId != null)
             result = result.Include(e => e.FollowerRelations.Where(relation =>
                     relation.FollowerId == currentUserId && relation.Type != UserRelationType.Blacklisted)
                 .Take(1));
-        result = result.Skip(position);
-        return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
+        result = result.Skip(position ?? 0);
+        return take >= 0 ? await result.Take(take.Value).ToListAsync() : await result.ToListAsync();
     }
 
     public async Task<User?> GetUserByIdAsync(int id, int? currentUserId = null)
     {
         IQueryable<User> result = context.Users.Include(e => e.Region)
             .Include(e => e.ApplicationLinks.Where(link => link.RemoteUserId != null))
-            .ThenInclude(e => e.Application);
+            .ThenInclude(e => e.Application)
+            .Include(e => e.Hostships);
         if (currentUserId != null)
             result = result.Include(e => e.FollowerRelations.Where(relation =>
                     relation.FollowerId == currentUserId && relation.Type != UserRelationType.Blacklisted)
                 .Take(1));
-        return await result.FirstOrDefaultAsync(user => user.Id == id);
+        return await result.FirstOrDefaultAsync(user => user.Id > 0 && user.Id == id);
     }
 
     public async Task<User?> GetUserByRemoteIdAsync(Guid applicationId, string remoteId, int? currentUserId = null)
     {
-        IQueryable<User> result = context.Users.Include(e => e.Region)
+        var result = context.Users.Include(e => e.Region)
             .Include(e => e.ApplicationLinks.Where(link => link.RemoteUserId != null))
-            .ThenInclude(e => e.Application);
+            .ThenInclude(e => e.Application)
+            .Where(user => user.Id > 0);
         if (currentUserId != null)
             result = result.Include(e => e.FollowerRelations.Where(relation =>
                     relation.FollowerId == currentUserId && relation.Type != UserRelationType.Blacklisted)
@@ -52,9 +55,10 @@ public class UserRepository(ApplicationDbContext context) : IUserRepository
 
     public async Task<User?> GetUserByTapUnionIdAsync(Guid applicationId, string unionId, int? currentUserId = null)
     {
-        IQueryable<User> result = context.Users.Include(e => e.Region)
+        var result = context.Users.Include(e => e.Region)
             .Include(e => e.ApplicationLinks.Where(link => link.RemoteUserId != null))
-            .ThenInclude(e => e.Application);
+            .ThenInclude(e => e.Application)
+            .Where(user => user.Id > 0);
         if (currentUserId != null)
             result = result.Include(e => e.FollowerRelations.Where(relation =>
                     relation.FollowerId == currentUserId && relation.Type != UserRelationType.Blacklisted)
@@ -66,7 +70,7 @@ public class UserRepository(ApplicationDbContext context) : IUserRepository
 
     public async Task<int> CountUsersAsync(Expression<Func<User, bool>>? predicate = null)
     {
-        var result = context.Users.AsQueryable();
+        var result = context.Users.Where(user => user.Id > 0);
         if (predicate != null) result = result.Where(predicate);
         return await result.CountAsync();
     }

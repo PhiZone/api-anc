@@ -24,11 +24,10 @@ public class ETagFilter(IConfiguration config) : ActionFilterAttribute
 
     private void Validate(ActionExecutedContext executedContext)
     {
-        if (executedContext.Result == null) return;
+        if (executedContext.Result is not ObjectResult result) return;
 
         var request = executedContext.HttpContext.Request;
         var response = executedContext.HttpContext.Response;
-        var result = (executedContext.Result as ObjectResult)!.Value;
         var eTag = ComputeETag(result);
         if (request.Headers.TryGetValue(HeaderNames.IfNoneMatch, out var header))
         {

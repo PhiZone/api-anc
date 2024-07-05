@@ -1,8 +1,9 @@
-﻿using PhiZoneApi.Enums;
+﻿using System.Text.Json.Serialization;
+using PhiZoneApi.Enums;
 
 namespace PhiZoneApi.Models;
 
-public class Chart : PublicResource
+public class Chart : SignificantResource
 {
     public string? Title { get; set; }
 
@@ -48,12 +49,15 @@ public class Chart : PublicResource
 
     public Song Song { get; set; } = null!;
 
-    public int PlayCount { get; set; }
+    public long PlayCount { get; set; }
 
     public List<Tag> Tags { get; } = [];
 
+    [JsonIgnore] public List<ChartAsset> Assets { get; } = [];
+
     public override string GetDisplay()
     {
-        return $"{(Title != null ? $"{Title} " : Song.Title)}[{Level} {Math.Floor(Difficulty)}]";
+        return
+            $"{(Title != null ? $"{Title} " : Song.Title)}[{Level} {(Difficulty == 0 ? "?" : Math.Floor(Difficulty))}]";
     }
 }

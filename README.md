@@ -78,7 +78,8 @@ A template for both `./appsettings.Development.json` and `./appsettings.Producti
       "IllustrationUrl": "https://res.example.com/github.png"
     }
   ],
-  "RedisConnection": "localhost:6379,password:yourpassword"
+  "RedisConnection": "localhost:6379,password:yourpassword", 
+  "Proxy": "http://this-is-an-optional-field:1080"
 }
 
 ```

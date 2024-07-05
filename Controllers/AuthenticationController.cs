@@ -1,5 +1,4 @@
-﻿using System.Collections.Immutable;
-using System.Security.Claims;
+﻿using System.Security.Claims;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
@@ -77,89 +76,105 @@ public class AuthenticationController(
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(OpenIddictErrorDto))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(OpenIddictErrorDto))]
     public async Task<IActionResult> Exchange([FromForm] OpenIddictTokenRequestDto dto,
-        [FromQuery] string? provider = null, [FromQuery] Guid? tapApplicationId = null)
+        [FromQuery] string? provider = null, [FromQuery] string? redirectUri = null,
+        [FromQuery] Guid? tapApplicationId = null, [FromQuery] string? token = null)
     {
         var request = HttpContext.GetOpenIddictServerRequest()!;
+        if (token != null)
+        {
+            var db = redis.GetDatabase();
+            var key = $"phizone:login:{token}";
+            if (!await db.KeyExistsAsync(key))
+                return Forbid(
+                    new AuthenticationProperties(new Dictionary<string, string>
+                    {
+                        [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidToken,
+                        [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
+                            "The specified token is invalid."
+                    }!), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+            var userId = await db.StringGetAsync($"phizone:login:{token}");
+            var user = await userManager.FindByIdAsync(userId!);
+            if (user == null)
+                return Forbid(
+                    new AuthenticationProperties(new Dictionary<string, string>
+                    {
+                        [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidToken,
+                        [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
+                            "The specified token is invalid."
+                    }!), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+
+            await db.KeyDeleteAsync(key);
+
+            var actionResult = await CheckUserLockoutState(user);
+            if (actionResult != null) return actionResult;
+            return await Login(user, "Token");
+        }
 
         if (provider != null)
         {
             if (!Enum.TryParse(typeof(AuthProvider), provider, true, out var providerEnum))
-                return Forbid(new AuthenticationProperties(new Dictionary<string, string>
-                {
-                    [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidClient,
-                    [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
-                        "The specified authentication provider does not exist."
-                }!), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+                return Forbid(
+                    new AuthenticationProperties(new Dictionary<string, string>
+                    {
+                        [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidClient,
+                        [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
+                            "The specified authentication provider does not exist."
+                    }!), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
 
             var authProvider = factory.GetAuthProvider((providerEnum as AuthProvider?)!.Value);
             if (authProvider == null)
-                return Forbid(new AuthenticationProperties(new Dictionary<string, string>
-                {
-                    [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidClient,
-                    [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
-                        "The specified authentication provider does not exist."
-                }!), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+                return Forbid(
+                    new AuthenticationProperties(new Dictionary<string, string>
+                    {
+                        [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidClient,
+                        [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
+                            "The specified authentication provider does not exist."
+                    }!), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
 
-            var result = await authProvider.RequestTokenAsync(dto.username!, dto.password!);
+            var result = await authProvider.RequestTokenAsync(dto.username!, dto.password!, redirectUri: redirectUri);
             if (result == null)
-                return Forbid(new AuthenticationProperties(new Dictionary<string, string>
-                {
-                    [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidRequest,
-                    [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
-                        "Unable to log into the specified provider with provided credentials."
-                }!), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+                return Forbid(
+                    new AuthenticationProperties(new Dictionary<string, string>
+                    {
+                        [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidRequest,
+                        [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
+                            "Unable to log into the specified provider with provided credentials."
+                    }!), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
 
             var user = await authProvider.GetIdentityAsync(result.Value.Item1);
             if (user == null)
-                return Forbid(new AuthenticationProperties(new Dictionary<string, string>
-                {
-                    [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidToken,
-                    [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
-                        "Unable to find a user with provided credentials."
-                }!), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+                return Forbid(
+                    new AuthenticationProperties(new Dictionary<string, string>
+                    {
+                        [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidToken,
+                        [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
+                            "Unable to find a user with provided credentials."
+                    }!), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
 
             var actionResult = await CheckUserLockoutState(user);
             if (actionResult != null) return actionResult;
-
-            var identity = new ClaimsIdentity(TokenValidationParameters.DefaultAuthenticationType, Claims.Name,
-                Claims.Role);
-
-            identity.AddClaim(Claims.Subject, user.Id.ToString(), Destinations.AccessToken);
-            identity.AddClaim(Claims.Username, user.UserName!, Destinations.AccessToken);
-
-            foreach (var role in await userManager.GetRolesAsync(user))
-                identity.AddClaim(Claims.Role, role, Destinations.AccessToken);
-
-            var claimsPrincipal = new ClaimsPrincipal(identity);
-            claimsPrincipal.SetScopes(Scopes.Roles, Scopes.OfflineAccess, Scopes.Email, Scopes.Profile);
-
-            user.DateLastLoggedIn = DateTimeOffset.UtcNow;
-            user.AccessFailedCount = 0;
-            await userRepository.SaveAsync();
-
-            logger.LogInformation(LogEvents.UserInfo, "[{Now}] New login ({Provider}): #{Id} {UserName}",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), providerEnum.ToString(), user.Id, user.UserName);
-
-            return SignIn(claimsPrincipal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+            return await Login(user, providerEnum.ToString()!);
         }
 
         if (tapApplicationId != null)
         {
             if (!await applicationRepository.ApplicationExistsAsync(tapApplicationId.Value))
-                return Forbid(new AuthenticationProperties(new Dictionary<string, string>
-                {
-                    [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidClient,
-                    [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
-                        "The specified application does not exist."
-                }!), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+                return Forbid(
+                    new AuthenticationProperties(new Dictionary<string, string>
+                    {
+                        [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidClient,
+                        [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
+                            "The specified application does not exist."
+                    }!), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
 
             if ((await applicationRepository.GetApplicationAsync(tapApplicationId.Value)).TapClientId == null)
-                return Forbid(new AuthenticationProperties(new Dictionary<string, string>
-                {
-                    [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidClient,
-                    [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
-                        "The specified application does not have a client ID for TapTap."
-                }!), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+                return Forbid(
+                    new AuthenticationProperties(new Dictionary<string, string>
+                    {
+                        [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidClient,
+                        [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
+                            "The specified application does not have a client ID for TapTap."
+                    }!), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
 
             var response = await tapTapService.Login(new TapTapRequestDto
             {
@@ -167,53 +182,94 @@ public class AuthenticationController(
             });
 
             if (response == null)
-                return Forbid(new AuthenticationProperties(new Dictionary<string, string>
-                {
-                    [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidRequest,
-                    [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
-                        "Insufficient data to contact TapTap."
-                }!), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+                return Forbid(
+                    new AuthenticationProperties(new Dictionary<string, string>
+                    {
+                        [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidRequest,
+                        [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
+                            "Insufficient data to contact TapTap."
+                    }!), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
 
             if (!response.IsSuccessStatusCode)
-                return Forbid(new AuthenticationProperties(new Dictionary<string, string>
-                {
-                    [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.AccessDenied,
-                    [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
-                        "Unable to log into TapTap with provided credentials."
-                }!), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+                return Forbid(
+                    new AuthenticationProperties(new Dictionary<string, string>
+                    {
+                        [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.AccessDenied,
+                        [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
+                            "Unable to log into TapTap with provided credentials."
+                    }!), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
 
             var responseDto =
                 JsonConvert.DeserializeObject<TapTapDelivererDto>(await response.Content.ReadAsStringAsync())!;
             var user = await userRepository.GetUserByTapUnionIdAsync(tapApplicationId.Value, responseDto.Data.Unionid);
-            if (user == null)
-                return Forbid(new AuthenticationProperties(new Dictionary<string, string>
-                {
-                    [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidToken,
-                    [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
-                        "Unable to find a user with provided credentials."
-                }!), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+            if (user != null)
+            {
+                var actionResult = await CheckUserLockoutState(user);
+                if (actionResult != null) return actionResult;
+                return await Login(user, "TapTap");
+            }
 
-            var actionResult = await CheckUserLockoutState(user);
-            if (actionResult != null) return actionResult;
+            var db = redis.GetDatabase();
+            var key = $"phizone:tapghost:{tapApplicationId.Value}:{responseDto.Data.Unionid}";
+            UserDetailedDto ghost;
+            var ghostStr = await db.StringGetAsync(key);
+            if (ghostStr == RedisValue.Null)
+            {
+                ghost = new UserDetailedDto
+                {
+                    Id = CriticalValues.TapTapGhostUserId,
+                    UserName = responseDto.Data.Name,
+                    Avatar = responseDto.Data.Avatar,
+                    Gender = 0,
+                    Region = new RegionDto
+                    {
+                        Id = 47,
+                        Code = "CN",
+                        Name = "China"
+                    },
+                    Language = "zh-CN",
+                    Biography = null,
+                    Role = UserRole.Unactivated.ToString(),
+                    Experience = 0,
+                    Tag = null,
+                    Rks = 0,
+                    FollowerCount = 0,
+                    FolloweeCount = 0,
+                    DateLastLoggedIn = DateTimeOffset.UtcNow,
+                    DateJoined = DateTimeOffset.UtcNow,
+                    DateOfBirth = null,
+                    DateFollowed = null,
+                    ApplicationLinks = null,
+                    Email = "ghost@phizone.cn",
+                    EmailConfirmed = true,
+                    PhoneNumber = null,
+                    PhoneNumberConfirmed = false,
+                    TwoFactorEnabled = false,
+                    Notifications = 0
+                };
+            }
+            else
+            {
+                ghost = JsonConvert.DeserializeObject<UserDetailedDto>(ghostStr!)!;
+                ghost.DateLastLoggedIn = DateTimeOffset.UtcNow;
+            }
+
+            await db.StringSetAsync(key, JsonConvert.SerializeObject(ghost), TimeSpan.FromDays(180));
 
             var identity = new ClaimsIdentity(TokenValidationParameters.DefaultAuthenticationType, Claims.Name,
                 Claims.Role);
 
-            identity.AddClaim(Claims.Subject, user.Id.ToString(), Destinations.AccessToken);
-            identity.AddClaim(Claims.Username, user.UserName!, Destinations.AccessToken);
-
-            foreach (var role in await userManager.GetRolesAsync(user))
-                identity.AddClaim(Claims.Role, role, Destinations.AccessToken);
+            identity.AddClaim(Claims.Subject, ghost.Id.ToString());
+            identity.AddClaim(Claims.Name, ghost.UserName);
+            identity.AddClaim("appId", tapApplicationId.Value.ToString());
+            identity.AddClaim("unionId", responseDto.Data.Unionid);
+            identity.SetDestinations(GetDestinations);
 
             var claimsPrincipal = new ClaimsPrincipal(identity);
-            claimsPrincipal.SetScopes(Scopes.Roles, Scopes.OfflineAccess, Scopes.Email, Scopes.Profile);
+            claimsPrincipal.SetScopes(Scopes.OfflineAccess);
 
-            user.DateLastLoggedIn = DateTimeOffset.UtcNow;
-            user.AccessFailedCount = 0;
-            await userRepository.SaveAsync();
-
-            logger.LogInformation(LogEvents.UserInfo, "[{Now}] New login (TapTap): #{Id} {UserName}",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), user.Id, user.UserName);
+            logger.LogInformation(LogEvents.UserInfo, "[{Now}] New login (TapTap Ghost): {UserName}",
+                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), ghost.UserName);
 
             return SignIn(claimsPrincipal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
         }
@@ -222,12 +278,13 @@ public class AuthenticationController(
         {
             var user = await userManager.FindByEmailAsync(request.Username!);
             if (user == null)
-                return Forbid(new AuthenticationProperties(new Dictionary<string, string>
-                {
-                    [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidToken,
-                    [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
-                        "Unable to find a user with provided credentials."
-                }!), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+                return Forbid(
+                    new AuthenticationProperties(new Dictionary<string, string>
+                    {
+                        [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.InvalidToken,
+                        [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
+                            "Unable to find a user with provided credentials."
+                    }!), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
             if (!resourceService.HasPermission(user, UserRole.Member))
                 return Forbid(
                     new AuthenticationProperties(new Dictionary<string, string>
@@ -267,26 +324,7 @@ public class AuthenticationController(
                     }!), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
             }
 
-            var identity = new ClaimsIdentity(TokenValidationParameters.DefaultAuthenticationType, Claims.Name,
-                Claims.Role);
-
-            identity.AddClaim(Claims.Subject, user.Id.ToString(), Destinations.AccessToken);
-            identity.AddClaim(Claims.Username, user.UserName!, Destinations.AccessToken);
-
-            foreach (var role in await userManager.GetRolesAsync(user))
-                identity.AddClaim(Claims.Role, role, Destinations.AccessToken);
-
-            var claimsPrincipal = new ClaimsPrincipal(identity);
-            claimsPrincipal.SetScopes(Scopes.Roles, Scopes.OfflineAccess, Scopes.Email, Scopes.Profile);
-
-            user.DateLastLoggedIn = DateTimeOffset.UtcNow;
-            user.AccessFailedCount = 0;
-            await userManager.UpdateAsync(user);
-
-            logger.LogInformation(LogEvents.UserInfo, "[{Now}] New login: #{Id} {UserName}",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), user.Id, user.UserName);
-
-            return SignIn(claimsPrincipal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+            return await Login(user, "Password");
         }
 
         if (request.IsRefreshTokenGrantType())
@@ -309,11 +347,8 @@ public class AuthenticationController(
             var identity = new ClaimsIdentity(result.Principal!.Claims,
                 TokenValidationParameters.DefaultAuthenticationType, Claims.Name, Claims.Role);
 
-            identity.SetClaim(Claims.Subject, await userManager.GetUserIdAsync(user))
-                .SetClaim(Claims.Email, await userManager.GetEmailAsync(user))
-                .SetClaim(Claims.Name, await userManager.GetUserNameAsync(user))
-                .SetClaims(Claims.Role, (await userManager.GetRolesAsync(user)).ToImmutableArray());
-
+            identity.SetClaim(Claims.Subject, user.Id.ToString());
+            identity.SetClaim(Claims.Name, user.UserName!);
             identity.SetDestinations(GetDestinations);
 
             user.DateLastLoggedIn = DateTimeOffset.UtcNow;
@@ -597,7 +632,7 @@ public class AuthenticationController(
     /// <summary>
     ///     Revokes user's account.
     /// </summary>
-    /// <param name="dto">Code from the confirmation email.</param>
+    /// <param name="codeDto">Code from the confirmation email.</param>
     /// <returns>An empty body.</returns>
     /// <response code="204">Returns an empty body.</response>
     /// <response code="400">When the input code is invalid.</response>
@@ -606,9 +641,9 @@ public class AuthenticationController(
     [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> RevokeAccount([FromBody] ConfirmationCodeDto dto)
+    public async Task<IActionResult> RevokeAccount([FromBody] CodeRequestDto codeDto)
     {
-        var user = await RedeemCode(dto.Code, EmailRequestMode.AccountRevocation);
+        var user = await RedeemCode(codeDto.Code, EmailRequestMode.AccountRevocation);
         if (user == null)
             return BadRequest(new ResponseDto<object>
             {
@@ -662,6 +697,29 @@ public class AuthenticationController(
                 yield return Destinations.AccessToken;
                 yield break;
         }
+    }
+
+    private async Task<IActionResult> Login(User user, string method)
+    {
+        var identity = new ClaimsIdentity(TokenValidationParameters.DefaultAuthenticationType, Claims.Name,
+            Claims.Role);
+
+        identity.AddClaim(Claims.Subject, user.Id.ToString());
+        identity.AddClaim(Claims.Name, user.UserName!);
+
+        identity.SetDestinations(GetDestinations);
+
+        var claimsPrincipal = new ClaimsPrincipal(identity);
+        claimsPrincipal.SetScopes(Scopes.OfflineAccess);
+
+        user.DateLastLoggedIn = DateTimeOffset.UtcNow;
+        user.AccessFailedCount = 0;
+        await userRepository.SaveAsync();
+
+        logger.LogInformation(LogEvents.UserInfo, "[{Now}] New login ({Method}): #{Id} {UserName}",
+            DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), method, user.Id, user.UserName);
+
+        return SignIn(claimsPrincipal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
     }
 
     private async Task<IActionResult?> CheckUserLockoutState(User user)

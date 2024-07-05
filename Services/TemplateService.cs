@@ -38,8 +38,6 @@ public class TemplateService : ITemplateService
 
     public string ReplacePlaceholders(string template, Dictionary<string, string> dictionary)
     {
-        var result = template;
-        foreach (var pair in dictionary) result = result.Replace($"{{{pair.Key}}}", pair.Value);
-        return result;
+        return dictionary.Aggregate(template, (current, pair) => current.Replace($"{{{pair.Key}}}", pair.Value));
     }
 }

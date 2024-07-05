@@ -8,6 +8,7 @@ using OpenIddict.Abstractions;
 using OpenIddict.Validation.AspNetCore;
 using PhiZoneApi.Configurations;
 using PhiZoneApi.Constants;
+using PhiZoneApi.Dtos.Deliverers;
 using PhiZoneApi.Dtos.Filters;
 using PhiZoneApi.Dtos.Requests;
 using PhiZoneApi.Dtos.Responses;
@@ -16,6 +17,8 @@ using PhiZoneApi.Filters;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 using PhiZoneApi.Utils;
+
+// ReSharper disable InvertIf
 
 // ReSharper disable RouteTemplates.ActionRoutePrefixCanBeExtractedToControllerRoute
 
@@ -41,14 +44,15 @@ public class ChartSubmissionController(
     ISongSubmissionRepository songSubmissionRepository,
     IChartService chartService,
     IVolunteerVoteRepository volunteerVoteRepository,
-    IApplicationServiceRepository applicationServiceRepository,
-    IApplicationServiceRecordRepository applicationServiceRecordRepository,
+    IServiceScriptRepository serviceScriptRepository,
     IScriptService scriptService,
     IAdmissionRepository admissionRepository,
     INotificationService notificationService,
     ITemplateService templateService,
     ICollaborationRepository collaborationRepository,
     IChartAssetSubmissionRepository chartAssetSubmissionRepository,
+    IEventDivisionRepository eventDivisionRepository,
+    IEventTeamRepository eventTeamRepository,
     ILogger<ChartSubmissionController> logger,
     IFeishuService feishuService,
     IMeilisearchService meilisearchService) : Controller
@@ -91,8 +95,9 @@ public class ChartSubmissionController(
             var result = await meilisearchService.SearchAsync<ChartSubmission>(dto.Search, dto.PerPage, dto.Page,
                 !isVolunteer ? currentUser.Id : null);
             var idList = result.Hits.Select(item => item.Id).ToList();
-            chartSubmissions = (await chartSubmissionRepository.GetChartSubmissionsAsync(["DateCreated"], [false],
-                position, dto.PerPage, e => idList.Contains(e.Id), currentUser.Id)).OrderBy(e => idList.IndexOf(e.Id));
+            chartSubmissions =
+                (await chartSubmissionRepository.GetChartSubmissionsAsync(predicate: e => idList.Contains(e.Id),
+                    currentUserId: currentUser.Id)).OrderBy(e => idList.IndexOf(e.Id));
             total = result.TotalHits;
         }
         else
@@ -241,6 +246,9 @@ public class ChartSubmissionController(
                 Message = "Must enter one and only one field between song and song submission."
             });
 
+        var (eventDivision, eventTeam, response) = await GetEvent(dto.Tags, currentUser);
+        if (response != null) return response;
+
         var illustrationUrl = dto.Illustration != null
             ? (await fileStorageService.UploadImage<Chart>(
                 dto.Title ?? (song != null ? song.Title : songSubmission!.Title), dto.Illustration, (16, 9))).Item1
@@ -249,7 +257,10 @@ public class ChartSubmissionController(
             await fileStorageService.SendUserInput(illustrationUrl, "Illustration", Request, currentUser);
 
         var chartSubmissionInfo = dto.File != null
-            ? await chartService.Upload(dto.Title ?? (song != null ? song.Title : songSubmission!.Title), dto.File)
+            ? await chartService.Upload(dto.Title ?? (song != null ? song.Title : songSubmission!.Title), dto.File,
+                eventDivision is { Anonymization: true },
+                eventDivision is { Anonymization: true } && (song is { IsOriginal: true } ||
+                                                             songSubmission is { OriginalityProof: not null }))
             : null;
 
         if (dto.File != null && chartSubmissionInfo == null)
@@ -293,11 +304,22 @@ public class ChartSubmissionController(
             DateUpdated = DateTimeOffset.UtcNow
         };
 
+        if (eventTeam != null)
+        {
+            var firstFailure = await scriptService.RunEventTaskAsync(eventTeam.DivisionId, chartSubmission,
+                eventTeam.Id, currentUser, [EventTaskType.PreSubmission]);
+
+            if (firstFailure != null)
+                return BadRequest(new ResponseDto<EventTaskResponseDto>
+                {
+                    Status = ResponseStatus.ErrorWithData, Code = ResponseCodes.InvalidData, Data = firstFailure
+                });
+        }
+
         if (!await chartSubmissionRepository.CreateChartSubmissionAsync(chartSubmission))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
-        // ReSharper disable once InvertIf
         if (song != null && song.OwnerId != currentUser.Id && song.Accessibility == Accessibility.RequireReview)
         {
             var admission = new Admission
@@ -369,6 +391,11 @@ public class ChartSubmissionController(
         }
 
         await feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
+
+        if (eventDivision != null && eventTeam != null)
+            await scriptService.RunEventTaskAsync(eventTeam.DivisionId, chartSubmission, eventTeam.Id, currentUser,
+                [EventTaskType.PostSubmission]);
+
         logger.LogInformation(LogEvents.ChartInfo, "[{Now}] New chart submission: {Title} [{Level} {Difficulty}]",
             DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), dto.Title ?? song?.Title ?? songSubmission!.Title, dto.Level,
             Math.Floor(dto.Difficulty));
@@ -458,11 +485,20 @@ public class ChartSubmissionController(
         chartSubmission.VolunteerStatus = RequestStatus.Waiting;
         chartSubmission.DateUpdated = DateTimeOffset.UtcNow;
 
+        var (eventDivision, eventTeam, response) =
+            await CheckForEvent(chartSubmission, currentUser, EventTaskType.PreUpdateSubmission);
+        if (response != null) return response;
+
         if (!await chartSubmissionRepository.UpdateChartSubmissionAsync(chartSubmission))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
         if (notify) await feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
+
+        if (eventDivision != null && eventTeam != null)
+            await scriptService.RunEventTaskAsync(eventTeam.DivisionId, chartSubmission, eventTeam.Id, currentUser,
+                [EventTaskType.PostUpdateSubmission]);
+
         return NoContent();
     }
 
@@ -476,7 +512,7 @@ public class ChartSubmissionController(
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="403">When the user does not have sufficient permission.</response>
-    /// <response code="404">When the specified chartSubmission is not found.</response>
+    /// <response code="404">When the specified chart submission is not found.</response>
     /// <response code="500">When an internal server error has occurred.</response>
     [HttpPatch("{id:guid}/file")]
     [Consumes("multipart/form-data")]
@@ -507,15 +543,29 @@ public class ChartSubmissionController(
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
+
+        var (eventDivision, eventTeam, response) = await GetEvent(chartSubmission.Tags, currentUser);
+        if (response != null) return response;
+
         var notify = chartSubmission.VolunteerStatus != RequestStatus.Waiting;
 
         if (dto.File != null)
         {
+            Song? song = null;
+            SongSubmission? songSubmission = null;
+            if (chartSubmission.SongId != null)
+                song = await songRepository.GetSongAsync(chartSubmission.SongId.Value);
+            else if (chartSubmission.SongSubmissionId != null)
+                songSubmission =
+                    await songSubmissionRepository.GetSongSubmissionAsync(chartSubmission.SongSubmissionId.Value);
+
             var chartSubmissionInfo = await chartService.Upload(
                 chartSubmission.Title ?? (chartSubmission.SongId != null
                     ? (await songRepository.GetSongAsync(chartSubmission.SongId.Value)).Title
                     : (await songSubmissionRepository.GetSongSubmissionAsync(chartSubmission.SongSubmissionId!.Value))
-                    .Title), dto.File);
+                    .Title), dto.File, eventDivision is { Anonymization: true },
+                eventDivision is { Anonymization: true } && (song is { IsOriginal: true } ||
+                                                             songSubmission is { OriginalityProof: not null }));
             if (chartSubmissionInfo == null)
                 return BadRequest(new ResponseDto<object>
                 {
@@ -531,11 +581,28 @@ public class ChartSubmissionController(
             chartSubmission.DateUpdated = DateTimeOffset.UtcNow;
         }
 
+        if (eventTeam != null)
+        {
+            var firstFailure = await scriptService.RunEventTaskAsync(eventTeam.DivisionId, chartSubmission,
+                eventTeam.Id, currentUser, [EventTaskType.PreUpdateSubmission]);
+
+            if (firstFailure != null)
+                return BadRequest(new ResponseDto<EventTaskResponseDto>
+                {
+                    Status = ResponseStatus.ErrorWithData, Code = ResponseCodes.InvalidData, Data = firstFailure
+                });
+        }
+
         if (!await chartSubmissionRepository.UpdateChartSubmissionAsync(chartSubmission))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
         if (notify) await feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
+
+        if (eventDivision != null && eventTeam != null)
+            await scriptService.RunEventTaskAsync(eventTeam.DivisionId, chartSubmission, eventTeam.Id, currentUser,
+                [EventTaskType.PostUpdateSubmission]);
+
         return NoContent();
     }
 
@@ -549,7 +616,7 @@ public class ChartSubmissionController(
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="403">When the user does not have sufficient permission.</response>
-    /// <response code="404">When the specified chartSubmission is not found.</response>
+    /// <response code="404">When the specified chart submission is not found.</response>
     /// <response code="500">When an internal server error has occurred.</response>
     [HttpPatch("{id:guid}/illustration")]
     [Consumes("multipart/form-data")]
@@ -595,11 +662,20 @@ public class ChartSubmissionController(
             chartSubmission.DateUpdated = DateTimeOffset.UtcNow;
         }
 
+        var (eventDivision, eventTeam, response) =
+            await CheckForEvent(chartSubmission, currentUser, EventTaskType.PreUpdateSubmission);
+        if (response != null) return response;
+
         if (!await chartSubmissionRepository.UpdateChartSubmissionAsync(chartSubmission))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
         if (notify) await feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
+
+        if (eventDivision != null && eventTeam != null)
+            await scriptService.RunEventTaskAsync(eventTeam.DivisionId, chartSubmission, eventTeam.Id, currentUser,
+                [EventTaskType.PostUpdateSubmission]);
+
         return NoContent();
     }
 
@@ -612,7 +688,7 @@ public class ChartSubmissionController(
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="403">When the user does not have sufficient permission.</response>
-    /// <response code="404">When the specified chartSubmission is not found.</response>
+    /// <response code="404">When the specified chart submission is not found.</response>
     /// <response code="500">When an internal server error has occurred.</response>
     [HttpDelete("{id:guid}/illustration")]
     [Produces("application/json")]
@@ -649,11 +725,20 @@ public class ChartSubmissionController(
         chartSubmission.VolunteerStatus = RequestStatus.Waiting;
         chartSubmission.DateUpdated = DateTimeOffset.UtcNow;
 
+        var (eventDivision, eventTeam, response) =
+            await CheckForEvent(chartSubmission, currentUser, EventTaskType.PreUpdateSubmission);
+        if (response != null) return response;
+
         if (!await chartSubmissionRepository.UpdateChartSubmissionAsync(chartSubmission))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
         if (notify) await feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
+
+        if (eventDivision != null && eventTeam != null)
+            await scriptService.RunEventTaskAsync(eventTeam.DivisionId, chartSubmission, eventTeam.Id, currentUser,
+                [EventTaskType.PostUpdateSubmission]);
+
         return NoContent();
     }
 
@@ -700,6 +785,24 @@ public class ChartSubmissionController(
         if (!await chartSubmissionRepository.RemoveChartSubmissionAsync(id))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+
+        var normalizedTags = chartSubmission.Tags.Select(resourceService.Normalize);
+        var eventDivisions = await eventDivisionRepository.GetEventDivisionsAsync(predicate: e =>
+            e.Type == EventDivisionType.Chart && e.Status == EventDivisionStatus.Started &&
+            normalizedTags.Contains(e.TagName));
+        if (eventDivisions.Count > 0)
+        {
+            var eventDivision = eventDivisions.First();
+            var eventTeams = await eventTeamRepository.GetEventTeamsAsync(predicate: e =>
+                e.DivisionId == eventDivision.Id && e.Participations.Any(f => f.ParticipantId == currentUser.Id));
+
+            if (eventTeams.Count > 0)
+            {
+                var eventTeam = eventTeams.First();
+                await scriptService.RunEventTaskAsync(eventTeam.DivisionId, chartSubmission, eventTeam.Id, currentUser,
+                    [EventTaskType.OnDeletion]);
+            }
+        }
 
         return NoContent();
     }
@@ -887,12 +990,21 @@ public class ChartSubmissionController(
         chartSubmission.VolunteerStatus = RequestStatus.Waiting;
         chartSubmission.DateUpdated = DateTimeOffset.UtcNow;
 
+        var (eventDivision, eventTeam, response) =
+            await CheckForEvent(chartSubmission, currentUser, EventTaskType.PreUpdateSubmission);
+        if (response != null) return response;
+
         if (!await chartAssetSubmissionRepository.CreateChartAssetSubmissionAsync(chartAsset) ||
             !await chartSubmissionRepository.UpdateChartSubmissionAsync(chartSubmission))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
         if (notify) await feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
+
+        if (eventDivision != null && eventTeam != null)
+            await scriptService.RunEventTaskAsync(eventTeam.DivisionId, chartSubmission, eventTeam.Id, currentUser,
+                [EventTaskType.PostUpdateSubmission]);
+
         return StatusCode(StatusCodes.Status201Created,
             new ResponseDto<CreatedResponseDto<Guid>>
             {
@@ -982,12 +1094,21 @@ public class ChartSubmissionController(
         chartSubmission.VolunteerStatus = RequestStatus.Waiting;
         chartSubmission.DateUpdated = DateTimeOffset.UtcNow;
 
+        var (eventDivision, eventTeam, response) =
+            await CheckForEvent(chartSubmission, currentUser, EventTaskType.PreUpdateSubmission);
+        if (response != null) return response;
+
         if (!await chartAssetSubmissionRepository.UpdateChartAssetSubmissionAsync(chartAsset) ||
             !await chartSubmissionRepository.UpdateChartSubmissionAsync(chartSubmission))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
         if (notify) await feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
+
+        if (eventDivision != null && eventTeam != null)
+            await scriptService.RunEventTaskAsync(eventTeam.DivisionId, chartSubmission, eventTeam.Id, currentUser,
+                [EventTaskType.PostUpdateSubmission]);
+
         return NoContent();
     }
 
@@ -1057,12 +1178,21 @@ public class ChartSubmissionController(
             chartSubmission.DateUpdated = DateTimeOffset.UtcNow;
         }
 
+        var (eventDivision, eventTeam, response) =
+            await CheckForEvent(chartSubmission, currentUser, EventTaskType.PreUpdateSubmission);
+        if (response != null) return response;
+
         if (!await chartAssetSubmissionRepository.UpdateChartAssetSubmissionAsync(chartAsset) ||
             !await chartSubmissionRepository.UpdateChartSubmissionAsync(chartSubmission))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
         if (notify) await feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
+
+        if (eventDivision != null && eventTeam != null)
+            await scriptService.RunEventTaskAsync(eventTeam.DivisionId, chartSubmission, eventTeam.Id, currentUser,
+                [EventTaskType.PostUpdateSubmission]);
+
         return NoContent();
     }
 
@@ -1118,17 +1248,26 @@ public class ChartSubmissionController(
         chartSubmission.VolunteerStatus = RequestStatus.Waiting;
         chartSubmission.DateUpdated = DateTimeOffset.UtcNow;
 
+        var (eventDivision, eventTeam, response) =
+            await CheckForEvent(chartSubmission, currentUser, EventTaskType.PreUpdateSubmission);
+        if (response != null) return response;
+
         if (!await chartAssetSubmissionRepository.RemoveChartAssetSubmissionAsync(assetId) ||
             !await chartSubmissionRepository.UpdateChartSubmissionAsync(chartSubmission))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
         if (notify) await feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
+
+        if (eventDivision != null && eventTeam != null)
+            await scriptService.RunEventTaskAsync(eventTeam.DivisionId, chartSubmission, eventTeam.Id, currentUser,
+                [EventTaskType.PostUpdateSubmission]);
+
         return NoContent();
     }
 
     /// <summary>
-    ///     Applies a specific chart submission to an application service.
+    ///     Applies a specific chart submission to a service script.
     /// </summary>
     /// <param name="id">A chart submission's ID.</param>
     /// <returns>A service response.</returns>
@@ -1146,7 +1285,7 @@ public class ChartSubmissionController(
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> ApplyChartSubmissionToService([FromRoute] Guid id, [FromRoute] Guid serviceId,
-        [FromBody] ApplicationServiceUsageDto dto)
+        [FromBody] ServiceScriptUsageDto dto)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if (!resourceService.HasPermission(currentUser, UserRole.Qualified))
@@ -1160,123 +1299,23 @@ public class ChartSubmissionController(
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        if (!await applicationServiceRepository.ApplicationServiceExistsAsync(serviceId))
+        if (!await serviceScriptRepository.ServiceScriptExistsAsync(serviceId))
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        var service = await applicationServiceRepository.GetApplicationServiceAsync(serviceId);
+        var service = await serviceScriptRepository.GetServiceScriptAsync(serviceId);
         if (service.TargetType != ServiceTargetType.ChartSubmission)
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
             });
         var chartSubmission = await chartSubmissionRepository.GetChartSubmissionAsync(id);
-        var result =
-            await scriptService.RunAsync(serviceId, dto.Parameters, chartSubmission, currentUser);
+        var result = await scriptService.RunAsync(serviceId, chartSubmission, dto.Parameters, currentUser);
 
-        return Ok(
-            new ResponseDto<ServiceResponseDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = result });
-    }
-
-    /// <summary>
-    ///     Retrieves service records.
-    /// </summary>
-    /// <returns>An array of service records.</returns>
-    /// <response code="200">Returns an array of service records.</response>
-    /// <response code="400">When any of the parameters is invalid.</response>
-    [HttpGet("{id:guid}/serviceRecords")]
-    [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status200OK,
-        Type = typeof(ResponseDto<IEnumerable<ApplicationServiceRecordDto>>))]
-    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetApplicationServiceRecords([FromRoute] Guid id, [FromQuery] ArrayRequestDto dto,
-        [FromQuery] ApplicationServiceRecordFilterDto? filterDto = null)
-    {
-        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!resourceService.HasPermission(currentUser, UserRole.Qualified))
-            return StatusCode(StatusCodes.Status403Forbidden,
-                new ResponseDto<object>
-                {
-                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
-                });
-        if (!await songSubmissionRepository.SongSubmissionExistsAsync(id))
-            return NotFound(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
-            });
-        dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
-            dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
-        dto.Page = dto.Page > 1 ? dto.Page : 1;
-        var position = dto.PerPage * (dto.Page - 1);
-        var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser, e => e.ResourceId == id);
-        var applicationServiceRecords =
-            await applicationServiceRecordRepository.GetApplicationServiceRecordsAsync(dto.Order, dto.Desc, position,
-                dto.PerPage, predicateExpr);
-        var total = await applicationServiceRecordRepository.CountApplicationServiceRecordsAsync(predicateExpr);
-        var list = applicationServiceRecords.Select(mapper.Map<ApplicationServiceRecordDto>).ToList();
-
-        return Ok(new ResponseDto<IEnumerable<ApplicationServiceRecordDto>>
+        return Ok(new ResponseDto<ServiceResponseDto>
         {
-            Status = ResponseStatus.Ok,
-            Code = ResponseCodes.Ok,
-            Total = total,
-            PerPage = dto.PerPage,
-            HasPrevious = position > 0,
-            HasNext = dto.PerPage > 0 && dto.PerPage * dto.Page < total,
-            Data = list
-        });
-    }
-
-    /// <summary>
-    ///     Retrieves a specific service record.
-    /// </summary>
-    /// <param name="id">A service record's ID.</param>
-    /// <returns>A service record.</returns>
-    /// <response code="200">Returns a service record.</response>
-    /// <response code="304">
-    ///     When the resource has not been updated since last retrieval. Requires <c>If-None-Match</c>.
-    /// </response>
-    /// <response code="400">When any of the parameters is invalid.</response>
-    /// <response code="404">When the specified service record is not found.</response>
-    [HttpGet("{id:guid}/serviceRecords/{recordId:guid}")]
-    [ServiceFilter(typeof(ETagFilter))]
-    [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<ApplicationServiceRecordDto>))]
-    [ProducesResponseType(typeof(void), StatusCodes.Status304NotModified, "text/plain")]
-    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
-    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetApplicationServiceRecord([FromRoute] Guid id, [FromRoute] Guid recordId)
-    {
-        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!resourceService.HasPermission(currentUser, UserRole.Qualified))
-            return StatusCode(StatusCodes.Status403Forbidden,
-                new ResponseDto<object>
-                {
-                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
-                });
-        if (!await songSubmissionRepository.SongSubmissionExistsAsync(id))
-            return NotFound(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
-            });
-        if (!await applicationServiceRecordRepository.ApplicationServiceRecordExistsAsync(recordId))
-            return NotFound(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
-            });
-        var applicationServiceRecord =
-            await applicationServiceRecordRepository.GetApplicationServiceRecordAsync(recordId);
-        if (applicationServiceRecord.ResourceId != id)
-            return NotFound(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
-            });
-        var dto = mapper.Map<ApplicationServiceRecordDto>(applicationServiceRecord);
-
-        return Ok(new ResponseDto<ApplicationServiceRecordDto>
-        {
-            Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto
+            Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = result
         });
     }
 
@@ -1431,9 +1470,10 @@ public class ChartSubmissionController(
     /// <response code="201">Returns an empty body.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
-    /// <response code="404">When the specified chartSubmission is not found.</response>
+    /// <response code="404">When the specified chart submission is not found.</response>
     /// <response code="500">When an internal server error has occurred.</response>
     [HttpPost("{id:guid}/votes")]
+    [Consumes("application/json")]
     [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
@@ -1451,7 +1491,7 @@ public class ChartSubmissionController(
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         var chartSubmission = await chartSubmissionRepository.GetChartSubmissionAsync(id);
         if ((chartSubmission.OwnerId == currentUser.Id &&
-             !resourceService.HasPermission(currentUser, UserRole.Qualified)) ||
+             !resourceService.HasPermission(currentUser, UserRole.Administrator)) ||
             (chartSubmission.OwnerId != currentUser.Id &&
              !resourceService.HasPermission(currentUser, UserRole.Volunteer)))
             return StatusCode(StatusCodes.Status403Forbidden,
@@ -1475,7 +1515,7 @@ public class ChartSubmissionController(
     /// <response code="204">Returns an empty body.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
-    /// <response code="404">When the specified chartSubmission is not found.</response>
+    /// <response code="404">When the specified chart submission is not found.</response>
     [HttpDelete("{id:guid}/votes")]
     [Produces("application/json")]
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
@@ -1508,5 +1548,95 @@ public class ChartSubmissionController(
             });
 
         return NoContent();
+    }
+
+    /// <summary>
+    ///     Checks for any event participation with provided tags.
+    /// </summary>
+    /// <returns>An event division and a team, if found.</returns>
+    /// <response code="200">Returns an event division and a team, if found.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="500">When an internal server error has occurred.</response>
+    [HttpPost("checkEvent")]
+    [Consumes("application/json")]
+    [Produces("application/json")]
+    [ProducesResponseType(typeof(void), StatusCodes.Status200OK, Type = typeof(ResponseDto<EventParticipationInfoDto>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> CheckForEvent([FromBody] StringArrayDto dto)
+    {
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        var result = await GetEvent(dto.Strings, currentUser);
+
+        if (result.Item3 != null) return result.Item3;
+
+        return Ok(new ResponseDto<EventParticipationInfoDto>
+        {
+            Status = ResponseStatus.Ok, Code = ResponseCodes.Ok,
+            Data = new EventParticipationInfoDto
+            {
+                Division = result.Item1 != null
+                    ? await dtoMapper.MapEventDivisionAsync<EventDivisionDto>(result.Item1)
+                    : null,
+                Team = result.Item2 != null ? dtoMapper.MapEventTeam<EventTeamDto>(result.Item2) : null
+            }
+        });
+    }
+
+    private async Task<(EventDivision?, EventTeam?, IActionResult?)> GetEvent(IEnumerable<string> tags,
+        User currentUser)
+    {
+        var normalizedTags = tags.Select(resourceService.Normalize);
+        var eventDivisions = await eventDivisionRepository.GetEventDivisionsAsync(predicate: e =>
+            e.Type == EventDivisionType.Chart &&
+            (e.Status == EventDivisionStatus.Unveiled || e.Status == EventDivisionStatus.Started) &&
+            normalizedTags.Contains(e.TagName));
+        if (eventDivisions.Count == 0) return (null, null, null);
+
+        var eventDivision = eventDivisions.FirstOrDefault(e => e.Status == EventDivisionStatus.Started);
+        if (eventDivision == null)
+            return (null, null,
+                BadRequest(new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.DivisionNotStarted
+                }));
+
+        var eventTeams = await eventTeamRepository.GetEventTeamsAsync(predicate: e =>
+            e.DivisionId == eventDivision.Id && e.Participations.Any(f => f.ParticipantId == currentUser.Id));
+
+        if (eventTeams.Count == 0)
+            return (eventDivision, null,
+                BadRequest(new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.NotEnrolled
+                }));
+
+        var eventTeam = eventTeams.First();
+        return (eventDivision, eventTeam, null);
+    }
+
+    private async Task<(EventDivision?, EventTeam?, IActionResult?)> CheckForEvent(ChartSubmission chartSubmission,
+        User currentUser, EventTaskType taskType)
+    {
+        var result = await GetEvent(chartSubmission.Tags, currentUser);
+        if (result.Item3 != null) return result;
+
+        var eventDivision = result.Item1!;
+        var eventTeam = result.Item2!;
+
+        var firstFailure = await scriptService.RunEventTaskAsync(eventTeam.DivisionId, chartSubmission, eventTeam.Id,
+            currentUser, [taskType]);
+
+        if (firstFailure != null)
+            return (eventDivision, eventTeam,
+                BadRequest(new ResponseDto<EventTaskResponseDto>
+                {
+                    Status = ResponseStatus.ErrorWithData, Code = ResponseCodes.InvalidData, Data = firstFailure
+                }));
+
+        return (eventDivision, eventTeam, null);
     }
 }

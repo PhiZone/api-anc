@@ -2,10 +2,8 @@ using PhiZoneApi.Enums;
 
 namespace PhiZoneApi.Models;
 
-public class ResourceRecord
+public class ResourceRecord : Resource
 {
-    public Guid Id { get; set; }
-
     public ResourceRecordType Type { get; set; }
 
     public string Title { get; set; } = null!;
@@ -23,8 +21,6 @@ public class ResourceRecord
     public string Source { get; set; } = null!;
 
     public string CopyrightOwner { get; set; } = null!;
-
-    public DateTimeOffset DateCreated { get; set; }
 
     public DateTimeOffset DateUpdated { get; set; }
 }

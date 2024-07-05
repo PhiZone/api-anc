@@ -7,7 +7,8 @@ using RabbitMQ.Client.Events;
 
 namespace PhiZoneApi.Services;
 
-public class MailSenderService(IMailService mailService, IRabbitMqService rabbitMqService, IHostEnvironment env) : BackgroundService
+public class MailSenderService(IMailService mailService, IRabbitMqService rabbitMqService, IHostEnvironment env)
+    : BackgroundService
 {
     private readonly IModel _channel = rabbitMqService.GetConnection().CreateModel();
     private readonly string _queue = env.IsProduction() ? "email" : "email-dev";

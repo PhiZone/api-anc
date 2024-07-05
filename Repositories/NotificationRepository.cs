@@ -12,15 +12,17 @@ namespace PhiZoneApi.Repositories;
 public class NotificationRepository(ApplicationDbContext context, IMeilisearchService meilisearchService)
     : INotificationRepository
 {
-    public async Task<ICollection<Notification>> GetNotificationsAsync(List<string> order, List<bool> desc,
-        int position, int take, Expression<Func<Notification, bool>>? predicate = null, int? currentUserId = null)
+    public async Task<ICollection<Notification>> GetNotificationsAsync(List<string>? order = null,
+        List<bool>? desc = null,
+        int? position = 0, int? take = -1, Expression<Func<Notification, bool>>? predicate = null,
+        int? currentUserId = null)
     {
         var result = context.Notifications.OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
         if (currentUserId != null)
             result = result.Include(e => e.Operator).ThenInclude(e => e!.Region);
-        result = result.Skip(position);
-        return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
+        result = result.Skip(position ?? 0);
+        return take >= 0 ? await result.Take(take.Value).ToListAsync() : await result.ToListAsync();
     }
 
     public async Task<Notification> GetNotificationAsync(Guid id, int? currentUserId = null)

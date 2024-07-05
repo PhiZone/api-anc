@@ -187,7 +187,7 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
                     },
                     Gender = (Gender)reader.GetInt32("gender"),
                     Biography = await reader.GetStr("bio"),
-                    Experience = reader.GetInt32("exp"),
+                    Experience = reader.GetUInt64("exp"),
                     Tag = await reader.GetStr("tag"),
                     Rks = reader.GetDouble("rks"),
                     RegionId = regionId,
@@ -307,7 +307,7 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
                 if (await _chapterRepository.CountChaptersAsync(e => e.Title == title && e.Subtitle == subtitle) > 0)
                 {
                     _chapterDictionary.Add(index,
-                        (await _chapterRepository.GetChaptersAsync(["DateCreated"], [false], 0, -1,
+                        (await _chapterRepository.GetChaptersAsync(predicate:
                             e => e.Title == title && e.Subtitle == subtitle)).FirstOrDefault()!.Id);
                     continue;
                 }
@@ -375,7 +375,7 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
                 if (await _songRepository.CountSongsAsync(e => e.Title == title && e.AuthorName == authorName) > 0)
                 {
                     _songDictionary.Add(index,
-                        (await _songRepository.GetSongsAsync(["DateCreated"], [false], 0, -1,
+                        (await _songRepository.GetSongsAsync(predicate:
                             e => e.Title == title && e.AuthorName == authorName)).FirstOrDefault()!.Id);
                     continue;
                 }
@@ -541,7 +541,7 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
                         e.OwnerId == _userDictionary[reader.GetInt32("owner_id")]) > 0)
                 {
                     _chartDictionary.Add(index,
-                        (await _chartRepository.GetChartsAsync(["DateCreated"], [false], 0, -1,
+                        (await _chartRepository.GetChartsAsync(predicate:
                             e => e.SongId == song.Id && e.LevelType == levelType && e.Level == level &&
                                  e.OwnerId == _userDictionary[reader.GetInt32("owner_id")])).FirstOrDefault()!.Id);
                     continue;
@@ -1031,7 +1031,7 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
                         e.Title == title && e.AuthorName == reader.GetString("composer")) > 0)
                 {
                     _songSubmissionDictionary.Add(index,
-                        (await _songSubmissionRepository.GetSongSubmissionsAsync(["DateCreated"], [false], 0, -1,
+                        (await _songSubmissionRepository.GetSongSubmissionsAsync(predicate:
                             e => e.Title == title && e.AuthorName == reader.GetString("composer"))).FirstOrDefault()!
                         .Id);
                     continue;
@@ -1160,7 +1160,7 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
                         e.OwnerId == _userDictionary[reader.GetInt32("uploader_id")]) > 0)
                 {
                     _chartSubmissionDictionary.Add(index,
-                        (await _chartSubmissionRepository.GetChartSubmissionsAsync(["DateCreated"], [false], 0, -1,
+                        (await _chartSubmissionRepository.GetChartSubmissionsAsync(predicate:
                             e => e.SongId == (song != null ? song.Id : null) &&
                                  e.SongSubmissionId == (songSubmission != null ? songSubmission.Id : null) &&
                                  e.LevelType == levelType && e.Level == level &&

@@ -9,10 +9,11 @@ public class MappingProfiles : Profile
 {
     public MappingProfiles()
     {
-        CreateMap<User, UserDto>().ForMember(x => x.Role, opt => opt.Ignore());
-        CreateMap<User, AuthorDto>().ForMember(x => x.Role, opt => opt.Ignore());
+        CreateMap<User, UserDto>();
+        CreateMap<User, PositionalUserDto>();
         CreateMap<User, UserDetailedDto>();
         CreateMap<User, UserUpdateDto>();
+        CreateMap<UserDetailedDto, UserDto>();
         CreateMap<UserRegistrationDto, User>();
         CreateMap<UserRelation, UserRelationDto>();
         CreateMap<Region, RegionDto>();
@@ -23,9 +24,13 @@ public class MappingProfiles : Profile
         CreateMap<Collection, CollectionAdmitterDto>();
         CreateMap<Collection, CollectionUpdateDto>();
         CreateMap<Song, SongDto>();
+        CreateMap<Song, EventSongPromptDto>();
+        CreateMap<Song, EventSongEntryDto>();
         CreateMap<Song, SongAdmitteeDto>();
         CreateMap<Song, SongUpdateDto>().ForMember(x => x.Tags, opt => opt.Ignore());
         CreateMap<Chart, ChartDto>();
+        CreateMap<Chart, EventChartPromptDto>();
+        CreateMap<Chart, EventChartEntryDto>();
         CreateMap<Chart, ChartDetailedDto>();
         CreateMap<Chart, ChartAdmitteeDto>();
         CreateMap<Chart, ChartUpdateDto>().ForMember(x => x.Tags, opt => opt.Ignore());
@@ -34,6 +39,7 @@ public class MappingProfiles : Profile
         CreateMap<ChartAssetSubmission, ChartAssetSubmissionDto>();
         CreateMap<ChartAssetSubmission, ChartAssetUpdateDto>();
         CreateMap<Record, RecordDto>();
+        CreateMap<Record, EventRecordEntryDto>();
         CreateMap<Tag, TagDto>();
         CreateMap<TagRequestDto, Tag>();
         CreateMap<Like, LikeDto>();
@@ -41,12 +47,25 @@ public class MappingProfiles : Profile
         CreateMap<Reply, ReplyDto>();
         CreateMap<Application, ApplicationDto>();
         CreateMap<Application, ApplicationUpdateDto>();
-        CreateMap<ApplicationService, ApplicationServiceDto>();
-        CreateMap<ApplicationService, ApplicationServiceRequestDto>();
-        CreateMap<ApplicationServiceRecord, ApplicationServiceRecordDto>();
+        CreateMap<ServiceScript, ServiceScriptDto>();
+        CreateMap<ServiceScript, ServiceScriptRequestDto>();
+        CreateMap<ServiceRecord, ServiceRecordDto>();
         CreateMap<ApplicationUser, ApplicationUserDto>();
         CreateMap<Announcement, AnnouncementDto>();
         CreateMap<Announcement, AnnouncementRequestDto>();
+        CreateMap<Event, EventDto>().ForMember(x => x.Divisions, opt => opt.Ignore());
+        CreateMap<Event, EventUpdateDto>();
+        CreateMap<EventDivision, EventDivisionDto>();
+        CreateMap<EventDivision, EventDivisionUpdateDto>();
+        CreateMap<EventTeam, EventTeamDto>();
+        CreateMap<EventTeam, EventTeamUpdateDto>();
+        CreateMap<EventTask, EventTaskDto>();
+        CreateMap<EventTask, EventTaskRequestDto>();
+        CreateMap<Hostship, HostshipDto>();
+        CreateMap<Hostship, HostshipDetailedDto>();
+        CreateMap<Hostship, HostshipRequestDto>();
+        CreateMap<EventResource, EventResourceDto>();
+        CreateMap<EventResource, EventResourceRequestDto>();
         CreateMap<PlayConfiguration, PlayConfigurationResponseDto>();
         CreateMap<PlayConfigurationRequestDto, PlayConfiguration>();
         CreateMap<PlayConfiguration, PlayConfigurationRequestDto>();

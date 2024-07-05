@@ -3,7 +3,7 @@ using PhiZoneApi.Enums;
 
 namespace PhiZoneApi.Models;
 
-public class Song : PublicResource
+public class Song : SignificantResource
 {
     public string Title { get; set; } = null!;
 
@@ -41,7 +41,7 @@ public class Song : PublicResource
 
     public TimeSpan PreviewEnd { get; set; }
 
-    public int PlayCount { get; set; }
+    public long PlayCount { get; set; }
 
     [JsonIgnore] public List<Chart> Charts { get; } = [];
 

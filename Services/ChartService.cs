@@ -11,15 +11,14 @@ using PhiZoneApi.Models;
 
 namespace PhiZoneApi.Services;
 
-public class ChartService(IFileStorageService fileStorageService, ILogger<ChartService> logger) : IChartService
+public partial class ChartService(IFileStorageService fileStorageService, ILogger<ChartService> logger) : IChartService
 {
-    private static readonly Regex PecCommandRegex = new("^(-?[0-9]+)|(n[1-4]|bp|cp|cm|cd|cr|ca|cf|cv|#|&)[ -.0-9]+$");
-
-    public async Task<(string, string, ChartFormat, int)?> Upload(string fileName, IFormFile file)
+    public async Task<(string, string, ChartFormat, int)?> Upload(string fileName, IFormFile file,
+        bool anonymizeChart = false, bool anonymizeSong = false)
     {
         var validationResult = await Validate(file);
         if (validationResult == null) return null;
-        return await Upload(validationResult.Value, fileName);
+        return await Upload(validationResult.Value, fileName, anonymizeChart, anonymizeSong);
     }
 
     public async Task<(string, string, ChartFormat, int)?> Upload(string fileName, string filePath)
@@ -41,11 +40,11 @@ public class ChartService(IFileStorageService fileStorageService, ILogger<ChartS
         return null;
     }
 
-    private async Task<(string, string, ChartFormat, int)> Upload((ChartFormat, ChartFormatDto, int) validationResult,
-        string fileName)
+    public async Task<(string, string, ChartFormat, int)> Upload((ChartFormat, ChartFormatDto, int) validationResult,
+        string fileName, bool anonymizeChart = false, bool anonymizeSong = false)
     {
         var serialized = validationResult.Item1 == ChartFormat.RpeJson
-            ? Serialize(Standardize((RpeJsonDto)validationResult.Item2))
+            ? Serialize(Standardize((RpeJsonDto)validationResult.Item2, anonymizeChart, anonymizeSong))
             : Serialize(Standardize((PecDto)validationResult.Item2));
         var stream = new MemoryStream(Encoding.UTF8.GetBytes(serialized));
         var uploadResult =
@@ -54,7 +53,7 @@ public class ChartService(IFileStorageService fileStorageService, ILogger<ChartS
             validationResult.Item1, validationResult.Item3);
     }
 
-    private async Task<(ChartFormat, ChartFormatDto, int)?> Validate(string filePath)
+    public async Task<(ChartFormat, ChartFormatDto, int)?> Validate(string filePath)
     {
         using var reader = new StreamReader(filePath);
         var content = await reader.ReadToEndAsync();
@@ -66,16 +65,18 @@ public class ChartService(IFileStorageService fileStorageService, ILogger<ChartS
         return null;
     }
 
-    private static RpeJsonDto Standardize(RpeJsonDto dto)
+    public RpeJsonDto Standardize(RpeJsonDto dto, bool anonymizeChart = false, bool anonymizeSong = false)
     {
+        if (anonymizeChart) dto.Meta.Charter = "Anonymous";
+
+        if (anonymizeSong) dto.Meta.Composer = "Anonymous";
+
         dto.BpmList.Sort();
-        foreach (var line in dto.JudgeLineList)
+        foreach (var line in dto.JudgeLineList.OfType<JudgeLine>())
         {
-            if (line == null) continue;
             if (line.EventLayers != null)
-                foreach (var layer in line.EventLayers)
+                foreach (var layer in line.EventLayers.OfType<EventLayer>())
                 {
-                    if (layer == null) continue;
                     layer.AlphaEvents?.Sort();
                     layer.MoveXEvents?.Sort();
                     layer.MoveYEvents?.Sort();
@@ -100,7 +101,7 @@ public class ChartService(IFileStorageService fileStorageService, ILogger<ChartS
         return dto;
     }
 
-    private static PecDto Standardize(PecDto dto)
+    public PecDto Standardize(PecDto dto)
     {
         dto.BpmCommands.Sort();
         dto.NoteCommands.Sort();
@@ -114,12 +115,12 @@ public class ChartService(IFileStorageService fileStorageService, ILogger<ChartS
         return dto;
     }
 
-    private static string Serialize(RpeJsonDto dto)
+    public string Serialize(RpeJsonDto dto)
     {
         return JsonConvert.SerializeObject(dto);
     }
 
-    private static string Serialize(PecDto dto)
+    public string Serialize(PecDto dto)
     {
         var builder = new StringBuilder($"{dto.Offset}\r\n");
         foreach (var command in dto.BpmCommands) builder.Append($"{BpmCommand.Id} {command.Time} {command.Bpm}\r\n");
@@ -179,7 +180,7 @@ public class ChartService(IFileStorageService fileStorageService, ILogger<ChartS
         return builder.ToString();
     }
 
-    private static int CountNotes(RpeJsonDto dto)
+    public int CountNotes(RpeJsonDto dto)
     {
         var noteCount = 0;
 
@@ -192,12 +193,12 @@ public class ChartService(IFileStorageService fileStorageService, ILogger<ChartS
         return noteCount;
     }
 
-    private static int CountNotes(PecDto dto)
+    public int CountNotes(PecDto dto)
     {
         return dto.NoteCommands.Count(command => !command.IsFake);
     }
 
-    private RpeJsonDto? ReadRpe(string input)
+    public RpeJsonDto? ReadRpe(string input)
     {
         try
         {
@@ -434,26 +435,26 @@ public class ChartService(IFileStorageService fileStorageService, ILogger<ChartS
         }
     }
 
-    private PecDto? ReadPec(string input)
+    public PecDto? ReadPec(string input)
     {
         var dto = new PecDto
         {
-            BpmCommands = new List<BpmCommand>(),
-            NoteCommands = new List<NoteCommand>(),
-            SpeedCommands = new List<SpeedCommand>(),
-            MoveCommands = new List<MoveCommand>(),
-            RotationCommands = new List<RotationCommand>(),
-            AlphaCommands = new List<AlphaCommand>(),
-            DurationalMoveCommands = new List<DurationalMoveCommand>(),
-            DurationalRotationCommands = new List<DurationalRotationCommand>(),
-            DurationalAlphaCommands = new List<DurationalAlphaCommand>()
+            BpmCommands = [],
+            NoteCommands = [],
+            SpeedCommands = [],
+            MoveCommands = [],
+            RotationCommands = [],
+            AlphaCommands = [],
+            DurationalMoveCommands = [],
+            DurationalRotationCommands = [],
+            DurationalAlphaCommands = []
         };
 
         try
         {
             foreach (var line in input.Split(GetLineSeparator(input)))
             {
-                if (line == string.Empty || !PecCommandRegex.IsMatch(line)) continue;
+                if (line == string.Empty || !PecCommandRegex().IsMatch(line)) continue;
 
                 if (int.TryParse(line, out var number))
                 {
@@ -611,4 +612,7 @@ public class ChartService(IFileStorageService fileStorageService, ILogger<ChartS
     {
         return input.Contains("\r\n") ? "\r\n" : input.Contains('\r') ? "\r" : "\n";
     }
+
+    [GeneratedRegex("^(-?[0-9]+)|(n[1-4]|bp|cp|cm|cd|cr|ca|cf|cv|#|&)[ -.0-9]+$")]
+    private static partial Regex PecCommandRegex();
 }

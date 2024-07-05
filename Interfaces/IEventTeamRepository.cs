@@ -5,10 +5,11 @@ namespace PhiZoneApi.Interfaces;
 
 public interface IEventTeamRepository
 {
-    Task<ICollection<EventTeam>> GetEventTeamsAsync(List<string> order, List<bool> desc, int position, int take,
-        Expression<Func<EventTeam, bool>>? predicate = null);
+    Task<ICollection<EventTeam>> GetEventTeamsAsync(List<string>? order = null, List<bool>? desc = null,
+        int? position = 0, int? take = -1,
+        Expression<Func<EventTeam, bool>>? predicate = null, int? currentUserId = null);
 
-    Task<EventTeam> GetEventTeamAsync(Guid id);
+    Task<EventTeam> GetEventTeamAsync(Guid id, int? currentUserId = null);
 
     Task<bool> EventTeamExistsAsync(Guid id);
 

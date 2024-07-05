@@ -1,6 +1,7 @@
 ﻿using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using PhiZoneApi.Data;
+using PhiZoneApi.Enums;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 using PhiZoneApi.Utils;
@@ -9,10 +10,18 @@ namespace PhiZoneApi.Repositories;
 
 public class RecordRepository(ApplicationDbContext context, IMeilisearchService meilisearchService) : IRecordRepository
 {
-    public async Task<ICollection<Record>> GetRecordsAsync(List<string> order, List<bool> desc, int position, int take,
-        Expression<Func<Record, bool>>? predicate = null, bool queryChart = false, int? currentUserId = null)
+    public async Task<ICollection<Record>> GetRecordsAsync(List<string>? order = null, List<bool>? desc = null,
+        int? position = 0, int? take = -1, Expression<Func<Record, bool>>? predicate = null, bool queryChart = false,
+        int? currentUserId = null, bool? showAnonymous = false)
     {
-        var result = context.Records.Include(e => e.Owner).ThenInclude(e => e.Region).OrderBy(order, desc);
+        var result = context.Records
+            .Where(e => (showAnonymous != null && showAnonymous.Value) || !e.EventPresences.Any(f =>
+                f.Type == EventResourceType.Entry && f.IsAnonymous != null && f.IsAnonymous.Value))
+            .Include(e => e.Owner)
+            .ThenInclude(e => e.Region)
+            .Include(e => e.EventPresences)
+            .ThenInclude(e => e.Team)
+            .OrderBy(order, desc);
         if (queryChart)
             result = result.Include(e => e.Chart)
                 .ThenInclude(e => e.Song)
@@ -21,12 +30,17 @@ public class RecordRepository(ApplicationDbContext context, IMeilisearchService 
                 .ThenInclude(e => e.Song)
                 .ThenInclude(e => e.Tags)
                 .Include(e => e.Chart)
-                .ThenInclude(e => e.Tags);
+                .ThenInclude(e => e.Tags)
+                .Include(e => e.Chart)
+                .ThenInclude(e => e.Song)
+                .ThenInclude(e => e.EventPresences)
+                .Include(e => e.Chart)
+                .ThenInclude(e => e.EventPresences);
         if (predicate != null) result = result.Where(predicate);
         if (currentUserId != null)
             result = result.Include(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
-        result = result.Skip(position);
-        return take >= 0 ? await result.Take(take).ToListAsync() : await result.ToListAsync();
+        result = result.Skip(position ?? 0);
+        return take >= 0 ? await result.Take(take.Value).ToListAsync() : await result.ToListAsync();
     }
 
     public async Task<Record> GetRecordAsync(Guid id, bool queryChart = false, int? currentUserId = null)
@@ -42,7 +56,17 @@ public class RecordRepository(ApplicationDbContext context, IMeilisearchService 
                 .ThenInclude(e => e.Tags)
                 .Include(e => e.Owner)
                 .ThenInclude(e => e.Region)
-            : context.Records.Include(e => e.Owner).ThenInclude(e => e.Region);
+                .Include(e => e.EventPresences)
+                .ThenInclude(e => e.Team)
+                .Include(e => e.Chart)
+                .ThenInclude(e => e.Song)
+                .ThenInclude(e => e.EventPresences)
+                .Include(e => e.Chart)
+                .ThenInclude(e => e.EventPresences)
+            : context.Records.Include(e => e.Owner)
+                .ThenInclude(e => e.Region)
+                .Include(e => e.EventPresences)
+                .ThenInclude(e => e.Team);
         if (currentUserId != null)
             result = result.Include(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
         return (await result.FirstOrDefaultAsync(record => record.Id == id))!;
@@ -55,12 +79,11 @@ public class RecordRepository(ApplicationDbContext context, IMeilisearchService 
 
     public async Task<bool> CreateRecordAsync(Record record)
     {
-        var chart = await context.Charts
-            .Include(e => e.Song)
+        var chart = await context.Charts.Include(e => e.Song)
             .ThenInclude(e => e.Tags)
             .FirstAsync(e => e.Id == record.ChartId);
-        chart.PlayCount = await context.Records.CountAsync(e => e.ChartId == record.Chart.Id) + 1;
-        chart.Song.PlayCount = await context.Records.CountAsync(e => e.Chart.SongId == record.Chart.SongId) + 1;
+        chart.PlayCount = await context.Records.LongCountAsync(e => e.ChartId == record.Chart.Id) + 1;
+        chart.Song.PlayCount = await context.Records.LongCountAsync(e => e.Chart.SongId == record.Chart.SongId) + 1;
         await context.Records.AddAsync(record);
         await meilisearchService.UpdateAsync(record.Chart);
         await meilisearchService.UpdateAsync(record.Chart.Song);
@@ -101,9 +124,12 @@ public class RecordRepository(ApplicationDbContext context, IMeilisearchService 
         return saved > 0;
     }
 
-    public async Task<int> CountRecordsAsync(Expression<Func<Record, bool>>? predicate = null)
+    public async Task<int> CountRecordsAsync(Expression<Func<Record, bool>>? predicate = null,
+        bool? showAnonymous = false)
     {
-        var result = context.Records.AsQueryable();
+        var result = context.Records.Where(e =>
+            (showAnonymous != null && showAnonymous.Value) || !e.EventPresences.Any(f =>
+                f.Type == EventResourceType.Entry && f.IsAnonymous != null && f.IsAnonymous.Value));
 
         if (predicate != null) result = result.Where(predicate);
 
@@ -113,15 +139,26 @@ public class RecordRepository(ApplicationDbContext context, IMeilisearchService 
     public async Task<ICollection<Record>> GetPersonalBests(int ownerId, int take = 19, bool queryChart = false,
         int? currentUserId = null)
     {
-        IQueryable<Record> result = context.Records.Include(e => e.Owner).ThenInclude(e => e.Region);
+        IQueryable<Record> result = context.Records
+            .Where(e => !e.EventPresences.Any(f =>
+                f.Type == EventResourceType.Entry && f.IsAnonymous != null && f.IsAnonymous.Value))
+            .Include(e => e.Owner)
+            .ThenInclude(e => e.Region)
+            .Include(e => e.EventPresences);
         if (queryChart)
             result = result.Include(e => e.Chart)
                 .ThenInclude(e => e.Song)
-                .ThenInclude(e => e.Charts).Include(e => e.Chart)
+                .ThenInclude(e => e.Charts)
+                .Include(e => e.Chart)
                 .ThenInclude(e => e.Song)
                 .ThenInclude(e => e.Tags)
                 .Include(e => e.Chart)
-                .ThenInclude(e => e.Tags);
+                .ThenInclude(e => e.Tags)
+                .Include(e => e.Chart)
+                .ThenInclude(e => e.Song)
+                .ThenInclude(e => e.EventPresences)
+                .Include(e => e.Chart)
+                .ThenInclude(e => e.EventPresences);
         if (currentUserId != null)
             result = result.Include(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
         result = result.Where(e => e.Chart.IsRanked && e.OwnerId == ownerId)

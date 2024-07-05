@@ -1,6 +1,6 @@
 ﻿namespace PhiZoneApi.Models;
 
-public class Vote : Resource
+public class Vote : OwnedResource
 {
     public Guid ChartId { get; set; }
 

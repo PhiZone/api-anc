@@ -18,9 +18,9 @@ public interface IMeilisearchService
 
     Task UpdateBatchAsync<T>(IEnumerable<T> documents);
 
-    Task DeleteAsync<T>(T document) where T : Resource;
+    Task DeleteAsync<T>(T document) where T : OwnedResource;
 
-    Task DeleteBatchAsync<T>(IEnumerable<T> documents) where T : Resource;
+    Task DeleteBatchAsync<T>(IEnumerable<T> documents) where T : OwnedResource;
 
     Task DeleteAsync<T>(Guid id);
 
