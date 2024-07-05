@@ -292,8 +292,7 @@ public class ChartSubmissionController(
             VolunteerStatus = RequestStatus.Waiting,
             AdmissionStatus =
                 song != null
-                    ?
-                    song.OwnerId == currentUser.Id || song.Accessibility == Accessibility.AllowAny
+                    ? song.OwnerId == currentUser.Id || song.Accessibility == Accessibility.AllowAny
                         ? RequestStatus.Approved
                         : RequestStatus.Waiting
                     : songSubmission!.OwnerId == currentUser.Id ||
@@ -549,14 +548,10 @@ public class ChartSubmissionController(
             Song? song = null;
             SongSubmission? songSubmission = null;
             if (chartSubmission.SongId != null)
-            {
                 song = await songRepository.GetSongAsync(chartSubmission.SongId.Value);
-            }
             else if (chartSubmission.SongSubmissionId != null)
-            {
                 songSubmission =
                     await songSubmissionRepository.GetSongSubmissionAsync(chartSubmission.SongSubmissionId.Value);
-            }
 
             var chartSubmissionInfo = await chartService.Upload(
                 chartSubmission.Title ?? (chartSubmission.SongId != null
@@ -1558,17 +1553,16 @@ public class ChartSubmissionController(
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         var result = await GetEvent(dto.Strings, currentUser);
 
-        if (result.Item3 != null)
-        {
-            return result.Item3;
-        }
+        if (result.Item3 != null) return result.Item3;
 
         return Ok(new ResponseDto<EventParticipationInfoDto>
         {
             Status = ResponseStatus.Ok, Code = ResponseCodes.Ok,
             Data = new EventParticipationInfoDto
             {
-                Division = result.Item1 != null ? await dtoMapper.MapEventDivisionAsync<EventDivisionDto>(result.Item1) : null,
+                Division = result.Item1 != null
+                    ? await dtoMapper.MapEventDivisionAsync<EventDivisionDto>(result.Item1)
+                    : null,
                 Team = result.Item2 != null ? dtoMapper.MapEventTeam<EventTeamDto>(result.Item2) : null
             }
         });
@@ -1610,10 +1604,7 @@ public class ChartSubmissionController(
         User currentUser, EventTaskType taskType)
     {
         var result = await GetEvent(chartSubmission.Tags, currentUser);
-        if (result.Item3 != null)
-        {
-            return result;
-        }
+        if (result.Item3 != null) return result;
 
         var eventDivision = result.Item1!;
         var eventTeam = result.Item2!;

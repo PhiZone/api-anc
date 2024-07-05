@@ -116,9 +116,7 @@ public class EventResourceController(
         var eventEntity = await eventRepository.GetEventAsync(eventDivision.EventId);
         EventTeam? eventTeam = null;
         if (eventResource.TeamId != null)
-        {
             eventTeam = await eventTeamRepository.GetEventTeamAsync(eventResource.TeamId.Value);
-        }
 
         var permission = HP.Gen(HP.Retrieve, HP.Resource);
         if (currentUser == null || !(resourceService.HasPermission(currentUser, UserRole.Administrator) ||
@@ -194,7 +192,9 @@ public class EventResourceController(
                 }
 
                 if (hostship == null)
+                {
                     matrix.Add([]);
+                }
                 else
                 {
                     IEnumerable<PreservedFieldDto?> list =
@@ -209,11 +209,9 @@ public class EventResourceController(
                 }
             }
         else
-        {
             matrix = eventResources.Select(e =>
                     e.Preserved.Select((f, i) => new PreservedFieldDto { Index = i + 1, Content = f }))
                 .ToList()!;
-        }
 
         return Ok(new ResponseDto<IEnumerable<IEnumerable<PreservedFieldDto?>>>
         {
@@ -354,10 +352,7 @@ public class EventResourceController(
                     });
         }
 
-        while (index > eventResource.Preserved.Count)
-        {
-            eventResource.Preserved.Add(null);
-        }
+        while (index > eventResource.Preserved.Count) eventResource.Preserved.Add(null);
 
         eventResource.Preserved[index - 1] = dto.Content;
 

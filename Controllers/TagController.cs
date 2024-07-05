@@ -438,6 +438,7 @@ public class TagController(
         var eventResource = new EventResource
         {
             DivisionId = dto.DivisionId,
+            ResourceId = tag.Id,
             TagId = tag.Id,
             Type = dto.Type,
             Label = dto.Label,

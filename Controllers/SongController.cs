@@ -79,7 +79,11 @@ public class SongController(
                       tagDto.TagsToInclude.Select(resourceService.Normalize).ToList().Contains(tag.NormalizedName))) &&
                   (tagDto.TagsToExclude == null || e.Tags.All(tag =>
                       !tagDto.TagsToExclude.Select(resourceService.Normalize).ToList().Contains(tag.NormalizedName)))));
-        var showAnonymous = filterDto is { RangeId: not null, ContainsAuthorName: null, EqualsAuthorName: null, RangeOwnerId: null, MinOwnerId: null, MaxOwnerId: null };
+        var showAnonymous = filterDto is
+        {
+            RangeId: not null, ContainsAuthorName: null, EqualsAuthorName: null, RangeOwnerId: null, MinOwnerId: null,
+            MaxOwnerId: null
+        };
         IEnumerable<Song> songs;
         int total;
         if (dto.Search != null)
@@ -1328,6 +1332,7 @@ public class SongController(
         var eventResource = new EventResource
         {
             DivisionId = dto.DivisionId,
+            ResourceId = song.Id,
             SignificantResourceId = song.Id,
             Type = dto.Type,
             Label = dto.Label,

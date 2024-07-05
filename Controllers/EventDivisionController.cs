@@ -447,8 +447,8 @@ public class EventDivisionController(
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser,
             e => e.EventPresences.Any(f => f.DivisionId == id));
         IEnumerable<Song> songs = await songRepository.GetSongsAsync(dto.Order, dto.Desc, position, dto.PerPage,
-            predicateExpr, currentUser?.Id, showAnonymous: true);
-        var total = await songRepository.CountSongsAsync(predicateExpr, showAnonymous: true);
+            predicateExpr, currentUser?.Id, true);
+        var total = await songRepository.CountSongsAsync(predicateExpr, true);
 
         var list = songs.Select(song =>
         {
@@ -527,8 +527,8 @@ public class EventDivisionController(
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser,
             e => e.EventPresences.Any(f => f.DivisionId == id));
         IEnumerable<Chart> charts = await chartRepository.GetChartsAsync(dto.Order, dto.Desc, position, dto.PerPage,
-            predicateExpr, currentUser?.Id, showAnonymous: true);
-        var total = await chartRepository.CountChartsAsync(predicateExpr, showAnonymous: true);
+            predicateExpr, currentUser?.Id, true);
+        var total = await chartRepository.CountChartsAsync(predicateExpr, true);
 
         var list = charts.Select(chart =>
         {
@@ -600,8 +600,8 @@ public class EventDivisionController(
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser,
             e => e.EventPresences.Any(f => f.DivisionId == id));
         IEnumerable<Record> records = await recordRepository.GetRecordsAsync(dto.Order, dto.Desc, position, dto.PerPage,
-            predicateExpr, true, currentUser?.Id, showAnonymous: true);
-        var total = await recordRepository.CountRecordsAsync(predicateExpr, showAnonymous: true);
+            predicateExpr, true, currentUser?.Id, true);
+        var total = await recordRepository.CountRecordsAsync(predicateExpr, true);
 
         var list = records.Select(record =>
         {

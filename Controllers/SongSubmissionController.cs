@@ -855,7 +855,8 @@ public class SongSubmissionController(
 
         var normalizedTags = songSubmission.Tags.Select(resourceService.Normalize);
         var eventDivisions = await eventDivisionRepository.GetEventDivisionsAsync(predicate: e =>
-            e.Type == EventDivisionType.Song && e.Status == EventDivisionStatus.Started && normalizedTags.Contains(e.TagName));
+            e.Type == EventDivisionType.Song && e.Status == EventDivisionStatus.Started &&
+            normalizedTags.Contains(e.TagName));
         if (eventDivisions.Count > 0)
         {
             var eventDivision = eventDivisions.First();
@@ -1109,17 +1110,16 @@ public class SongSubmissionController(
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         var result = await GetEvent(dto.Strings, currentUser);
 
-        if (result.Item3 != null)
-        {
-            return result.Item3;
-        }
+        if (result.Item3 != null) return result.Item3;
 
         return Ok(new ResponseDto<EventParticipationInfoDto>
         {
             Status = ResponseStatus.Ok, Code = ResponseCodes.Ok,
             Data = new EventParticipationInfoDto
             {
-                Division = result.Item1 != null ? await dtoMapper.MapEventDivisionAsync<EventDivisionDto>(result.Item1) : null,
+                Division = result.Item1 != null
+                    ? await dtoMapper.MapEventDivisionAsync<EventDivisionDto>(result.Item1)
+                    : null,
                 Team = result.Item2 != null ? dtoMapper.MapEventTeam<EventTeamDto>(result.Item2) : null
             }
         });
@@ -1161,10 +1161,7 @@ public class SongSubmissionController(
         User currentUser, EventTaskType taskType)
     {
         var result = await GetEvent(songSubmission.Tags, currentUser);
-        if (result.Item3 != null)
-        {
-            return result;
-        }
+        if (result.Item3 != null) return result;
 
         var eventDivision = result.Item1!;
         var eventTeam = result.Item2!;

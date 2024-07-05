@@ -346,6 +346,7 @@ public class RecordController(
             var eventResource = new EventResource
             {
                 DivisionId = eventDivision.Id,
+                ResourceId = record.Id,
                 RecordId = record.Id,
                 Type = EventResourceType.Entry,
                 IsAnonymous = eventDivision.Anonymization,
@@ -901,6 +902,7 @@ public class RecordController(
         var eventResource = new EventResource
         {
             DivisionId = dto.DivisionId,
+            ResourceId = record.Id,
             RecordId = record.Id,
             Type = dto.Type,
             Label = dto.Label,

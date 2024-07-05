@@ -31,8 +31,7 @@ public class MeilisearchService : IMeilisearchService
                     HitsPerPage = perPage,
                     Page = page,
                     Filter = typeof(PublicResource).IsAssignableFrom(typeof(T)) && !showHidden
-                        ?
-                        "isHidden = false"
+                        ? "isHidden = false"
                         : (typeof(Submission).IsAssignableFrom(typeof(T)) || typeof(T) == typeof(Notification) ||
                            typeof(T) == typeof(PetAnswer)) && showOwnerId != null
                             ? $"ownerId = {showOwnerId}"

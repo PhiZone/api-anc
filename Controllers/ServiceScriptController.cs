@@ -62,7 +62,8 @@ public class ServiceScriptController(
         {
             var result = await meilisearchService.SearchAsync<ServiceScript>(dto.Search, dto.PerPage, dto.Page);
             var idList = result.Hits.Select(item => item.Id).ToList();
-            serviceScripts = (await serviceScriptRepository.GetServiceScriptsAsync(predicate: e => idList.Contains(e.Id),
+            serviceScripts = (await serviceScriptRepository.GetServiceScriptsAsync(
+                predicate: e => idList.Contains(e.Id),
                 currentUserId: currentUser?.Id)).OrderBy(e => idList.IndexOf(e.Id));
             total = result.TotalHits;
         }
