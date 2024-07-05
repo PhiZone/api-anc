@@ -246,7 +246,7 @@ public class PetController : Controller
     /// <response code="500">When an internal server error has occurred.</response>
     [HttpPost("subjective")]
     [Produces("application/json")]
-    [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ResponseDto<CreatedResponseDto<Guid>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
@@ -297,7 +297,13 @@ public class PetController : Controller
 
         await _feishuService.Notify(answer, deliverer.DateStarted, FeishuResources.QualificationReviewalChat);
 
-        return StatusCode(StatusCodes.Status201Created);
+        return StatusCode(StatusCodes.Status201Created,
+            new ResponseDto<CreatedResponseDto<Guid>>
+            {
+                Status = ResponseStatus.Ok,
+                Code = ResponseCodes.Ok,
+                Data = new CreatedResponseDto<Guid> { Id = answer.Id }
+            });
     }
 
     /// <summary>

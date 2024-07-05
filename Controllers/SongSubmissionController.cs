@@ -164,7 +164,7 @@ public class SongSubmissionController(
     [HttpPost]
     [Consumes("multipart/form-data")]
     [Produces("application/json")]
-    [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ResponseDto<CreatedResponseDto<Guid>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
@@ -256,13 +256,6 @@ public class SongSubmissionController(
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
-        var authorship = new Authorship
-        {
-            ResourceId = songSubmission.Id, AuthorId = currentUser.Id, DateCreated = DateTimeOffset.UtcNow
-        };
-
-        await authorshipRepository.CreateAuthorshipAsync(authorship);
-
         if (!wait)
         {
             await songService.PublishAsync(dto.File, songSubmission.Id, true);
@@ -274,7 +267,13 @@ public class SongSubmissionController(
             await feishuService.Notify(songSubmission, FeishuResources.ContentReviewalChat);
         }
 
-        return StatusCode(StatusCodes.Status201Created);
+        return StatusCode(StatusCodes.Status201Created,
+            new ResponseDto<CreatedResponseDto<Guid>>
+            {
+                Status = ResponseStatus.Ok,
+                Code = ResponseCodes.Ok,
+                Data = new CreatedResponseDto<Guid> { Id = songSubmission.Id }
+            });
     }
 
     /// <summary>
@@ -948,7 +947,7 @@ public class SongSubmissionController(
     [HttpPost("{id:guid}/collaborations")]
     [Consumes("application/json")]
     [Produces("application/json")]
-    [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ResponseDto<CreatedResponseDto<Guid>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
@@ -1020,7 +1019,13 @@ public class SongSubmissionController(
                         templateService.GetMessage("more-info", invitee.Language)!)
                 }
             });
-        return StatusCode(StatusCodes.Status201Created);
+        return StatusCode(StatusCodes.Status201Created,
+            new ResponseDto<CreatedResponseDto<Guid>>
+            {
+                Status = ResponseStatus.Ok,
+                Code = ResponseCodes.Ok,
+                Data = new CreatedResponseDto<Guid> { Id = collaboration.Id }
+            });
     }
 
     /// <summary>

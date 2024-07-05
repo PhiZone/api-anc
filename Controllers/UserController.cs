@@ -146,7 +146,7 @@ public class UserController(
     [HttpPost]
     [Consumes("multipart/form-data")]
     [Produces("application/json")]
-    [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ResponseDto<CreatedResponseDto<int>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> Register([FromForm] UserRegistrationDto dto)
@@ -227,7 +227,13 @@ public class UserController(
             DateCreated = DateTimeOffset.UtcNow
         };
         await playConfigurationRepository.CreatePlayConfigurationAsync(configuration);
-        return StatusCode(StatusCodes.Status201Created);
+        return StatusCode(StatusCodes.Status201Created,
+            new ResponseDto<CreatedResponseDto<int>>
+            {
+                Status = ResponseStatus.Ok,
+                Code = ResponseCodes.Ok,
+                Data = new CreatedResponseDto<int> { Id = user.Id }
+            });
     }
 
     /// <summary>
@@ -248,7 +254,7 @@ public class UserController(
     [HttpPost("brief")]
     [Consumes("application/json")]
     [Produces("application/json")]
-    [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ResponseDto<CreatedResponseDto<int>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> Register([FromBody] UserRegistrationBriefDto dto)
@@ -324,7 +330,13 @@ public class UserController(
         };
         await playConfigurationRepository.CreatePlayConfigurationAsync(configuration);
 
-        return StatusCode(StatusCodes.Status201Created);
+        return StatusCode(StatusCodes.Status201Created,
+            new ResponseDto<CreatedResponseDto<int>>
+            {
+                Status = ResponseStatus.Ok,
+                Code = ResponseCodes.Ok,
+                Data = new CreatedResponseDto<int> { Id = user.Id }
+            });
     }
 
     /// <summary>
