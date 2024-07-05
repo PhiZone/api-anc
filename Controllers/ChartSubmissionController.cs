@@ -173,7 +173,7 @@ public class ChartSubmissionController(
     [HttpPost]
     [Consumes("multipart/form-data")]
     [Produces("application/json")]
-    [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ResponseDto<CreatedResponseDto<Guid>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
@@ -373,7 +373,13 @@ public class ChartSubmissionController(
             DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), dto.Title ?? song?.Title ?? songSubmission!.Title, dto.Level,
             Math.Floor(dto.Difficulty));
 
-        return StatusCode(StatusCodes.Status201Created);
+        return StatusCode(StatusCodes.Status201Created,
+            new ResponseDto<CreatedResponseDto<Guid>>
+            {
+                Status = ResponseStatus.Ok,
+                Code = ResponseCodes.Ok,
+                Data = new CreatedResponseDto<Guid> { Id = chartSubmission.Id }
+            });
     }
 
     /// <summary>
@@ -822,7 +828,7 @@ public class ChartSubmissionController(
     [HttpPost("{id:guid}/assets")]
     [Consumes("multipart/form-data")]
     [Produces("application/json")]
-    [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ResponseDto<CreatedResponseDto<Guid>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
@@ -887,7 +893,13 @@ public class ChartSubmissionController(
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
         if (notify) await feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
-        return StatusCode(StatusCodes.Status201Created);
+        return StatusCode(StatusCodes.Status201Created,
+            new ResponseDto<CreatedResponseDto<Guid>>
+            {
+                Status = ResponseStatus.Ok,
+                Code = ResponseCodes.Ok,
+                Data = new CreatedResponseDto<Guid> { Id = chartAsset.Id }
+            });
     }
 
     /// <summary>
@@ -1281,7 +1293,7 @@ public class ChartSubmissionController(
     [HttpPost("{id:guid}/collaborations")]
     [Consumes("application/json")]
     [Produces("application/json")]
-    [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ResponseDto<CreatedResponseDto<Guid>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
@@ -1347,7 +1359,13 @@ public class ChartSubmissionController(
                         templateService.GetMessage("more-info", invitee.Language)!)
                 }
             });
-        return StatusCode(StatusCodes.Status201Created);
+        return StatusCode(StatusCodes.Status201Created,
+            new ResponseDto<CreatedResponseDto<Guid>>
+            {
+                Status = ResponseStatus.Ok,
+                Code = ResponseCodes.Ok,
+                Data = new CreatedResponseDto<Guid> { Id = collaboration.Id }
+            });
     }
 
     /// <summary>
