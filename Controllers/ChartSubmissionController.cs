@@ -169,8 +169,8 @@ public class ChartSubmissionController(
     /// <summary>
     ///     Creates a new chart submission.
     /// </summary>
-    /// <returns>An empty body.</returns>
-    /// <response code="201">Returns an empty body.</response>
+    /// <returns>The ID of the chart submission.</returns>
+    /// <response code="201">Returns the ID of the chart submission.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="403">When the user does not have sufficient permission.</response>
@@ -917,12 +917,12 @@ public class ChartSubmissionController(
     }
 
     /// <summary>
-    ///     Creates a chart submission's asset.
+    ///     Creates a new chart submission's asset.
     /// </summary>
     /// <param name="id">A chart submission's ID.</param>
     /// <param name="dto">The new asset.</param>
-    /// <returns>An empty body.</returns>
-    /// <response code="201">Returns an empty body.</response>
+    /// <returns>The ID of the chart submission's asset.</returns>
+    /// <response code="201">Returns the ID of the chart submission's asset.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="403">When the user does not have sufficient permission.</response>
@@ -1322,8 +1322,8 @@ public class ChartSubmissionController(
     /// <summary>
     ///     Creates a new collaboration for a chart.
     /// </summary>
-    /// <returns>An empty body.</returns>
-    /// <response code="201">Returns an empty body.</response>
+    /// <returns>The ID of the collaboration.</returns>
+    /// <response code="201">Returns the ID of the collaboration.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="403">When the user does not have sufficient permission.</response>

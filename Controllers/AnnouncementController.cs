@@ -129,8 +129,8 @@ public class AnnouncementController(
     /// <summary>
     ///     Creates a new announcement.
     /// </summary>
-    /// <returns>An empty body.</returns>
-    /// <response code="201">Returns an empty body.</response>
+    /// <returns>The ID of the announcement.</returns>
+    /// <response code="201">Returns the ID of the announcement.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="403">When the user does not have sufficient permission.</response>
@@ -451,8 +451,8 @@ public class AnnouncementController(
     ///     Comments on a specific announcement.
     /// </summary>
     /// <param name="id">An announcement's ID.</param>
-    /// <returns>An empty body.</returns>
-    /// <response code="201">Returns an empty body.</response>
+    /// <returns>The ID of the comment.</returns>
+    /// <response code="201">Returns the ID of the comment.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="403">When the user does not have sufficient permission.</response>

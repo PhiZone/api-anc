@@ -139,7 +139,7 @@ public class UserController(
     ///     User Name, Email, Password, Language, Region, Email Confirmation Code, Gender (optional), Biography (optional),
     ///     Date of Birth (optional)
     /// </param>
-    /// <returns>An empty body.</returns>
+    /// <returns>A login token.</returns>
     /// <response code="201">Returns a login token.</response>
     /// <response code="400">
     ///     When
@@ -249,7 +249,7 @@ public class UserController(
     ///     User Name, Email, Password, Language, Region, Email Confirmation Code, Gender (optional), Biography (optional),
     ///     Date of Birth (optional)
     /// </param>
-    /// <returns>An empty body.</returns>
+    /// <returns>A login token.</returns>
     /// <response code="201">Returns a login token.</response>
     /// <response code="400">
     ///     When
@@ -352,8 +352,8 @@ public class UserController(
     ///     Language, Region, Gender (optional), Biography (optional),
     ///     Date of Birth (optional)
     /// </param>
-    /// <returns>An empty body.</returns>
-    /// <response code="201">Returns an empty body. Sends a confirmation email to the user.</response>
+    /// <returns>A login token.</returns>
+    /// <response code="201">Returns a login token.</response>
     /// <response code="400">
     ///     When
     ///     1. the email address has been occupied;
@@ -363,7 +363,7 @@ public class UserController(
     [HttpPost("provider/{provider}")]
     [Consumes("application/json")]
     [Produces("application/json")]
-    [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ResponseDto<LoginTokenDto>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> RegisterWithProvider([FromRoute] string provider, [FromQuery] string code,

@@ -202,8 +202,8 @@ public class CommentController(
     ///     Replies to a specific comment.
     /// </summary>
     /// <param name="id">A comment's ID.</param>
-    /// <returns>An empty body.</returns>
-    /// <response code="201">Returns an empty body.</response>
+    /// <returns>The ID of the reply.</returns>
+    /// <response code="201">Returns the ID of the reply.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="403">When the user does not have sufficient permission.</response>

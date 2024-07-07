@@ -321,8 +321,8 @@ public class UserInfoController(
     /// <summary>
     ///     Requests to migrate data on a TapTap ghost account to a formal user account.
     /// </summary>
-    /// <returns>An object containing the code required for inheritance.</returns>
-    /// <response code="201">Returns an object containing the code required for inheritance.</response>
+    /// <returns>The code required for inheritance.</returns>
+    /// <response code="201">Returns the code required for inheritance.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="403">When the user does not have sufficient permission.</response>

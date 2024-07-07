@@ -123,8 +123,8 @@ public class PlayerController(
     /// <summary>
     ///     Creates a new configuration.
     /// </summary>
-    /// <returns>An empty body.</returns>
-    /// <response code="201">Returns an empty body.</response>
+    /// <returns>The ID of the configuration.</returns>
+    /// <response code="201">Returns the ID of the configuration.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="403">When the user does not have sufficient permission.</response>
@@ -311,11 +311,11 @@ public class PlayerController(
     ///     Obtains a play token.
     /// </summary>
     /// <returns>
-    ///     An object containing a play token and a timestamp of the current time in UTC, along with necessary resources
+    ///     A play token and a timestamp of the current time in UTC, along with necessary resources
     ///     required for the play.
     /// </returns>
     /// <response code="200">
-    ///     Returns an object containing a play token and a timestamp of the current time in UTC, along with
+    ///     Returns a play token and a timestamp of the current time in UTC, along with
     ///     necessary resources required for the play.
     /// </response>
     /// <response code="400">When any of the parameters is invalid.</response>
@@ -427,11 +427,11 @@ public class PlayerController(
     ///     Obtains a play token using a TapTap ghost account.
     /// </summary>
     /// <returns>
-    ///     An object containing a play token and a timestamp of the current time in UTC, along with necessary resources
+    ///     A play token and a timestamp of the current time in UTC, along with necessary resources
     ///     required for the play.
     /// </returns>
     /// <response code="200">
-    ///     Returns an object containing a play token and a timestamp of the current time in UTC, along with
+    ///     Returns a play token and a timestamp of the current time in UTC, along with
     ///     necessary resources required for the play.
     /// </response>
     /// <response code="400">When any of the parameters is invalid.</response>
