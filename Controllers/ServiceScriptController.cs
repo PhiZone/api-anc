@@ -126,8 +126,8 @@ public class ServiceScriptController(
     /// <summary>
     ///     Creates a new service script.
     /// </summary>
-    /// <returns>An empty body.</returns>
-    /// <response code="201">Returns an empty body.</response>
+    /// <returns>The ID of the service script.</returns>
+    /// <response code="201">Returns the ID of the service script.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="403">When the user does not have sufficient permission.</response>
@@ -136,7 +136,7 @@ public class ServiceScriptController(
     [Consumes("application/json")]
     [Produces("application/json")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
-    [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ResponseDto<CreatedResponseDto<Guid>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
@@ -167,7 +167,13 @@ public class ServiceScriptController(
 
         scriptService.Compile(serviceScript.Id, serviceScript.Code, serviceScript.TargetType);
 
-        return StatusCode(StatusCodes.Status201Created);
+        return StatusCode(StatusCodes.Status201Created,
+            new ResponseDto<CreatedResponseDto<Guid>>
+            {
+                Status = ResponseStatus.Ok,
+                Code = ResponseCodes.Ok,
+                Data = new CreatedResponseDto<Guid> { Id = serviceScript.Id }
+            });
     }
 
     /// <summary>

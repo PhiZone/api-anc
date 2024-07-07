@@ -140,8 +140,8 @@ public class EventTaskController(
     /// <summary>
     ///     Creates a new event task.
     /// </summary>
-    /// <returns>An empty body.</returns>
-    /// <response code="201">Returns an empty body.</response>
+    /// <returns>The ID of the event task.</returns>
+    /// <response code="201">Returns the ID of the event task.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="403">When the user does not have sufficient permission.</response>
@@ -150,7 +150,7 @@ public class EventTaskController(
     [Consumes("application/json")]
     [Produces("application/json")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
-    [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ResponseDto<CreatedResponseDto<Guid>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
@@ -196,7 +196,13 @@ public class EventTaskController(
         if (eventTask.Type == EventTaskType.Scheduled) eventTaskScheduler.Schedule(eventTask);
         if (eventTask.Code != null) scriptService.Compile(eventTask.Id, eventTask.Code);
 
-        return StatusCode(StatusCodes.Status201Created);
+        return StatusCode(StatusCodes.Status201Created,
+            new ResponseDto<CreatedResponseDto<Guid>>
+            {
+                Status = ResponseStatus.Ok,
+                Code = ResponseCodes.Ok,
+                Data = new CreatedResponseDto<Guid> { Id = eventTask.Id }
+            });
     }
 
     /// <summary>

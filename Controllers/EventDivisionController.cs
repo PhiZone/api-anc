@@ -832,8 +832,8 @@ public class EventDivisionController(
     /// <summary>
     ///     Creates a new event division.
     /// </summary>
-    /// <returns>An empty body.</returns>
-    /// <response code="201">Returns an empty body.</response>
+    /// <returns>The ID of the event division.</returns>
+    /// <response code="201">Returns the ID of the event division.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="403">When the user does not have sufficient permission.</response>
@@ -842,7 +842,7 @@ public class EventDivisionController(
     [Consumes("multipart/form-data")]
     [Produces("application/json")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
-    [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ResponseDto<CreatedResponseDto<Guid>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
@@ -900,7 +900,13 @@ public class EventDivisionController(
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
-        return StatusCode(StatusCodes.Status201Created);
+        return StatusCode(StatusCodes.Status201Created,
+            new ResponseDto<CreatedResponseDto<Guid>>
+            {
+                Status = ResponseStatus.Ok,
+                Code = ResponseCodes.Ok,
+                Data = new CreatedResponseDto<Guid> { Id = eventDivision.Id }
+            });
     }
 
     /// <summary>
@@ -1341,8 +1347,8 @@ public class EventDivisionController(
     ///     Comments on a specific event division.
     /// </summary>
     /// <param name="id">An event division's ID.</param>
-    /// <returns>An empty body.</returns>
-    /// <response code="201">Returns an empty body.</response>
+    /// <returns>The ID of the comment.</returns>
+    /// <response code="201">Returns the ID of the comment.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="403">When the user does not have sufficient permission.</response>
@@ -1351,7 +1357,7 @@ public class EventDivisionController(
     [HttpPost("{id:guid}/comments")]
     [Produces("application/json")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
-    [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ResponseDto<CreatedResponseDto<Guid>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
@@ -1405,6 +1411,12 @@ public class EventDivisionController(
         await notificationService.NotifyMentions(result.Item2, currentUser,
             resourceService.GetRichText<Comment>(comment.Id.ToString(), dto.Content));
 
-        return StatusCode(StatusCodes.Status201Created);
+        return StatusCode(StatusCodes.Status201Created,
+            new ResponseDto<CreatedResponseDto<Guid>>
+            {
+                Status = ResponseStatus.Ok,
+                Code = ResponseCodes.Ok,
+                Data = new CreatedResponseDto<Guid> { Id = comment.Id }
+            });
     }
 }

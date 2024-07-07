@@ -131,8 +131,8 @@ public class RecordController(
     /// <summary>
     ///     Creates a new record.
     /// </summary>
-    /// <returns>An object containing calculated results related to the play.</returns>
-    /// <response code="201">Returns an object containing calculated results related to the play.</response>
+    /// <returns>Calculated results related to the play.</returns>
+    /// <response code="201">Returns calculated results related to the play.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="404">When either the token, the application, the chart, the user, or the configuration is not found.</response>
     /// <response code="500">When an internal server error has occurred.</response>
@@ -389,8 +389,8 @@ public class RecordController(
     /// <summary>
     ///     Creates a new record using a TapTap ghost account.
     /// </summary>
-    /// <returns>An object containing calculated results related to the play.</returns>
-    /// <response code="201">Returns an object containing calculated results related to the play.</response>
+    /// <returns>Calculated results related to the play.</returns>
+    /// <response code="201">Returns calculated results related to the play.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="404">When either the token, the application, the chart, the user, or the configuration is not found.</response>
     /// <response code="500">When an internal server error has occurred.</response>
@@ -796,8 +796,8 @@ public class RecordController(
     ///     Comments on a specific record.
     /// </summary>
     /// <param name="id">A record's ID.</param>
-    /// <returns>An empty body.</returns>
-    /// <response code="201">Returns an empty body.</response>
+    /// <returns>The ID of the comment.</returns>
+    /// <response code="201">Returns the ID of the comment.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="403">When the user does not have sufficient permission.</response>

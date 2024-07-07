@@ -280,8 +280,8 @@ public class ChartController(
     /// <summary>
     ///     Creates a new chart.
     /// </summary>
-    /// <returns>An empty body.</returns>
-    /// <response code="201">Returns an empty body.</response>
+    /// <returns>The ID of the chart.</returns>
+    /// <response code="201">Returns the ID of the chart.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="403">When the user does not have sufficient permission.</response>
@@ -799,12 +799,12 @@ public class ChartController(
     }
 
     /// <summary>
-    ///     Creates a chart's asset.
+    ///     Creates a new chart's asset.
     /// </summary>
     /// <param name="id">A chart's ID.</param>
     /// <param name="dto">The new asset.</param>
-    /// <returns>An empty body.</returns>
-    /// <response code="201">Returns an empty body.</response>
+    /// <returns>The ID of the chart's asset.</returns>
+    /// <response code="201">Returns the ID of the chart's asset.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="403">When the user does not have sufficient permission.</response>
@@ -1071,8 +1071,8 @@ public class ChartController(
     /// <summary>
     ///     Creates a new authorship for a chart.
     /// </summary>
-    /// <returns>An empty body.</returns>
-    /// <response code="201">Returns an empty body.</response>
+    /// <returns>The ID of the authorship.</returns>
+    /// <response code="201">Returns the ID of the authorship.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="403">When the user does not have sufficient permission.</response>
@@ -1254,7 +1254,7 @@ public class ChartController(
     /// </summary>
     /// <param name="id">A chart's ID.</param>
     /// <returns>An empty body.</returns>
-    /// <response code="201">Returns an empty body.</response>
+    /// <response code="204">Returns an empty body.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="403">When the user does not have sufficient permission.</response>
@@ -1347,7 +1347,7 @@ public class ChartController(
                     }
                 });
 
-        return StatusCode(StatusCodes.Status201Created);
+        return NoContent();
     }
 
     /// <summary>
@@ -1701,8 +1701,8 @@ public class ChartController(
     ///     Comments on a specific chart.
     /// </summary>
     /// <param name="id">A chart's ID.</param>
-    /// <returns>An empty body.</returns>
-    /// <response code="201">Returns an empty body.</response>
+    /// <returns>The ID of the comment.</returns>
+    /// <response code="201">Returns the ID of the comment.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="403">When the user does not have sufficient permission.</response>

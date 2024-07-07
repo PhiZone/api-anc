@@ -186,8 +186,8 @@ public class SongController(
     /// <summary>
     ///     Creates a new song.
     /// </summary>
-    /// <returns>An empty body.</returns>
-    /// <response code="201">Returns an empty body.</response>
+    /// <returns>The ID of the song.</returns>
+    /// <response code="201">Returns the ID of the song.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="403">When the user does not have sufficient permission.</response>
@@ -653,8 +653,8 @@ public class SongController(
     /// <summary>
     ///     Creates a new authorship for a song.
     /// </summary>
-    /// <returns>An empty body.</returns>
-    /// <response code="201">Returns an empty body.</response>
+    /// <returns>The ID of the authorship.</returns>
+    /// <response code="201">Returns the ID of the authorship.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="403">When the user does not have sufficient permission.</response>
@@ -836,7 +836,7 @@ public class SongController(
     /// </summary>
     /// <param name="id">A song's ID.</param>
     /// <returns>An empty body.</returns>
-    /// <response code="201">Returns an empty body.</response>
+    /// <response code="204">Returns an empty body.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="403">When the user does not have sufficient permission.</response>
@@ -928,7 +928,7 @@ public class SongController(
                     }
                 });
 
-        return StatusCode(StatusCodes.Status201Created);
+        return NoContent();
     }
 
     /// <summary>
@@ -1233,8 +1233,8 @@ public class SongController(
     ///     Comments on a specific song.
     /// </summary>
     /// <param name="id">A song's ID.</param>
-    /// <returns>An empty body.</returns>
-    /// <response code="201">Returns an empty body.</response>
+    /// <returns>The ID of the comment.</returns>
+    /// <response code="201">Returns the ID of the comment.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="403">When the user does not have sufficient permission.</response>
