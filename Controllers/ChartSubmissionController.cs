@@ -49,6 +49,7 @@ public class ChartSubmissionController(
     IAdmissionRepository admissionRepository,
     INotificationService notificationService,
     ITemplateService templateService,
+    IUserRepository userRepository,
     ICollaborationRepository collaborationRepository,
     IChartAssetSubmissionRepository chartAssetSubmissionRepository,
     IEventDivisionRepository eventDivisionRepository,
@@ -293,7 +294,8 @@ public class ChartSubmissionController(
             VolunteerStatus = RequestStatus.Waiting,
             AdmissionStatus =
                 song != null
-                    ? song.OwnerId == currentUser.Id || song.Accessibility == Accessibility.AllowAny
+                    ?
+                    song.OwnerId == currentUser.Id || song.Accessibility == Accessibility.AllowAny
                         ? RequestStatus.Approved
                         : RequestStatus.Waiting
                     : songSubmission!.OwnerId == currentUser.Id ||
@@ -389,6 +391,20 @@ public class ChartSubmissionController(
                             templateService.GetMessage("more-info", admission.Requestee.Language)!)
                     }
                 });
+        }
+
+        foreach (var id in authors.Where(e => e != currentUser.Id).Distinct())
+        {
+            var invitee = await userRepository.GetUserByIdAsync(id);
+            if (invitee == null)
+            {
+                return BadRequest(new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNotFound
+                });
+            }
+
+            await CreateCollaboration(chartSubmission, invitee, null, currentUser);
         }
 
         await feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
@@ -1371,34 +1387,13 @@ public class ChartSubmissionController(
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
             });
 
-        var collaboration = new Collaboration
+        var collaboration = await CreateCollaboration(chartSubmission, invitee, dto.Position, currentUser);
+        if (collaboration == null)
         {
-            SubmissionId = id,
-            InviterId = currentUser.Id,
-            InviteeId = dto.InviteeId,
-            Position = dto.Position,
-            DateCreated = DateTimeOffset.UtcNow
-        };
-
-        if (!await collaborationRepository.CreateCollaborationAsync(collaboration))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+        }
 
-        await notificationService.Notify(invitee, currentUser, NotificationType.Requests, "chart-collab",
-            new Dictionary<string, string>
-            {
-                { "User", resourceService.GetRichText<User>(currentUser.Id.ToString(), currentUser.UserName!) },
-                {
-                    "Chart",
-                    resourceService.GetRichText<ChartSubmission>(chartSubmission.Id.ToString(),
-                        await resourceService.GetDisplayName(chartSubmission))
-                },
-                {
-                    "Collaboration",
-                    resourceService.GetRichText<Collaboration>(collaboration.Id.ToString(),
-                        templateService.GetMessage("more-info", invitee.Language)!)
-                }
-            });
         return StatusCode(StatusCodes.Status201Created,
             new ResponseDto<CreatedResponseDto<Guid>>
             {
@@ -1576,7 +1571,8 @@ public class ChartSubmissionController(
 
         return Ok(new ResponseDto<EventParticipationInfoDto>
         {
-            Status = ResponseStatus.Ok, Code = ResponseCodes.Ok,
+            Status = ResponseStatus.Ok,
+            Code = ResponseCodes.Ok,
             Data = new EventParticipationInfoDto
             {
                 Division = result.Item1 != null
@@ -1639,5 +1635,37 @@ public class ChartSubmissionController(
                 }));
 
         return (eventDivision, eventTeam, null);
+    }
+
+    private async Task<Collaboration?> CreateCollaboration(ChartSubmission chartSubmission, User invitee,
+        string? position, User currentUser)
+    {
+        var collaboration = new Collaboration
+        {
+            SubmissionId = chartSubmission.Id,
+            InviterId = currentUser.Id,
+            InviteeId = invitee.Id,
+            Position = position,
+            DateCreated = DateTimeOffset.UtcNow
+        };
+
+        if (!await collaborationRepository.CreateCollaborationAsync(collaboration)) return null;
+
+        await notificationService.Notify(invitee, currentUser, NotificationType.Requests, "chart-collab",
+            new Dictionary<string, string>
+            {
+                { "User", resourceService.GetRichText<User>(currentUser.Id.ToString(), currentUser.UserName!) },
+                {
+                    "Chart",
+                    resourceService.GetRichText<ChartSubmission>(chartSubmission.Id.ToString(),
+                        await resourceService.GetDisplayName(chartSubmission))
+                },
+                {
+                    "Collaboration",
+                    resourceService.GetRichText<Collaboration>(collaboration.Id.ToString(),
+                        templateService.GetMessage("more-info", invitee.Language)!)
+                }
+            });
+        return collaboration;
     }
 }

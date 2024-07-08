@@ -43,6 +43,7 @@ public class SongSubmissionController(
     ISubmissionService submissionService,
     IScriptService scriptService,
     IResourceService resourceService,
+    IUserRepository userRepository,
     ICollaborationRepository collaborationRepository,
     IEventDivisionRepository eventDivisionRepository,
     IEventTeamRepository eventTeamRepository,
@@ -216,10 +217,11 @@ public class SongSubmissionController(
         string? license = null;
         if (dto.License != null) license = (await fileStorageService.Upload<Song>(dto.Title, dto.License)).Item1;
 
+        var authors = resourceService.GetAuthorIds(dto.AuthorName);
         string? originalityProof = null;
         if (dto.OriginalityProof != null)
         {
-            if (!resourceService.GetAuthorIds(dto.AuthorName).Contains(currentUser.Id))
+            if (!authors.Contains(currentUser.Id))
                 return BadRequest(new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidAuthorInfo
@@ -263,6 +265,20 @@ public class SongSubmissionController(
         if (!await songSubmissionRepository.CreateSongSubmissionAsync(songSubmission))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+
+        foreach (var id in authors.Where(e => e != currentUser.Id).Distinct())
+        {
+            var invitee = await userRepository.GetUserByIdAsync(id);
+            if (invitee == null)
+            {
+                return BadRequest(new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNotFound
+                });
+            }
+
+            await CreateCollaboration(songSubmission, invitee, null, currentUser);
+        }
 
         if (!wait)
         {
@@ -982,34 +998,13 @@ public class SongSubmissionController(
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
             });
 
-        var collaboration = new Collaboration
+        var collaboration = await CreateCollaboration(songSubmission, invitee, dto.Position, currentUser);
+        if (collaboration == null)
         {
-            SubmissionId = id,
-            InviterId = currentUser.Id,
-            InviteeId = dto.InviteeId,
-            Position = dto.Position,
-            DateCreated = DateTimeOffset.UtcNow
-        };
-
-        if (!await collaborationRepository.CreateCollaborationAsync(collaboration))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+        }
 
-        await notificationService.Notify(invitee, currentUser, NotificationType.Requests, "song-collab",
-            new Dictionary<string, string>
-            {
-                { "User", resourceService.GetRichText<User>(currentUser.Id.ToString(), currentUser.UserName!) },
-                {
-                    "Song",
-                    resourceService.GetRichText<SongSubmission>(songSubmission.Id.ToString(),
-                        songSubmission.GetDisplay())
-                },
-                {
-                    "Collaboration",
-                    resourceService.GetRichText<Collaboration>(collaboration.Id.ToString(),
-                        templateService.GetMessage("more-info", invitee.Language)!)
-                }
-            });
         return StatusCode(StatusCodes.Status201Created,
             new ResponseDto<CreatedResponseDto<Guid>>
             {
@@ -1118,7 +1113,8 @@ public class SongSubmissionController(
 
         return Ok(new ResponseDto<EventParticipationInfoDto>
         {
-            Status = ResponseStatus.Ok, Code = ResponseCodes.Ok,
+            Status = ResponseStatus.Ok,
+            Code = ResponseCodes.Ok,
             Data = new EventParticipationInfoDto
             {
                 Division = result.Item1 != null
@@ -1181,5 +1177,37 @@ public class SongSubmissionController(
                 }));
 
         return (eventDivision, eventTeam, null);
+    }
+
+    private async Task<Collaboration?> CreateCollaboration(SongSubmission songSubmission, User invitee,
+        string? position, User currentUser)
+    {
+        var collaboration = new Collaboration
+        {
+            SubmissionId = songSubmission.Id,
+            InviterId = currentUser.Id,
+            InviteeId = invitee.Id,
+            Position = position,
+            DateCreated = DateTimeOffset.UtcNow
+        };
+
+        if (!await collaborationRepository.CreateCollaborationAsync(collaboration)) return null;
+
+        await notificationService.Notify(invitee, currentUser, NotificationType.Requests, "song-collab",
+            new Dictionary<string, string>
+            {
+                { "User", resourceService.GetRichText<User>(currentUser.Id.ToString(), currentUser.UserName!) },
+                {
+                    "Song",
+                    resourceService.GetRichText<SongSubmission>(songSubmission.Id.ToString(),
+                        songSubmission.GetDisplay())
+                },
+                {
+                    "Collaboration",
+                    resourceService.GetRichText<Collaboration>(collaboration.Id.ToString(),
+                        templateService.GetMessage("more-info", invitee.Language)!)
+                }
+            });
+        return collaboration;
     }
 }
