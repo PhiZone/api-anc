@@ -13,7 +13,7 @@ public class TagFilterDto : FilterDto<Tag>
     public string? ContainsNormalizedName { get; set; }
 
     public string? EqualsNormalizedName { get; set; }
-    
+
     public List<string>? RangeNormalizedName { get; set; }
 
     public string? ContainsDescription { get; set; }

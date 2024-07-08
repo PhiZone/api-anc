@@ -193,7 +193,8 @@ public class ChartSubmissionController(
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
-        if (!resourceService.GetAuthorIds(dto.AuthorName).Contains(currentUser.Id))
+        var authors = resourceService.GetAuthorIds(dto.AuthorName);
+        if (!authors.Contains(currentUser.Id))
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidAuthorInfo

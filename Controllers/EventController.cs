@@ -161,9 +161,9 @@ public class EventController(
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser,
-            e => (e.EventId == id && e.DateUnveiled <= DateTimeOffset.UtcNow) || (currentUser != null &&
+            e => e.EventId == id && (e.DateUnveiled <= DateTimeOffset.UtcNow || (currentUser != null &&
                 (resourceService.HasPermission(currentUser, UserRole.Administrator) ||
-                 e.Event.Hostships.Any(f => f.UserId == currentUser.Id))));
+                 e.Event.Hostships.Any(f => f.UserId == currentUser.Id)))));
         IEnumerable<EventDivision> eventDivisions;
         int total;
         if (dto.Search != null)
