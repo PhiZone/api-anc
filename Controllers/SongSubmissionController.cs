@@ -1161,10 +1161,10 @@ public class SongSubmissionController(
         User currentUser, EventTaskType taskType)
     {
         var result = await GetEvent(songSubmission.Tags, currentUser);
-        if (result.Item3 != null) return result;
+        if (result.Item1 == null || result.Item2 == null || result.Item3 != null) return result;
 
-        var eventDivision = result.Item1!;
-        var eventTeam = result.Item2!;
+        var eventDivision = result.Item1;
+        var eventTeam = result.Item2;
 
         var firstFailure = await scriptService.RunEventTaskAsync(eventTeam.DivisionId, songSubmission, eventTeam.Id,
             currentUser, [taskType]);

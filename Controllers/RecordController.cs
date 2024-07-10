@@ -308,7 +308,7 @@ public class RecordController(
 
         experienceDelta += (ulong)(rksFactor * score switch
         {
-            1000000 => 20,
+            >= 1000000 => 20,
             >= 960000 => 14,
             >= 920000 => 9,
             >= 880000 => 5,
@@ -540,7 +540,7 @@ public class RecordController(
 
         experienceDelta += (ulong)(rksFactor * score switch
         {
-            1000000 => 20,
+            >= 1000000 => 20,
             >= 960000 => 14,
             >= 920000 => 9,
             >= 880000 => 5,

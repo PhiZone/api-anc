@@ -1619,7 +1619,7 @@ public class ChartSubmissionController(
         User currentUser, EventTaskType taskType)
     {
         var result = await GetEvent(chartSubmission.Tags, currentUser);
-        if (result.Item3 != null) return result;
+        if (result.Item1 == null || result.Item2 == null || result.Item3 != null) return result;
 
         var eventDivision = result.Item1!;
         var eventTeam = result.Item2!;

@@ -14,5 +14,5 @@ public class UserDetailedDto : UserDto
 
     public int Notifications { get; set; }
 
-    public List<HostshipDetailedDto> Hostships { get; set; } = [];
+    public List<HostshipDto> Hostships { get; set; } = [];
 }

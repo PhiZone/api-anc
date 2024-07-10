@@ -82,7 +82,8 @@ public class HostshipController(
     /// <summary>
     ///     Retrieves a specific hostship.
     /// </summary>
-    /// <param name="id">A hostship's ID.</param>
+    /// <param name="eventId">An event's ID.</param>
+    /// <param name="userId">A user's ID.</param>
     /// <returns>A hostship.</returns>
     /// <response code="200">Returns a hostship.</response>
     /// <response code="304">
@@ -183,7 +184,8 @@ public class HostshipController(
     /// <summary>
     ///     Updates a hostship.
     /// </summary>
-    /// <param name="id">A hostship's ID.</param>
+    /// <param name="eventId">An event's ID.</param>
+    /// <param name="userId">A user's ID.</param>
     /// <param name="patchDocument">A JSON Patch Document.</param>
     /// <returns>An empty body.</returns>
     /// <response code="204">Returns an empty body.</response>
@@ -255,7 +257,8 @@ public class HostshipController(
     /// <summary>
     ///     Removes a hostship.
     /// </summary>
-    /// <param name="id">A hostship's ID.</param>
+    /// <param name="eventId">An event's ID.</param>
+    /// <param name="userId">A user's ID.</param>
     /// <returns>An empty body.</returns>
     /// <response code="204">Returns an empty body.</response>
     /// <response code="400">When any of the parameters is invalid.</response>

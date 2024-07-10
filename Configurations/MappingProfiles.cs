@@ -62,7 +62,6 @@ public class MappingProfiles : Profile
         CreateMap<EventTask, EventTaskDto>();
         CreateMap<EventTask, EventTaskRequestDto>();
         CreateMap<Hostship, HostshipDto>();
-        CreateMap<Hostship, HostshipDetailedDto>();
         CreateMap<Hostship, HostshipRequestDto>();
         CreateMap<EventResource, EventResourceDto>();
         CreateMap<EventResource, EventResourceRequestDto>();
