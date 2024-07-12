@@ -336,7 +336,6 @@ public class HostshipController(
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetInvitation([FromRoute] string code)
     {
-        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         var db = redis.GetDatabase();
         var key = $"phizone:eventhost:{code.ToUpper()}";
         if (!await db.KeyExistsAsync(key))

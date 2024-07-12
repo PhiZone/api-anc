@@ -9,7 +9,7 @@ public class HostshipDto
     public bool IsAdmin { get; set; }
 
     public string? Position { get; set; }
-    
+
     public bool IsUnveiled { get; set; }
 
     public List<uint> Permissions { get; set; } = [];

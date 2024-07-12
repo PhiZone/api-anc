@@ -270,12 +270,10 @@ public class SongSubmissionController(
         {
             var invitee = await userRepository.GetUserByIdAsync(id);
             if (invitee == null)
-            {
                 return BadRequest(new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNotFound
                 });
-            }
 
             await CreateCollaboration(songSubmission, invitee, null, currentUser);
         }
@@ -1000,10 +998,8 @@ public class SongSubmissionController(
 
         var collaboration = await CreateCollaboration(songSubmission, invitee, dto.Position, currentUser);
         if (collaboration == null)
-        {
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
-        }
 
         return StatusCode(StatusCodes.Status201Created,
             new ResponseDto<CreatedResponseDto<Guid>>
