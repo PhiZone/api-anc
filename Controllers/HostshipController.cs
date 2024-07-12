@@ -4,10 +4,12 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using OpenIddict.Abstractions;
 using OpenIddict.Validation.AspNetCore;
 using PhiZoneApi.Configurations;
 using PhiZoneApi.Constants;
+using PhiZoneApi.Dtos.Deliverers;
 using PhiZoneApi.Dtos.Filters;
 using PhiZoneApi.Dtos.Requests;
 using PhiZoneApi.Dtos.Responses;
@@ -16,6 +18,7 @@ using PhiZoneApi.Filters;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 using PhiZoneApi.Utils;
+using StackExchange.Redis;
 using HP = PhiZoneApi.Constants.HostshipPermissions;
 
 // ReSharper disable RouteTemplates.ActionRoutePrefixCanBeExtractedToControllerRoute
@@ -30,10 +33,13 @@ namespace PhiZoneApi.Controllers;
 public class HostshipController(
     IHostshipRepository hostshipRepository,
     IEventRepository eventRepository,
+    IUserRepository userRepository,
     IOptions<DataSettings> dataSettings,
     IFilterService filterService,
     UserManager<User> userManager,
     IMapper mapper,
+    IDtoMapper dtoMapper,
+    IConnectionMultiplexer redis,
     IResourceService resourceService) : Controller
 {
     /// <summary>
@@ -161,6 +167,8 @@ public class HostshipController(
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
+        var isOwner = resourceService.HasPermission(currentUser, UserRole.Administrator) ||
+                      eventEntity.OwnerId == currentUser.Id;
         var isAdmin = resourceService.HasPermission(currentUser, UserRole.Administrator) ||
                       eventEntity.Hostships.Any(f => f.UserId == currentUser.Id && f.IsAdmin);
 
@@ -170,8 +178,8 @@ public class HostshipController(
             UserId = dto.UserId,
             Position = dto.Position,
             IsUnveiled = dto.IsUnveiled,
-            IsAdmin = eventEntity.OwnerId == currentUser.Id && dto.IsAdmin,
-            Permissions = isAdmin ? dto.Permissions : []
+            IsAdmin = isOwner && dto.IsAdmin,
+            Permissions = isAdmin ? dto.Permissions.Distinct().ToList() : []
         };
 
         if (!await hostshipRepository.CreateHostshipAsync(hostship))
@@ -237,6 +245,8 @@ public class HostshipController(
                 Errors = ModelErrorTranslator.Translate(ModelState)
             });
 
+        var isOwner = resourceService.HasPermission(currentUser, UserRole.Administrator) ||
+                      eventEntity.OwnerId == currentUser.Id;
         var isAdmin = resourceService.HasPermission(currentUser, UserRole.Administrator) ||
                       eventEntity.Hostships.Any(f => f.UserId == currentUser.Id && f.IsAdmin);
 
@@ -244,8 +254,8 @@ public class HostshipController(
         hostship.UserId = dto.UserId;
         hostship.Position = dto.Position;
         hostship.IsUnveiled = dto.IsUnveiled;
-        hostship.IsAdmin = eventEntity.OwnerId == currentUser.Id && dto.IsAdmin;
-        hostship.Permissions = isAdmin ? dto.Permissions : [];
+        hostship.IsAdmin = isOwner ? dto.IsAdmin : hostship.IsAdmin;
+        hostship.Permissions = isAdmin ? dto.Permissions.Distinct().ToList() : hostship.Permissions;
 
         if (!await hostshipRepository.UpdateHostshipAsync(hostship))
             return StatusCode(StatusCodes.Status500InternalServerError,
@@ -300,6 +310,117 @@ public class HostshipController(
                 });
 
         if (!await hostshipRepository.RemoveHostshipAsync(eventId, userId))
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+
+        return NoContent();
+    }
+
+    /// <summary>
+    ///     Retrieves details of the specified invitation.
+    /// </summary>
+    /// <param name="id">An invite code.</param>
+    /// <returns>Details of an invitation.</returns>
+    /// <response code="204">Returns details of an invitation.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
+    /// <response code="404">When the specified code is invalid.</response>
+    [HttpGet("invites/{code}")]
+    [Produces("application/json")]
+    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<EventHostInviteDto>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> GetInvitation([FromRoute] string code)
+    {
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        var db = redis.GetDatabase();
+        var key = $"phizone:eventhost:{code.ToUpper()}";
+        if (!await db.KeyExistsAsync(key))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+
+        var invite = JsonConvert.DeserializeObject<EventHostInviteDelivererDto>((await db.StringGetAsync(key))!)!;
+
+        var inviter = (await userRepository.GetUserByIdAsync(invite.InviterId))!;
+        var eventEntity = await eventRepository.GetEventAsync(invite.EventId);
+
+        return Ok(new ResponseDto<EventHostInviteDto>
+        {
+            Status = ResponseStatus.Ok,
+            Code = ResponseCodes.Ok,
+            Data = new EventHostInviteDto
+            {
+                Event = dtoMapper.MapEvent<EventDto>(eventEntity),
+                Inviter = dtoMapper.MapUser<UserDto>(inviter),
+                DateExpired = invite.DateExpired,
+                IsAdmin = invite.IsAdmin,
+                IsUnveiled = invite.IsUnveiled,
+                Position = invite.Position,
+                Permissions = invite.Permissions
+            }
+        });
+    }
+
+    /// <summary>
+    ///     Accepts an invitation.
+    /// </summary>
+    /// <param name="id">An invitation's ID.</param>
+    /// <returns>An empty body.</returns>
+    /// <response code="204">Returns an empty body.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
+    /// <response code="404">When the specified invitation is not found.</response>
+    /// <response code="500">When an internal server error has occurred.</response>
+    [HttpPost("invites/{code}/accept")]
+    [Consumes("application/json")]
+    [Produces("application/json")]
+    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
+    [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> AcceptInvitation([FromRoute] string code)
+    {
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        var db = redis.GetDatabase();
+        var key = $"phizone:eventhost:{code}";
+        if (!await db.KeyExistsAsync(key))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
+            });
+
+        var invite = JsonConvert.DeserializeObject<EventHostInviteDelivererDto>((await db.StringGetAsync(key))!)!;
+
+        var eventEntity = await eventRepository.GetEventAsync(invite.EventId);
+
+        if (await hostshipRepository.CountHostshipsAsync(e =>
+                e.UserId == currentUser.Id && e.EventId == eventEntity.Id) > 0)
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
+            });
+
+        var hostship = new Hostship
+        {
+            EventId = invite.EventId,
+            UserId = currentUser.Id,
+            Position = invite.Position,
+            IsUnveiled = invite.IsUnveiled,
+            IsAdmin = invite.IsAdmin,
+            Permissions = invite.Permissions.Distinct().ToList()
+        };
+
+        if (!await hostshipRepository.CreateHostshipAsync(hostship))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 

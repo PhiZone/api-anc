@@ -1097,7 +1097,7 @@ public class EventTeamController(
     [HttpGet("invites/{code}")]
     [Produces("application/json")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<EventTeamInviteDto>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<Dtos.Responses.EventTeamInviteDto>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
@@ -1131,11 +1131,11 @@ public class EventTeamController(
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
-        return Ok(new ResponseDto<EventTeamInviteDto>
+        return Ok(new ResponseDto<Dtos.Responses.EventTeamInviteDto>
         {
             Status = ResponseStatus.Ok,
             Code = ResponseCodes.Ok,
-            Data = new EventTeamInviteDto
+            Data = new Dtos.Responses.EventTeamInviteDto
             {
                 Team = dtoMapper.MapEventTeam<EventTeamDto>(eventTeam),
                 Inviter = dtoMapper.MapUser<UserDto>(inviter),

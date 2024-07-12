@@ -260,7 +260,7 @@ public class CommentController(
                     { "User", resourceService.GetRichText<User>(currentUser.Id.ToString(), currentUser.UserName!) },
                     { "Reply", resourceService.GetRichText<Reply>(reply.Id.ToString(), reply.GetDisplay()) }
                 });
-        await notificationService.NotifyMentions(result.Item2, currentUser,
+        await notificationService.NotifyMentions(result.Item2.Where(e => e.Id != comment.OwnerId), currentUser,
             resourceService.GetRichText<Reply>(reply.Id.ToString(), reply.GetDisplay()));
 
         return StatusCode(StatusCodes.Status201Created,

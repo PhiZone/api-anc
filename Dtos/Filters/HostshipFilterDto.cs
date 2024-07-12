@@ -8,9 +8,9 @@ public class HostshipFilterDto : FilterDto<Hostship>
 
     public List<int>? RangeUserId { get; set; }
 
-    public bool IsAdmin { get; set; }
+    public bool? IsAdmin { get; set; }
 
-    public bool IsUnveiled { get; set; }
+    public bool? IsUnveiled { get; set; }
 
     public string? ContainsPosition { get; set; }
 
