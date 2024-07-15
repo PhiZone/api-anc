@@ -811,9 +811,9 @@ public class EventDivisionController(
         if (!(eventEntity.Hostships.Any(f => f.UserId == currentUser.Id && f.IsAdmin) ||
               resourceService.HasPermission(currentUser, UserRole.Administrator)))
         {
-            var hostship = eventEntity.Hostships.FirstOrDefault(f =>
-                f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(permission)));
             permission = HP.Gen(HP.Retrieve, HP.ReservedField);
+            var hostship = eventEntity.Hostships.FirstOrDefault(f =>
+                f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Any(e => e.SameAs(permission))));
             if (hostship == null)
                 list = [];
             else if (hostship.Permissions.All(e => e != permission))
