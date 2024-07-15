@@ -5,9 +5,17 @@ namespace PhiZoneApi.Interfaces;
 
 public interface IAuthorshipRepository
 {
+    Task<ICollection<Authorship>> GetResourcesAsync(int authorId, List<string>? order = null, List<bool>? desc = null,
+        int? position = 0,
+        int? take = -1, Expression<Func<Authorship, bool>>? predicate = null);
+
+    Task<ICollection<Authorship>> GetAuthorsAsync(Guid resourceId, List<string>? order = null, List<bool>? desc = null,
+        int? position = 0,
+        int? take = -1, Expression<Func<Authorship, bool>>? predicate = null);
+
     Task<ICollection<Authorship>> GetAuthorshipsAsync(List<string>? order = null, List<bool>? desc = null,
-        int? position = 0, int? take = -1, Expression<Func<Authorship, bool>>? predicate = null,
-        int? currentUserId = null);
+        int? position = 0, int? take = -1,
+        Expression<Func<Authorship, bool>>? predicate = null, int? currentUserId = null);
 
     Task<Authorship> GetAuthorshipAsync(Guid resourceId, int authorId, int? currentUserId = null);
 
@@ -28,4 +36,8 @@ public interface IAuthorshipRepository
     Task<bool> AuthorshipExistsAsync(Guid resourceId, int authorId);
 
     Task<bool> AuthorshipExistsAsync(Guid id);
+
+    Task<int> CountResourcesAsync(int authorId, Expression<Func<Authorship, bool>>? predicate = null);
+
+    Task<int> CountAuthorsAsync(Guid resourceId, Expression<Func<Authorship, bool>>? predicate = null);
 }

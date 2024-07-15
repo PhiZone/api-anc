@@ -28,6 +28,7 @@ namespace PhiZoneApi.Controllers;
     Policy = "AllowAnonymous")]
 public class AuthorshipController(
     IAuthorshipRepository authorshipRepository,
+    ISongRepository songRepository,
     IDtoMapper dtoMapper,
     UserManager<User> userManager,
     IMapper mapper,
@@ -54,8 +55,23 @@ public class AuthorshipController(
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser);
-        var authorships = await authorshipRepository.GetAuthorshipsAsync(dto.Order, dto.Desc, position, dto.PerPage,
+        IEnumerable<Authorship> authorships = await authorshipRepository.GetAuthorshipsAsync(dto.Order, dto.Desc, position, dto.PerPage,
             predicateExpr, currentUser?.Id);
+        if (filterDto is { RangeResourceId: not null })
+        {
+            foreach (var id in filterDto.RangeResourceId)
+            {
+                if (!await songRepository.SongExistsAsync(id)) continue;
+                var song = await songRepository.GetSongAsync(id);
+                if (song.EventPresences.Any(e => e.IsAnonymous != null && e.IsAnonymous.Value) ||
+                    song.Charts.Any(e => e.EventPresences.Any(f =>
+                        f.IsAnonymous != null && f.IsAnonymous.Value && f.Team != null &&
+                        f.Team.Participations.Any(g => g.ParticipantId == song.OwnerId))))
+                {
+                    authorships = authorships.Where(e => e.ResourceId != id);
+                }
+            }
+        }
         var list = authorships.Select(e =>
         {
             var author = dtoMapper.MapUser<PositionalUserDto>(e.Author);
