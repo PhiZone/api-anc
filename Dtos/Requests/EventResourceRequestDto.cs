@@ -16,7 +16,7 @@ public class EventResourceRequestDto
 
     public double? Score { get; set; }
 
-    public List<string?> Preserved { get; set; } = [];
+    public List<string?> Reserved { get; set; } = [];
 
     public Guid? TeamId { get; set; }
 

@@ -1,6 +1,6 @@
 namespace PhiZoneApi.Dtos.Responses;
 
-public class PreservedFieldDto
+public class ReservedFieldDto
 {
     public int Index { get; set; }
 

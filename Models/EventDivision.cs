@@ -35,7 +35,9 @@ public class EventDivision : PublicResource
 
     public bool Anonymization { get; set; }
 
-    [JsonIgnore] public List<string?> Preserved { get; set; } = [];
+    public string? SuggestedEntrySearch { get; set; }
+
+    [JsonIgnore] public List<string?> Reserved { get; set; } = [];
 
     public Guid EventId { get; set; }
 

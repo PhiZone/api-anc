@@ -24,13 +24,11 @@ public class EventDivisionCreationDto
     [Range(0, 3, ErrorMessage = ResponseCodes.ValueOutOfRange)]
     public EventDivisionStatus Status { get; set; }
 
-    [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
-    public IFormFile Illustration { get; set; } = null!;
+    public IFormFile? Illustration { get; set; }
 
-    [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     [MaxLength(200, ErrorMessage = ResponseCodes.ValueTooLong)]
     [UserInputValidator(ErrorMessage = ResponseCodes.ContentProhibited)]
-    public string Illustrator { get; set; } = null!;
+    public string? Illustrator { get; set; }
 
     [MaxLength(2000, ErrorMessage = ResponseCodes.ValueTooLong)]
     [UserInputValidator(ErrorMessage = ResponseCodes.ContentProhibited)]
@@ -53,7 +51,11 @@ public class EventDivisionCreationDto
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     public bool Anonymization { get; set; }
 
-    public List<string?> Preserved { get; set; } = [];
+    [MaxLength(4000, ErrorMessage = ResponseCodes.ValueTooLong)]
+    [UserInputValidator(ErrorMessage = ResponseCodes.ContentProhibited)]
+    public string? SuggestedEntrySearch { get; set; }
+
+    public List<string?> Reserved { get; set; } = [];
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     [Range(0, 2, ErrorMessage = ResponseCodes.ValueOutOfRange)]

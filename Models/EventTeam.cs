@@ -22,7 +22,7 @@ public class EventTeam : LikeableResource, IComparable<EventTeam>
 
     public double? Score { get; set; }
 
-    [JsonIgnore] public List<string?> Preserved { get; set; } = [];
+    [JsonIgnore] public List<string?> Reserved { get; set; } = [];
 
     public Guid DivisionId { get; set; }
 

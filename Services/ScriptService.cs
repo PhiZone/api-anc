@@ -9,6 +9,8 @@ using PhiZoneApi.Enums;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 
+// ReSharper disable MemberCanBePrivate.Global
+
 // ReSharper disable InvertIf
 
 // ReSharper disable UnusedAutoPropertyAccessor.Local
@@ -164,11 +166,6 @@ public class ScriptService(IServiceProvider serviceProvider, ILogger<ScriptServi
         }
 
         return null;
-    }
-
-    public void Log(string? message, params object?[] args)
-    {
-        logger.LogInformation(message);
     }
 
     public class ServiceScriptGlobals : ScriptGlobals

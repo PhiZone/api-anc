@@ -50,7 +50,11 @@ public class EventDivisionUpdateDto
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     public bool Anonymization { get; set; }
 
-    public List<string?> Preserved { get; set; } = [];
+    [MaxLength(4000, ErrorMessage = ResponseCodes.ValueTooLong)]
+    [UserInputValidator(ErrorMessage = ResponseCodes.ContentProhibited)]
+    public string? SuggestedEntrySearch { get; set; }
+
+    public List<string?> Reserved { get; set; } = [];
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     [Range(0, 2, ErrorMessage = ResponseCodes.ValueOutOfRange)]

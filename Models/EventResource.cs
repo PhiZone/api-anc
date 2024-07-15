@@ -35,7 +35,7 @@ public class EventResource
 
     public double? Score { get; set; }
 
-    [JsonIgnore] public List<string?> Preserved { get; set; } = [];
+    [JsonIgnore] public List<string?> Reserved { get; set; } = [];
 
     public Guid? TeamId { get; set; }
 

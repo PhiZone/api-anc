@@ -140,17 +140,17 @@ public class EventResourceController(
     }
 
     /// <summary>
-    ///     Retrieves preserved fields of event resources.
+    ///     Retrieves reserved fields of event resources.
     /// </summary>
-    /// <returns>A matrix of preserved fields.</returns>
-    /// <response code="200">Returns an array of preserved fields.</response>
+    /// <returns>A matrix of reserved fields.</returns>
+    /// <response code="200">Returns an array of reserved fields.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
-    [HttpGet("preservedFields")]
+    [HttpGet("reservedFields")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK,
-        Type = typeof(ResponseDto<IEnumerable<IEnumerable<PreservedFieldDto?>>>))]
+        Type = typeof(ResponseDto<IEnumerable<IEnumerable<ReservedFieldDto?>>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetPreservedFields([FromQuery] ArrayRequestDto dto,
+    public async Task<IActionResult> GetReservedFields([FromQuery] ArrayRequestDto dto,
         [FromQuery] EventResourceFilterDto? filterDto = null)
     {
         var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
@@ -168,9 +168,9 @@ public class EventResourceController(
             dto.PerPage, predicateExpr);
         var total = await eventResourceRepository.CountEventResourcesAsync(predicateExpr);
 
-        List<IEnumerable<PreservedFieldDto?>> matrix = [];
+        List<IEnumerable<ReservedFieldDto?>> matrix = [];
         Dictionary<Guid, Hostship?> cache = [];
-        permission = HP.Gen(HP.Retrieve, HP.PreservedField);
+        permission = HP.Gen(HP.Retrieve, HP.ReservedField);
 
         // ReSharper disable once InvertIf
         if (currentUser == null || !resourceService.HasPermission(currentUser, UserRole.Administrator))
@@ -197,8 +197,8 @@ public class EventResourceController(
                 }
                 else
                 {
-                    IEnumerable<PreservedFieldDto?> list =
-                        eventResource.Preserved.Select((e, i) => new PreservedFieldDto { Index = i + 1, Content = e });
+                    IEnumerable<ReservedFieldDto?> list =
+                        eventResource.Reserved.Select((e, i) => new ReservedFieldDto { Index = i + 1, Content = e });
                     if (hostship.Permissions.All(e => e != permission))
                         matrix.Add(hostship.Permissions.Where(e => e.SameAs(permission))
                             .Select(HP.GetIndex)
@@ -210,10 +210,10 @@ public class EventResourceController(
             }
         else
             matrix = eventResources.Select(e =>
-                    e.Preserved.Select((f, i) => new PreservedFieldDto { Index = i + 1, Content = f }))
+                    e.Reserved.Select((f, i) => new ReservedFieldDto { Index = i + 1, Content = f }))
                 .ToList()!;
 
-        return Ok(new ResponseDto<IEnumerable<IEnumerable<PreservedFieldDto?>>>
+        return Ok(new ResponseDto<IEnumerable<IEnumerable<ReservedFieldDto?>>>
         {
             Status = ResponseStatus.Ok,
             Code = ResponseCodes.Ok,
@@ -226,18 +226,18 @@ public class EventResourceController(
     }
 
     /// <summary>
-    ///     Retrieves preserved fields of a specific event resource.
+    ///     Retrieves reserved fields of a specific event resource.
     /// </summary>
     /// <param name="divisionId">An event division's ID.</param>
     /// <param name="resourceId">A resource's ID.</param>
-    /// <returns>An array of preserved fields.</returns>
-    /// <response code="200">Returns an array of preserved fields.</response>
+    /// <returns>An array of reserved fields.</returns>
+    /// <response code="200">Returns an array of reserved fields.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
-    [HttpGet("{divisionId:guid}/{resourceId:guid}/preservedFields")]
+    [HttpGet("{divisionId:guid}/{resourceId:guid}/reservedFields")]
     [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<PreservedFieldDto?>>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<ReservedFieldDto?>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetPreservedFields([FromRoute] Guid divisionId, [FromRoute] Guid resourceId)
+    public async Task<IActionResult> GetReservedFields([FromRoute] Guid divisionId, [FromRoute] Guid resourceId)
     {
         var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         if (!await eventResourceRepository.EventResourceExistsAsync(divisionId, resourceId))
@@ -259,8 +259,8 @@ public class EventResourceController(
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        IEnumerable<PreservedFieldDto?> list =
-            eventResource.Preserved.Select((e, i) => new PreservedFieldDto { Index = i + 1, Content = e });
+        IEnumerable<ReservedFieldDto?> list =
+            eventResource.Reserved.Select((e, i) => new ReservedFieldDto { Index = i + 1, Content = e });
 
         // ReSharper disable once InvertIf
         if (!(eventEntity.Hostships.Any(f => f.UserId == currentUser.Id && f.IsAdmin) ||
@@ -268,7 +268,7 @@ public class EventResourceController(
         {
             var hostship = eventEntity.Hostships.FirstOrDefault(f =>
                 f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(permission)));
-            permission = HP.Gen(HP.Retrieve, HP.PreservedField);
+            permission = HP.Gen(HP.Retrieve, HP.ReservedField);
             if (hostship == null)
                 list = [];
             else if (hostship.Permissions.All(e => e != permission))
@@ -278,14 +278,14 @@ public class EventResourceController(
                     .ToList();
         }
 
-        return Ok(new ResponseDto<IEnumerable<PreservedFieldDto?>>
+        return Ok(new ResponseDto<IEnumerable<ReservedFieldDto?>>
         {
             Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = list
         });
     }
 
     /// <summary>
-    ///     Updates a specific preserved field of the specified event resource.
+    ///     Updates a specific reserved field of the specified event resource.
     /// </summary>
     /// <param name="divisionId">An event division's ID.</param>
     /// <param name="resourceId">A resource's ID.</param>
@@ -297,7 +297,7 @@ public class EventResourceController(
     /// <response code="403">When the user does not have sufficient permission.</response>
     /// <response code="404">When the specified event resource is not found.</response>
     /// <response code="500">When an internal server error has occurred.</response>
-    [HttpPost("{divisionId:guid}/{resourceId:guid}/preservedFields/{index:int}")]
+    [HttpPost("{divisionId:guid}/{resourceId:guid}/reservedFields/{index:int}")]
     [Consumes("application/json")]
     [Produces("application/json")]
     [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
@@ -307,7 +307,7 @@ public class EventResourceController(
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> UpdatePreservedField([FromRoute] Guid divisionId, [FromRoute] Guid resourceId,
+    public async Task<IActionResult> UpdateReservedField([FromRoute] Guid divisionId, [FromRoute] Guid resourceId,
         [FromRoute] int index, [FromBody] StringDto dto)
     {
         var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
@@ -341,8 +341,8 @@ public class EventResourceController(
         {
             var hostship = eventEntity.Hostships.FirstOrDefault(f =>
                 f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(permission)));
-            permission = HP.Gen(HP.Update, HP.PreservedField);
-            var permissionWithIndex = HP.Gen(HP.Update, HP.PreservedField, index);
+            permission = HP.Gen(HP.Update, HP.ReservedField);
+            var permissionWithIndex = HP.Gen(HP.Update, HP.ReservedField, index);
             if (hostship == null || (hostship.Permissions.All(e => e != permission) &&
                                      !hostship.HasPermission(permissionWithIndex)))
                 return StatusCode(StatusCodes.Status403Forbidden,
@@ -352,9 +352,9 @@ public class EventResourceController(
                     });
         }
 
-        while (index > eventResource.Preserved.Count) eventResource.Preserved.Add(null);
+        while (index > eventResource.Reserved.Count) eventResource.Reserved.Add(null);
 
-        eventResource.Preserved[index - 1] = dto.Content;
+        eventResource.Reserved[index - 1] = dto.Content;
 
         if (!await eventResourceRepository.UpdateEventResourceAsync(eventResource))
             return StatusCode(StatusCodes.Status500InternalServerError,

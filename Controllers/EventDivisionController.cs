@@ -773,17 +773,17 @@ public class EventDivisionController(
     }
 
     /// <summary>
-    ///     Retrieves preserved fields of a specific event division.
+    ///     Retrieves reserved fields of a specific event division.
     /// </summary>
     /// <param name="id">An event division's ID.</param>
-    /// <returns>An array of preserved fields.</returns>
-    /// <response code="200">Returns an array of preserved fields.</response>
+    /// <returns>An array of reserved fields.</returns>
+    /// <response code="200">Returns an array of reserved fields.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
-    [HttpGet("{id:guid}/preservedFields")]
+    [HttpGet("{id:guid}/reservedFields")]
     [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<PreservedFieldDto?>>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<ReservedFieldDto?>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetPreservedFields([FromRoute] Guid id)
+    public async Task<IActionResult> GetReservedFields([FromRoute] Guid id)
     {
         var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         if (!await eventDivisionRepository.EventDivisionExistsAsync(id))
@@ -804,8 +804,8 @@ public class EventDivisionController(
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        IEnumerable<PreservedFieldDto?> list =
-            eventDivision.Preserved.Select((e, i) => new PreservedFieldDto { Index = i + 1, Content = e });
+        IEnumerable<ReservedFieldDto?> list =
+            eventDivision.Reserved.Select((e, i) => new ReservedFieldDto { Index = i + 1, Content = e });
 
         // ReSharper disable once InvertIf
         if (!(eventEntity.Hostships.Any(f => f.UserId == currentUser.Id && f.IsAdmin) ||
@@ -813,7 +813,7 @@ public class EventDivisionController(
         {
             var hostship = eventEntity.Hostships.FirstOrDefault(f =>
                 f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(permission)));
-            permission = HP.Gen(HP.Retrieve, HP.PreservedField);
+            permission = HP.Gen(HP.Retrieve, HP.ReservedField);
             if (hostship == null)
                 list = [];
             else if (hostship.Permissions.All(e => e != permission))
@@ -823,7 +823,7 @@ public class EventDivisionController(
                     .ToList();
         }
 
-        return Ok(new ResponseDto<IEnumerable<PreservedFieldDto?>>
+        return Ok(new ResponseDto<IEnumerable<ReservedFieldDto?>>
         {
             Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = list
         });
@@ -860,9 +860,11 @@ public class EventDivisionController(
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
-        var illustrationUrl =
-            (await fileStorageService.UploadImage<EventDivision>(dto.Title, dto.Illustration, (16, 9))).Item1;
-        await fileStorageService.SendUserInput(illustrationUrl, "Illustration", Request, currentUser);
+        var illustrationUrl = dto.Illustration != null
+            ? (await fileStorageService.UploadImage<EventDivision>(dto.Title, dto.Illustration, (16, 9))).Item1
+            : null;
+        if (illustrationUrl != null)
+            await fileStorageService.SendUserInput(illustrationUrl, "Illustration", Request, currentUser);
 
         var tagName = dto.TagId != null ? (await tagRepository.GetTagAsync(dto.TagId.Value)).NormalizedName : null;
 
@@ -884,7 +886,8 @@ public class EventDivisionController(
             MinSubmissionCount = dto.MinSubmissionCount,
             MaxSubmissionCount = dto.MaxSubmissionCount,
             Anonymization = dto.Anonymization,
-            Preserved = dto.Preserved,
+            SuggestedEntrySearch = dto.SuggestedEntrySearch,
+            Reserved = dto.Reserved,
             Accessibility = dto.Accessibility,
             IsHidden = dto.IsHidden,
             IsLocked = dto.IsLocked,
@@ -981,7 +984,8 @@ public class EventDivisionController(
         eventDivision.MinSubmissionCount = dto.MinSubmissionCount;
         eventDivision.MaxSubmissionCount = dto.MaxSubmissionCount;
         eventDivision.Anonymization = dto.Anonymization;
-        eventDivision.Preserved = dto.Preserved;
+        eventDivision.SuggestedEntrySearch = dto.SuggestedEntrySearch;
+        eventDivision.Reserved = dto.Reserved;
         eventDivision.Accessibility = dto.Accessibility;
         eventDivision.IsHidden = dto.IsHidden;
         eventDivision.IsLocked = dto.IsLocked;

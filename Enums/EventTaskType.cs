@@ -13,7 +13,7 @@ public enum EventTaskType
     PreUpdateSubmission, // SongSubmission / ChartSubmission
 
     PostRegistration, // EventTeam
-    PostInvitation, // EventTeamInviteDto
+    PostInvitation, // EventTeamInviteDelivererDto
     PostParticipation, // Participation
     PostSubmission, // SongSubmission / ChartSubmission / Record
     PostUpdateTeam, // EventTeam

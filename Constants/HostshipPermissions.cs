@@ -16,7 +16,7 @@ public static class HostshipPermissions
     public const uint Team = 0b0001u;
     public const uint Resource = 0b0010u;
     public const uint Hostship = 0b0011u;
-    public const uint PreservedField = 0b0100u;
+    public const uint ReservedField = 0b0100u;
 
     public static bool HasPermission(this Hostship hostship, uint permission)
     {

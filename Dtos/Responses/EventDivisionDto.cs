@@ -42,6 +42,8 @@ public class EventDivisionDto
 
     public bool Anonymization { get; set; }
 
+    public string? SuggestedEntrySearch { get; set; }
+
     public int LikeCount { get; set; }
 
     public int OwnerId { get; set; }
