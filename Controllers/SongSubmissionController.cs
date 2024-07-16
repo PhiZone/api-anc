@@ -391,8 +391,9 @@ public class SongSubmissionController(
         songSubmission.DateUpdated = DateTimeOffset.UtcNow;
         songSubmission.Status = RequestStatus.Waiting;
 
+        var owner = (await userRepository.GetUserByIdAsync(songSubmission.OwnerId))!;
         var (eventDivision, eventTeam, response) =
-            await CheckForEvent(songSubmission, currentUser, EventTaskType.PreUpdateSubmission);
+            await CheckForEvent(songSubmission, owner, EventTaskType.PreUpdateSubmission);
         if (response != null) return response;
 
         if (!await songSubmissionRepository.UpdateSongSubmissionAsync(songSubmission))
@@ -402,7 +403,7 @@ public class SongSubmissionController(
         if (notify) await feishuService.Notify(songSubmission, FeishuResources.ContentReviewalChat);
 
         if (eventDivision != null && eventTeam != null)
-            await scriptService.RunEventTaskAsync(eventTeam.DivisionId, songSubmission, eventTeam.Id, currentUser,
+            await scriptService.RunEventTaskAsync(eventTeam.DivisionId, songSubmission, eventTeam.Id, owner,
                 [EventTaskType.PostUpdateSubmission]);
 
         return NoContent();
@@ -482,8 +483,9 @@ public class SongSubmissionController(
             songSubmission.Status = RequestStatus.Waiting;
         }
 
+        var owner = (await userRepository.GetUserByIdAsync(songSubmission.OwnerId))!;
         var (eventDivision, eventTeam, response) =
-            await CheckForEvent(songSubmission, currentUser, EventTaskType.PreUpdateSubmission);
+            await CheckForEvent(songSubmission, owner, EventTaskType.PreUpdateSubmission);
         if (response != null) return response;
 
         if (!await songSubmissionRepository.UpdateSongSubmissionAsync(songSubmission))
@@ -493,7 +495,7 @@ public class SongSubmissionController(
         if (wait && notify) await feishuService.Notify(songSubmission, FeishuResources.ContentReviewalChat);
 
         if (eventDivision != null && eventTeam != null)
-            await scriptService.RunEventTaskAsync(eventTeam.DivisionId, songSubmission, eventTeam.Id, currentUser,
+            await scriptService.RunEventTaskAsync(eventTeam.DivisionId, songSubmission, eventTeam.Id, owner,
                 [EventTaskType.PostUpdateSubmission]);
 
         return NoContent();
@@ -551,8 +553,9 @@ public class SongSubmissionController(
             songSubmission.Status = RequestStatus.Waiting;
         }
 
+        var owner = (await userRepository.GetUserByIdAsync(songSubmission.OwnerId))!;
         var (eventDivision, eventTeam, response) =
-            await CheckForEvent(songSubmission, currentUser, EventTaskType.PreUpdateSubmission);
+            await CheckForEvent(songSubmission, owner, EventTaskType.PreUpdateSubmission);
         if (response != null) return response;
 
         if (!await songSubmissionRepository.UpdateSongSubmissionAsync(songSubmission))
@@ -562,7 +565,7 @@ public class SongSubmissionController(
         if (notify) await feishuService.Notify(songSubmission, FeishuResources.ContentReviewalChat);
 
         if (eventDivision != null && eventTeam != null)
-            await scriptService.RunEventTaskAsync(eventTeam.DivisionId, songSubmission, eventTeam.Id, currentUser,
+            await scriptService.RunEventTaskAsync(eventTeam.DivisionId, songSubmission, eventTeam.Id, owner,
                 [EventTaskType.PostUpdateSubmission]);
 
         return NoContent();
@@ -618,8 +621,9 @@ public class SongSubmissionController(
             songSubmission.Status = RequestStatus.Waiting;
         }
 
+        var owner = (await userRepository.GetUserByIdAsync(songSubmission.OwnerId))!;
         var (eventDivision, eventTeam, response) =
-            await CheckForEvent(songSubmission, currentUser, EventTaskType.PreUpdateSubmission);
+            await CheckForEvent(songSubmission, owner, EventTaskType.PreUpdateSubmission);
         if (response != null) return response;
 
         if (!await songSubmissionRepository.UpdateSongSubmissionAsync(songSubmission))
@@ -629,7 +633,7 @@ public class SongSubmissionController(
         if (notify) await feishuService.Notify(songSubmission, FeishuResources.ContentReviewalChat);
 
         if (eventDivision != null && eventTeam != null)
-            await scriptService.RunEventTaskAsync(eventTeam.DivisionId, songSubmission, eventTeam.Id, currentUser,
+            await scriptService.RunEventTaskAsync(eventTeam.DivisionId, songSubmission, eventTeam.Id, owner,
                 [EventTaskType.PostUpdateSubmission]);
 
         return NoContent();
@@ -678,8 +682,9 @@ public class SongSubmissionController(
         songSubmission.DateUpdated = DateTimeOffset.UtcNow;
         songSubmission.Status = RequestStatus.Waiting;
 
+        var owner = (await userRepository.GetUserByIdAsync(songSubmission.OwnerId))!;
         var (eventDivision, eventTeam, response) =
-            await CheckForEvent(songSubmission, currentUser, EventTaskType.PreUpdateSubmission);
+            await CheckForEvent(songSubmission, owner, EventTaskType.PreUpdateSubmission);
         if (response != null) return response;
 
         if (!await songSubmissionRepository.UpdateSongSubmissionAsync(songSubmission))
@@ -689,7 +694,7 @@ public class SongSubmissionController(
         if (notify) await feishuService.Notify(songSubmission, FeishuResources.ContentReviewalChat);
 
         if (eventDivision != null && eventTeam != null)
-            await scriptService.RunEventTaskAsync(eventTeam.DivisionId, songSubmission, eventTeam.Id, currentUser,
+            await scriptService.RunEventTaskAsync(eventTeam.DivisionId, songSubmission, eventTeam.Id, owner,
                 [EventTaskType.PostUpdateSubmission]);
 
         return NoContent();
@@ -746,8 +751,9 @@ public class SongSubmissionController(
             songSubmission.Status = RequestStatus.Waiting;
         }
 
+        var owner = (await userRepository.GetUserByIdAsync(songSubmission.OwnerId))!;
         var (eventDivision, eventTeam, response) =
-            await CheckForEvent(songSubmission, currentUser, EventTaskType.PreUpdateSubmission);
+            await CheckForEvent(songSubmission, owner, EventTaskType.PreUpdateSubmission);
         if (response != null) return response;
 
         if (!await songSubmissionRepository.UpdateSongSubmissionAsync(songSubmission))
@@ -757,7 +763,7 @@ public class SongSubmissionController(
         if (notify) await feishuService.Notify(songSubmission, FeishuResources.ContentReviewalChat);
 
         if (eventDivision != null && eventTeam != null)
-            await scriptService.RunEventTaskAsync(eventTeam.DivisionId, songSubmission, eventTeam.Id, currentUser,
+            await scriptService.RunEventTaskAsync(eventTeam.DivisionId, songSubmission, eventTeam.Id, owner,
                 [EventTaskType.PostUpdateSubmission]);
 
         return NoContent();
@@ -806,8 +812,9 @@ public class SongSubmissionController(
         songSubmission.DateUpdated = DateTimeOffset.UtcNow;
         songSubmission.Status = RequestStatus.Waiting;
 
+        var owner = (await userRepository.GetUserByIdAsync(songSubmission.OwnerId))!;
         var (eventDivision, eventTeam, response) =
-            await CheckForEvent(songSubmission, currentUser, EventTaskType.PreUpdateSubmission);
+            await CheckForEvent(songSubmission, owner, EventTaskType.PreUpdateSubmission);
         if (response != null) return response;
 
         if (!await songSubmissionRepository.UpdateSongSubmissionAsync(songSubmission))
@@ -817,7 +824,7 @@ public class SongSubmissionController(
         if (notify) await feishuService.Notify(songSubmission, FeishuResources.ContentReviewalChat);
 
         if (eventDivision != null && eventTeam != null)
-            await scriptService.RunEventTaskAsync(eventTeam.DivisionId, songSubmission, eventTeam.Id, currentUser,
+            await scriptService.RunEventTaskAsync(eventTeam.DivisionId, songSubmission, eventTeam.Id, owner,
                 [EventTaskType.PostUpdateSubmission]);
 
         return NoContent();
@@ -865,6 +872,7 @@ public class SongSubmissionController(
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
+        var owner = (await userRepository.GetUserByIdAsync(songSubmission.OwnerId))!;
         var normalizedTags = songSubmission.Tags.Select(resourceService.Normalize);
         var eventDivisions = await eventDivisionRepository.GetEventDivisionsAsync(predicate: e =>
             e.Type == EventDivisionType.Song && e.Status == EventDivisionStatus.Started &&
@@ -873,12 +881,12 @@ public class SongSubmissionController(
         {
             var eventDivision = eventDivisions.First();
             var eventTeams = await eventTeamRepository.GetEventTeamsAsync(predicate: e =>
-                e.DivisionId == eventDivision.Id && e.Participations.Any(f => f.ParticipantId == currentUser.Id));
+                e.DivisionId == eventDivision.Id && e.Participations.Any(f => f.ParticipantId == owner.Id));
 
             if (eventTeams.Count > 0)
             {
                 var eventTeam = eventTeams.First();
-                await scriptService.RunEventTaskAsync(eventTeam.DivisionId, songSubmission, eventTeam.Id, currentUser,
+                await scriptService.RunEventTaskAsync(eventTeam.DivisionId, songSubmission, eventTeam.Id, owner,
                     [EventTaskType.OnDeletion]);
             }
         }

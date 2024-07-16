@@ -499,8 +499,9 @@ public class ChartSubmissionController(
         chartSubmission.VolunteerStatus = RequestStatus.Waiting;
         chartSubmission.DateUpdated = DateTimeOffset.UtcNow;
 
+        var owner = (await userRepository.GetUserByIdAsync(chartSubmission.OwnerId))!;
         var (eventDivision, eventTeam, response) =
-            await CheckForEvent(chartSubmission, currentUser, EventTaskType.PreUpdateSubmission);
+            await CheckForEvent(chartSubmission, owner, EventTaskType.PreUpdateSubmission);
         if (response != null) return response;
 
         if (!await chartSubmissionRepository.UpdateChartSubmissionAsync(chartSubmission))
@@ -510,7 +511,7 @@ public class ChartSubmissionController(
         if (notify) await feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
 
         if (eventDivision != null && eventTeam != null)
-            await scriptService.RunEventTaskAsync(eventTeam.DivisionId, chartSubmission, eventTeam.Id, currentUser,
+            await scriptService.RunEventTaskAsync(eventTeam.DivisionId, chartSubmission, eventTeam.Id, owner,
                 [EventTaskType.PostUpdateSubmission]);
 
         return NoContent();
@@ -558,7 +559,8 @@ public class ChartSubmissionController(
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
-        var (eventDivision, eventTeam, response) = await GetEvent(chartSubmission.Tags, currentUser);
+        var owner = (await userRepository.GetUserByIdAsync(chartSubmission.OwnerId))!;
+        var (eventDivision, eventTeam, response) = await GetEvent(chartSubmission.Tags, owner);
         if (response != null) return response;
 
         var notify = chartSubmission.VolunteerStatus != RequestStatus.Waiting;
@@ -598,7 +600,7 @@ public class ChartSubmissionController(
         if (eventTeam != null)
         {
             var firstFailure = await scriptService.RunEventTaskAsync(eventTeam.DivisionId, chartSubmission,
-                eventTeam.Id, currentUser, [EventTaskType.PreUpdateSubmission]);
+                eventTeam.Id, owner, [EventTaskType.PreUpdateSubmission]);
 
             if (firstFailure != null)
                 return BadRequest(new ResponseDto<EventTaskResponseDto>
@@ -614,7 +616,7 @@ public class ChartSubmissionController(
         if (notify) await feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
 
         if (eventDivision != null && eventTeam != null)
-            await scriptService.RunEventTaskAsync(eventTeam.DivisionId, chartSubmission, eventTeam.Id, currentUser,
+            await scriptService.RunEventTaskAsync(eventTeam.DivisionId, chartSubmission, eventTeam.Id, owner,
                 [EventTaskType.PostUpdateSubmission]);
 
         return NoContent();
@@ -676,8 +678,9 @@ public class ChartSubmissionController(
             chartSubmission.DateUpdated = DateTimeOffset.UtcNow;
         }
 
+        var owner = (await userRepository.GetUserByIdAsync(chartSubmission.OwnerId))!;
         var (eventDivision, eventTeam, response) =
-            await CheckForEvent(chartSubmission, currentUser, EventTaskType.PreUpdateSubmission);
+            await CheckForEvent(chartSubmission, owner, EventTaskType.PreUpdateSubmission);
         if (response != null) return response;
 
         if (!await chartSubmissionRepository.UpdateChartSubmissionAsync(chartSubmission))
@@ -687,7 +690,7 @@ public class ChartSubmissionController(
         if (notify) await feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
 
         if (eventDivision != null && eventTeam != null)
-            await scriptService.RunEventTaskAsync(eventTeam.DivisionId, chartSubmission, eventTeam.Id, currentUser,
+            await scriptService.RunEventTaskAsync(eventTeam.DivisionId, chartSubmission, eventTeam.Id, owner,
                 [EventTaskType.PostUpdateSubmission]);
 
         return NoContent();
@@ -739,8 +742,9 @@ public class ChartSubmissionController(
         chartSubmission.VolunteerStatus = RequestStatus.Waiting;
         chartSubmission.DateUpdated = DateTimeOffset.UtcNow;
 
+        var owner = (await userRepository.GetUserByIdAsync(chartSubmission.OwnerId))!;
         var (eventDivision, eventTeam, response) =
-            await CheckForEvent(chartSubmission, currentUser, EventTaskType.PreUpdateSubmission);
+            await CheckForEvent(chartSubmission, owner, EventTaskType.PreUpdateSubmission);
         if (response != null) return response;
 
         if (!await chartSubmissionRepository.UpdateChartSubmissionAsync(chartSubmission))
@@ -750,7 +754,7 @@ public class ChartSubmissionController(
         if (notify) await feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
 
         if (eventDivision != null && eventTeam != null)
-            await scriptService.RunEventTaskAsync(eventTeam.DivisionId, chartSubmission, eventTeam.Id, currentUser,
+            await scriptService.RunEventTaskAsync(eventTeam.DivisionId, chartSubmission, eventTeam.Id, owner,
                 [EventTaskType.PostUpdateSubmission]);
 
         return NoContent();
@@ -800,6 +804,7 @@ public class ChartSubmissionController(
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
+        var owner = (await userRepository.GetUserByIdAsync(chartSubmission.OwnerId))!;
         var normalizedTags = chartSubmission.Tags.Select(resourceService.Normalize);
         var eventDivisions = await eventDivisionRepository.GetEventDivisionsAsync(predicate: e =>
             e.Type == EventDivisionType.Chart && e.Status == EventDivisionStatus.Started &&
@@ -808,12 +813,12 @@ public class ChartSubmissionController(
         {
             var eventDivision = eventDivisions.First();
             var eventTeams = await eventTeamRepository.GetEventTeamsAsync(predicate: e =>
-                e.DivisionId == eventDivision.Id && e.Participations.Any(f => f.ParticipantId == currentUser.Id));
+                e.DivisionId == eventDivision.Id && e.Participations.Any(f => f.ParticipantId == owner.Id));
 
             if (eventTeams.Count > 0)
             {
                 var eventTeam = eventTeams.First();
-                await scriptService.RunEventTaskAsync(eventTeam.DivisionId, chartSubmission, eventTeam.Id, currentUser,
+                await scriptService.RunEventTaskAsync(eventTeam.DivisionId, chartSubmission, eventTeam.Id, owner,
                     [EventTaskType.OnDeletion]);
             }
         }
@@ -1004,8 +1009,9 @@ public class ChartSubmissionController(
         chartSubmission.VolunteerStatus = RequestStatus.Waiting;
         chartSubmission.DateUpdated = DateTimeOffset.UtcNow;
 
+        var owner = (await userRepository.GetUserByIdAsync(chartSubmission.OwnerId))!;
         var (eventDivision, eventTeam, response) =
-            await CheckForEvent(chartSubmission, currentUser, EventTaskType.PreUpdateSubmission);
+            await CheckForEvent(chartSubmission, owner, EventTaskType.PreUpdateSubmission);
         if (response != null) return response;
 
         if (!await chartAssetSubmissionRepository.CreateChartAssetSubmissionAsync(chartAsset) ||
@@ -1016,7 +1022,7 @@ public class ChartSubmissionController(
         if (notify) await feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
 
         if (eventDivision != null && eventTeam != null)
-            await scriptService.RunEventTaskAsync(eventTeam.DivisionId, chartSubmission, eventTeam.Id, currentUser,
+            await scriptService.RunEventTaskAsync(eventTeam.DivisionId, chartSubmission, eventTeam.Id, owner,
                 [EventTaskType.PostUpdateSubmission]);
 
         return StatusCode(StatusCodes.Status201Created,
@@ -1108,8 +1114,9 @@ public class ChartSubmissionController(
         chartSubmission.VolunteerStatus = RequestStatus.Waiting;
         chartSubmission.DateUpdated = DateTimeOffset.UtcNow;
 
+        var owner = (await userRepository.GetUserByIdAsync(chartSubmission.OwnerId))!;
         var (eventDivision, eventTeam, response) =
-            await CheckForEvent(chartSubmission, currentUser, EventTaskType.PreUpdateSubmission);
+            await CheckForEvent(chartSubmission, owner, EventTaskType.PreUpdateSubmission);
         if (response != null) return response;
 
         if (!await chartAssetSubmissionRepository.UpdateChartAssetSubmissionAsync(chartAsset) ||
@@ -1120,7 +1127,7 @@ public class ChartSubmissionController(
         if (notify) await feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
 
         if (eventDivision != null && eventTeam != null)
-            await scriptService.RunEventTaskAsync(eventTeam.DivisionId, chartSubmission, eventTeam.Id, currentUser,
+            await scriptService.RunEventTaskAsync(eventTeam.DivisionId, chartSubmission, eventTeam.Id, owner,
                 [EventTaskType.PostUpdateSubmission]);
 
         return NoContent();
@@ -1192,8 +1199,9 @@ public class ChartSubmissionController(
             chartSubmission.DateUpdated = DateTimeOffset.UtcNow;
         }
 
+        var owner = (await userRepository.GetUserByIdAsync(chartSubmission.OwnerId))!;
         var (eventDivision, eventTeam, response) =
-            await CheckForEvent(chartSubmission, currentUser, EventTaskType.PreUpdateSubmission);
+            await CheckForEvent(chartSubmission, owner, EventTaskType.PreUpdateSubmission);
         if (response != null) return response;
 
         if (!await chartAssetSubmissionRepository.UpdateChartAssetSubmissionAsync(chartAsset) ||
@@ -1204,7 +1212,7 @@ public class ChartSubmissionController(
         if (notify) await feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
 
         if (eventDivision != null && eventTeam != null)
-            await scriptService.RunEventTaskAsync(eventTeam.DivisionId, chartSubmission, eventTeam.Id, currentUser,
+            await scriptService.RunEventTaskAsync(eventTeam.DivisionId, chartSubmission, eventTeam.Id, owner,
                 [EventTaskType.PostUpdateSubmission]);
 
         return NoContent();
@@ -1262,8 +1270,9 @@ public class ChartSubmissionController(
         chartSubmission.VolunteerStatus = RequestStatus.Waiting;
         chartSubmission.DateUpdated = DateTimeOffset.UtcNow;
 
+        var owner = (await userRepository.GetUserByIdAsync(chartSubmission.OwnerId))!;
         var (eventDivision, eventTeam, response) =
-            await CheckForEvent(chartSubmission, currentUser, EventTaskType.PreUpdateSubmission);
+            await CheckForEvent(chartSubmission, owner, EventTaskType.PreUpdateSubmission);
         if (response != null) return response;
 
         if (!await chartAssetSubmissionRepository.RemoveChartAssetSubmissionAsync(assetId) ||
@@ -1274,7 +1283,7 @@ public class ChartSubmissionController(
         if (notify) await feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
 
         if (eventDivision != null && eventTeam != null)
-            await scriptService.RunEventTaskAsync(eventTeam.DivisionId, chartSubmission, eventTeam.Id, currentUser,
+            await scriptService.RunEventTaskAsync(eventTeam.DivisionId, chartSubmission, eventTeam.Id, owner,
                 [EventTaskType.PostUpdateSubmission]);
 
         return NoContent();
