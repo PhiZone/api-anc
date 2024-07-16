@@ -102,6 +102,7 @@ public class ScriptService(IServiceProvider serviceProvider, ILogger<ScriptServi
             _eventTaskScripts.Add(task.Id, script);
         }
 
+        logger.LogInformation(LogEvents.ScriptInfo, "Firing up Event Task {Id}", id);
         return Task.Run(async () =>
             {
                 try
