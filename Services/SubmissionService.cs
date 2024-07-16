@@ -142,6 +142,10 @@ public class SubmissionService(
 
                 if (existingEventResources.All(e => e.DivisionId != eventDivision.Id))
                     await CreateEventResource(eventDivision, eventTeam, song, owner);
+                else
+                    await scriptService.RunEventTaskAsync(eventTeam.DivisionId,
+                        existingEventResources.First(e => e.DivisionId == eventDivision.Id), eventTeam.Id, owner,
+                        [EventTaskType.OnApproval]);
             }
         }
 
@@ -319,6 +323,10 @@ public class SubmissionService(
 
                 if (existingEventResources.All(e => e.DivisionId != eventDivision.Id))
                     await CreateEventResource(eventDivision, eventTeam, chart, owner);
+                else
+                    await scriptService.RunEventTaskAsync(eventTeam.DivisionId,
+                        existingEventResources.First(e => e.DivisionId == eventDivision.Id), eventTeam.Id, owner,
+                        [EventTaskType.OnApproval]);
             }
         }
 
@@ -467,8 +475,7 @@ public class SubmissionService(
         };
         await eventResourceRepository.CreateEventResourceAsync(eventResource);
         if (await eventResourceRepository.CountResourcesAsync(eventDivision.Id,
-                e => e.Type == EventResourceType.Entry && e.TeamId == eventTeam.Id) ==
-            eventTeam.ClaimedSubmissionCount)
+                e => e.Type == EventResourceType.Entry && e.TeamId == eventTeam.Id) == eventTeam.ClaimedSubmissionCount)
         {
             eventTeam.Status = ParticipationStatus.Finished;
             await eventTeamRepository.UpdateEventTeamAsync(eventTeam);
