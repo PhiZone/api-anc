@@ -58,12 +58,33 @@ public class EventTaskScheduler(IServiceProvider serviceProvider, ILogger<EventT
         var delay = task.DateExecuted.Value - DateTimeOffset.UtcNow;
         if (delay.CompareTo(TimeSpan.Zero) < 0) return;
 
-        _schedules.Add(task.Id,
-            new Timer(Execute, (task.Id, task.DivisionId), delay,
-                Timeout.InfiniteTimeSpan));
+        _schedules.Add(task.Id, new Timer(Execute, (task.Id, task.DivisionId), delay, Timeout.InfiniteTimeSpan));
         logger.LogInformation(LogEvents.SchedulerInfo, "[{Now}] Successfully scheduled Task \"{Name}\" at {Date}",
             DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), task.Name,
             task.DateExecuted.Value.LocalDateTime.ToString("yyyy-MM-dd HH:mm:ss"));
+    }
+
+    public void ImplicitlySchedule(EventTask task, object? target, Guid? teamId, User? user, DateTimeOffset dateExecuted,
+        bool replace = false)
+    {
+        if (_schedules.TryGetValue(task.Id, out var schedule))
+        {
+            if (!replace)
+            {
+                logger.LogInformation(LogEvents.SchedulerInfo, "[{Now}] Task \"{Name}\" is already scheduled",
+                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), task.Name);
+                return;
+            }
+
+            schedule?.Dispose();
+            _schedules.Remove(task.Id);
+        }
+
+        var delay = dateExecuted - DateTimeOffset.UtcNow;
+        if (delay.CompareTo(TimeSpan.Zero) < 0) return;
+
+        _schedules.Add(task.Id,
+            new Timer(ImplicitlyExecute, (task.Id, target, teamId, user), delay, Timeout.InfiniteTimeSpan));
     }
 
     public void Cancel(Guid taskId)
@@ -83,5 +104,13 @@ public class EventTaskScheduler(IServiceProvider serviceProvider, ILogger<EventT
         var eventDivisionRepository = scope.ServiceProvider.GetRequiredService<IEventDivisionRepository>();
         var eventDivision = await eventDivisionRepository.GetEventDivisionAsync(divisionId);
         await scriptService.RunAsync<object>(id, eventDivision, cancellationToken: _cancellationToken);
+    }
+
+    private async void ImplicitlyExecute(object? state)
+    {
+        var (id, target, teamId, user) = (ValueTuple<Guid, object?, Guid?, User?>)state!;
+        await using var scope = serviceProvider.CreateAsyncScope();
+        var scriptService = scope.ServiceProvider.GetRequiredService<IScriptService>();
+        await scriptService.RunAsync(id, target, teamId, user, cancellationToken: _cancellationToken);
     }
 }

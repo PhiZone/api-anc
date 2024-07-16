@@ -19,11 +19,11 @@ namespace PhiZoneApi.Services;
 
 public class ScriptService(IServiceProvider serviceProvider, ILogger<ScriptService> logger) : IScriptService
 {
-    private static readonly ScriptOptions ScriptOptions = ScriptOptions.Default
-        .AddReferences(AppDomain.CurrentDomain.GetAssemblies()
-            .SelectMany(a => a.GetTypes())
-            .Where(t => t is { IsClass: true, Namespace: not null } && t.Namespace.StartsWith("PhiZoneApi"))
-            .Select(t => t.Assembly));
+    private static readonly ScriptOptions ScriptOptions = ScriptOptions.Default.AddReferences(AppDomain.CurrentDomain
+        .GetAssemblies()
+        .SelectMany(a => a.GetTypes())
+        .Where(t => t is { IsClass: true, Namespace: not null } && t.Namespace.StartsWith("PhiZoneApi"))
+        .Select(t => t.Assembly));
 
     private readonly Dictionary<Guid, Script<EventTaskResponseDto?>> _eventTaskScripts = new();
     private readonly Dictionary<Guid, Script<ServiceResponseDto>> _serviceScripts = new();
@@ -161,9 +161,16 @@ public class ScriptService(IServiceProvider serviceProvider, ILogger<ScriptServi
         foreach (var task in await eventTaskRepository.GetEventTasksAsync(["DateUpdated"],
                      predicate: e => e.DivisionId == divisionId && types.Contains(e.Type)))
         {
-            var response = await RunAsync(task.Id, target, teamId, currentUser);
-            if (response == null || response.Status == ResponseStatus.Ok) continue;
-            return response;
+            if (task.Type.ToString().StartsWith("Pre"))
+            {
+                var response = await RunAsync(task.Id, target, teamId, currentUser);
+                if (response == null || response.Status == ResponseStatus.Ok) continue;
+                return response;
+            }
+
+            var eventTaskScheduler = scope.ServiceProvider.GetRequiredService<EventTaskScheduler>();
+            eventTaskScheduler.ImplicitlySchedule(task, target, teamId, currentUser,
+                DateTimeOffset.UtcNow.AddMilliseconds(100), true);
         }
 
         return null;
