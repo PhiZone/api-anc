@@ -294,7 +294,8 @@ public class ChartSubmissionController(
             VolunteerStatus = RequestStatus.Waiting,
             AdmissionStatus =
                 song != null
-                    ? song.OwnerId == currentUser.Id || song.Accessibility == Accessibility.AllowAny
+                    ?
+                    song.OwnerId == currentUser.Id || song.Accessibility == Accessibility.AllowAny
                         ? RequestStatus.Approved
                         : RequestStatus.Waiting
                     : songSubmission!.OwnerId == currentUser.Id ||
@@ -1002,9 +1003,6 @@ public class ChartSubmissionController(
 
         var notify = chartSubmission.VolunteerStatus != RequestStatus.Waiting;
 
-        chartAsset.Type = dto.Type;
-        chartAsset.Name = dto.Name;
-        chartAsset.DateUpdated = DateTimeOffset.UtcNow;
         chartSubmission.Status = RequestStatus.Waiting;
         chartSubmission.VolunteerStatus = RequestStatus.Waiting;
         chartSubmission.DateUpdated = DateTimeOffset.UtcNow;
@@ -1031,6 +1029,112 @@ public class ChartSubmissionController(
                 Status = ResponseStatus.Ok,
                 Code = ResponseCodes.Ok,
                 Data = new CreatedResponseDto<Guid> { Id = chartAsset.Id }
+            });
+    }
+
+    /// <summary>
+    ///     Creates new chart submission's assets.
+    /// </summary>
+    /// <param name="id">A chart submission's ID.</param>
+    /// <param name="dto">The new assets.</param>
+    /// <returns>The IDs of the chart submission's assets.</returns>
+    /// <response code="201">Returns the IDs of the chart submission's assets.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
+    /// <response code="404">When the specified chart submission is not found.</response>
+    /// <response code="500">When an internal server error has occurred.</response>
+    [HttpPost("{id:guid}/assets/batch")]
+    [Consumes("multipart/form-data")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status201Created,
+        Type = typeof(ResponseDto<CreatedResponseDto<IEnumerable<Guid>>>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> CreateChartSubmissionAssets([FromRoute] Guid id,
+        [FromForm] IEnumerable<ChartAssetCreationDto> dtos)
+    {
+        if (!await chartSubmissionRepository.ChartSubmissionExistsAsync(id))
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
+            });
+
+        var chartSubmission = await chartSubmissionRepository.GetChartSubmissionAsync(id);
+
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if ((chartSubmission.OwnerId == currentUser.Id &&
+             !resourceService.HasPermission(currentUser, UserRole.Qualified)) ||
+            (chartSubmission.OwnerId != currentUser.Id &&
+             !resourceService.HasPermission(currentUser, UserRole.Moderator)))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+
+        var notify = chartSubmission.VolunteerStatus != RequestStatus.Waiting;
+
+        var assetIds = new List<Guid>();
+        foreach (var dto in dtos)
+        {
+            if (await chartAssetSubmissionRepository.CountChartAssetSubmissionsAsync(e =>
+                    e.Name == dto.Name && e.ChartSubmissionId == id) > 0)
+                return BadRequest(new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.NameOccupied
+                });
+
+            var chartAsset = new ChartAssetSubmission
+            {
+                ChartSubmissionId = id,
+                Type = dto.Type,
+                Name = dto.Name,
+                File = (await fileStorageService.Upload<ChartAsset>(
+                    chartSubmission.Title ?? (chartSubmission.SongId != null
+                        ? (await songRepository.GetSongAsync(chartSubmission.SongId.Value)).Title
+                        : (await songSubmissionRepository.GetSongSubmissionAsync(chartSubmission.SongSubmissionId!
+                            .Value)).Title), dto.File)).Item1,
+                OwnerId = currentUser.Id,
+                DateCreated = DateTimeOffset.UtcNow,
+                DateUpdated = DateTimeOffset.UtcNow
+            };
+
+            if (!await chartAssetSubmissionRepository.CreateChartAssetSubmissionAsync(chartAsset))
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+
+            assetIds.Add(chartAsset.Id);
+        }
+
+        chartSubmission.Status = RequestStatus.Waiting;
+        chartSubmission.VolunteerStatus = RequestStatus.Waiting;
+        chartSubmission.DateUpdated = DateTimeOffset.UtcNow;
+
+        var owner = (await userRepository.GetUserByIdAsync(chartSubmission.OwnerId))!;
+        var (eventDivision, eventTeam, response) =
+            await CheckForEvent(chartSubmission, owner, EventTaskType.PreUpdateSubmission);
+        if (response != null) return response;
+
+        if (!await chartSubmissionRepository.UpdateChartSubmissionAsync(chartSubmission))
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+
+        if (notify) await feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
+
+        if (eventDivision != null && eventTeam != null)
+            await scriptService.RunEventTaskAsync(eventTeam.DivisionId, chartSubmission, eventTeam.Id, owner,
+                [EventTaskType.PostUpdateSubmission]);
+
+        return StatusCode(StatusCodes.Status201Created,
+            new ResponseDto<CreatedResponseDto<IEnumerable<Guid>>>
+            {
+                Status = ResponseStatus.Ok,
+                Code = ResponseCodes.Ok,
+                Data = new CreatedResponseDto<IEnumerable<Guid>> { Id = assetIds }
             });
     }
 
