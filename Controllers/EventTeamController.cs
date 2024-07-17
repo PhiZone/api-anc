@@ -245,7 +245,7 @@ public class EventTeamController(
     }
 
     /// <summary>
-    ///     Retrieves reserved fields of a specific event team.
+    ///     Retrieves reserved fields of a specified event team.
     /// </summary>
     /// <param name="teamId">An event team's ID.</param>
     /// <returns>An array of reserved fields.</returns>

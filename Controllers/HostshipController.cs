@@ -317,7 +317,7 @@ public class HostshipController(
     }
 
     /// <summary>
-    ///     Retrieves details of the specified invitation.
+    ///     Retrieves details of a specified invitation.
     /// </summary>
     /// <param name="id">An invite code.</param>
     /// <returns>Details of an invitation.</returns>

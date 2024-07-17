@@ -1417,7 +1417,7 @@ public class ChartController(
     }
 
     /// <summary>
-    ///     Retrieves the leaderboard of a specific chart.
+    ///     Retrieves the leaderboard of a specified chart.
     /// </summary>
     /// <param name="id">A chart's ID.</param>
     /// <returns>The leaderboard (an array of records).</returns>

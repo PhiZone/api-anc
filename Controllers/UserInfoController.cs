@@ -83,7 +83,7 @@ public class UserInfoController(
     }
 
     /// <summary>
-    ///     Binds a user to an account of the specified authentication provider.
+    ///     Binds a user to an account on a specified authentication provider.
     /// </summary>
     /// <returns>An empty body.</returns>
     /// <response code="204">Returns an empty body.</response>
@@ -219,7 +219,7 @@ public class UserInfoController(
     }
 
     /// <summary>
-    ///     Unbinds a user from an account of the specified authentication provider.
+    ///     Unbinds a user from an account on a specified authentication provider.
     /// </summary>
     /// <returns>An empty body.</returns>
     /// <response code="204">Returns an empty body.</response>

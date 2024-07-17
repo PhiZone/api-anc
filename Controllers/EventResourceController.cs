@@ -226,7 +226,7 @@ public class EventResourceController(
     }
 
     /// <summary>
-    ///     Retrieves reserved fields of a specific event resource.
+    ///     Retrieves reserved fields of a specified event resource.
     /// </summary>
     /// <param name="divisionId">An event division's ID.</param>
     /// <param name="resourceId">A resource's ID.</param>
@@ -285,7 +285,7 @@ public class EventResourceController(
     }
 
     /// <summary>
-    ///     Updates a specific reserved field of the specified event resource.
+    ///     Updates a specific reserved field of a specified event resource.
     /// </summary>
     /// <param name="divisionId">An event division's ID.</param>
     /// <param name="resourceId">A resource's ID.</param>

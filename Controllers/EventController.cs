@@ -143,7 +143,7 @@ public class EventController(
     }
 
     /// <summary>
-    ///     Retrieves divisions of a specific event.
+    ///     Retrieves divisions of a specified event.
     /// </summary>
     /// <returns>An array of event divisions.</returns>
     /// <response code="200">Returns an array of event divisions.</response>

@@ -346,7 +346,7 @@ public class UserController(
     }
 
     /// <summary>
-    ///     Creates a new user using the specified auth provider.
+    ///     Creates a new user using a specified auth provider.
     /// </summary>
     /// <param name="dto">
     ///     Language, Region, Gender (optional), Biography (optional),

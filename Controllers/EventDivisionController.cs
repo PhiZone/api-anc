@@ -157,7 +157,7 @@ public class EventDivisionController(
     }
 
     /// <summary>
-    ///     Retrieves song prompts of a specific event division.
+    ///     Retrieves song prompts of a specified event division.
     /// </summary>
     /// <param name="id">An event division's ID.</param>
     /// <returns>An array of songs.</returns>
@@ -238,7 +238,7 @@ public class EventDivisionController(
     }
 
     /// <summary>
-    ///     Retrieves chart prompts of a specific event division.
+    ///     Retrieves chart prompts of a specified event division.
     /// </summary>
     /// <param name="id">An event division's ID.</param>
     /// <returns>An array of charts.</returns>
@@ -319,7 +319,7 @@ public class EventDivisionController(
     }
 
     /// <summary>
-    ///     Retrieves tags of a specific event division.
+    ///     Retrieves tags of a specified event division.
     /// </summary>
     /// <param name="id">An event division's ID.</param>
     /// <returns>An array of tags.</returns>
@@ -393,7 +393,7 @@ public class EventDivisionController(
     }
 
     /// <summary>
-    ///     Retrieves song entries of a specific event division. Note that the search string and authorship-related filters are
+    ///     Retrieves song entries of a specified event division. Note that the search string and authorship-related filters are
     ///     disabled for divisions that require anonymization.
     /// </summary>
     /// <param name="id">An event division's ID.</param>
@@ -473,7 +473,7 @@ public class EventDivisionController(
     }
 
     /// <summary>
-    ///     Retrieves chart entries of a specific event division. Note that the search string and authorship-related filters
+    ///     Retrieves chart entries of a specified event division. Note that the search string and authorship-related filters
     ///     are disabled for divisions that require anonymization.
     /// </summary>
     /// <param name="id">An event division's ID.</param>
@@ -553,7 +553,7 @@ public class EventDivisionController(
     }
 
     /// <summary>
-    ///     Retrieves record entries of a specific event division. Note that the search string and authorship-related filters
+    ///     Retrieves record entries of a specified event division. Note that the search string and authorship-related filters
     ///     are disabled for divisions that require anonymization.
     /// </summary>
     /// <param name="id">An event division's ID.</param>
@@ -626,7 +626,7 @@ public class EventDivisionController(
     }
 
     /// <summary>
-    ///     Retrieves the leaderboard of a specific event division.
+    ///     Retrieves the leaderboard of a specified event division.
     /// </summary>
     /// <param name="id">An event division's ID.</param>
     /// <returns>The leaderboard (an array of event teams).</returns>
@@ -704,7 +704,7 @@ public class EventDivisionController(
     }
 
     /// <summary>
-    ///     Retrieves tasks of a specific event division.
+    ///     Retrieves tasks of a specified event division.
     /// </summary>
     /// <param name="id">An event division's ID.</param>
     /// <returns>An array of event tasks.</returns>
@@ -773,7 +773,7 @@ public class EventDivisionController(
     }
 
     /// <summary>
-    ///     Retrieves reserved fields of a specific event division.
+    ///     Retrieves reserved fields of a specified event division.
     /// </summary>
     /// <param name="id">An event division's ID.</param>
     /// <returns>An array of reserved fields.</returns>
