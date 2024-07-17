@@ -130,8 +130,8 @@ public class EventController(
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
         var eventEntity = await eventRepository.GetEventAsync(id, currentUser?.Id);
-        if ((currentUser == null || !eventEntity.Hosts.Contains(currentUser) ||
-             !resourceService.HasPermission(currentUser, UserRole.Administrator)) &&
+        if ((currentUser == null || !(eventEntity.Hostships.Any(e => e.UserId == currentUser.Id) &&
+                                      resourceService.HasPermission(currentUser, UserRole.Administrator))) &&
             eventEntity.DateUnveiled >= DateTimeOffset.UtcNow)
             return NotFound(new ResponseDto<object>
             {
@@ -371,7 +371,8 @@ public class EventController(
         var eventEntity = await eventRepository.GetEventAsync(id);
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!resourceService.HasPermission(currentUser, UserRole.Administrator))
+        if (!(resourceService.HasPermission(currentUser, UserRole.Administrator) ||
+              currentUser.Id == eventEntity.OwnerId))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
