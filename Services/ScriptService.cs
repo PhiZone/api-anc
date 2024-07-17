@@ -170,7 +170,7 @@ public class ScriptService(IServiceProvider serviceProvider, ILogger<ScriptServi
 
             var eventTaskScheduler = scope.ServiceProvider.GetRequiredService<EventTaskScheduler>();
             eventTaskScheduler.ImplicitlySchedule(task, target, teamId, currentUser,
-                DateTimeOffset.UtcNow.AddMilliseconds(100), true);
+                DateTimeOffset.UtcNow.AddMilliseconds(10), true);
         }
 
         return null;

@@ -446,7 +446,7 @@ public class TagController(
             DivisionId = dto.DivisionId,
             ResourceId = tag.Id,
             TagId = tag.Id,
-            Type = dto.Type,
+            Type = EventResourceType.Tag,
             Label = dto.Label,
             Description = dto.Description,
             IsAnonymous = dto.IsAnonymous,

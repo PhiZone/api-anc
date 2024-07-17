@@ -910,7 +910,7 @@ public class RecordController(
             DivisionId = dto.DivisionId,
             ResourceId = record.Id,
             RecordId = record.Id,
-            Type = dto.Type,
+            Type = EventResourceType.Entry,
             Label = dto.Label,
             Description = dto.Description,
             IsAnonymous = dto.IsAnonymous,
