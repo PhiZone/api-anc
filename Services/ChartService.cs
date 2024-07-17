@@ -23,7 +23,9 @@ public partial class ChartService(IFileStorageService fileStorageService, ILogge
 
     public async Task<(string, string, ChartFormat, int)?> Upload(string fileName, string filePath)
     {
-        var validationResult = await Validate(filePath);
+        using var reader = new StreamReader(filePath);
+        var content = await reader.ReadToEndAsync();
+        var validationResult = Validate(content);
         if (validationResult == null) return null;
         return await Upload(validationResult.Value, fileName);
     }
@@ -53,10 +55,8 @@ public partial class ChartService(IFileStorageService fileStorageService, ILogge
             validationResult.Item1, validationResult.Item3);
     }
 
-    public async Task<(ChartFormat, ChartFormatDto, int)?> Validate(string filePath)
+    public (ChartFormat, ChartFormatDto, int)? Validate(string content)
     {
-        using var reader = new StreamReader(filePath);
-        var content = await reader.ReadToEndAsync();
         var rpeJson = ReadRpe(content);
         if (rpeJson != null)
             return new ValueTuple<ChartFormat, ChartFormatDto, int>(ChartFormat.RpeJson, rpeJson, CountNotes(rpeJson));

@@ -15,7 +15,7 @@ public interface IChartService
     Task<(string, string, ChartFormat, int)> Upload((ChartFormat, ChartFormatDto, int) validationResult,
         string fileName, bool anonymizeChart = false, bool anonymizeSong = false);
 
-    Task<(ChartFormat, ChartFormatDto, int)?> Validate(string filePath);
+    (ChartFormat, ChartFormatDto, int)? Validate(string content);
 
     RpeJsonDto Standardize(RpeJsonDto dto, bool anonymizeChart = false, bool anonymizeSong = false);
 
