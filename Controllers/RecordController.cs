@@ -625,7 +625,7 @@ public class RecordController(
     }
 
     /// <summary>
-    ///     Retrieves likes from a specific record.
+    ///     Retrieves likes from a specified record.
     /// </summary>
     /// <param name="id">A record's ID.</param>
     /// <returns>An array of likes.</returns>
@@ -711,7 +711,7 @@ public class RecordController(
     }
 
     /// <summary>
-    ///     Removes the like from a specific record.
+    ///     Removes the like from a specified record.
     /// </summary>
     /// <param name="id">A record's ID.</param>
     /// <returns>An empty body.</returns>
@@ -751,7 +751,7 @@ public class RecordController(
     }
 
     /// <summary>
-    ///     Retrieves comments from a specific record.
+    ///     Retrieves comments from a specified record.
     /// </summary>
     /// <param name="id">A record's ID.</param>
     /// <returns>An array of comments.</returns>

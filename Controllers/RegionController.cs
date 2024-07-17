@@ -141,7 +141,7 @@ public class RegionController(
     }
 
     /// <summary>
-    ///     Retrieves users from a specific region.
+    ///     Retrieves users from a specified region.
     /// </summary>
     /// <param name="code">A region's code</param>
     /// <response code="200">Returns an array of users.</response>
@@ -184,7 +184,7 @@ public class RegionController(
     }
 
     /// <summary>
-    ///     Retrieves users from a specific region by its ID.
+    ///     Retrieves users from a specified region by its ID.
     /// </summary>
     /// <param name="id">A region's ID.</param>
     /// <returns>An array of users.</returns>

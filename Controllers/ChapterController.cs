@@ -349,7 +349,7 @@ public class ChapterController(
     }
 
     /// <summary>
-    ///     Retrieves songs from a specific chapter.
+    ///     Retrieves songs from a specified chapter.
     /// </summary>
     /// <param name="id">A chapter's ID.</param>
     /// <returns>An array of songs.</returns>
@@ -396,7 +396,7 @@ public class ChapterController(
     }
 
     /// <summary>
-    ///     Retrieves likes from a specific chapter.
+    ///     Retrieves likes from a specified chapter.
     /// </summary>
     /// <param name="id">A chapter's ID.</param>
     /// <returns>An array of likes.</returns>
@@ -494,7 +494,7 @@ public class ChapterController(
     }
 
     /// <summary>
-    ///     Removes the like from a specific chapter.
+    ///     Removes the like from a specified chapter.
     /// </summary>
     /// <param name="id">A chapter's ID.</param>
     /// <returns>An empty body.</returns>
@@ -533,7 +533,7 @@ public class ChapterController(
     }
 
     /// <summary>
-    ///     Retrieves comments from a specific chapter.
+    ///     Retrieves comments from a specified chapter.
     /// </summary>
     /// <param name="id">A chapter's ID.</param>
     /// <returns>An array of comments.</returns>

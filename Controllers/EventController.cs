@@ -439,7 +439,7 @@ public class EventController(
     }
 
     /// <summary>
-    ///     Retrieves likes from a specific event.
+    ///     Retrieves likes from a specified event.
     /// </summary>
     /// <param name="id">An event's ID.</param>
     /// <returns>An array of likes.</returns>
@@ -519,7 +519,7 @@ public class EventController(
     }
 
     /// <summary>
-    ///     Removes the like from a specific event.
+    ///     Removes the like from a specified event.
     /// </summary>
     /// <param name="id">An event's ID.</param>
     /// <returns>An empty body.</returns>
@@ -553,7 +553,7 @@ public class EventController(
     }
 
     /// <summary>
-    ///     Retrieves comments from a specific event.
+    ///     Retrieves comments from a specified event.
     /// </summary>
     /// <param name="id">An event's ID.</param>
     /// <returns>An array of comments.</returns>

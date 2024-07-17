@@ -310,7 +310,7 @@ public class TagController(
     }
 
     /// <summary>
-    ///     Retrieves songs from a specific tag.
+    ///     Retrieves songs from a specified tag.
     /// </summary>
     /// <param name="id">A tag's ID.</param>
     /// <returns>An array of songs.</returns>
@@ -353,7 +353,7 @@ public class TagController(
     }
 
     /// <summary>
-    ///     Retrieves charts from a specific tag.
+    ///     Retrieves charts from a specified tag.
     /// </summary>
     /// <param name="id">A tag's ID.</param>
     /// <returns>An array of charts.</returns>

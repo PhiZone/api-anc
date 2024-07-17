@@ -1160,7 +1160,7 @@ public class EventDivisionController(
     }
 
     /// <summary>
-    ///     Retrieves likes from a specific event division.
+    ///     Retrieves likes from a specified event division.
     /// </summary>
     /// <param name="id">An event division's ID.</param>
     /// <returns>An array of likes.</returns>
@@ -1250,7 +1250,7 @@ public class EventDivisionController(
     }
 
     /// <summary>
-    ///     Removes the like from a specific event division.
+    ///     Removes the like from a specified event division.
     /// </summary>
     /// <param name="id">An event division's ID.</param>
     /// <returns>An empty body.</returns>
@@ -1294,7 +1294,7 @@ public class EventDivisionController(
     }
 
     /// <summary>
-    ///     Retrieves comments from a specific event division.
+    ///     Retrieves comments from a specified event division.
     /// </summary>
     /// <param name="id">An event division's ID.</param>
     /// <returns>An array of comments.</returns>

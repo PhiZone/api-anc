@@ -856,7 +856,7 @@ public class EventTeamController(
     }
 
     /// <summary>
-    ///     Retrieves likes from a specific event team.
+    ///     Retrieves likes from a specified event team.
     /// </summary>
     /// <param name="id">An event team's ID.</param>
     /// <returns>An array of likes.</returns>
@@ -964,7 +964,7 @@ public class EventTeamController(
     }
 
     /// <summary>
-    ///     Removes the like from a specific event team.
+    ///     Removes the like from a specified event team.
     /// </summary>
     /// <param name="id">An event team's ID.</param>
     /// <returns>An empty body.</returns>

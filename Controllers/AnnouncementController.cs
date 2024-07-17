@@ -292,7 +292,7 @@ public class AnnouncementController(
     }
 
     /// <summary>
-    ///     Retrieves likes from a specific announcement.
+    ///     Retrieves likes from a specified announcement.
     /// </summary>
     /// <param name="id">An announcement's ID.</param>
     /// <returns>An array of likes.</returns>
@@ -372,7 +372,7 @@ public class AnnouncementController(
     }
 
     /// <summary>
-    ///     Removes the like from a specific announcement.
+    ///     Removes the like from a specified announcement.
     /// </summary>
     /// <param name="id">An announcement's ID.</param>
     /// <returns>An empty body.</returns>
@@ -406,7 +406,7 @@ public class AnnouncementController(
     }
 
     /// <summary>
-    ///     Retrieves comments from a specific announcement.
+    ///     Retrieves comments from a specified announcement.
     /// </summary>
     /// <param name="id">An announcement's ID.</param>
     /// <returns>An array of comments.</returns>

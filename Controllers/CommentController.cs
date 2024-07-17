@@ -154,7 +154,7 @@ public class CommentController(
     }
 
     /// <summary>
-    ///     Retrieves replies from a specific comment.
+    ///     Retrieves replies from a specified comment.
     /// </summary>
     /// <param name="id">A comment's ID.</param>
     /// <returns>An array of replies.</returns>
@@ -273,7 +273,7 @@ public class CommentController(
     }
 
     /// <summary>
-    ///     Retrieves likes from a specific comment.
+    ///     Retrieves likes from a specified comment.
     /// </summary>
     /// <param name="id">A comment's ID.</param>
     /// <returns>An array of likes.</returns>
@@ -359,7 +359,7 @@ public class CommentController(
     }
 
     /// <summary>
-    ///     Removes the like from a specific comment.
+    ///     Removes the like from a specified comment.
     /// </summary>
     /// <param name="id">A comment's ID.</param>
     /// <returns>An empty body.</returns>

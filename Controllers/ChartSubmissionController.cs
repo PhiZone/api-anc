@@ -1408,7 +1408,7 @@ public class ChartSubmissionController(
     }
 
     /// <summary>
-    ///     Retrieves votes from a specific chart submission.
+    ///     Retrieves votes from a specified chart submission.
     /// </summary>
     /// <param name="id">A chart submission's ID.</param>
     /// <returns>An array of votes.</returns>
@@ -1508,7 +1508,7 @@ public class ChartSubmissionController(
     }
 
     /// <summary>
-    ///     Removes the vote from a specific chart submission.
+    ///     Removes the vote from a specified chart submission.
     /// </summary>
     /// <param name="id">A chart submission's ID.</param>
     /// <returns>An empty body.</returns>

@@ -998,7 +998,7 @@ public class SongController(
     }
 
     /// <summary>
-    ///     Retrieves charts from a specific song.
+    ///     Retrieves charts from a specified song.
     /// </summary>
     /// <param name="id">A song's ID.</param>
     /// <returns>An array of charts.</returns>
@@ -1043,7 +1043,7 @@ public class SongController(
     }
 
     /// <summary>
-    ///     Retrieves likes from a specific song.
+    ///     Retrieves likes from a specified song.
     /// </summary>
     /// <param name="id">A song's ID.</param>
     /// <returns>An array of likes.</returns>
@@ -1139,7 +1139,7 @@ public class SongController(
     }
 
     /// <summary>
-    ///     Removes the like from a specific song.
+    ///     Removes the like from a specified song.
     /// </summary>
     /// <param name="id">A song's ID.</param>
     /// <returns>An empty body.</returns>
@@ -1180,7 +1180,7 @@ public class SongController(
     }
 
     /// <summary>
-    ///     Retrieves comments from a specific song.
+    ///     Retrieves comments from a specified song.
     /// </summary>
     /// <param name="id">A song's ID.</param>
     /// <returns>An array of comments.</returns>

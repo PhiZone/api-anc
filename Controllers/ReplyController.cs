@@ -150,7 +150,7 @@ public class ReplyController(
     }
 
     /// <summary>
-    ///     Retrieves likes from a specific reply.
+    ///     Retrieves likes from a specified reply.
     /// </summary>
     /// <param name="id">A reply's ID.</param>
     /// <returns>An array of likes.</returns>
@@ -226,7 +226,7 @@ public class ReplyController(
     }
 
     /// <summary>
-    ///     Removes the like from a specific reply.
+    ///     Removes the like from a specified reply.
     /// </summary>
     /// <param name="id">A reply's ID.</param>
     /// <returns>An empty body.</returns>

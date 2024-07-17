@@ -1497,7 +1497,7 @@ public class ChartController(
     }
 
     /// <summary>
-    ///     Retrieves likes from a specific chart.
+    ///     Retrieves likes from a specified chart.
     /// </summary>
     /// <param name="id">A chart's ID.</param>
     /// <returns>An array of likes.</returns>
@@ -1599,7 +1599,7 @@ public class ChartController(
     }
 
     /// <summary>
-    ///     Removes the like from a specific chart.
+    ///     Removes the like from a specified chart.
     /// </summary>
     /// <param name="id">A chart's ID.</param>
     /// <returns>An empty body.</returns>
@@ -1645,7 +1645,7 @@ public class ChartController(
     }
 
     /// <summary>
-    ///     Retrieves comments from a specific chart.
+    ///     Retrieves comments from a specified chart.
     /// </summary>
     /// <param name="id">A chart's ID.</param>
     /// <returns>An array of comments.</returns>
@@ -1771,7 +1771,7 @@ public class ChartController(
     }
 
     /// <summary>
-    ///     Retrieves votes from a specific chart.
+    ///     Retrieves votes from a specified chart.
     /// </summary>
     /// <param name="id">A chart's ID.</param>
     /// <returns>An array of votes.</returns>
@@ -1868,7 +1868,7 @@ public class ChartController(
     }
 
     /// <summary>
-    ///     Removes the vote from a specific chart.
+    ///     Removes the vote from a specified chart.
     /// </summary>
     /// <param name="id">A chart's ID.</param>
     /// <returns>An empty body.</returns>

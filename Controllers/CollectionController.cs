@@ -349,7 +349,7 @@ public class CollectionController(
     }
 
     /// <summary>
-    ///     Retrieves charts from a specific collection.
+    ///     Retrieves charts from a specified collection.
     /// </summary>
     /// <param name="id">A collection's ID.</param>
     /// <returns>An array of charts.</returns>
@@ -396,7 +396,7 @@ public class CollectionController(
     }
 
     /// <summary>
-    ///     Retrieves likes from a specific collection.
+    ///     Retrieves likes from a specified collection.
     /// </summary>
     /// <param name="id">A collection's ID.</param>
     /// <returns>An array of likes.</returns>
@@ -494,7 +494,7 @@ public class CollectionController(
     }
 
     /// <summary>
-    ///     Removes the like from a specific collection.
+    ///     Removes the like from a specified collection.
     /// </summary>
     /// <param name="id">A collection's ID.</param>
     /// <returns>An empty body.</returns>
@@ -533,7 +533,7 @@ public class CollectionController(
     }
 
     /// <summary>
-    ///     Retrieves comments from a specific collection.
+    ///     Retrieves comments from a specified collection.
     /// </summary>
     /// <param name="id">A collection's ID.</param>
     /// <returns>An array of comments.</returns>

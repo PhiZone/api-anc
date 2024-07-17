@@ -405,7 +405,7 @@ public class ApplicationController(
     }
 
     /// <summary>
-    ///     Retrieves likes from a specific application.
+    ///     Retrieves likes from a specified application.
     /// </summary>
     /// <param name="id">An application's ID.</param>
     /// <returns>An array of likes.</returns>
@@ -485,7 +485,7 @@ public class ApplicationController(
     }
 
     /// <summary>
-    ///     Removes the like from a specific application.
+    ///     Removes the like from a specified application.
     /// </summary>
     /// <param name="id">An application's ID.</param>
     /// <returns>An empty body.</returns>
@@ -519,7 +519,7 @@ public class ApplicationController(
     }
 
     /// <summary>
-    ///     Retrieves comments from a specific application.
+    ///     Retrieves comments from a specified application.
     /// </summary>
     /// <param name="id">An application's ID.</param>
     /// <returns>An array of comments.</returns>
