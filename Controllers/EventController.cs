@@ -130,7 +130,7 @@ public class EventController(
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
         var eventEntity = await eventRepository.GetEventAsync(id, currentUser?.Id);
-        if ((currentUser == null || !(eventEntity.Hostships.Any(e => e.UserId == currentUser.Id) &&
+        if ((currentUser == null || !(eventEntity.Hostships.Any(e => e.UserId == currentUser.Id) ||
                                       resourceService.HasPermission(currentUser, UserRole.Administrator))) &&
             eventEntity.DateUnveiled >= DateTimeOffset.UtcNow)
             return NotFound(new ResponseDto<object>
