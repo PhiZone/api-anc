@@ -85,14 +85,13 @@ public class EventTeamController(
             var idList = result.Hits.Select(item => item.Id).ToList();
             eventTeams =
                 (await eventTeamRepository.GetEventTeamsAsync(predicate: e => idList.Contains(e.Id),
-                    currentUserId: currentUser?.Id)).OrderBy(e =>
-                    idList.IndexOf(e.Id));
+                    currentUserId: currentUser?.Id)).OrderBy(e => idList.IndexOf(e.Id));
             total = result.TotalHits;
         }
         else
         {
-            eventTeams = await eventTeamRepository.GetEventTeamsAsync(dto.Order, dto.Desc, position,
-                dto.PerPage, predicateExpr, currentUser?.Id);
+            eventTeams = await eventTeamRepository.GetEventTeamsAsync(dto.Order, dto.Desc, position, dto.PerPage,
+                predicateExpr, currentUser?.Id);
             total = await eventTeamRepository.CountEventTeamsAsync(predicateExpr);
         }
 
@@ -458,16 +457,20 @@ public class EventTeamController(
                 Message = "The claimed number of submissions is not within the allowed range."
             });
 
-        var iconUrl = dto.Icon != null
-            ? (await fileStorageService.UploadImage<EventTeam>(dto.Name, dto.Icon, (1, 1))).Item1
-            : currentUser.Avatar;
+        var iconUrl = currentUser.Avatar;
+        if (dto.Icon != null)
+        {
+            iconUrl = (await fileStorageService.UploadImage<EventTeam>(dto.Name, dto.Icon, (1, 1))).Item1;
+            await fileStorageService.SendUserInput(iconUrl, "Icon", Request, currentUser);
+        }
 
         var eventTeam = new EventTeam
         {
             Name = dto.Name,
             Icon = iconUrl,
             Description = dto.Description,
-            Status = ParticipationStatus.Registered,
+            Status =
+                dto.ClaimedParticipantCount == 1 ? ParticipationStatus.Prepared : ParticipationStatus.Registered,
             ClaimedParticipantCount = dto.ClaimedParticipantCount,
             ClaimedSubmissionCount = dto.ClaimedSubmissionCount,
             DivisionId = dto.DivisionId,
