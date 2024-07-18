@@ -393,7 +393,8 @@ public class EventDivisionController(
     }
 
     /// <summary>
-    ///     Retrieves song entries of a specified event division. Note that the search string and authorship-related filters are
+    ///     Retrieves song entries of a specified event division. Note that the search string and authorship-related filters
+    ///     are
     ///     disabled for divisions that require anonymization.
     /// </summary>
     /// <param name="id">An event division's ID.</param>

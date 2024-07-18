@@ -64,7 +64,8 @@ public class EventTaskScheduler(IServiceProvider serviceProvider, ILogger<EventT
             task.DateExecuted.Value.LocalDateTime.ToString("yyyy-MM-dd HH:mm:ss"));
     }
 
-    public void ImplicitlySchedule(EventTask task, object? target, Guid? teamId, User? user, DateTimeOffset dateExecuted,
+    public void ImplicitlySchedule(EventTask task, object? target, Guid? teamId, User? user,
+        DateTimeOffset dateExecuted,
         bool replace = false)
     {
         if (_schedules.TryGetValue(task.Id, out var schedule))
@@ -111,6 +112,6 @@ public class EventTaskScheduler(IServiceProvider serviceProvider, ILogger<EventT
         var (id, target, teamId, user) = (ValueTuple<Guid, object?, Guid?, User?>)state!;
         await using var scope = serviceProvider.CreateAsyncScope();
         var scriptService = scope.ServiceProvider.GetRequiredService<IScriptService>();
-        await scriptService.RunAsync(id, target, teamId, user, cancellationToken: _cancellationToken);
+        await scriptService.RunAsync(id, target, teamId, user, _cancellationToken);
     }
 }
