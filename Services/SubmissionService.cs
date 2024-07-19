@@ -84,7 +84,10 @@ public class SubmissionService(
             if (eventDivision != null && eventTeam != null)
             {
                 await CreateEventResource(eventDivision, eventTeam, song, owner);
-                broadcast = broadcast && !eventDivision.Anonymization;
+                broadcast = broadcast && !eventDivision.Anonymization && await chartRepository.CountChartsAsync(
+                    predicate: f => f.EventPresences.Any(g =>
+                        g.Type == EventResourceType.Entry && g.IsAnonymous != null && g.IsAnonymous.Value &&
+                        g.Team != null && g.Team.Participants.Any(h => h.Id == song.OwnerId))) == 0;
             }
 
             if (broadcast)
@@ -261,7 +264,7 @@ public class SubmissionService(
             await chartRepository.CreateChartAsync(chart);
 
             await tagRepository.CreateTagsAsync(chartSubmission.Tags, chart);
-            
+
             chartSubmission.RepresentationId = chart.Id;
             await chartSubmissionRepository.UpdateChartSubmissionAsync(chartSubmission);
 
