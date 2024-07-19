@@ -66,6 +66,7 @@ public class MappingProfiles : Profile
         CreateMap<Hostship, HostshipRequestDto>();
         CreateMap<EventResource, EventResourceDto>();
         CreateMap<EventResource, EventResourceRequestDto>();
+        CreateMap<Participation, ParticipationUpdateDto>();
         CreateMap<PlayConfiguration, PlayConfigurationResponseDto>();
         CreateMap<PlayConfigurationRequestDto, PlayConfiguration>();
         CreateMap<PlayConfiguration, PlayConfigurationRequestDto>();
