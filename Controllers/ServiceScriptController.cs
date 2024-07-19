@@ -63,8 +63,8 @@ public class ServiceScriptController(
             var result = await meilisearchService.SearchAsync<ServiceScript>(dto.Search, dto.PerPage, dto.Page);
             var idList = result.Hits.Select(item => item.Id).ToList();
             serviceScripts = (await serviceScriptRepository.GetServiceScriptsAsync(
-                predicate: e => idList.Contains(e.Id),
-                currentUserId: currentUser?.Id)).OrderBy(e => idList.IndexOf(e.Id));
+                predicate: e => idList.Contains(e.Id), currentUserId: currentUser?.Id)).OrderBy(e =>
+                idList.IndexOf(e.Id));
             total = result.TotalHits;
         }
         else
@@ -258,6 +258,7 @@ public class ServiceScriptController(
     [HttpPost("{id:guid}/use")]
     [Consumes("application/json")]
     [Produces("application/json")]
+    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<ServiceResponseDto>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
