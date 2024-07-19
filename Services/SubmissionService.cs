@@ -70,6 +70,8 @@ public class SubmissionService(
             };
             await songRepository.CreateSongAsync(song);
 
+            await tagRepository.CreateTagsAsync(songSubmission.Tags, song);
+
             foreach (var chartSubmission in await chartSubmissionRepository.GetChartSubmissionsAsync(predicate: e =>
                          e.SongSubmissionId == songSubmission.Id && e.Status == RequestStatus.Approved))
                 await ApproveChart(chartSubmission, song.Id);
@@ -130,6 +132,8 @@ public class SubmissionService(
 
             await songRepository.UpdateSongAsync(song);
 
+            await tagRepository.CreateTagsAsync(songSubmission.Tags, song);
+
             var existingEventResources =
                 await eventResourceRepository.GetEventResourcesAsync(predicate: e => e.ResourceId == song.Id);
 
@@ -148,8 +152,6 @@ public class SubmissionService(
                         [EventTaskType.OnApproval]);
             }
         }
-
-        await tagRepository.CreateTagsAsync(songSubmission.Tags, song);
 
         await notificationService.Notify(songSubmission.Owner, null, NotificationType.System,
             "song-submission-approval",
@@ -257,6 +259,9 @@ public class SubmissionService(
                 DateUpdated = DateTimeOffset.UtcNow
             };
             await chartRepository.CreateChartAsync(chart);
+
+            await tagRepository.CreateTagsAsync(chartSubmission.Tags, chart);
+            
             chartSubmission.RepresentationId = chart.Id;
             await chartSubmissionRepository.UpdateChartSubmissionAsync(chartSubmission);
 
@@ -311,6 +316,8 @@ public class SubmissionService(
             chart.DateUpdated = DateTimeOffset.UtcNow;
             await chartRepository.UpdateChartAsync(chart);
 
+            await tagRepository.CreateTagsAsync(chartSubmission.Tags, chart);
+
             var existingEventResources =
                 await eventResourceRepository.GetEventResourcesAsync(predicate: e => e.ResourceId == chart.Id);
 
@@ -339,8 +346,6 @@ public class SubmissionService(
 
         foreach (var submission in assetSubmissions) await ApproveChartAsset(submission, chart.Id);
         foreach (var asset in assetsToDelete) await chartAssetRepository.RemoveChartAssetAsync(asset.Id);
-
-        await tagRepository.CreateTagsAsync(chartSubmission.Tags, chart);
 
         await notificationService.Notify(owner, null, NotificationType.System, "chart-submission-approval",
             new Dictionary<string, string>
