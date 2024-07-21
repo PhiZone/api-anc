@@ -161,7 +161,7 @@ public class ScriptService(IServiceProvider serviceProvider, ILogger<ScriptServi
     {
         await using var scope = serviceProvider.CreateAsyncScope();
         var eventTaskRepository = scope.ServiceProvider.GetRequiredService<IEventTaskRepository>();
-        var i = 0;
+        var i = 1;
         foreach (var task in await eventTaskRepository.GetEventTasksAsync(["DateUpdated"],
                      predicate: e => e.DivisionId == divisionId && types.Contains(e.Type)))
         {
@@ -174,7 +174,7 @@ public class ScriptService(IServiceProvider serviceProvider, ILogger<ScriptServi
 
             var eventTaskScheduler = scope.ServiceProvider.GetRequiredService<EventTaskScheduler>();
             eventTaskScheduler.ImplicitlySchedule(task, target, teamId, currentUser,
-                DateTimeOffset.UtcNow.AddMilliseconds(10 * i), true);
+                DateTimeOffset.UtcNow.AddSeconds(1 * i), true);
             i++;
         }
 

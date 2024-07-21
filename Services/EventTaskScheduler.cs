@@ -82,7 +82,7 @@ public class EventTaskScheduler(IServiceProvider serviceProvider, ILogger<EventT
         }
 
         var delay = dateExecuted - DateTimeOffset.UtcNow;
-        if (delay.CompareTo(-TimeSpan.FromSeconds(1)) < 0) return;
+        if (delay.CompareTo(-TimeSpan.FromSeconds(3)) < 0) return;
 
         _schedules.Add(task.Id,
             new Timer(ImplicitlyExecute, (task.Id, target, teamId, user), delay, Timeout.InfiniteTimeSpan));
