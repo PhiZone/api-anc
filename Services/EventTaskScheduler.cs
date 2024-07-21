@@ -82,10 +82,13 @@ public class EventTaskScheduler(IServiceProvider serviceProvider, ILogger<EventT
         }
 
         var delay = dateExecuted - DateTimeOffset.UtcNow;
-        if (delay.CompareTo(TimeSpan.Zero) < 0) return;
+        if (delay.CompareTo(-TimeSpan.FromSeconds(1)) < 0) return;
 
         _schedules.Add(task.Id,
             new Timer(ImplicitlyExecute, (task.Id, target, teamId, user), delay, Timeout.InfiniteTimeSpan));
+        logger.LogInformation(LogEvents.SchedulerInfo, "[{Now}] Successfully implicitly scheduled Task \"{Name}\" at {Date}",
+            DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), task.Name,
+            dateExecuted.LocalDateTime.ToString("yyyy-MM-dd HH:mm:ss"));
     }
 
     public void Cancel(Guid taskId)
