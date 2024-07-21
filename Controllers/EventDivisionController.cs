@@ -199,7 +199,9 @@ public class EventDivisionController(
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser,
-            e => e.EventPresences.Any(f => f.DivisionId == id));
+            e => e.EventPresences.Any(f => f.DivisionId == id),
+            currentUser != null && eventEntity.Hostships.Any(f =>
+                f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(HP.Gen(HP.Retrieve, HP.Resource)))));
         IEnumerable<Song> songs;
         int total;
         if (dto.Search != null)
@@ -280,7 +282,9 @@ public class EventDivisionController(
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser,
-            e => e.EventPresences.Any(f => f.DivisionId == id));
+            e => e.EventPresences.Any(f => f.DivisionId == id),
+            currentUser != null && eventEntity.Hostships.Any(f =>
+                f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(HP.Gen(HP.Retrieve, HP.Resource)))));
         IEnumerable<Chart> charts;
         int total;
         if (dto.Search != null)
@@ -355,7 +359,9 @@ public class EventDivisionController(
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser,
-            e => e.EventPresences.Any(f => f.DivisionId == id));
+            e => e.EventPresences.Any(f => f.DivisionId == id),
+            currentUser != null && eventEntity.Hostships.Any(f =>
+                f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(HP.Gen(HP.Retrieve, HP.Resource)))));
         IEnumerable<Tag> tags;
         int total;
         if (dto.Search != null)
@@ -446,7 +452,9 @@ public class EventDivisionController(
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser,
-            e => e.EventPresences.Any(f => f.DivisionId == id));
+            e => e.EventPresences.Any(f => f.DivisionId == id),
+            currentUser != null && eventEntity.Hostships.Any(f =>
+                f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(HP.Gen(HP.Retrieve, HP.Resource)))));
         IEnumerable<Song> songs = await songRepository.GetSongsAsync(dto.Order, dto.Desc, position, dto.PerPage,
             predicateExpr, currentUser?.Id, true);
         var total = await songRepository.CountSongsAsync(predicateExpr, true);
@@ -526,7 +534,9 @@ public class EventDivisionController(
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser,
-            e => e.EventPresences.Any(f => f.DivisionId == id));
+            e => e.EventPresences.Any(f => f.DivisionId == id),
+            currentUser != null && eventEntity.Hostships.Any(f =>
+                f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(HP.Gen(HP.Retrieve, HP.Resource)))));
         IEnumerable<Chart> charts = await chartRepository.GetChartsAsync(dto.Order, dto.Desc, position, dto.PerPage,
             predicateExpr, currentUser?.Id, true);
         var total = await chartRepository.CountChartsAsync(predicateExpr, true);
@@ -599,7 +609,9 @@ public class EventDivisionController(
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser,
-            e => e.EventPresences.Any(f => f.DivisionId == id));
+            e => e.EventPresences.Any(f => f.DivisionId == id),
+            currentUser != null && eventEntity.Hostships.Any(f =>
+                f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(HP.Gen(HP.Retrieve, HP.Resource)))));
         IEnumerable<Record> records = await recordRepository.GetRecordsAsync(dto.Order, dto.Desc, position, dto.PerPage,
             predicateExpr, true, currentUser?.Id, true);
         var total = await recordRepository.CountRecordsAsync(predicateExpr, true);
@@ -740,7 +752,8 @@ public class EventDivisionController(
             dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
-        var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser, e => e.DivisionId == id);
+        var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser, e => e.DivisionId == id,
+            currentUser != null && eventEntity.Hostships.Any(f => f.UserId == currentUser.Id && f.IsAdmin));
         IEnumerable<EventTask> eventTasks;
         int total;
         if (dto.Search != null)
