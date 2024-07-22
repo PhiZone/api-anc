@@ -19,6 +19,7 @@ public class SubmissionService(
     IEventDivisionRepository eventDivisionRepository,
     IEventTeamRepository eventTeamRepository,
     IEventResourceRepository eventResourceRepository,
+    IChartService chartService,
     IScriptService scriptService,
     ITagRepository tagRepository,
     UserManager<User> userManager,
@@ -236,6 +237,23 @@ public class SubmissionService(
             mentions = result.Item2;
         }
 
+        var (eventDivision, eventTeam) = await GetEventInfo(chartSubmission);
+        if (eventDivision != null && eventTeam != null && eventDivision.Anonymization &&
+            chartSubmission.Format == ChartFormat.RpeJson)
+        {
+            using var response = await new HttpClient().GetAsync(chartSubmission.File);
+            response.EnsureSuccessStatusCode();
+            await using var stream = await response.Content.ReadAsStreamAsync();
+            using var reader = new StreamReader(stream);
+            var result = chartService.Validate(await reader.ReadToEndAsync());
+            if (result != null)
+            {
+                (chartSubmission.File, chartSubmission.FileChecksum, chartSubmission.Format,
+                    chartSubmission.NoteCount) = await chartService.Upload(result.Value,
+                    chartSubmission.Title ?? song.Title, true, song.IsOriginal);
+            }
+        }
+
         if (chartSubmission.RepresentationId == null)
         {
             chart = new Chart
@@ -269,7 +287,6 @@ public class SubmissionService(
             await chartSubmissionRepository.UpdateChartSubmissionAsync(chartSubmission);
 
             var broadcast = !song.IsHidden;
-            var (eventDivision, eventTeam) = await GetEventInfo(chartSubmission);
             if (eventDivision != null && eventTeam != null)
             {
                 await CreateEventResource(eventDivision, eventTeam, chart, owner);
@@ -324,7 +341,6 @@ public class SubmissionService(
             var existingEventResources =
                 await eventResourceRepository.GetEventResourcesAsync(predicate: e => e.ResourceId == chart.Id);
 
-            var (eventDivision, eventTeam) = await GetEventInfo(chartSubmission);
             if (eventDivision != null && eventTeam != null)
             {
                 foreach (var existingEventResource in
