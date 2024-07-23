@@ -599,7 +599,7 @@ public class ChartSubmissionController(
         if (eventTeam != null)
         {
             var firstFailure = await scriptService.RunEventTaskAsync(eventTeam.DivisionId, chartSubmission,
-                eventTeam.Id, owner, [EventTaskType.PreUpdateSubmission]);
+                eventTeam.Id, currentUser, [EventTaskType.PreUpdateSubmission]);
 
             if (firstFailure != null)
                 return BadRequest(new ResponseDto<object>
@@ -615,7 +615,7 @@ public class ChartSubmissionController(
         if (notify) await feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
 
         if (eventDivision != null && eventTeam != null)
-            await scriptService.RunEventTaskAsync(eventTeam.DivisionId, chartSubmission, eventTeam.Id, owner,
+            await scriptService.RunEventTaskAsync(eventTeam.DivisionId, chartSubmission, eventTeam.Id, currentUser,
                 [EventTaskType.PostUpdateSubmission]);
 
         return NoContent();
