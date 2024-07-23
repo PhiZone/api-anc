@@ -1175,9 +1175,9 @@ public class SongSubmissionController(
 
         if (firstFailure != null)
             return (eventDivision, eventTeam,
-                BadRequest(new ResponseDto<EventTaskResponseDto>
+                BadRequest(new ResponseDto<object>
                 {
-                    Status = ResponseStatus.ErrorWithData, Code = ResponseCodes.InvalidData, Data = firstFailure
+                    Status = firstFailure.Status, Code = firstFailure.Code, Message = firstFailure.Message
                 }));
 
         return (eventDivision, eventTeam, null);

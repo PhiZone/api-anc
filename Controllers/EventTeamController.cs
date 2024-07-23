@@ -482,10 +482,10 @@ public class EventTeamController(
             currentUser, [EventTaskType.PreRegistration, EventTaskType.PreParticipation]);
 
         if (firstFailure != null)
-            return BadRequest(new ResponseDto<EventTaskResponseDto>
-            {
-                Status = ResponseStatus.ErrorWithData, Code = ResponseCodes.InvalidData, Data = firstFailure
-            });
+            return BadRequest(new ResponseDto<object>
+                {
+                    Status = firstFailure.Status, Code = firstFailure.Code, Message = firstFailure.Message
+                });
 
         if (!await eventTeamRepository.CreateEventTeamAsync(eventTeam))
             return StatusCode(StatusCodes.Status500InternalServerError,
@@ -609,10 +609,10 @@ public class EventTeamController(
             currentUser, [EventTaskType.PreUpdateTeam]);
 
         if (firstFailure != null)
-            return BadRequest(new ResponseDto<EventTaskResponseDto>
-            {
-                Status = ResponseStatus.ErrorWithData, Code = ResponseCodes.InvalidData, Data = firstFailure
-            });
+            return BadRequest(new ResponseDto<object>
+                {
+                    Status = firstFailure.Status, Code = firstFailure.Code, Message = firstFailure.Message
+                });
 
         if (!await eventTeamRepository.UpdateEventTeamAsync(eventTeam))
             return StatusCode(StatusCodes.Status500InternalServerError,
@@ -688,10 +688,10 @@ public class EventTeamController(
             currentUser, [EventTaskType.PreUpdateTeam]);
 
         if (firstFailure != null)
-            return BadRequest(new ResponseDto<EventTaskResponseDto>
-            {
-                Status = ResponseStatus.ErrorWithData, Code = ResponseCodes.InvalidData, Data = firstFailure
-            });
+            return BadRequest(new ResponseDto<object>
+                {
+                    Status = firstFailure.Status, Code = firstFailure.Code, Message = firstFailure.Message
+                });
 
         if (!await eventTeamRepository.UpdateEventTeamAsync(eventTeam))
             return StatusCode(StatusCodes.Status500InternalServerError,
@@ -761,10 +761,10 @@ public class EventTeamController(
             currentUser, [EventTaskType.PreUpdateTeam]);
 
         if (firstFailure != null)
-            return BadRequest(new ResponseDto<EventTaskResponseDto>
-            {
-                Status = ResponseStatus.ErrorWithData, Code = ResponseCodes.InvalidData, Data = firstFailure
-            });
+            return BadRequest(new ResponseDto<object>
+                {
+                    Status = firstFailure.Status, Code = firstFailure.Code, Message = firstFailure.Message
+                });
 
         if (!await eventTeamRepository.UpdateEventTeamAsync(eventTeam))
             return StatusCode(StatusCodes.Status500InternalServerError,
@@ -1057,10 +1057,10 @@ public class EventTeamController(
             currentUser, [EventTaskType.PreInvitation]);
 
         if (firstFailure != null)
-            return BadRequest(new ResponseDto<EventTaskResponseDto>
-            {
-                Status = ResponseStatus.ErrorWithData, Code = ResponseCodes.InvalidData, Data = firstFailure
-            });
+            return BadRequest(new ResponseDto<object>
+                {
+                    Status = firstFailure.Status, Code = firstFailure.Code, Message = firstFailure.Message
+                });
 
         var db = redis.GetDatabase();
         string key, code;
@@ -1215,10 +1215,10 @@ public class EventTeamController(
             currentUser, [EventTaskType.PreParticipation]);
 
         if (firstFailure != null)
-            return BadRequest(new ResponseDto<EventTaskResponseDto>
-            {
-                Status = ResponseStatus.ErrorWithData, Code = ResponseCodes.InvalidData, Data = firstFailure
-            });
+            return BadRequest(new ResponseDto<object>
+                {
+                    Status = firstFailure.Status, Code = firstFailure.Code, Message = firstFailure.Message
+                });
 
         if (!await participationRepository.CreateParticipationAsync(participation))
             return StatusCode(StatusCodes.Status500InternalServerError,
@@ -1331,10 +1331,10 @@ public class EventTeamController(
             currentUser, [EventTaskType.PreUpdateParticipant]);
 
         if (firstFailure != null)
-            return BadRequest(new ResponseDto<EventTaskResponseDto>
-            {
-                Status = ResponseStatus.ErrorWithData, Code = ResponseCodes.InvalidData, Data = firstFailure
-            });
+            return BadRequest(new ResponseDto<object>
+                {
+                    Status = firstFailure.Status, Code = firstFailure.Code, Message = firstFailure.Message
+                });
 
         if (!await participationRepository.UpdateParticipationAsync(participation))
             return StatusCode(StatusCodes.Status500InternalServerError,

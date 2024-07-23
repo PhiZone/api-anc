@@ -296,9 +296,9 @@ public class RecordController(
                 [EventTaskType.PreSubmission]);
 
             if (firstFailure != null)
-                return BadRequest(new ResponseDto<EventTaskResponseDto>
+                return BadRequest(new ResponseDto<object>
                 {
-                    Status = ResponseStatus.ErrorWithData, Code = ResponseCodes.InvalidData, Data = firstFailure
+                    Status = firstFailure.Status, Code = firstFailure.Code, Message = firstFailure.Message
                 });
         }
 

@@ -8,7 +8,6 @@ using OpenIddict.Abstractions;
 using OpenIddict.Validation.AspNetCore;
 using PhiZoneApi.Configurations;
 using PhiZoneApi.Constants;
-using PhiZoneApi.Dtos.Deliverers;
 using PhiZoneApi.Dtos.Filters;
 using PhiZoneApi.Dtos.Requests;
 using PhiZoneApi.Dtos.Responses;
@@ -294,7 +293,8 @@ public class ChartSubmissionController(
             VolunteerStatus = RequestStatus.Waiting,
             AdmissionStatus =
                 song != null
-                    ? song.OwnerId == currentUser.Id || song.Accessibility == Accessibility.AllowAny
+                    ?
+                    song.OwnerId == currentUser.Id || song.Accessibility == Accessibility.AllowAny
                         ? RequestStatus.Approved
                         : RequestStatus.Waiting
                     : songSubmission!.OwnerId == currentUser.Id ||
@@ -312,9 +312,9 @@ public class ChartSubmissionController(
                 eventTeam.Id, currentUser, [EventTaskType.PreSubmission]);
 
             if (firstFailure != null)
-                return BadRequest(new ResponseDto<EventTaskResponseDto>
+                return BadRequest(new ResponseDto<object>
                 {
-                    Status = ResponseStatus.ErrorWithData, Code = ResponseCodes.InvalidData, Data = firstFailure
+                    Status = firstFailure.Status, Code = firstFailure.Code, Message = firstFailure.Message
                 });
         }
 
@@ -603,9 +603,9 @@ public class ChartSubmissionController(
                 eventTeam.Id, owner, [EventTaskType.PreUpdateSubmission]);
 
             if (firstFailure != null)
-                return BadRequest(new ResponseDto<EventTaskResponseDto>
+                return BadRequest(new ResponseDto<object>
                 {
-                    Status = ResponseStatus.ErrorWithData, Code = ResponseCodes.InvalidData, Data = firstFailure
+                    Status = firstFailure.Status, Code = firstFailure.Code, Message = firstFailure.Message
                 });
         }
 
@@ -1736,9 +1736,9 @@ public class ChartSubmissionController(
 
         if (firstFailure != null)
             return (eventDivision, eventTeam,
-                BadRequest(new ResponseDto<EventTaskResponseDto>
+                BadRequest(new ResponseDto<object>
                 {
-                    Status = ResponseStatus.ErrorWithData, Code = ResponseCodes.InvalidData, Data = firstFailure
+                    Status = firstFailure.Status, Code = firstFailure.Code, Message = firstFailure.Message
                 }));
 
         return (eventDivision, eventTeam, null);
