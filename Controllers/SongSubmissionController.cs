@@ -8,7 +8,6 @@ using OpenIddict.Abstractions;
 using OpenIddict.Validation.AspNetCore;
 using PhiZoneApi.Configurations;
 using PhiZoneApi.Constants;
-using PhiZoneApi.Dtos.Deliverers;
 using PhiZoneApi.Dtos.Filters;
 using PhiZoneApi.Dtos.Requests;
 using PhiZoneApi.Dtos.Responses;
@@ -471,6 +470,7 @@ public class SongSubmissionController(
                 songSubmission.FileChecksum = songSubmissionInfo.Value.Item2;
                 songSubmission.Duration = songSubmissionInfo.Value.Item3;
                 songSubmission.DateUpdated = DateTimeOffset.UtcNow;
+                songSubmission.Status = RequestStatus.Waiting;
 
                 if (songSubmission.PreviewEnd > songSubmission.Duration)
                     songSubmission.PreviewEnd = songSubmission.Duration.Value;
@@ -478,8 +478,6 @@ public class SongSubmissionController(
                 if (songSubmission.PreviewStart > songSubmission.PreviewEnd)
                     songSubmission.PreviewStart = TimeSpan.Zero;
             }
-
-            songSubmission.Status = RequestStatus.Waiting;
         }
 
         var (eventDivision, eventTeam, response) =
@@ -873,7 +871,8 @@ public class SongSubmissionController(
         {
             var eventDivision = eventDivisions.First();
             var eventTeams = await eventTeamRepository.GetEventTeamsAsync(predicate: e =>
-                e.DivisionId == eventDivision.Id && e.Participations.Any(f => f.ParticipantId == songSubmission.OwnerId));
+                e.DivisionId == eventDivision.Id &&
+                e.Participations.Any(f => f.ParticipantId == songSubmission.OwnerId));
 
             if (eventTeams.Count > 0)
             {

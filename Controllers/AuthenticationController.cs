@@ -221,12 +221,7 @@ public class AuthenticationController(
                     UserName = responseDto.Data.Name,
                     Avatar = responseDto.Data.Avatar,
                     Gender = 0,
-                    Region = new RegionDto
-                    {
-                        Id = 47,
-                        Code = "CN",
-                        Name = "China"
-                    },
+                    Region = new RegionDto { Id = 47, Code = "CN", Name = "China" },
                     Language = "zh-CN",
                     Biography = null,
                     Role = UserRole.Unactivated.ToString(),
@@ -333,13 +328,30 @@ public class AuthenticationController(
 
             var user = await userManager.FindByIdAsync(result.Principal!.GetClaim(Claims.Subject)!);
             if (user == null)
-                return Forbid(
-                    new AuthenticationProperties(new Dictionary<string, string>
-                    {
-                        [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.ExpiredToken,
-                        [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
-                            "The refresh token has expired."
-                    }!), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+            {
+                var db = redis.GetDatabase();
+                var key =
+                    $"phizone:tapghost:{result.Principal!.GetClaim("appId")}:{result.Principal!.GetClaim("unionId")}";
+                if (!await db.KeyExistsAsync(key))
+                    return Forbid(
+                        new AuthenticationProperties(new Dictionary<string, string>
+                        {
+                            [OpenIddictServerAspNetCoreConstants.Properties.Error] = Errors.ExpiredToken,
+                            [OpenIddictServerAspNetCoreConstants.Properties.ErrorDescription] =
+                                "The refresh token has expired."
+                        }!), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+
+                var ghost = JsonConvert.DeserializeObject<UserDetailedDto>((await db.StringGetAsync(key))!)!;
+                ghost.DateLastLoggedIn = DateTimeOffset.UtcNow;
+
+                await db.StringSetAsync(key, JsonConvert.SerializeObject(ghost), TimeSpan.FromDays(180));
+                var ghostIdentity = new ClaimsIdentity(result.Principal!.Claims,TokenValidationParameters.DefaultAuthenticationType, Claims.Name,
+                    Claims.Role);
+
+                ghostIdentity.SetDestinations(GetDestinations);
+
+                return SignIn(new ClaimsPrincipal(ghostIdentity), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+            }
 
             var actionResult = await CheckUserLockoutState(user);
             if (actionResult != null) return actionResult;
@@ -352,7 +364,6 @@ public class AuthenticationController(
             identity.SetDestinations(GetDestinations);
 
             user.DateLastLoggedIn = DateTimeOffset.UtcNow;
-            user.AccessFailedCount = 0;
             await userManager.UpdateAsync(user);
 
             return SignIn(new ClaimsPrincipal(identity), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);

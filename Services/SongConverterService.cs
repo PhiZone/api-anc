@@ -1,5 +1,6 @@
 ﻿using System.Text;
 using PhiZoneApi.Constants;
+using PhiZoneApi.Enums;
 using PhiZoneApi.Interfaces;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
@@ -43,6 +44,7 @@ public class SongConverterService(
                     song.FileChecksum = result.Value.Item2;
                     song.Duration = result.Value.Item3;
                     song.DateUpdated = DateTimeOffset.UtcNow;
+                    song.Status = RequestStatus.Waiting;
 
                     if (song.PreviewEnd > song.Duration) song.PreviewEnd = song.Duration.Value;
                     if (song.PreviewStart > song.PreviewEnd) song.PreviewStart = TimeSpan.Zero;
