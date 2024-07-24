@@ -91,9 +91,9 @@ public partial class ResourceService(IServiceProvider serviceProvider, IConfigur
                 e => e.Type == EventResourceType.Entry && e.TeamId == eventTeam.Id));
     }
 
-    public bool HasPermission(User user, UserRole role)
+    public bool HasPermission(User? user, UserRole role)
     {
-        return GetPriority(user.Role) >= GetPriority(role);
+        return user != null && GetPriority(user.Role) >= GetPriority(role);
     }
 
     public async Task<(string, List<User>)> ParseUserContent(string content)

@@ -348,7 +348,7 @@ public class UserInfoController(
         } while (await db.KeyExistsAsync($"phizone:tapghost:inherit:{code}"));
 
         await db.StringSetAsync($"phizone:tapghost:inherit:{code}",
-            $"{User.GetClaim(OpenIddictConstants.Claims.ClientId)}:{User.GetClaim(OpenIddictConstants.Claims.KeyId)}",
+            $"{User.GetClaim("appId")}:{User.GetClaim("unionId")}",
             TimeSpan.FromMinutes(10));
         return Ok(new ResponseDto<CodeDto>
         {

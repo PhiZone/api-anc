@@ -476,8 +476,8 @@ public class PlayerController(
         var info = new PlayInfoTapTapDto
         {
             ChartId = chartId,
-            ApplicationId = Guid.Parse(User.GetClaim(OpenIddictConstants.Claims.ClientId)!),
-            PlayerId = User.GetClaim(OpenIddictConstants.Claims.KeyId)!,
+            ApplicationId = Guid.Parse(User.GetClaim("appId")!),
+            PlayerId = User.GetClaim("unionId")!,
             EarliestEndTime = DateTimeOffset.UtcNow.Add(song.Duration!.Value),
             PerfectJudgment = perfectJudgment,
             GoodJudgment = goodJudgment,

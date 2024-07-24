@@ -21,7 +21,7 @@ public interface IResourceService
 
     Task<(bool, bool)> IsPreparedOrFinished(EventTeam eventTeam);
 
-    bool HasPermission(User user, UserRole role);
+    bool HasPermission(User? user, UserRole role);
 
     Task<(string, List<User>)> ParseUserContent(string content);
 
