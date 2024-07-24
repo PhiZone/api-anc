@@ -6,7 +6,7 @@ public class ChartAssetDto
 {
     public Guid Id { get; set; }
 
-    public int OwnerId { get; set; }
+    public int? OwnerId { get; set; }
 
     public Guid ChartId { get; set; }
 

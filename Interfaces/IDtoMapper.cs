@@ -33,6 +33,8 @@ public interface IDtoMapper
 
     T MapChart<T>(Chart chart, bool anonymize = false) where T : ChartDto;
 
+    T MapChartAsset<T>(ChartAsset asset, bool anonymize = false) where T : ChartAssetDto;
+
     Task<T> MapChartCollectionAsync<T>(Admission admission, User? currentUser = null) where T : CollectionAdmitterDto;
 
     Task<T> MapCollectionChartAsync<T>(Admission admission, User? currentUser) where T : ChartAdmitteeDto;

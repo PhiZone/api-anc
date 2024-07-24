@@ -92,7 +92,11 @@ public class ChartController(
                                                         !tagsToExclude!.Contains(tag.NormalizedName))))));
         var showAnonymous = filterDto is
         {
-            RangeId: not null, ContainsAuthorName: null, EqualsAuthorName: null, RangeOwnerId: null, MinOwnerId: null,
+            RangeId: not null,
+            ContainsAuthorName: null,
+            EqualsAuthorName: null,
+            RangeOwnerId: null,
+            MinOwnerId: null,
             MaxOwnerId: null
         };
         IEnumerable<Chart> charts;
@@ -736,9 +740,13 @@ public class ChartController(
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser, e => e.ChartId == id);
+        var chart = await chartRepository.GetChartAsync(id);
         var chartAssets = await chartAssetRepository.GetChartAssetsAsync(dto.Order, dto.Desc, position,
             dto.PerPage, predicateExpr);
-        var list = mapper.Map<List<ChartAssetDto>>(chartAssets);
+        var list = chartAssets.Select(e =>
+                dtoMapper.MapChartAsset<ChartAssetDto>(e,
+                    chart.EventPresences.Any(f => f.IsAnonymous != null && f.IsAnonymous.Value)))
+            .ToList();
         var total = await chartAssetRepository.CountChartAssetsAsync(predicateExpr);
 
         return Ok(new ResponseDto<IEnumerable<ChartAssetDto>>
@@ -793,7 +801,8 @@ public class ChartController(
 
         var chartAsset = await chartAssetRepository.GetChartAssetAsync(assetId);
 
-        var dto = mapper.Map<ChartAssetDto>(chartAsset);
+        var chart = await chartRepository.GetChartAsync(id);
+        var dto = dtoMapper.MapChartAsset<ChartAssetDto>(chartAsset, chart.EventPresences.Any(e => e.IsAnonymous != null && e.IsAnonymous.Value));
 
         return Ok(new ResponseDto<ChartAssetDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
     }

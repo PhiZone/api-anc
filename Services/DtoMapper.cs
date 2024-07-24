@@ -179,6 +179,17 @@ public class DtoMapper(
         return dto;
     }
 
+    public T MapChartAsset<T>(ChartAsset asset, bool anonymize = false) where T : ChartAssetDto
+    {
+        var dto = mapper.Map<T>(asset);
+        if (anonymize)
+        {
+            dto.OwnerId = null;
+        }
+
+        return dto;
+    }
+
     public async Task<T> MapChartCollectionAsync<T>(Admission admission, User? currentUser = null)
         where T : CollectionAdmitterDto
     {
