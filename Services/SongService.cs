@@ -1,4 +1,5 @@
 ﻿using NVorbis;
+using PhiZoneApi.Constants;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 
@@ -8,8 +9,8 @@ public class SongService(
     IFileStorageService fileStorageService,
     IRabbitMqService rabbitMqService,
     IMultimediaService multimediaService,
-    IHostEnvironment env)
-    : ISongService
+    ILogger<SongService> logger,
+    IHostEnvironment env) : ISongService
 {
     private readonly string _queue = env.IsProduction() ? "song" : "song-dev";
 
@@ -17,20 +18,38 @@ public class SongService(
     {
         var stream = await multimediaService.ConvertAudio(file);
         if (stream == null) return null;
-        using var vorbis = new VorbisReader(stream, false);
-        var duration = vorbis.TotalTime;
         var result = await fileStorageService.Upload<Song>(fileName, stream, "ogg");
-        return (result.Item1, result.Item2, duration);
+        try
+        {
+            using var vorbis = new VorbisReader(stream, false);
+            var duration = vorbis.TotalTime;
+            return (result.Item1, result.Item2, duration);
+        }
+        catch (Exception e)
+        {
+            logger.LogWarning(LogEvents.AudioFailure, e, "[{Now}] Failed to read duration for {File}",
+                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), fileName);
+            return (result.Item1, result.Item2, TimeSpan.Zero);
+        }
     }
 
     public async Task<(string, string, TimeSpan)?> UploadAsync(string fileName, byte[] buffer)
     {
         var stream = await multimediaService.ConvertAudio(buffer);
         if (stream == null) return null;
-        using var vorbis = new VorbisReader(stream, false);
-        var duration = vorbis.TotalTime;
         var result = await fileStorageService.Upload<Song>(fileName, stream, "ogg");
-        return (result.Item1, result.Item2, duration);
+        try
+        {
+            using var vorbis = new VorbisReader(stream, false);
+            var duration = vorbis.TotalTime;
+            return (result.Item1, result.Item2, duration);
+        }
+        catch (Exception e)
+        {
+            logger.LogWarning(LogEvents.AudioFailure, e, "[{Now}] Failed to read duration for {File}",
+                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), fileName);
+            return (result.Item1, result.Item2, TimeSpan.Zero);
+        }
     }
 
     public async Task PublishAsync(IFormFile file, Guid songId, bool isSubmission = false)
@@ -42,8 +61,7 @@ public class SongService(
         var properties = channel.CreateBasicProperties();
         properties.Headers = new Dictionary<string, object>
         {
-            { "SongId", songId.ToString() },
-            { "IsSubmission", isSubmission.ToString() }
+            { "SongId", songId.ToString() }, { "IsSubmission", isSubmission.ToString() }
         };
         channel.BasicPublish("", _queue, false, properties, memoryStream.ToArray());
     }
