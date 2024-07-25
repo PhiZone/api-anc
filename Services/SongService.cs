@@ -18,18 +18,18 @@ public class SongService(
     {
         var stream = await multimediaService.ConvertAudio(file);
         if (stream == null) return null;
-        var result = await fileStorageService.Upload<Song>(fileName, stream, "ogg");
         try
         {
+            var result = await fileStorageService.Upload<Song>(fileName, stream, "ogg");
             using var vorbis = new VorbisReader(stream, false);
             var duration = vorbis.TotalTime;
             return (result.Item1, result.Item2, duration);
         }
         catch (Exception e)
         {
-            logger.LogWarning(LogEvents.AudioFailure, e, "[{Now}] Failed to read duration for {File}",
+            logger.LogWarning(LogEvents.AudioFailure, e, "[{Now}] Failed to read audio from {File}",
                 DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), fileName);
-            return (result.Item1, result.Item2, TimeSpan.Zero);
+            return null;
         }
     }
 
@@ -37,18 +37,18 @@ public class SongService(
     {
         var stream = await multimediaService.ConvertAudio(buffer);
         if (stream == null) return null;
-        var result = await fileStorageService.Upload<Song>(fileName, stream, "ogg");
         try
         {
+            var result = await fileStorageService.Upload<Song>(fileName, stream, "ogg");
             using var vorbis = new VorbisReader(stream, false);
             var duration = vorbis.TotalTime;
             return (result.Item1, result.Item2, duration);
         }
         catch (Exception e)
         {
-            logger.LogWarning(LogEvents.AudioFailure, e, "[{Now}] Failed to read duration for {File}",
+            logger.LogWarning(LogEvents.AudioFailure, e, "[{Now}] Failed to read audio from {File}",
                 DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), fileName);
-            return (result.Item1, result.Item2, TimeSpan.Zero);
+            return null;
         }
     }
 
