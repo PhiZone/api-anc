@@ -24,9 +24,12 @@ public class FilterService(IResourceService resourceService) : IFilterService
         if (dto == null) return null;
 
         var entity = Expression.Parameter(typeof(T), "e");
+        var rangeIdProperty = dto.GetType().GetProperty("RangeId");
 
         Expression expression =
-            Expression.OrElse(Expression.Constant(isAdmin.Value || typeof(T).GetProperty("IsHidden") == null),
+            Expression.OrElse(
+                Expression.Constant(isAdmin.Value || typeof(T).GetProperty("IsHidden") == null ||
+                                    (rangeIdProperty != null && rangeIdProperty.GetValue(dto) != null)),
                 IsFalse(Property<T>(entity, "IsHidden")));
 
         if (requirement != null) expression = Expression.AndAlso(expression, Expression.Invoke(requirement, entity));
