@@ -15,8 +15,11 @@ public class RecordRepository(ApplicationDbContext context, IMeilisearchService 
         int? currentUserId = null, bool? showAnonymous = false)
     {
         var result = context.Records
-            .Where(e => (showAnonymous != null && showAnonymous.Value) || !e.EventPresences.Any(f =>
-                f.Type == EventResourceType.Entry && f.IsAnonymous != null && f.IsAnonymous.Value))
+            .Where(e => (showAnonymous != null && showAnonymous.Value) ||
+                        !(e.EventPresences.Any(f =>
+                              f.Type == EventResourceType.Entry && f.IsAnonymous != null && f.IsAnonymous.Value) ||
+                          e.Chart.EventPresences.Any(f =>
+                              f.Type == EventResourceType.Entry && f.IsAnonymous != null && f.IsAnonymous.Value)))
             .Include(e => e.Owner)
             .ThenInclude(e => e.Region)
             .Include(e => e.EventPresences)
@@ -128,8 +131,12 @@ public class RecordRepository(ApplicationDbContext context, IMeilisearchService 
         bool? showAnonymous = false)
     {
         var result = context.Records.Where(e =>
-            (showAnonymous != null && showAnonymous.Value) || !e.EventPresences.Any(f =>
-                f.Type == EventResourceType.Entry && f.IsAnonymous != null && f.IsAnonymous.Value));
+            (showAnonymous != null && showAnonymous.Value) || !(e.EventPresences.Any(f =>
+                                                                    f.Type == EventResourceType.Entry &&
+                                                                    f.IsAnonymous != null && f.IsAnonymous.Value) ||
+                                                                e.Chart.EventPresences.Any(f =>
+                                                                    f.Type == EventResourceType.Entry &&
+                                                                    f.IsAnonymous != null && f.IsAnonymous.Value)));
 
         if (predicate != null) result = result.Where(predicate);
 
