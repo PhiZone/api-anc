@@ -182,10 +182,7 @@ public class DtoMapper(
     public T MapChartAsset<T>(ChartAsset asset, bool anonymize = false) where T : ChartAssetDto
     {
         var dto = mapper.Map<T>(asset);
-        if (anonymize)
-        {
-            dto.OwnerId = null;
-        }
+        if (anonymize) dto.OwnerId = null;
 
         return dto;
     }

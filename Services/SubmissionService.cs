@@ -86,7 +86,7 @@ public class SubmissionService(
             {
                 await CreateEventResource(eventDivision, eventTeam, song, owner);
                 broadcast = broadcast && !eventDivision.Anonymization && await chartRepository.CountChartsAsync(
-                    predicate: f => f.EventPresences.Any(g =>
+                    f => f.EventPresences.Any(g =>
                         g.Type == EventResourceType.Entry && g.IsAnonymous != null && g.IsAnonymous.Value &&
                         g.Team != null && g.Team.Participants.Any(h => h.Id == song.OwnerId))) == 0;
             }
@@ -247,11 +247,9 @@ public class SubmissionService(
             using var reader = new StreamReader(stream);
             var result = chartService.Validate(await reader.ReadToEndAsync());
             if (result != null)
-            {
                 (chartSubmission.File, chartSubmission.FileChecksum, chartSubmission.Format,
                     chartSubmission.NoteCount) = await chartService.Upload(result.Value,
                     chartSubmission.Title ?? song.Title, true, song.IsOriginal);
-            }
         }
 
         if (chartSubmission.RepresentationId == null)

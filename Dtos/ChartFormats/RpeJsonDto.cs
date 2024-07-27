@@ -60,7 +60,7 @@ public class JudgeLine
     [JsonProperty("Texture")] public string Texture { get; set; } = null!;
 
     [JsonProperty("alphaControl")] public List<AlphaControl?>? AlphaControl { get; set; }
-    
+
     [JsonProperty("attachUI")] public string? AttachUi { get; set; }
 
     [JsonProperty("bpmfactor")] public double BpmFactor { get; set; }

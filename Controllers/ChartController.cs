@@ -802,7 +802,8 @@ public class ChartController(
         var chartAsset = await chartAssetRepository.GetChartAssetAsync(assetId);
 
         var chart = await chartRepository.GetChartAsync(id);
-        var dto = dtoMapper.MapChartAsset<ChartAssetDto>(chartAsset, chart.EventPresences.Any(e => e.IsAnonymous != null && e.IsAnonymous.Value));
+        var dto = dtoMapper.MapChartAsset<ChartAssetDto>(chartAsset,
+            chart.EventPresences.Any(e => e.IsAnonymous != null && e.IsAnonymous.Value));
 
         return Ok(new ResponseDto<ChartAssetDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
     }

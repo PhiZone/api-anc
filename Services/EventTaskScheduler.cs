@@ -86,7 +86,8 @@ public class EventTaskScheduler(IServiceProvider serviceProvider, ILogger<EventT
 
         _schedules.Add(task.Id,
             new Timer(ImplicitlyExecute, (task.Id, target, teamId, user), delay, Timeout.InfiniteTimeSpan));
-        logger.LogInformation(LogEvents.SchedulerInfo, "[{Now}] Successfully implicitly scheduled Task \"{Name}\" at {Date}",
+        logger.LogInformation(LogEvents.SchedulerInfo,
+            "[{Now}] Successfully implicitly scheduled Task \"{Name}\" at {Date}",
             DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), task.Name,
             dateExecuted.LocalDateTime.ToString("yyyy-MM-dd HH:mm:ss"));
     }

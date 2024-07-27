@@ -198,10 +198,12 @@ public class EventDivisionController(
             dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
+        var isAdmin = currentUser != null && (resourceService.HasPermission(currentUser, UserRole.Administrator) ||
+                                              eventEntity.Hostships.Any(f =>
+                                                  f.UserId == currentUser.Id && (f.IsAdmin ||
+                                                      f.Permissions.Contains(HP.Gen(HP.Retrieve, HP.Resource)))));
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser,
-            e => e.EventPresences.Any(f => f.DivisionId == id),
-            currentUser != null && eventEntity.Hostships.Any(f =>
-                f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(HP.Gen(HP.Retrieve, HP.Resource)))));
+            e => e.EventPresences.Any(f => f.DivisionId == id), isAdmin);
         IEnumerable<Song> songs;
         int total;
         if (dto.Search != null)
@@ -281,10 +283,12 @@ public class EventDivisionController(
             dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
+        var isAdmin = currentUser != null && (resourceService.HasPermission(currentUser, UserRole.Administrator) ||
+                                              eventEntity.Hostships.Any(f =>
+                                                  f.UserId == currentUser.Id && (f.IsAdmin ||
+                                                      f.Permissions.Contains(HP.Gen(HP.Retrieve, HP.Resource)))));
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser,
-            e => e.EventPresences.Any(f => f.DivisionId == id),
-            currentUser != null && eventEntity.Hostships.Any(f =>
-                f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(HP.Gen(HP.Retrieve, HP.Resource)))));
+            e => e.EventPresences.Any(f => f.DivisionId == id), isAdmin);
         IEnumerable<Chart> charts;
         int total;
         if (dto.Search != null)
@@ -358,10 +362,12 @@ public class EventDivisionController(
             dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
+        var isAdmin = currentUser != null && (resourceService.HasPermission(currentUser, UserRole.Administrator) ||
+                                              eventEntity.Hostships.Any(f =>
+                                                  f.UserId == currentUser.Id && (f.IsAdmin ||
+                                                      f.Permissions.Contains(HP.Gen(HP.Retrieve, HP.Resource)))));
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser,
-            e => e.EventPresences.Any(f => f.DivisionId == id),
-            currentUser != null && eventEntity.Hostships.Any(f =>
-                f.UserId == currentUser.Id && (f.IsAdmin || f.Permissions.Contains(HP.Gen(HP.Retrieve, HP.Resource)))));
+            e => e.EventPresences.Any(f => f.DivisionId == id), isAdmin);
         IEnumerable<Tag> tags;
         int total;
         if (dto.Search != null)

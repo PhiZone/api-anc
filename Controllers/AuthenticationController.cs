@@ -345,12 +345,14 @@ public class AuthenticationController(
                 ghost.DateLastLoggedIn = DateTimeOffset.UtcNow;
 
                 await db.StringSetAsync(key, JsonConvert.SerializeObject(ghost), TimeSpan.FromDays(180));
-                var ghostIdentity = new ClaimsIdentity(result.Principal!.Claims,TokenValidationParameters.DefaultAuthenticationType, Claims.Name,
+                var ghostIdentity = new ClaimsIdentity(result.Principal!.Claims,
+                    TokenValidationParameters.DefaultAuthenticationType, Claims.Name,
                     Claims.Role);
 
                 ghostIdentity.SetDestinations(GetDestinations);
 
-                return SignIn(new ClaimsPrincipal(ghostIdentity), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+                return SignIn(new ClaimsPrincipal(ghostIdentity),
+                    OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
             }
 
             var actionResult = await CheckUserLockoutState(user);
