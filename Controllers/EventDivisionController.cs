@@ -465,7 +465,7 @@ public class EventDivisionController(
             e => e.EventPresences.Any(f => f.DivisionId == id) && (!e.IsHidden || isAdmin || (currentUser != null &&
                 e.EventPresences.Any(f =>
                     f.Type == EventResourceType.Entry && f.Team!.Participants.Any(g => g.Id == currentUser.Id)))),
-            isAdmin);
+            isAdmin, true);
         IEnumerable<Song> songs = await songRepository.GetSongsAsync(dto.Order, dto.Desc, position, dto.PerPage,
             predicateExpr, currentUser?.Id, true);
         var total = await songRepository.CountSongsAsync(predicateExpr, true);
@@ -552,7 +552,7 @@ public class EventDivisionController(
             e => e.EventPresences.Any(f => f.DivisionId == id) && (!e.IsHidden || isAdmin || (currentUser != null &&
                 e.EventPresences.Any(f =>
                     f.Type == EventResourceType.Entry && f.Team!.Participants.Any(g => g.Id == currentUser.Id)))),
-            isAdmin);
+            isAdmin, true);
         IEnumerable<Chart> charts = await chartRepository.GetChartsAsync(dto.Order, dto.Desc, position, dto.PerPage,
             predicateExpr, currentUser?.Id, true);
         var total = await chartRepository.CountChartsAsync(predicateExpr, true);

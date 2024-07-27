@@ -80,15 +80,15 @@ public class SubmissionService(
             var broadcast = isOriginal && !isHidden && await chartRepository.CountChartsAsync(e =>
                 e.SongId == song.Id && e.EventPresences.Any(f =>
                     f.Type == EventResourceType.Entry && f.IsAnonymous != null && f.IsAnonymous.Value &&
-                                                        f.Team!.Participations.Any(g => g.ParticipantId == song.OwnerId))) == 0;
+                    f.Team!.Participations.Any(g => g.ParticipantId == song.OwnerId))) == 0;
             var (eventDivision, eventTeam) = await GetEventInfo(songSubmission);
             if (eventDivision != null && eventTeam != null)
             {
                 await CreateEventResource(eventDivision, eventTeam, song, owner);
-                broadcast = broadcast && !eventDivision.Anonymization && await chartRepository.CountChartsAsync(
-                    f => f.EventPresences.Any(g =>
-                        g.Type == EventResourceType.Entry && g.IsAnonymous != null && g.IsAnonymous.Value &&
-                        g.Team!.Participants.Any(h => h.Id == song.OwnerId))) == 0;
+                broadcast = broadcast && !song.IsHidden && !eventDivision.Anonymization &&
+                            await chartRepository.CountChartsAsync(f => f.EventPresences.Any(g =>
+                                g.Type == EventResourceType.Entry && g.IsAnonymous != null && g.IsAnonymous.Value &&
+                                g.Team!.Participants.Any(h => h.Id == song.OwnerId))) == 0;
             }
 
             if (broadcast)

@@ -13,7 +13,7 @@ namespace PhiZoneApi.Services;
 public class FilterService(IResourceService resourceService) : IFilterService
 {
     public async Task<Expression<Func<T, bool>>?> Parse<T>(FilterDto<T>? dto, string? predicate = null,
-        User? currentUser = null, Expression<Func<T, bool>>? requirement = null, bool? isAdmin = null)
+        User? currentUser = null, Expression<Func<T, bool>>? requirement = null, bool? isAdmin = null, bool showHidden = false)
     {
         isAdmin ??= currentUser != null && resourceService.HasPermission(currentUser, UserRole.Administrator);
 
@@ -28,7 +28,7 @@ public class FilterService(IResourceService resourceService) : IFilterService
 
         Expression expression =
             Expression.OrElse(
-                Expression.Constant(isAdmin.Value || typeof(T).GetProperty("IsHidden") == null ||
+                Expression.Constant(isAdmin.Value || showHidden || typeof(T).GetProperty("IsHidden") == null ||
                                     (rangeIdProperty != null && rangeIdProperty.GetValue(dto) != null)),
                 IsFalse(Property<T>(entity, "IsHidden")));
 

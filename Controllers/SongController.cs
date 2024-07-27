@@ -163,14 +163,14 @@ public class SongController(
     {
         var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser,
-            e => !e.IsHidden && (tagDto == null ||
+            e => tagDto == null ||
                                  ((tagDto.TagsToInclude == null || e.Tags.Any(tag =>
                                      tagDto.TagsToInclude.Select(resourceService.Normalize)
                                          .Contains(tag.NormalizedName))) && (tagDto.TagsToExclude == null ||
                                                                              e.Tags.All(tag =>
                                                                                  !tagDto.TagsToExclude
                                                                                      .Select(resourceService.Normalize)
-                                                                                     .Contains(tag.NormalizedName))))));
+                                                                                     .Contains(tag.NormalizedName)))));
         var song = await songRepository.GetRandomSongAsync(predicateExpr, currentUser?.Id);
 
         if (song == null)
