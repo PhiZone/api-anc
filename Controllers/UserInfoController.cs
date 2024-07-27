@@ -392,7 +392,11 @@ public class UserInfoController(
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidCode
             });
         key = (await db.StringGetAsync(key))!;
-        if (!await db.KeyExistsAsync($"phizone:tapghost:{key}")) return NotFound();
+        if (!await db.KeyExistsAsync($"phizone:tapghost:{key}")) 
+            return NotFound(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNotFound
+            });
         var ghost = JsonConvert.DeserializeObject<UserDetailedDto>(
             (await db.StringGetAsync($"phizone:tapghost:{key}"))!)!;
         if (currentUser.Avatar == null)
