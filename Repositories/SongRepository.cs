@@ -22,7 +22,7 @@ public class SongRepository(ApplicationDbContext context, IMeilisearchService me
                              f.Type == EventResourceType.Entry && f.IsAnonymous != null && f.IsAnonymous.Value) &&
                          !e.Charts.Any(f => f.EventPresences.Any(g =>
                              g.Type == EventResourceType.Entry && g.IsAnonymous != null && g.IsAnonymous.Value &&
-                             g.Team != null && g.Team.Participants.Any(h => h.Id == e.OwnerId)))))
+                             g.Team!.Participants.Any(h => h.Id == e.OwnerId)))))
             .Include(e => e.Charts)
             .ThenInclude(e => e.EventPresences)
             .ThenInclude(e => e.Team)
@@ -61,7 +61,7 @@ public class SongRepository(ApplicationDbContext context, IMeilisearchService me
                     f.Type == EventResourceType.Entry && f.IsAnonymous != null && f.IsAnonymous.Value) &&
                 !e.Charts.Any(f => f.EventPresences.Any(g =>
                     g.Type == EventResourceType.Entry && g.IsAnonymous != null && g.IsAnonymous.Value &&
-                    g.Team != null && g.Team.Participants.Any(h => h.Id == e.OwnerId))))
+                    g.Team!.Participants.Any(h => h.Id == e.OwnerId))))
             .Include(e => e.Charts)
             .ThenInclude(e => e.EventPresences)
             .ThenInclude(e => e.Team)
@@ -123,7 +123,7 @@ public class SongRepository(ApplicationDbContext context, IMeilisearchService me
                 f.Type == EventResourceType.Entry && f.IsAnonymous != null && f.IsAnonymous.Value) && !e.Charts.Any(f =>
                 f.EventPresences.Any(g =>
                     g.Type == EventResourceType.Entry && g.IsAnonymous != null && g.IsAnonymous.Value &&
-                    g.Team != null && g.Team.Participants.Any(h => h.Id == e.OwnerId)))));
+                    g.Team!.Participants.Any(h => h.Id == e.OwnerId)))));
         if (predicate != null) result = result.Where(predicate);
         return await result.CountAsync();
     }

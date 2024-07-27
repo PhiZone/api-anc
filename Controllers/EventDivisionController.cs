@@ -464,7 +464,7 @@ public class EventDivisionController(
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser,
             e => e.EventPresences.Any(f => f.DivisionId == id) && (!e.IsHidden || isAdmin || (currentUser != null &&
                 e.EventPresences.Any(f =>
-                    f.Team != null && f.Team.Participations.Any(g => g.ParticipantId == currentUser.Id)))), isAdmin);
+                    f.Type == EventResourceType.Entry && f.Team!.Participations.Any(g => g.ParticipantId == currentUser.Id)))), isAdmin);
         IEnumerable<Song> songs = await songRepository.GetSongsAsync(dto.Order, dto.Desc, position, dto.PerPage,
             predicateExpr, currentUser?.Id, true);
         var total = await songRepository.CountSongsAsync(predicateExpr, true);
@@ -550,7 +550,7 @@ public class EventDivisionController(
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser,
             e => e.EventPresences.Any(f => f.DivisionId == id) && (!e.IsHidden || isAdmin || (currentUser != null &&
                 e.EventPresences.Any(f =>
-                    f.Team != null && f.Team.Participations.Any(g => g.ParticipantId == currentUser.Id)))), isAdmin);
+                    f.Type == EventResourceType.Entry && f.Team!.Participations.Any(g => g.ParticipantId == currentUser.Id)))), isAdmin);
         IEnumerable<Chart> charts = await chartRepository.GetChartsAsync(dto.Order, dto.Desc, position, dto.PerPage,
             predicateExpr, currentUser?.Id, true);
         var total = await chartRepository.CountChartsAsync(predicateExpr, true);
