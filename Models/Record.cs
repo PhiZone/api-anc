@@ -1,4 +1,4 @@
-﻿using System.Text.Json.Serialization;
+﻿using Newtonsoft.Json;
 
 namespace PhiZoneApi.Models;
 
@@ -38,7 +38,9 @@ public class Record : LikeableResource, IComparable<Record>
 
     public Application Application { get; set; } = null!;
 
-    [JsonIgnore] public List<EventResource> EventPresences { get; } = [];
+    [System.Text.Json.Serialization.JsonIgnore]
+    [JsonIgnore]
+    public List<EventResource> EventPresences { get; } = [];
 
     public int CompareTo(Record? other)
     {

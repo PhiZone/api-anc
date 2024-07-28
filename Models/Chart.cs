@@ -1,4 +1,4 @@
-﻿using System.Text.Json.Serialization;
+﻿using Newtonsoft.Json;
 using PhiZoneApi.Enums;
 
 namespace PhiZoneApi.Models;
@@ -53,7 +53,9 @@ public class Chart : SignificantResource
 
     public List<Tag> Tags { get; } = [];
 
-    [JsonIgnore] public List<ChartAsset> Assets { get; } = [];
+    [System.Text.Json.Serialization.JsonIgnore]
+    [JsonIgnore]
+    public List<ChartAsset> Assets { get; } = [];
 
     public override string GetDisplay()
     {

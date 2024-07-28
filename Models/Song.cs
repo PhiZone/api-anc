@@ -1,4 +1,4 @@
-﻿using System.Text.Json.Serialization;
+﻿using Newtonsoft.Json;
 using PhiZoneApi.Enums;
 
 namespace PhiZoneApi.Models;
@@ -43,7 +43,9 @@ public class Song : SignificantResource
 
     public long PlayCount { get; set; }
 
-    [JsonIgnore] public List<Chart> Charts { get; } = [];
+    [System.Text.Json.Serialization.JsonIgnore]
+    [JsonIgnore]
+    public List<Chart> Charts { get; } = [];
 
     public List<Tag> Tags { get; } = [];
 
