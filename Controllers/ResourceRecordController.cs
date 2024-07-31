@@ -59,7 +59,10 @@ public class ResourceRecordController(
         if (dto.Search != null)
         {
             var result = await meilisearchService.SearchAsync<ResourceRecord>(dto.Search, dto.PerPage, dto.Page);
-            resourceRecords = result.Hits;
+            var idList = result.Hits.Select(item => item.Id).ToList();
+            resourceRecords =
+                (await resourceRecordRepository.GetResourceRecordsAsync(predicate: e => idList.Contains(e.Id))).OrderBy(
+                    e => idList.IndexOf(e.Id));
             total = result.TotalHits;
         }
         else

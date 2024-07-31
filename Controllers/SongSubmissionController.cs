@@ -89,7 +89,10 @@ public class SongSubmissionController(
         {
             var result = await meilisearchService.SearchAsync<SongSubmission>(dto.Search, dto.PerPage, dto.Page,
                 !isVolunteer ? currentUser.Id : null);
-            songSubmissions = result.Hits;
+            var idList = result.Hits.Select(item => item.Id).ToList();
+            songSubmissions =
+                (await songSubmissionRepository.GetSongSubmissionsAsync(predicate: e => idList.Contains(e.Id))).OrderBy(
+                    e => idList.IndexOf(e.Id));
             total = result.TotalHits;
         }
         else

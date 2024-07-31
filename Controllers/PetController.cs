@@ -333,7 +333,10 @@ public class PetController : Controller
         {
             var result = await _meilisearchService.SearchAsync<PetAnswer>(dto.Search, dto.PerPage, dto.Page,
                 !isModerator ? currentUser.Id : null);
-            answers = result.Hits;
+            var idList = result.Hits.Select(item => item.Id).ToList();
+            answers =
+                (await _petAnswerRepository.GetPetAnswersAsync(predicate: e => idList.Contains(e.Id))).OrderBy(
+                    e => idList.IndexOf(e.Id));
             total = result.TotalHits;
         }
         else
@@ -363,7 +366,7 @@ public class PetController : Controller
     ///     Retrieves a specific answer.
     /// </summary>
     /// <param name="id">An answer's ID.</param>
-    /// <returns>A answer.</returns>
+    /// <returns>An answer.</returns>
     /// <response code="200">Returns an answer.</response>
     /// <response code="304">
     ///     When the resource has not been updated since last retrieval. Requires <c>If-None-Match</c>.
