@@ -365,7 +365,7 @@ public class PlayerController(
             token = Guid.NewGuid();
         } while (await db.KeyExistsAsync($"phizone:play:{token}"));
 
-        var chart = await chartRepository.GetChartAsync(chartId);
+        var chart = await chartRepository.GetChartAsync(chartId, currentUser.Id, true);
         if (await resourceService.IsBlacklisted(chart.OwnerId, currentUser.Id))
             return BadRequest(new ResponseDto<object>
             {
@@ -463,7 +463,7 @@ public class PlayerController(
             token = Guid.NewGuid();
         } while (await db.KeyExistsAsync($"phizone:play:tapghost:{token}"));
 
-        var chart = await chartRepository.GetChartAsync(chartId);
+        var chart = await chartRepository.GetChartAsync(chartId, includeAssets: true);
         if (chart.IsLocked)
             return BadRequest(new ResponseDto<object>
             {

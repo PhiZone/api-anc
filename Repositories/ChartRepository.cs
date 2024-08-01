@@ -54,7 +54,7 @@ public class ChartRepository(ApplicationDbContext context, IMeilisearchService m
     }
 
     public async Task<Chart?> GetRandomChartAsync(Expression<Func<Chart, bool>>? predicate = null,
-        int? currentUserId = null)
+        int? currentUserId = null, bool includeAssets = false)
     {
         IQueryable<Chart> result = context.Charts
             .Where(e => !e.EventPresences.Any(f =>
@@ -69,6 +69,7 @@ public class ChartRepository(ApplicationDbContext context, IMeilisearchService m
             .ThenInclude(e => e.EventPresences)
             .OrderBy(chart => EF.Functions.Random());
         if (predicate != null) result = result.Where(predicate);
+        if (includeAssets) result = result.Include(e => e.Assets);
         if (currentUserId != null)
             result = result.Include(e => e.Likes.Where(like => like.OwnerId == currentUserId).Take(1));
         return await result.FirstOrDefaultAsync();

@@ -157,7 +157,7 @@ public class ChartController(
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        var chart = await chartRepository.GetChartAsync(id, currentUser?.Id);
+        var chart = await chartRepository.GetChartAsync(id, currentUser?.Id, true);
         var dto = dtoMapper.MapChart<ChartDetailedDto>(chart);
 
         // ReSharper disable once InvertIf
@@ -209,7 +209,7 @@ public class ChartController(
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        var chart = await chartRepository.GetChartAsync(id);
+        var chart = await chartRepository.GetChartAsync(id, includeAssets: true);
         var dto = dtoMapper.MapChart<ChartDetailedDto>(chart);
         var records = JsonConvert.DeserializeObject<List<Record>>((await db.StringGetAsync($"{key}:records"))!)!;
 
@@ -252,7 +252,7 @@ public class ChartController(
                   (tagDto.TagsToExclude == null || (e.Tags.All(tag => !tagsToExclude!.Contains(tag.NormalizedName)) &&
                                                     e.Song.Tags.All(tag =>
                                                         !tagsToExclude!.Contains(tag.NormalizedName))))));
-        var chart = await chartRepository.GetRandomChartAsync(predicateExpr, currentUser?.Id);
+        var chart = await chartRepository.GetRandomChartAsync(predicateExpr, currentUser?.Id, includeAssets: true);
 
         if (chart == null)
             return NotFound(new ResponseDto<object>
