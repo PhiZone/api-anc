@@ -149,7 +149,7 @@ public class ChartController(
     [ProducesResponseType(typeof(void), StatusCodes.Status304NotModified, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetChart([FromRoute] Guid id)
+    public async Task<IActionResult> GetChart([FromRoute] Guid id, bool includeAssets = false)
     {
         var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         if (!await chartRepository.ChartExistsAsync(id))
@@ -157,7 +157,7 @@ public class ChartController(
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        var chart = await chartRepository.GetChartAsync(id, currentUser?.Id, true);
+        var chart = await chartRepository.GetChartAsync(id, currentUser?.Id, includeAssets);
         var dto = dtoMapper.MapChart<ChartDetailedDto>(chart);
 
         // ReSharper disable once InvertIf
@@ -198,7 +198,7 @@ public class ChartController(
     [ProducesResponseType(typeof(void), StatusCodes.Status304NotModified, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetChartTapTapGhost([FromRoute] Guid id)
+    public async Task<IActionResult> GetChartTapTapGhost([FromRoute] Guid id, bool includeAssets = false)
     {
         var db = redis.GetDatabase();
         var key = $"phizone:tapghost:{User.GetClaim("appId")}:{User.GetClaim("unionId")}";
@@ -209,7 +209,7 @@ public class ChartController(
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        var chart = await chartRepository.GetChartAsync(id, includeAssets: true);
+        var chart = await chartRepository.GetChartAsync(id, includeAssets: includeAssets);
         var dto = dtoMapper.MapChart<ChartDetailedDto>(chart);
         var records = JsonConvert.DeserializeObject<List<Record>>((await db.StringGetAsync($"{key}:records"))!)!;
 
@@ -240,7 +240,8 @@ public class ChartController(
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<ChartDetailedDto>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetRandomChart([FromQuery] ArrayRequestDto dto,
-        [FromQuery] ChartFilterDto? filterDto = null, [FromQuery] ArrayTagDto? tagDto = null)
+        [FromQuery] ChartFilterDto? filterDto = null, [FromQuery] ArrayTagDto? tagDto = null,
+        bool includeAssets = false)
     {
         var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         var tagsToInclude = tagDto?.TagsToInclude?.Select(resourceService.Normalize).ToList();
@@ -252,7 +253,8 @@ public class ChartController(
                   (tagDto.TagsToExclude == null || (e.Tags.All(tag => !tagsToExclude!.Contains(tag.NormalizedName)) &&
                                                     e.Song.Tags.All(tag =>
                                                         !tagsToExclude!.Contains(tag.NormalizedName))))));
-        var chart = await chartRepository.GetRandomChartAsync(predicateExpr, currentUser?.Id, includeAssets: true);
+        var chart = await chartRepository.GetRandomChartAsync(predicateExpr, currentUser?.Id,
+            includeAssets: includeAssets);
 
         if (chart == null)
             return NotFound(new ResponseDto<object>
