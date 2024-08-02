@@ -617,9 +617,12 @@ public class RecordController(
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
+        var record = await recordRepository.GetRecordAsync(id);
         if (!await recordRepository.RemoveRecordAsync(id))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+
+        leaderboardService.Remove(record);
 
         return NoContent();
     }
