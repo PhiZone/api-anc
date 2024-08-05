@@ -247,7 +247,7 @@ public class ChartSubmissionController(
                 Message = "Must enter one and only one field between song and song submission."
             });
 
-        var (eventDivision, eventTeam, response) = await GetEvent(dto.Tags, currentUser);
+        var (eventDivision, eventTeam, response) = await GetEvent(dto.Tags, currentUser, true);
         if (response != null) return response;
 
         var illustrationUrl = dto.Illustration != null
@@ -293,7 +293,8 @@ public class ChartSubmissionController(
             VolunteerStatus = RequestStatus.Waiting,
             AdmissionStatus =
                 song != null
-                    ? song.OwnerId == currentUser.Id || song.Accessibility == Accessibility.AllowAny
+                    ?
+                    song.OwnerId == currentUser.Id || song.Accessibility == Accessibility.AllowAny
                         ? RequestStatus.Approved
                         : RequestStatus.Waiting
                     : songSubmission!.OwnerId == currentUser.Id ||
@@ -483,6 +484,7 @@ public class ChartSubmissionController(
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidAuthorInfo
             });
         var notify = chartSubmission.VolunteerStatus != RequestStatus.Waiting;
+        var tagChanged = new HashSet<string>(chartSubmission.Tags).SetEquals(new HashSet<string>(dto.Tags));
 
         chartSubmission.Title = dto.Title;
         chartSubmission.LevelType = dto.LevelType;
@@ -499,7 +501,7 @@ public class ChartSubmissionController(
         chartSubmission.DateUpdated = DateTimeOffset.UtcNow;
 
         var (eventDivision, eventTeam, response) =
-            await CheckForEvent(chartSubmission, currentUser, EventTaskType.PreUpdateSubmission);
+            await CheckForEvent(chartSubmission, currentUser, EventTaskType.PreUpdateSubmission, tagChanged);
         if (response != null) return response;
 
         if (!await chartSubmissionRepository.UpdateChartSubmissionAsync(chartSubmission))
@@ -1682,16 +1684,20 @@ public class ChartSubmissionController(
     }
 
     private async Task<(EventDivision?, EventTeam?, IActionResult?)> GetEvent(IEnumerable<string> tags,
-        User currentUser)
+        User currentUser, bool tagChanged = false)
     {
         var normalizedTags = tags.Select(resourceService.Normalize);
         var eventDivisions = await eventDivisionRepository.GetEventDivisionsAsync(predicate: e =>
-            e.Type == EventDivisionType.Chart &&
-            (e.Status == EventDivisionStatus.Unveiled || e.Status == EventDivisionStatus.Started) &&
-            normalizedTags.Contains(e.TagName));
+            e.Type == EventDivisionType.Chart && (tagChanged
+                ? e.Status == EventDivisionStatus.Unveiled || e.Status == EventDivisionStatus.Started
+                : e.Status == EventDivisionStatus.Unveiled || e.Status == EventDivisionStatus.Started ||
+                  e.Status == EventDivisionStatus.Ended) && normalizedTags.Contains(e.TagName));
         if (eventDivisions.Count == 0) return (null, null, null);
 
-        var eventDivision = eventDivisions.FirstOrDefault(e => e.Status == EventDivisionStatus.Started);
+        var eventDivision = eventDivisions.FirstOrDefault(e =>
+            tagChanged
+                ? e.Status == EventDivisionStatus.Started
+                : e.Status is EventDivisionStatus.Started or EventDivisionStatus.Ended);
         if (eventDivision == null)
             return (null, null,
                 BadRequest(new ResponseDto<object>
@@ -1714,10 +1720,10 @@ public class ChartSubmissionController(
     }
 
     private async Task<(EventDivision?, EventTeam?, IActionResult?)> CheckForEvent(ChartSubmission chartSubmission,
-        User currentUser, EventTaskType taskType)
+        User currentUser, EventTaskType taskType, bool tagChanged = false)
     {
         var owner = (await userRepository.GetUserByIdAsync(chartSubmission.OwnerId))!;
-        var result = await GetEvent(chartSubmission.Tags, owner);
+        var result = await GetEvent(chartSubmission.Tags, owner, tagChanged);
         if (result.Item1 == null || result.Item2 == null || result.Item3 != null) return result;
 
         var eventDivision = result.Item1!;

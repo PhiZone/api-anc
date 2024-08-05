@@ -261,7 +261,7 @@ public class SongSubmissionController(
         };
 
         var (eventDivision, eventTeam, response) =
-            await CheckForEvent(songSubmission, currentUser, EventTaskType.PreSubmission);
+            await CheckForEvent(songSubmission, currentUser, EventTaskType.PreSubmission, true);
         if (response != null) return response;
 
         if (!await songSubmissionRepository.CreateSongSubmissionAsync(songSubmission))
@@ -373,6 +373,7 @@ public class SongSubmissionController(
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidAuthorInfo
                 });
         var notify = songSubmission.Status != RequestStatus.Waiting;
+        var tagChanged = new HashSet<string>(songSubmission.Tags).SetEquals(new HashSet<string>(dto.Tags));
 
         songSubmission.Title = dto.Title;
         songSubmission.EditionType = dto.EditionType;
@@ -394,7 +395,7 @@ public class SongSubmissionController(
         songSubmission.Status = RequestStatus.Waiting;
 
         var (eventDivision, eventTeam, response) =
-            await CheckForEvent(songSubmission, currentUser, EventTaskType.PreUpdateSubmission);
+            await CheckForEvent(songSubmission, currentUser, EventTaskType.PreUpdateSubmission, tagChanged);
         if (response != null) return response;
 
         if (!await songSubmissionRepository.UpdateSongSubmissionAsync(songSubmission))
@@ -1124,16 +1125,22 @@ public class SongSubmissionController(
     }
 
     private async Task<(EventDivision?, EventTeam?, IActionResult?)> GetEvent(IEnumerable<string> tags,
-        User currentUser)
+        User currentUser, bool tagChanged = false)
     {
         var normalizedTags = tags.Select(resourceService.Normalize);
         var eventDivisions = await eventDivisionRepository.GetEventDivisionsAsync(predicate: e =>
             e.Type == EventDivisionType.Song &&
-            (e.Status == EventDivisionStatus.Unveiled || e.Status == EventDivisionStatus.Started) &&
+            (tagChanged
+                ? e.Status == EventDivisionStatus.Unveiled || e.Status == EventDivisionStatus.Started
+                : e.Status == EventDivisionStatus.Unveiled || e.Status == EventDivisionStatus.Started ||
+                  e.Status == EventDivisionStatus.Ended) &&
             normalizedTags.Contains(e.TagName));
         if (eventDivisions.Count == 0) return (null, null, null);
 
-        var eventDivision = eventDivisions.FirstOrDefault(e => e.Status == EventDivisionStatus.Started);
+        var eventDivision = eventDivisions.FirstOrDefault(e =>
+            tagChanged
+                ? e.Status == EventDivisionStatus.Started
+                : e.Status is EventDivisionStatus.Started or EventDivisionStatus.Ended);
         if (eventDivision == null)
             return (null, null,
                 BadRequest(new ResponseDto<object>
@@ -1156,10 +1163,10 @@ public class SongSubmissionController(
     }
 
     private async Task<(EventDivision?, EventTeam?, IActionResult?)> CheckForEvent(SongSubmission songSubmission,
-        User currentUser, EventTaskType taskType)
+        User currentUser, EventTaskType taskType, bool tagChanged = false)
     {
         var owner = (await userRepository.GetUserByIdAsync(songSubmission.OwnerId))!;
-        var result = await GetEvent(songSubmission.Tags, owner);
+        var result = await GetEvent(songSubmission.Tags, owner, tagChanged);
         if (result.Item1 == null || result.Item2 == null || result.Item3 != null) return result;
 
         var eventDivision = result.Item1;
