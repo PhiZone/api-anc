@@ -394,8 +394,8 @@ public class SongSubmissionController(
         songSubmission.DateUpdated = DateTimeOffset.UtcNow;
         songSubmission.Status = RequestStatus.Waiting;
 
-        var (eventDivision, eventTeam, response) =
-            await CheckForEvent(songSubmission, currentUser, EventTaskType.PreUpdateSubmission, tagChanged);
+        var (eventDivision, eventTeam, response) = await CheckForEvent(songSubmission, currentUser,
+            EventTaskType.PreUpdateSubmission, tagChanged);
         if (response != null) return response;
 
         if (!await songSubmissionRepository.UpdateSongSubmissionAsync(songSubmission))
@@ -1129,11 +1129,7 @@ public class SongSubmissionController(
     {
         var normalizedTags = tags.Select(resourceService.Normalize);
         var eventDivisions = await eventDivisionRepository.GetEventDivisionsAsync(predicate: e =>
-            e.Type == EventDivisionType.Song &&
-            (tagChanged
-                ? e.Status == EventDivisionStatus.Unveiled || e.Status == EventDivisionStatus.Started
-                : e.Status == EventDivisionStatus.Unveiled || e.Status == EventDivisionStatus.Started ||
-                  e.Status == EventDivisionStatus.Ended) &&
+            e.Type == EventDivisionType.Song && e.Status != EventDivisionStatus.Created &&
             normalizedTags.Contains(e.TagName));
         if (eventDivisions.Count == 0) return (null, null, null);
 

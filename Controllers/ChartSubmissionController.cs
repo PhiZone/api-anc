@@ -500,8 +500,8 @@ public class ChartSubmissionController(
         chartSubmission.VolunteerStatus = RequestStatus.Waiting;
         chartSubmission.DateUpdated = DateTimeOffset.UtcNow;
 
-        var (eventDivision, eventTeam, response) =
-            await CheckForEvent(chartSubmission, currentUser, EventTaskType.PreUpdateSubmission, tagChanged);
+        var (eventDivision, eventTeam, response) = await CheckForEvent(chartSubmission, currentUser,
+            EventTaskType.PreUpdateSubmission, tagChanged);
         if (response != null) return response;
 
         if (!await chartSubmissionRepository.UpdateChartSubmissionAsync(chartSubmission))
@@ -1688,10 +1688,8 @@ public class ChartSubmissionController(
     {
         var normalizedTags = tags.Select(resourceService.Normalize);
         var eventDivisions = await eventDivisionRepository.GetEventDivisionsAsync(predicate: e =>
-            e.Type == EventDivisionType.Chart && (tagChanged
-                ? e.Status == EventDivisionStatus.Unveiled || e.Status == EventDivisionStatus.Started
-                : e.Status == EventDivisionStatus.Unveiled || e.Status == EventDivisionStatus.Started ||
-                  e.Status == EventDivisionStatus.Ended) && normalizedTags.Contains(e.TagName));
+            e.Type == EventDivisionType.Chart && e.Status != EventDivisionStatus.Created &&
+            normalizedTags.Contains(e.TagName));
         if (eventDivisions.Count == 0) return (null, null, null);
 
         var eventDivision = eventDivisions.FirstOrDefault(e =>
