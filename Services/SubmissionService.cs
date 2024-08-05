@@ -456,7 +456,8 @@ public class SubmissionService(
     {
         var normalizedTags = chartSubmission.Tags.Select(resourceService.Normalize);
         var eventDivisions = await eventDivisionRepository.GetEventDivisionsAsync(predicate: e =>
-            e.Type == EventDivisionType.Chart && e.Status == EventDivisionStatus.Started &&
+            e.Type == EventDivisionType.Chart &&
+            (e.Status == EventDivisionStatus.Started || e.Status == EventDivisionStatus.Ended) &&
             normalizedTags.Contains(e.TagName));
         if (eventDivisions.Count == 0) return (null, null);
         var eventDivision = eventDivisions.First();
@@ -471,7 +472,8 @@ public class SubmissionService(
     {
         var normalizedTags = songSubmission.Tags.Select(resourceService.Normalize);
         var eventDivisions = await eventDivisionRepository.GetEventDivisionsAsync(predicate: e =>
-            e.Type == EventDivisionType.Song && e.Status == EventDivisionStatus.Started &&
+            e.Type == EventDivisionType.Song &&
+            (e.Status == EventDivisionStatus.Started || e.Status == EventDivisionStatus.Ended) &&
             normalizedTags.Contains(e.TagName));
         if (eventDivisions.Count == 0) return (null, null);
         var eventDivision = eventDivisions.First();

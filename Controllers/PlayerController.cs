@@ -61,6 +61,14 @@ public class PlayerController(
         [FromQuery] PlayConfigurationFilterDto? filterDto = null)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+
+        if (!resourceService.HasPermission(currentUser, UserRole.Member))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+        
         if (filterDto != null && !resourceService.HasPermission(currentUser, UserRole.Administrator))
             filterDto.RangeOwnerId = new List<int> { currentUser.Id };
 
