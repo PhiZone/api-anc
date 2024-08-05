@@ -168,7 +168,7 @@ public class EventDivisionController(
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<EventSongPromptDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetSongPrompts([FromRoute] Guid id, [FromQuery] ArrayRequestDto dto,
-        [FromQuery] SongFilterDto? filterDto = null)
+        [FromQuery] SongFilterDto? filterDto = null, [FromQuery] ArrayTagDto? tagDto = null)
     {
         var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         if (!await eventDivisionRepository.EventDivisionExistsAsync(id))
@@ -203,7 +203,17 @@ public class EventDivisionController(
                                                   f.UserId == currentUser.Id && (f.IsAdmin ||
                                                       f.Permissions.Contains(HP.Gen(HP.Retrieve, HP.Resource)))));
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser,
-            e => e.EventPresences.Any(f => f.DivisionId == id), isAdmin);
+            e => e.EventPresences.Any(f => f.DivisionId == id) && (tagDto == null ||
+                                                                   ((tagDto.TagsToInclude == null || e.Tags.Any(tag =>
+                                                                        tagDto.TagsToInclude
+                                                                            .Select(resourceService.Normalize)
+                                                                            .ToList()
+                                                                            .Contains(tag.NormalizedName))) &&
+                                                                    (tagDto.TagsToExclude == null || e.Tags.All(tag =>
+                                                                        !tagDto.TagsToExclude
+                                                                            .Select(resourceService.Normalize)
+                                                                            .ToList()
+                                                                            .Contains(tag.NormalizedName))))), isAdmin);
         IEnumerable<Song> songs;
         int total;
         if (dto.Search != null)
@@ -253,7 +263,7 @@ public class EventDivisionController(
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<EventChartPromptDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetChartPrompts([FromRoute] Guid id, [FromQuery] ArrayRequestDto dto,
-        [FromQuery] ChartFilterDto? filterDto = null)
+        [FromQuery] ChartFilterDto? filterDto = null, [FromQuery] ArrayTagDto? tagDto = null)
     {
         var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         if (!await eventDivisionRepository.EventDivisionExistsAsync(id))
@@ -283,12 +293,27 @@ public class EventDivisionController(
             dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
+        var tagsToInclude = tagDto?.TagsToInclude?.Select(resourceService.Normalize).ToList();
+        var tagsToExclude = tagDto?.TagsToExclude?.Select(resourceService.Normalize).ToList();
         var isAdmin = currentUser != null && (resourceService.HasPermission(currentUser, UserRole.Administrator) ||
                                               eventEntity.Hostships.Any(f =>
                                                   f.UserId == currentUser.Id && (f.IsAdmin ||
                                                       f.Permissions.Contains(HP.Gen(HP.Retrieve, HP.Resource)))));
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser,
-            e => e.EventPresences.Any(f => f.DivisionId == id), isAdmin);
+            e => e.EventPresences.Any(f => f.DivisionId == id) && (tagDto == null ||
+                                                                   ((tagDto.TagsToInclude == null ||
+                                                                     e.Tags.Any(tag =>
+                                                                         tagsToInclude!.Contains(tag.NormalizedName)) ||
+                                                                     e.Song.Tags.Any(tag =>
+                                                                         tagsToInclude!.Contains(
+                                                                             tag.NormalizedName))) &&
+                                                                    (tagDto.TagsToExclude == null ||
+                                                                     (e.Tags.All(tag =>
+                                                                          !tagsToExclude!.Contains(
+                                                                              tag.NormalizedName)) &&
+                                                                      e.Song.Tags.All(tag =>
+                                                                          !tagsToExclude!.Contains(
+                                                                              tag.NormalizedName)))))), isAdmin);
         IEnumerable<Chart> charts;
         int total;
         if (dto.Search != null)
@@ -418,7 +443,7 @@ public class EventDivisionController(
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<EventSongEntryDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetSongEntries([FromRoute] Guid id, [FromQuery] ArrayRequestDto dto,
-        [FromQuery] SongFilterDto? filterDto = null)
+        [FromQuery] SongFilterDto? filterDto = null, [FromQuery] ArrayTagDto? tagDto = null)
     {
         var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         if (!await eventDivisionRepository.EventDivisionExistsAsync(id))
@@ -462,9 +487,16 @@ public class EventDivisionController(
                                                   f.UserId == currentUser.Id && (f.IsAdmin ||
                                                       f.Permissions.Contains(HP.Gen(HP.Retrieve, HP.Resource)))));
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser,
-            e => e.EventPresences.Any(f => f.DivisionId == id) && (!e.IsHidden || isAdmin || (currentUser != null &&
-                e.EventPresences.Any(f =>
-                    f.Type == EventResourceType.Entry && f.Team!.Participants.Any(g => g.Id == currentUser.Id)))),
+            e => e.EventPresences.Any(f => f.DivisionId == id) &&
+                 (!e.IsHidden || isAdmin || (currentUser != null && e.EventPresences.Any(f =>
+                     f.Type == EventResourceType.Entry && f.Team!.Participants.Any(g => g.Id == currentUser.Id)))) &&
+                 (tagDto == null ||
+                  ((tagDto.TagsToInclude == null || e.Tags.Any(tag =>
+                       tagDto.TagsToInclude.Select(resourceService.Normalize).ToList().Contains(tag.NormalizedName))) &&
+                   (tagDto.TagsToExclude == null || e.Tags.All(tag =>
+                       !tagDto.TagsToExclude.Select(resourceService.Normalize)
+                           .ToList()
+                           .Contains(tag.NormalizedName))))),
             isAdmin, true);
         IEnumerable<Song> songs = await songRepository.GetSongsAsync(dto.Order, dto.Desc, position, dto.PerPage,
             predicateExpr, currentUser?.Id, true);
@@ -505,7 +537,7 @@ public class EventDivisionController(
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<EventChartEntryDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetChartEntries([FromRoute] Guid id, [FromQuery] ArrayRequestDto dto,
-        [FromQuery] ChartFilterDto? filterDto = null)
+        [FromQuery] ChartFilterDto? filterDto = null, [FromQuery] ArrayTagDto? tagDto = null)
     {
         var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         if (!await eventDivisionRepository.EventDivisionExistsAsync(id))
@@ -544,15 +576,23 @@ public class EventDivisionController(
             dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
         dto.Page = dto.Page > 1 ? dto.Page : 1;
         var position = dto.PerPage * (dto.Page - 1);
+        var tagsToInclude = tagDto?.TagsToInclude?.Select(resourceService.Normalize).ToList();
+        var tagsToExclude = tagDto?.TagsToExclude?.Select(resourceService.Normalize).ToList();
         var isAdmin = currentUser != null && (resourceService.HasPermission(currentUser, UserRole.Administrator) ||
                                               eventEntity.Hostships.Any(f =>
                                                   f.UserId == currentUser.Id && (f.IsAdmin ||
                                                       f.Permissions.Contains(HP.Gen(HP.Retrieve, HP.Resource)))));
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser,
-            e => e.EventPresences.Any(f => f.DivisionId == id) && (!e.IsHidden || isAdmin || (currentUser != null &&
-                e.EventPresences.Any(f =>
-                    f.Type == EventResourceType.Entry && f.Team!.Participants.Any(g => g.Id == currentUser.Id)))),
-            isAdmin, true);
+            e => e.EventPresences.Any(f => f.DivisionId == id) &&
+                 (!e.IsHidden || isAdmin || (currentUser != null && e.EventPresences.Any(f =>
+                     f.Type == EventResourceType.Entry && f.Team!.Participants.Any(g => g.Id == currentUser.Id)))) &&
+                 (tagDto == null ||
+                  ((tagDto.TagsToInclude == null || e.Tags.Any(tag => tagsToInclude!.Contains(tag.NormalizedName)) ||
+                    e.Song.Tags.Any(tag => tagsToInclude!.Contains(tag.NormalizedName))) &&
+                   (tagDto.TagsToExclude == null || (e.Tags.All(tag => !tagsToExclude!.Contains(tag.NormalizedName)) &&
+                                                     e.Song.Tags.All(tag =>
+                                                         !tagsToExclude!.Contains(tag.NormalizedName)))))), isAdmin,
+            true);
         IEnumerable<Chart> charts = await chartRepository.GetChartsAsync(dto.Order, dto.Desc, position, dto.PerPage,
             predicateExpr, currentUser?.Id, true);
         var total = await chartRepository.CountChartsAsync(predicateExpr, true);
