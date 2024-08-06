@@ -484,7 +484,7 @@ public class ChartSubmissionController(
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidAuthorInfo
             });
         var notify = chartSubmission.VolunteerStatus != RequestStatus.Waiting;
-        var tagChanged = new HashSet<string>(chartSubmission.Tags).SetEquals(new HashSet<string>(dto.Tags));
+        var tagChanged = !new HashSet<string>(chartSubmission.Tags).SetEquals(new HashSet<string>(dto.Tags));
 
         chartSubmission.Title = dto.Title;
         chartSubmission.LevelType = dto.LevelType;

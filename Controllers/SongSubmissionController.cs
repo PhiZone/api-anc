@@ -373,7 +373,7 @@ public class SongSubmissionController(
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidAuthorInfo
                 });
         var notify = songSubmission.Status != RequestStatus.Waiting;
-        var tagChanged = new HashSet<string>(songSubmission.Tags).SetEquals(new HashSet<string>(dto.Tags));
+        var tagChanged = !new HashSet<string>(songSubmission.Tags).SetEquals(new HashSet<string>(dto.Tags));
 
         songSubmission.Title = dto.Title;
         songSubmission.EditionType = dto.EditionType;
