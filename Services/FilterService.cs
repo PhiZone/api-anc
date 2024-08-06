@@ -13,11 +13,12 @@ namespace PhiZoneApi.Services;
 public class FilterService(IResourceService resourceService) : IFilterService
 {
     public async Task<Expression<Func<T, bool>>?> Parse<T>(FilterDto<T>? dto, string? predicate = null,
-        User? currentUser = null, Expression<Func<T, bool>>? requirement = null, bool? isAdmin = null, bool showHidden = false)
+        User? currentUser = null, Expression<Func<T, bool>>? requirement = null, bool? isAdmin = null,
+        bool showHidden = false)
     {
         isAdmin ??= currentUser != null && resourceService.HasPermission(currentUser, UserRole.Administrator);
 
-        if (isAdmin.Value && predicate != null)
+        if (resourceService.HasPermission(currentUser, UserRole.Moderator) && predicate != null)
             return await CSharpScript.EvaluateAsync<Expression<Func<T, bool>>>(predicate,
                 ScriptOptions.Default.AddReferences(typeof(T).Assembly));
 

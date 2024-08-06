@@ -197,7 +197,7 @@ public class SongSubmissionController(
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidData
                 });
 
-            if (!(TimeSpan.Zero <= dto.PreviewStart && dto.PreviewStart <= dto.PreviewEnd &&
+            if (!(TimeSpan.Zero <= dto.PreviewStart && dto.PreviewStart < dto.PreviewEnd &&
                   dto.PreviewEnd <= songSubmissionInfo.Value.Item3))
                 return BadRequest(new ResponseDto<object>
                 {
@@ -206,7 +206,7 @@ public class SongSubmissionController(
             logger.LogInformation(LogEvents.SongInfo, "[{Now}] New song submission: {Title}",
                 DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), dto.Title);
         }
-        else if (!(TimeSpan.Zero <= dto.PreviewStart && dto.PreviewStart <= dto.PreviewEnd))
+        else if (!(TimeSpan.Zero <= dto.PreviewStart && dto.PreviewStart < dto.PreviewEnd))
         {
             return BadRequest(new ResponseDto<object>
             {
@@ -358,7 +358,7 @@ public class SongSubmissionController(
                 Errors = ModelErrorTranslator.Translate(ModelState)
             });
 
-        if (!(TimeSpan.Zero <= dto.PreviewStart && dto.PreviewStart <= dto.PreviewEnd &&
+        if (!(TimeSpan.Zero <= dto.PreviewStart && dto.PreviewStart < dto.PreviewEnd &&
               dto.PreviewEnd <= songSubmission.Duration))
             return BadRequest(new ResponseDto<object>
             {

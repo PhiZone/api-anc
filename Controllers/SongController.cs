@@ -81,7 +81,11 @@ public class SongController(
                       !tagDto.TagsToExclude.Select(resourceService.Normalize).ToList().Contains(tag.NormalizedName)))));
         var showAnonymous = filterDto is
         {
-            RangeId: not null, ContainsAuthorName: null, EqualsAuthorName: null, RangeOwnerId: null, MinOwnerId: null,
+            RangeId: not null,
+            ContainsAuthorName: null,
+            EqualsAuthorName: null,
+            RangeOwnerId: null,
+            MinOwnerId: null,
             MaxOwnerId: null
         };
         IEnumerable<Song> songs;
@@ -164,13 +168,10 @@ public class SongController(
         var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         var predicateExpr = await filterService.Parse(filterDto, dto.Predicate, currentUser,
             e => tagDto == null ||
-                                 ((tagDto.TagsToInclude == null || e.Tags.Any(tag =>
-                                     tagDto.TagsToInclude.Select(resourceService.Normalize)
-                                         .Contains(tag.NormalizedName))) && (tagDto.TagsToExclude == null ||
-                                                                             e.Tags.All(tag =>
-                                                                                 !tagDto.TagsToExclude
-                                                                                     .Select(resourceService.Normalize)
-                                                                                     .Contains(tag.NormalizedName)))));
+                 ((tagDto.TagsToInclude == null || e.Tags.Any(tag =>
+                      tagDto.TagsToInclude.Select(resourceService.Normalize).Contains(tag.NormalizedName))) &&
+                  (tagDto.TagsToExclude == null || e.Tags.All(tag =>
+                      !tagDto.TagsToExclude.Select(resourceService.Normalize).Contains(tag.NormalizedName)))));
         var song = await songRepository.GetRandomSongAsync(predicateExpr, currentUser?.Id);
 
         if (song == null)
@@ -221,7 +222,7 @@ public class SongController(
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidData
                 });
 
-            if (!(TimeSpan.Zero <= dto.PreviewStart && dto.PreviewStart <= dto.PreviewEnd &&
+            if (!(TimeSpan.Zero <= dto.PreviewStart && dto.PreviewStart < dto.PreviewEnd &&
                   dto.PreviewEnd <= songInfo.Value.Item3))
                 return BadRequest(new ResponseDto<object>
                 {
@@ -230,7 +231,7 @@ public class SongController(
             logger.LogInformation(LogEvents.SongInfo, "[{Now}] New song: {Title}",
                 DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), dto.Title);
         }
-        else if (!(TimeSpan.Zero <= dto.PreviewStart && dto.PreviewStart <= dto.PreviewEnd))
+        else if (!(TimeSpan.Zero <= dto.PreviewStart && dto.PreviewStart < dto.PreviewEnd))
         {
             return BadRequest(new ResponseDto<object>
             {
@@ -348,7 +349,7 @@ public class SongController(
                 Errors = ModelErrorTranslator.Translate(ModelState)
             });
 
-        if (!(TimeSpan.Zero <= dto.PreviewStart && dto.PreviewStart <= dto.PreviewEnd &&
+        if (!(TimeSpan.Zero <= dto.PreviewStart && dto.PreviewStart < dto.PreviewEnd &&
               dto.PreviewEnd <= song.Duration))
             return BadRequest(new ResponseDto<object>
             {
