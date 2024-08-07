@@ -199,8 +199,8 @@ public partial class ResourceService(IServiceProvider serviceProvider, IConfigur
             UserRole.Moderator => 5,
             UserRole.Volunteer => 4,
             UserRole.Qualified => 3,
-            UserRole.Sponsor => 3,
-            UserRole.Member => 3,
+            UserRole.Sponsor => 2,
+            UserRole.Member => 1,
             _ => 0
         };
     }
