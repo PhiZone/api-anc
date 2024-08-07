@@ -169,6 +169,7 @@ public class DtoMapper(
         var dto = mapper.Map<T>(chart);
         anonymize = anonymize || chart.EventPresences.Any(e => e.IsAnonymous != null && e.IsAnonymous.Value);
         dto.Song = MapSong<SongDto>(chart.Song, anonymize);
+        dto.Assets = chart.Assets.Select(e => MapChartAsset<ChartAssetDto>(e, anonymize)).ToList();
         dto.DateLiked = chart.Likes.FirstOrDefault()?.DateCreated;
         if (anonymize)
         {
