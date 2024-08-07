@@ -1453,12 +1453,19 @@ public class ChartController(
 
         var chart = await chartRepository.GetChartAsync(id);
 
-        if ((currentUser == null || !resourceService.HasPermission(currentUser, UserRole.Administrator)) &&
-            chart.IsLocked)
-            return BadRequest(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Locked
-            });
+        if (currentUser == null || !resourceService.HasPermission(currentUser, UserRole.Administrator))
+        {
+            if (chart.IsLocked)
+                return BadRequest(new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.Locked
+                });
+            if (chart.EventPresences.Any(e => e.IsAnonymous != null && e.IsAnonymous.Value))
+                return BadRequest(new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+        }
 
         var leaderboard = leaderboardService.ObtainChartLeaderboard(chart.Id);
         var rank = currentUser != null
