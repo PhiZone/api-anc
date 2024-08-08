@@ -28,7 +28,7 @@
         <PackageReference Include="Romanization.NET" Version="0.9.5"/>
         <PackageReference Include="SixLabors.ImageSharp" Version="3.1.4"/>
         <PackageReference Include="StackExchange.Redis" Version="2.8.0"/>
-        <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2"/>
+        <PackageReference Include="Swashbuckle.AspNetCore" Version="6.7.0"/>
         <PackageReference Include="Swashbuckle.AspNetCore.Newtonsoft" Version="6.6.2"/>
         <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="7.6.2"/>
         <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.7"/>
