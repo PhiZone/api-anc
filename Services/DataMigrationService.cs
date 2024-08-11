@@ -390,7 +390,7 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
                     await File.ReadAllBytesAsync(illustrationPath, cancellationToken), (16, 9))).Item1;
                 var date = reader.GetDateTimeOffset("time");
                 var bpm = NonDigitRegex.Split(reader.GetString("bpm"))
-                    .Where(s => !s.IsNullOrEmpty())
+                    .Where(s => !string.IsNullOrEmpty(s))
                     .Select(double.Parse)
                     .ToArray();
 
@@ -553,7 +553,7 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
 
                 var chartFile = reader.GetString("chart");
                 (string, string, ChartFormat, int)? chartInfo = null;
-                if (!chartFile.IsNullOrEmpty())
+                if (!string.IsNullOrEmpty(chartFile))
                 {
                     var filePath = Path.Combine(_mediaPath, chartFile);
                     chartInfo = await _chartService.Upload(song.Title, filePath);
@@ -1048,7 +1048,7 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
                 var date = reader.GetDateTimeOffset("time");
                 var edition = reader.GetString("edition");
                 var bpm = NonDigitRegex.Split(reader.GetString("bpm"))
-                    .Where(s => !s.IsNullOrEmpty())
+                    .Where(s => !string.IsNullOrEmpty(s))
                     .Select(double.Parse)
                     .ToArray();
 
