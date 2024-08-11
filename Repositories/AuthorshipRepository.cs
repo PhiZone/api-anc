@@ -11,8 +11,8 @@ namespace PhiZoneApi.Repositories;
 public class AuthorshipRepository(ApplicationDbContext context) : IAuthorshipRepository
 {
     public async Task<ICollection<Authorship>> GetResourcesAsync(int authorId, List<string>? order = null,
-        List<bool>? desc = null,
-        int? position = 0, int? take = -1, Expression<Func<Authorship, bool>>? predicate = null)
+        List<bool>? desc = null, int? position = 0, int? take = -1,
+        Expression<Func<Authorship, bool>>? predicate = null)
     {
         var result = context.Authorships.Include(e => e.Author)
             .ThenInclude(e => e.Region)
@@ -26,8 +26,8 @@ public class AuthorshipRepository(ApplicationDbContext context) : IAuthorshipRep
     }
 
     public async Task<ICollection<Authorship>> GetAuthorsAsync(Guid resourceId, List<string>? order = null,
-        List<bool>? desc = null,
-        int? position = 0, int? take = -1, Expression<Func<Authorship, bool>>? predicate = null)
+        List<bool>? desc = null, int? position = 0, int? take = -1,
+        Expression<Func<Authorship, bool>>? predicate = null)
     {
         var result = context.Authorships.Include(e => e.Author)
             .ThenInclude(e => e.Region)
@@ -41,8 +41,8 @@ public class AuthorshipRepository(ApplicationDbContext context) : IAuthorshipRep
     }
 
     public async Task<ICollection<Authorship>> GetAuthorshipsAsync(List<string>? order = null, List<bool>? desc = null,
-        int? position = 0,
-        int? take = -1, Expression<Func<Authorship, bool>>? predicate = null, int? currentUserId = null)
+        int? position = 0, int? take = -1, Expression<Func<Authorship, bool>>? predicate = null,
+        int? currentUserId = null)
     {
         var result = context.Authorships.Include(e => e.Author)
             .ThenInclude(e => e.Region)
@@ -132,15 +132,12 @@ public class AuthorshipRepository(ApplicationDbContext context) : IAuthorshipRep
     public async Task<bool> AuthorshipExistsAsync(Guid resourceId, int authorId)
     {
         return await context.Authorships.AnyAsync(authorship =>
-            authorship.ResourceId == resourceId && authorship.AuthorId == authorId &&
-            !authorship.Resource.EventPresences.Any(e => e.IsAnonymous != null && e.IsAnonymous.Value));
+            authorship.ResourceId == resourceId && authorship.AuthorId == authorId);
     }
 
     public async Task<bool> AuthorshipExistsAsync(Guid id)
     {
-        return await context.Authorships.AnyAsync(authorship =>
-            authorship.Id == id &&
-            !authorship.Resource.EventPresences.Any(e => e.IsAnonymous != null && e.IsAnonymous.Value));
+        return await context.Authorships.AnyAsync(authorship => authorship.Id == id);
     }
 
     public async Task<int> CountResourcesAsync(int authorId, Expression<Func<Authorship, bool>>? predicate = null)
