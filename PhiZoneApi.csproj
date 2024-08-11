@@ -12,7 +12,7 @@
         <PackageReference Include="AutoMapper" Version="12.0.1"/>
         <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.1"/>
         <PackageReference Include="HtmlSanitizer" Version="8.1.812-beta"/>
-        <PackageReference Include="MailKit" Version="4.7.0"/>
+        <PackageReference Include="MailKit" Version="4.7.1.1"/>
         <PackageReference Include="MeiliSearch" Version="0.15.1"/>
         <PackageReference Include="Microsoft.AspNetCore.Mvc.Versioning" Version="5.1.0"/>
         <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="4.10.0"/>
@@ -28,11 +28,11 @@
         <PackageReference Include="Romanization.NET" Version="0.9.5"/>
         <PackageReference Include="SixLabors.ImageSharp" Version="3.1.4"/>
         <PackageReference Include="StackExchange.Redis" Version="2.8.0"/>
-        <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2"/>
-        <PackageReference Include="Swashbuckle.AspNetCore.Newtonsoft" Version="6.6.2"/>
-        <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="7.6.2"/>
+        <PackageReference Include="Swashbuckle.AspNetCore" Version="6.7.0"/>
+        <PackageReference Include="Swashbuckle.AspNetCore.Newtonsoft" Version="6.7.0"/>
+        <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.0.1"/>
         <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.7"/>
-        <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="8.0.4"/>
+        <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="8.0.7"/>
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.7"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.7"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.7"/>
