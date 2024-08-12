@@ -68,7 +68,7 @@ public class PlayerController(
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        
+
         if (filterDto != null && !resourceService.HasPermission(currentUser, UserRole.Administrator))
             filterDto.RangeOwnerId = new List<int> { currentUser.Id };
 

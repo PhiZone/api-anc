@@ -64,7 +64,8 @@ public class EventResourceController(
                                              f.UserId == currentUser.Id &&
                                              (f.IsAdmin || f.Permissions.Contains(permission))) ||
                                          (e.Type == EventResourceType.Entry &&
-                                          ((e.IsAnonymous != null && !e.IsAnonymous.Value) || e.Team!.Participants.Any(f => f.Id == currentUser.Id)))));
+                                          ((e.IsAnonymous != null && !e.IsAnonymous.Value) ||
+                                           e.Team!.Participants.Any(f => f.Id == currentUser.Id)))));
         var eventResources = await eventResourceRepository.GetEventResourcesAsync(dto.Order, dto.Desc, position,
             dto.PerPage, predicateExpr);
         var total = await eventResourceRepository.CountEventResourcesAsync(predicateExpr);

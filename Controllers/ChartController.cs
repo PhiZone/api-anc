@@ -254,7 +254,7 @@ public class ChartController(
                                                     e.Song.Tags.All(tag =>
                                                         !tagsToExclude!.Contains(tag.NormalizedName))))));
         var chart = await chartRepository.GetRandomChartAsync(predicateExpr, currentUser?.Id,
-            includeAssets: includeAssets);
+            includeAssets);
 
         if (chart == null)
             return NotFound(new ResponseDto<object>

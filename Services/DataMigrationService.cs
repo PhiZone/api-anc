@@ -3,7 +3,6 @@ using System.Globalization;
 using System.Net.Sockets;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.IdentityModel.Tokens;
 using MySqlConnector;
 using PhiZoneApi.Constants;
 using PhiZoneApi.Enums;
@@ -945,8 +944,8 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
                 var id = await reader.GetInt("chapter_id");
                 if (id != null)
                 {
-                    if (!_chapterDictionary.ContainsKey(id.Value)) continue;
-                    var resource = await _chapterRepository.GetChapterAsync(_chapterDictionary[id.Value]);
+                    if (!_chapterDictionary.TryGetValue(id.Value, out var chapterId)) continue;
+                    var resource = await _chapterRepository.GetChapterAsync(chapterId);
                     await _likeService.CreateLikeAsync(resource, _userDictionary[reader.GetInt32("user_id")],
                         reader.GetDateTimeOffset("time"));
                     continue;
@@ -955,8 +954,8 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
                 id = await reader.GetInt("song_id");
                 if (id != null)
                 {
-                    if (!_songDictionary.ContainsKey(id.Value)) continue;
-                    var resource = await _songRepository.GetSongAsync(_songDictionary[id.Value]);
+                    if (!_songDictionary.TryGetValue(id.Value, out var songId)) continue;
+                    var resource = await _songRepository.GetSongAsync(songId);
                     await _likeService.CreateLikeAsync(resource, _userDictionary[reader.GetInt32("user_id")],
                         reader.GetDateTimeOffset("time"));
                     continue;
@@ -965,8 +964,8 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
                 id = await reader.GetInt("chart_id");
                 if (id != null)
                 {
-                    if (!_chartDictionary.ContainsKey(id.Value)) continue;
-                    var resource = await _chartRepository.GetChartAsync(_chartDictionary[id.Value]);
+                    if (!_chartDictionary.TryGetValue(id.Value, out var chartId)) continue;
+                    var resource = await _chartRepository.GetChartAsync(chartId);
                     await _likeService.CreateLikeAsync(resource, _userDictionary[reader.GetInt32("user_id")],
                         reader.GetDateTimeOffset("time"));
                     continue;
@@ -975,8 +974,8 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
                 id = await reader.GetInt("comment_id");
                 if (id != null)
                 {
-                    if (!_commentDictionary.ContainsKey(id.Value)) continue;
-                    var resource = await _commentRepository.GetCommentAsync(_commentDictionary[id.Value]);
+                    if (!_commentDictionary.TryGetValue(id.Value, out var commentId)) continue;
+                    var resource = await _commentRepository.GetCommentAsync(commentId);
                     await _likeService.CreateLikeAsync(resource, _userDictionary[reader.GetInt32("user_id")],
                         reader.GetDateTimeOffset("time"));
                     continue;
@@ -986,8 +985,8 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
                 // ReSharper disable once InvertIf
                 if (id != null)
                 {
-                    if (!_replyDictionary.ContainsKey(id.Value)) continue;
-                    var resource = await _replyRepository.GetReplyAsync(_replyDictionary[id.Value]);
+                    if (!_replyDictionary.TryGetValue(id.Value, out var replyId)) continue;
+                    var resource = await _replyRepository.GetReplyAsync(replyId);
                     await _likeService.CreateLikeAsync(resource, _userDictionary[reader.GetInt32("user_id")],
                         reader.GetDateTimeOffset("time"));
                 }
