@@ -51,6 +51,8 @@ public class Chart : SignificantResource
 
     public long PlayCount { get; set; }
 
+    [JsonIgnore]
+    [Newtonsoft.Json.JsonIgnore]
     public List<Tag> Tags { get; } = [];
 
     [JsonIgnore]

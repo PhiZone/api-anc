@@ -10,9 +10,15 @@ public class Tag : Resource
 
     public string? Description { get; set; }
 
-    [JsonIgnore] public List<Song> Songs { get; } = [];
+    [JsonIgnore]
+    [Newtonsoft.Json.JsonIgnore]
+    public List<Song> Songs { get; } = [];
 
-    [JsonIgnore] public List<Chart> Charts { get; } = [];
+    [JsonIgnore]
+    [Newtonsoft.Json.JsonIgnore]
+    public List<Chart> Charts { get; } = [];
 
-    [JsonIgnore] public List<EventResource> EventPresences { get; } = [];
+    [JsonIgnore]
+    [Newtonsoft.Json.JsonIgnore]
+    public List<EventResource> EventPresences { get; } = [];
 }

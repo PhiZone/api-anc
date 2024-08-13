@@ -47,6 +47,8 @@ public class Song : SignificantResource
     [Newtonsoft.Json.JsonIgnore]
     public List<Chart> Charts { get; } = [];
 
+    [JsonIgnore]
+    [Newtonsoft.Json.JsonIgnore]
     public List<Tag> Tags { get; } = [];
 
     public override string GetDisplay()
