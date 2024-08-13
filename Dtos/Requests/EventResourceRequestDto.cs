@@ -19,6 +19,4 @@ public class EventResourceRequestDto
     public List<string?> Reserved { get; set; } = [];
 
     public Guid? TeamId { get; set; }
-
-    public DateTimeOffset DateCreated { get; set; }
 }

@@ -42,4 +42,6 @@ public class EventResource
     public EventTeam? Team { get; set; }
 
     public DateTimeOffset DateCreated { get; set; }
+
+    public DateTimeOffset DateUpdated { get; set; }
 }

@@ -351,7 +351,8 @@ public class RecordController(
                 Type = EventResourceType.Entry,
                 IsAnonymous = eventDivision.Anonymization,
                 TeamId = eventTeam.Id,
-                DateCreated = DateTimeOffset.UtcNow
+                DateCreated = DateTimeOffset.UtcNow,
+                DateUpdated = DateTimeOffset.UtcNow
             };
             await eventResourceRepository.CreateEventResourceAsync(eventResource);
             if (await eventResourceRepository.CountResourcesAsync(eventDivision.Id,
@@ -918,7 +919,8 @@ public class RecordController(
             Description = dto.Description,
             IsAnonymous = dto.IsAnonymous,
             TeamId = dto.TeamId,
-            DateCreated = DateTimeOffset.UtcNow
+            DateCreated = DateTimeOffset.UtcNow,
+            DateUpdated = DateTimeOffset.UtcNow
         };
 
         if (!await eventResourceRepository.CreateEventResourceAsync(eventResource))

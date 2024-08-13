@@ -495,7 +495,8 @@ public class SubmissionService(
             Type = EventResourceType.Entry,
             IsAnonymous = eventDivision.Anonymization,
             TeamId = eventTeam.Id,
-            DateCreated = DateTimeOffset.UtcNow
+            DateCreated = DateTimeOffset.UtcNow,
+            DateUpdated = DateTimeOffset.UtcNow
         };
         await eventResourceRepository.CreateEventResourceAsync(eventResource);
         if (await eventResourceRepository.CountResourcesAsync(eventDivision.Id,

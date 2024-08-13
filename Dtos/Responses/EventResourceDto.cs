@@ -21,4 +21,6 @@ public class EventResourceDto
     public Guid? TeamId { get; set; }
 
     public DateTimeOffset DateCreated { get; set; }
+
+    public DateTimeOffset DateUpdated { get; set; }
 }

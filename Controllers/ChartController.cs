@@ -1988,7 +1988,8 @@ public class ChartController(
             Description = dto.Description,
             IsAnonymous = dto.IsAnonymous,
             TeamId = dto.TeamId,
-            DateCreated = DateTimeOffset.UtcNow
+            DateCreated = DateTimeOffset.UtcNow,
+            DateUpdated = DateTimeOffset.UtcNow
         };
 
         if (!await eventResourceRepository.CreateEventResourceAsync(eventResource))
