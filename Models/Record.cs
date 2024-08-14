@@ -6,6 +6,8 @@ public class Record : LikeableResource, IComparable<Record>
 {
     public Guid ChartId { get; set; }
 
+    [JsonIgnore]
+    [Newtonsoft.Json.JsonIgnore]
     public Chart Chart { get; set; } = null!;
 
     public int Score { get; set; }
