@@ -35,7 +35,6 @@ public class UserInfoController(
     AuthProviderFactory factory,
     IFileStorageService fileStorageService,
     IRecordRepository recordRepository,
-    IChartRepository chartRepository,
     IApplicationUserRepository applicationUserRepository) : Controller
 {
     /// <summary>
