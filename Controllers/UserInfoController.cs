@@ -35,6 +35,7 @@ public class UserInfoController(
     AuthProviderFactory factory,
     IFileStorageService fileStorageService,
     IRecordRepository recordRepository,
+    IChartRepository chartRepository,
     IApplicationUserRepository applicationUserRepository) : Controller
 {
     /// <summary>
@@ -413,9 +414,12 @@ public class UserInfoController(
             var records =
                 JsonConvert.DeserializeObject<List<Record>>(
                     (await db.StringGetAsync($"phizone:tapghost:{key}:records"))!)!;
+            var chartIds = records.Select(r => r.ChartId).Distinct();
+            var charts = await chartRepository.GetChartsAsync(predicate: e => chartIds.Contains(e.Id));
             foreach (var record in records)
             {
                 record.OwnerId = currentUser.Id;
+                record.ChartId = charts.First(c => c.Id == record.ChartId).Id;
                 await recordRepository.CreateRecordAsync(record);
             }
 
