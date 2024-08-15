@@ -589,8 +589,7 @@ public partial class ChartService(IFileStorageService fileStorageService, ILogge
         }
         catch (Exception ex)
         {
-            logger.LogError(LogEvents.ChartFailure, ex, "[{Now}] Failed to parse chart",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+            logger.LogError(LogEvents.ChartFailure, ex, "Failed to parse chart");
             return null;
         }
     }

@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using OpenIddict.Abstractions;
+using PhiZoneApi.Constants;
 using PhiZoneApi.Data;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
@@ -15,12 +16,17 @@ public class DatabaseSeeder(IServiceProvider serviceProvider) : IHostedService
         await using var scope = serviceProvider.CreateAsyncScope();
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         await context.Database.EnsureCreatedAsync(cancellationToken);
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<DatabaseSeeder>>();
+        logger.LogInformation(LogEvents.DatabaseSeederInfo, "Populating regions, scopes, and apps");
         await PopulateRegions(scope, cancellationToken);
         await PopulateScopes(scope, cancellationToken);
         await PopulateInternalApps(scope, cancellationToken);
-        await PopulateLeaderboards(scope, cancellationToken);
-        await PopulateScripts(scope, cancellationToken);
         await PopulateAuthProviders(scope);
+        logger.LogInformation(LogEvents.DatabaseSeederInfo, "Populating leaderboards");
+        await PopulateLeaderboards(scope, cancellationToken);
+        logger.LogInformation(LogEvents.DatabaseSeederInfo, "Populating scripts");
+        await PopulateScripts(scope, cancellationToken);
+        logger.LogInformation(LogEvents.DatabaseSeederInfo, "Database seeding completed");
     }
 
     public Task StopAsync(CancellationToken cancellationToken)

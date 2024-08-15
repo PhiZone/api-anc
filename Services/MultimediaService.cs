@@ -34,8 +34,8 @@ public class MultimediaService(ILogger<MultimediaService> logger) : IMultimediaS
         }
         catch (Exception ex)
         {
-            logger.LogError(LogEvents.AudioFailure, ex, "[{Now}] Failed to convert audio for {File}",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), file.FileName);
+            logger.LogError(LogEvents.AudioFailure, ex, "Failed to convert audio for {File}",
+                file.FileName);
             return null;
         }
     }
@@ -56,8 +56,7 @@ public class MultimediaService(ILogger<MultimediaService> logger) : IMultimediaS
         }
         catch (Exception ex)
         {
-            logger.LogError(LogEvents.AudioFailure, ex, "[{Now}] Failed to convert audio from bytes",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+            logger.LogError(LogEvents.AudioFailure, ex, "Failed to convert audio from bytes");
             return null;
         }
     }

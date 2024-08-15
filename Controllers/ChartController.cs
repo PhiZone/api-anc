@@ -360,8 +360,8 @@ public class ChartController(
         if (!await chartRepository.CreateChartAsync(chart))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
-        logger.LogInformation(LogEvents.ChartInfo, "[{Now}] New chart: {Title} [{Level} {Difficulty}]",
-            DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), dto.Title ?? song.Title, dto.Level,
+        logger.LogInformation(LogEvents.ChartInfo, "New chart: {Title} [{Level} {Difficulty}]",
+            dto.Title ?? song.Title, dto.Level,
             Math.Floor(dto.Difficulty));
 
         await tagRepository.CreateTagsAsync(dto.Tags, chart);

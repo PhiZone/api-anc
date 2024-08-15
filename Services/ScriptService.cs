@@ -80,8 +80,8 @@ public class ScriptService(IServiceProvider serviceProvider, ILogger<ScriptServi
                 }
                 catch (Exception ex)
                 {
-                    logger.LogError(LogEvents.ScriptFailure, ex, "[{Now}] Failed to run Service {Id}",
-                        DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), id);
+                    logger.LogError(LogEvents.ScriptFailure, ex, "Failed to run Service {Id}",
+                        id);
                     return new ServiceResponseDto { Type = ServiceResponseType.Failed, Message = ex.Message };
                 }
             })
@@ -103,8 +103,8 @@ public class ScriptService(IServiceProvider serviceProvider, ILogger<ScriptServi
             _eventTaskScripts.Add(task.Id, script);
         }
 
-        logger.LogInformation(LogEvents.ScriptInfo, "[{Now}] Fired up Event Task {Id}",
-            DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), id);
+        logger.LogInformation(LogEvents.ScriptInfo, "Fired up Event Task {Id}",
+            id);
         return Task.Run(async () =>
             {
                 try
@@ -123,8 +123,8 @@ public class ScriptService(IServiceProvider serviceProvider, ILogger<ScriptServi
                 }
                 catch (Exception ex)
                 {
-                    logger.LogError(LogEvents.ScriptFailure, ex, "[{Now}] Failed to run Event Task {Id}",
-                        DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), id);
+                    logger.LogError(LogEvents.ScriptFailure, ex, "Failed to run Event Task {Id}",
+                        id);
                     return new EventTaskResponseDto
                     {
                         Status = ResponseStatus.Failed, Code = ResponseCodes.InternalError, Message = ex.Message

@@ -45,8 +45,8 @@ public class EventTaskScheduler(IServiceProvider serviceProvider, ILogger<EventT
         {
             if (!replace)
             {
-                logger.LogInformation(LogEvents.SchedulerInfo, "[{Now}] Task \"{Name}\" is already scheduled",
-                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), task.Name);
+                logger.LogInformation(LogEvents.SchedulerInfo, "Task \"{Name}\" is already scheduled",
+                    task.Name);
                 return;
             }
 
@@ -59,8 +59,8 @@ public class EventTaskScheduler(IServiceProvider serviceProvider, ILogger<EventT
         if (delay.CompareTo(TimeSpan.Zero) < 0) return;
 
         _schedules.Add(task.Id, new Timer(Execute, (task.Id, task.DivisionId), delay, Timeout.InfiniteTimeSpan));
-        logger.LogInformation(LogEvents.SchedulerInfo, "[{Now}] Successfully scheduled Task \"{Name}\" at {Date}",
-            DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), task.Name,
+        logger.LogInformation(LogEvents.SchedulerInfo, "Successfully scheduled Task \"{Name}\" at {Date}",
+            task.Name,
             task.DateExecuted.Value.LocalDateTime.ToString("yyyy-MM-dd HH:mm:ss"));
     }
 
@@ -72,8 +72,8 @@ public class EventTaskScheduler(IServiceProvider serviceProvider, ILogger<EventT
         {
             if (!replace)
             {
-                logger.LogInformation(LogEvents.SchedulerInfo, "[{Now}] Task \"{Name}\" is already scheduled",
-                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), task.Name);
+                logger.LogInformation(LogEvents.SchedulerInfo, "Task \"{Name}\" is already scheduled",
+                    task.Name);
                 return;
             }
 
@@ -87,8 +87,8 @@ public class EventTaskScheduler(IServiceProvider serviceProvider, ILogger<EventT
         _schedules.Add(task.Id,
             new Timer(ImplicitlyExecute, (task.Id, target, teamId, user), delay, Timeout.InfiniteTimeSpan));
         logger.LogInformation(LogEvents.SchedulerInfo,
-            "[{Now}] Successfully implicitly scheduled Task \"{Name}\" at {Date}",
-            DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), task.Name,
+            "Successfully implicitly scheduled Task \"{Name}\" at {Date}",
+            task.Name,
             dateExecuted.LocalDateTime.ToString("yyyy-MM-dd HH:mm:ss"));
     }
 

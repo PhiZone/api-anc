@@ -51,8 +51,8 @@ public class SongConverterService(
 
                     await songSubmissionRepository.UpdateSongSubmissionAsync(song);
                     await feishuService.Notify(song, FeishuResources.ContentReviewalChat);
-                    logger.LogInformation(LogEvents.SongInfo, "[{Now}] Completed song submission schedule: {Title}",
-                        DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), song.Title);
+                    logger.LogInformation(LogEvents.SongInfo, "Completed song submission schedule: {Title}",
+                        song.Title);
                 }
             }
             else
@@ -70,8 +70,8 @@ public class SongConverterService(
                     if (song.PreviewStart > song.PreviewEnd) song.PreviewStart = TimeSpan.Zero;
 
                     await songRepository.UpdateSongAsync(song);
-                    logger.LogInformation(LogEvents.SongInfo, "[{Now}] Completed song schedule: {Title}",
-                        DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), song.Title);
+                    logger.LogInformation(LogEvents.SongInfo, "Completed song schedule: {Title}",
+                        song.Title);
                 }
             }
 

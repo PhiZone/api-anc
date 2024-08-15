@@ -27,8 +27,8 @@ public class SongService(
         }
         catch (Exception e)
         {
-            logger.LogWarning(LogEvents.AudioFailure, e, "[{Now}] Failed to read audio from {File}",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), fileName);
+            logger.LogWarning(LogEvents.AudioFailure, e, "Failed to read audio from {File}",
+                fileName);
             return null;
         }
     }
@@ -46,8 +46,8 @@ public class SongService(
         }
         catch (Exception e)
         {
-            logger.LogWarning(LogEvents.AudioFailure, e, "[{Now}] Failed to read audio from {File}",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), fileName);
+            logger.LogWarning(LogEvents.AudioFailure, e, "Failed to read audio from {File}",
+                fileName);
             return null;
         }
     }

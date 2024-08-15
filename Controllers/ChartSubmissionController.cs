@@ -409,8 +409,8 @@ public class ChartSubmissionController(
             await scriptService.RunEventTaskAsync(eventTeam.DivisionId, chartSubmission, eventTeam.Id, currentUser,
                 [EventTaskType.PostSubmission]);
 
-        logger.LogInformation(LogEvents.ChartInfo, "[{Now}] New chart submission: {Title} [{Level} {Difficulty}]",
-            DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), dto.Title ?? song?.Title ?? songSubmission!.Title, dto.Level,
+        logger.LogInformation(LogEvents.ChartInfo, "New chart submission: {Title} [{Level} {Difficulty}]",
+            dto.Title ?? song?.Title ?? songSubmission!.Title, dto.Level,
             Math.Floor(dto.Difficulty));
 
         return StatusCode(StatusCodes.Status201Created,

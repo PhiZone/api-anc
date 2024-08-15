@@ -259,8 +259,8 @@ public class RecordController(
         var culture = (CultureInfo)CultureInfo.CurrentCulture.Clone();
         culture.NumberFormat.PercentPositivePattern = 1;
         logger.LogInformation(LogEvents.RecordInfo,
-            "[{Now}] New record: {User} - {Chart} {Score} {Accuracy} {Rks} {StdDeviation}ms",
-            DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), player.UserName, await resourceService.GetDisplayName(chart),
+            "New record: {User} - {Chart} {Score} {Accuracy} {Rks} {StdDeviation}ms",
+            player.UserName, await resourceService.GetDisplayName(chart),
             score, accuracy.ToString("P2", culture), rks.ToString("N3"), dto.StdDeviation.ToString("N3"));
 
         var record = new Record
@@ -506,8 +506,8 @@ public class RecordController(
         var culture = (CultureInfo)CultureInfo.CurrentCulture.Clone();
         culture.NumberFormat.PercentPositivePattern = 1;
         logger.LogInformation(LogEvents.RecordInfo,
-            "[{Now}] New record: {User} - {Chart} {Score} {Accuracy} {Rks} {StdDeviation}ms",
-            DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), player.UserName, await resourceService.GetDisplayName(chart),
+            "New record: {User} - {Chart} {Score} {Accuracy} {Rks} {StdDeviation}ms",
+            player.UserName, await resourceService.GetDisplayName(chart),
             score, accuracy.ToString("P2", culture), rks.ToString("N3"), dto.StdDeviation.ToString("N3"));
 
         var record = new Record
@@ -535,6 +535,7 @@ public class RecordController(
         var records = await db.KeyExistsAsync($"{key}:records")
             ? JsonConvert.DeserializeObject<List<Record>>((await db.StringGetAsync($"{key}:records"))!)!
             : [];
+        if (records.Count > 1999) records = records.TakeLast(1999).ToList();
         records.Add(record);
         await db.StringSetAsync($"{key}:records", (RedisValue)JsonConvert.SerializeObject(records),
             TimeSpan.FromDays(180));
@@ -548,10 +549,13 @@ public class RecordController(
             _ => 1
         });
 
+        var chartIds = records.Select(e => e.ChartId).Distinct();
+        var charts = await chartRepository.GetChartsAsync(predicate: e => chartIds.Contains(e.Id));
         var phiRks = records.OrderByDescending(e => e.Rks)
-            .FirstOrDefault(r => r.OwnerId == player.Id && r is { Score: 1000000, Chart.IsRanked: true })
+            .FirstOrDefault(r =>
+                r.OwnerId == player.Id && r.Score == 1000000 && charts.First(e => e.Id == r.ChartId).IsRanked)
             ?.Rks ?? 0d;
-        var best19Rks = records.Where(e => e.Chart.IsRanked && e.OwnerId == player.Id)
+        var best19Rks = records.Where(e => charts.First(f => f.Id == e.ChartId).IsRanked && e.OwnerId == player.Id)
             .GroupBy(e => e.ChartId)
             .Select(g => g.OrderByDescending(e => e.Rks).ThenBy(e => e.DateCreated).First())
             .Sum(r => r.Rks);

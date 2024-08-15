@@ -75,8 +75,8 @@ public class FeishuService : IFeishuService
             var response = await _client.SendAsync(request);
             if (!response.IsSuccessStatusCode)
                 _logger.LogError(LogEvents.FeishuFailure,
-                    "[{Now}] An error occurred whilst announcing song update:\n{Error}",
-                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), await response.Content.ReadAsStringAsync());
+                    "An error occurred whilst announcing song update:\n{Error}",
+                    await response.Content.ReadAsStringAsync());
         }
     }
 
@@ -131,8 +131,8 @@ public class FeishuService : IFeishuService
             var response = await _client.SendAsync(request);
             if (!response.IsSuccessStatusCode)
                 _logger.LogError(LogEvents.FeishuFailure,
-                    "[{Now}] An error occurred whilst announcing chart update:\n{Error}",
-                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), await response.Content.ReadAsStringAsync());
+                    "An error occurred whilst announcing chart update:\n{Error}",
+                    await response.Content.ReadAsStringAsync());
         }
     }
 
@@ -173,8 +173,8 @@ public class FeishuService : IFeishuService
             var response = await _client.SendAsync(request);
             if (!response.IsSuccessStatusCode)
                 _logger.LogError(LogEvents.FeishuFailure,
-                    "[{Now}] An error occurred whilst announcing PET answer update:\n{Error}",
-                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), await response.Content.ReadAsStringAsync());
+                    "An error occurred whilst announcing PET answer update:\n{Error}",
+                    await response.Content.ReadAsStringAsync());
         }
     }
 
@@ -184,8 +184,7 @@ public class FeishuService : IFeishuService
         if (_lastTokenUpdate != null && now - _lastTokenUpdate <= TimeSpan.FromMinutes(89))
         {
             _logger.LogInformation(LogEvents.FeishuInfo,
-                "[{Now}] Skipping token update since it was last updated at {LastUpdate}",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+                "Skipping token update since it was last updated at {LastUpdate}",
                 _lastTokenUpdate.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss"));
             return;
         }
@@ -204,18 +203,16 @@ public class FeishuService : IFeishuService
         {
             if (_lastTokenUpdate != null)
                 _logger.LogInformation(LogEvents.FeishuInfo,
-                    "[{Now}] Successfully updated tenant token since its last update at {LastUpdate}",
-                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+                    "Successfully updated tenant token since its last update at {LastUpdate}",
                     _lastTokenUpdate.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss"));
             else
-                _logger.LogInformation(LogEvents.FeishuInfo, "[{Now}] Successfully updated tenant token",
-                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+                _logger.LogInformation(LogEvents.FeishuInfo, "Successfully updated tenant token");
         }
         else
         {
             _logger.LogError(LogEvents.FeishuFailure,
-                "[{Now}] An error occurred whilst updating tenant token:\n{Error}",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), await response.Content.ReadAsStringAsync());
+                "An error occurred whilst updating tenant token:\n{Error}",
+                await response.Content.ReadAsStringAsync());
         }
 
         var data = JsonConvert.DeserializeObject<FeishuTokenDelivererDto>(await response.Content.ReadAsStringAsync())!;

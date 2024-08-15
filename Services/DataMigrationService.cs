@@ -91,18 +91,15 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
         foreach (var child in _configuration.GetSection("Migration").GetSection("ApplicationDictionary").GetChildren())
             _applicationDictionary[int.Parse(child.Key)] = Guid.Parse(child.Value!);
 
-        _logger.LogInformation(LogEvents.DataMigration, "[{Now}] Data migration started",
-            DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+        _logger.LogInformation(LogEvents.DataMigration, "Data migration started");
         try
         {
             await MigrateDataAsync(cancellationToken);
-            _logger.LogInformation(LogEvents.DataMigration, "[{Now}] Data migration finished",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+            _logger.LogInformation(LogEvents.DataMigration, "Data migration finished");
         }
         catch (Exception ex)
         {
-            _logger.LogError(LogEvents.DataMigration, ex, "[{Now}] Data migration failed",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+            _logger.LogError(LogEvents.DataMigration, ex, "Data migration failed");
         }
     }
 
@@ -139,8 +136,7 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
         var index = startIndex;
         try
         {
-            _logger.LogInformation(LogEvents.DataMigration, "[{Now}] Migrating users...",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+            _logger.LogInformation(LogEvents.DataMigration, "Migrating users...");
             await using var mysqlCommand =
                 new MySqlCommand($"SELECT * FROM phizone_user WHERE id > {index}", mysqlConnection);
             await using var reader = await mysqlCommand.ExecuteReaderAsync(cancellationToken);
@@ -156,8 +152,8 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
                     continue;
                 }
 
-                _logger.LogInformation(LogEvents.DataMigration, "[{Now}] Migrating User #{Id} {UserName}",
-                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), index, userName);
+                _logger.LogInformation(LogEvents.DataMigration, "Migrating User #{Id} {UserName}",
+                    index, userName);
                 var avatarPath = reader.GetString("avatar");
                 avatarPath = avatarPath == "user/default.webp" ? null : Path.Combine(_mediaPath, avatarPath);
                 string? avatar = null;
@@ -225,15 +221,15 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
         }
         catch (SocketException ex)
         {
-            _logger.LogError(LogEvents.DataMigration, ex, "[{Now}] Migration aborted after User #{Index}",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), index);
+            _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after User #{Index}",
+                index);
             if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateUsers(mysqlConnection, cancellationToken, index);
         }
         catch (IOException ex)
         {
-            _logger.LogError(LogEvents.DataMigration, ex, "[{Now}] Migration aborted after User #{Index}",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), index);
+            _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after User #{Index}",
+                index);
             if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateUsers(mysqlConnection, cancellationToken, index);
         }
@@ -245,8 +241,7 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
         var index = startIndex;
         try
         {
-            _logger.LogInformation(LogEvents.DataMigration, "[{Now}] Migrating user relations...",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+            _logger.LogInformation(LogEvents.DataMigration, "Migrating user relations...");
             await using var mysqlCommand =
                 new MySqlCommand($"SELECT * FROM phizone_relation WHERE id > {index}", mysqlConnection);
             await using var reader = await mysqlCommand.ExecuteReaderAsync(cancellationToken);
@@ -257,8 +252,8 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
                 var followeeId = _userDictionary[reader.GetInt32("followee_id")];
                 var followerId = _userDictionary[reader.GetInt32("follower_id")];
                 if (await _userRelationRepository.RelationExistsAsync(followerId, followeeId)) continue;
-                _logger.LogInformation(LogEvents.DataMigration, "[{Now}] Migrating User Relation #{Id}",
-                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), index);
+                _logger.LogInformation(LogEvents.DataMigration, "Migrating User Relation #{Id}",
+                    index);
 
                 var userRelation = new UserRelation
                 {
@@ -272,15 +267,15 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
         }
         catch (SocketException ex)
         {
-            _logger.LogError(LogEvents.DataMigration, ex, "[{Now}] Migration aborted after User Relation #{Index}",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), index);
+            _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after User Relation #{Index}",
+                index);
             if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateUserRelations(mysqlConnection, cancellationToken, index);
         }
         catch (IOException ex)
         {
-            _logger.LogError(LogEvents.DataMigration, ex, "[{Now}] Migration aborted after User Relation #{Index}",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), index);
+            _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after User Relation #{Index}",
+                index);
             if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateUserRelations(mysqlConnection, cancellationToken, index);
         }
@@ -292,8 +287,7 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
         var index = startIndex;
         try
         {
-            _logger.LogInformation(LogEvents.DataMigration, "[{Now}] Migrating chapters...",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+            _logger.LogInformation(LogEvents.DataMigration, "Migrating chapters...");
             await using var mysqlCommand =
                 new MySqlCommand($"SELECT * FROM phizone_chapter WHERE id > {index}", mysqlConnection);
             await using var reader = await mysqlCommand.ExecuteReaderAsync(cancellationToken);
@@ -311,8 +305,8 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
                     continue;
                 }
 
-                _logger.LogInformation(LogEvents.DataMigration, "[{Now}] Migrating Chapter #{Id} {Title} - {Subtitle}",
-                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), index, title, subtitle);
+                _logger.LogInformation(LogEvents.DataMigration, "Migrating Chapter #{Id} {Title} - {Subtitle}",
+                    index, title, subtitle);
                 var illustrationPath = Path.Combine(_mediaPath, reader.GetString("illustration"));
                 var illustration = (await _fileStorageService.UploadImage<Chapter>(title,
                     await File.ReadAllBytesAsync(illustrationPath, cancellationToken), (16, 9))).Item1;
@@ -339,15 +333,15 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
         }
         catch (SocketException ex)
         {
-            _logger.LogError(LogEvents.DataMigration, ex, "[{Now}] Migration aborted after Chapter #{Index}",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), index);
+            _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after Chapter #{Index}",
+                index);
             if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateChapters(mysqlConnection, cancellationToken, index);
         }
         catch (IOException ex)
         {
-            _logger.LogError(LogEvents.DataMigration, ex, "[{Now}] Migration aborted after Chapter #{Index}",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), index);
+            _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after Chapter #{Index}",
+                index);
             if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateChapters(mysqlConnection, cancellationToken, index);
         }
@@ -359,8 +353,7 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
         var index = startIndex;
         try
         {
-            _logger.LogInformation(LogEvents.DataMigration, "[{Now}] Migrating songs...",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+            _logger.LogInformation(LogEvents.DataMigration, "Migrating songs...");
             await using var mysqlCommand =
                 new MySqlCommand($"SELECT * FROM phizone_song WHERE id > {index}", mysqlConnection);
             await using var reader = await mysqlCommand.ExecuteReaderAsync(cancellationToken);
@@ -379,8 +372,8 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
                     continue;
                 }
 
-                _logger.LogInformation(LogEvents.DataMigration, "[{Now}] Migrating Song #{Id} {Title}",
-                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), index, title);
+                _logger.LogInformation(LogEvents.DataMigration, "Migrating Song #{Id} {Title}",
+                    index, title);
                 var filePath = Path.Combine(_mediaPath, reader.GetString("song"));
                 var fileInfo =
                     await _songService.UploadAsync(title, await File.ReadAllBytesAsync(filePath, cancellationToken));
@@ -451,15 +444,15 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
         }
         catch (SocketException ex)
         {
-            _logger.LogError(LogEvents.DataMigration, ex, "[{Now}] Migration aborted after Song #{Index}",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), index);
+            _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after Song #{Index}",
+                index);
             if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateSongs(mysqlConnection, cancellationToken, index);
         }
         catch (IOException ex)
         {
-            _logger.LogError(LogEvents.DataMigration, ex, "[{Now}] Migration aborted after Song #{Index}",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), index);
+            _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after Song #{Index}",
+                index);
             if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateSongs(mysqlConnection, cancellationToken, index);
         }
@@ -471,8 +464,7 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
         var index = startIndex;
         try
         {
-            _logger.LogInformation(LogEvents.DataMigration, "[{Now}] Migrating song admissions...",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+            _logger.LogInformation(LogEvents.DataMigration, "Migrating song admissions...");
             await using var mysqlCommand =
                 new MySqlCommand($"SELECT * FROM phizone_song_chapters WHERE id > {index} ORDER BY chapter_id, song_id",
                     mysqlConnection);
@@ -485,8 +477,8 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
                 var songId = _songDictionary[reader.GetInt32("song_id")];
                 if (await _admissionRepository.AdmissionExistsAsync(chapterId, songId)) continue;
 
-                _logger.LogInformation(LogEvents.DataMigration, "[{Now}] Migrating Song Admission #{Id}",
-                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), index);
+                _logger.LogInformation(LogEvents.DataMigration, "Migrating Song Admission #{Id}",
+                    index);
 
                 var admission = new Admission
                 {
@@ -502,15 +494,15 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
         }
         catch (SocketException ex)
         {
-            _logger.LogError(LogEvents.DataMigration, ex, "[{Now}] Migration aborted after Song Admission #{Index}",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), index);
+            _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after Song Admission #{Index}",
+                index);
             if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateSongAdmissions(mysqlConnection, cancellationToken, index);
         }
         catch (IOException ex)
         {
-            _logger.LogError(LogEvents.DataMigration, ex, "[{Now}] Migration aborted after Song Admission #{Index}",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), index);
+            _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after Song Admission #{Index}",
+                index);
             if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateSongAdmissions(mysqlConnection, cancellationToken, index);
         }
@@ -522,8 +514,7 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
         var index = startIndex;
         try
         {
-            _logger.LogInformation(LogEvents.DataMigration, "[{Now}] Migrating charts...",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+            _logger.LogInformation(LogEvents.DataMigration, "Migrating charts...");
             await using var mysqlCommand =
                 new MySqlCommand($"SELECT * FROM phizone_chart WHERE id > {index}", mysqlConnection);
             await using var reader = await mysqlCommand.ExecuteReaderAsync(cancellationToken);
@@ -547,8 +538,8 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
                 }
 
                 _logger.LogInformation(LogEvents.DataMigration,
-                    "[{Now}] Migrating Chart #{Id} {Title} {Level} Lv.{Difficulty}",
-                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), index, song.Title, level, Math.Floor(difficulty));
+                    "Migrating Chart #{Id} {Title} {Level} Lv.{Difficulty}",
+                    index, song.Title, level, Math.Floor(difficulty));
 
                 var chartFile = reader.GetString("chart");
                 (string, string, ChartFormat, int)? chartInfo = null;
@@ -593,15 +584,15 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
         }
         catch (SocketException ex)
         {
-            _logger.LogError(LogEvents.DataMigration, ex, "[{Now}] Migration aborted after Chart #{Index}",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), index);
+            _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after Chart #{Index}",
+                index);
             if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateCharts(mysqlConnection, cancellationToken, index);
         }
         catch (IOException ex)
         {
-            _logger.LogError(LogEvents.DataMigration, ex, "[{Now}] Migration aborted after Chart #{Index}",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), index);
+            _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after Chart #{Index}",
+                index);
             if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateCharts(mysqlConnection, cancellationToken, index);
         }
@@ -613,8 +604,7 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
         var index = startIndex;
         try
         {
-            _logger.LogInformation(LogEvents.DataMigration, "[{Now}] Migrating play configurations...",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+            _logger.LogInformation(LogEvents.DataMigration, "Migrating play configurations...");
             await using var mysqlCommand =
                 new MySqlCommand(
                     $"SELECT * FROM player_configuration WHERE id > {index} AND perfect_judgment != 80 AND good_judgment != 160",
@@ -624,8 +614,8 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
             while (await reader.ReadAsync(cancellationToken))
             {
                 index = reader.GetInt32("id");
-                _logger.LogInformation(LogEvents.DataMigration, "[{Now}] Migrating Play Configuration #{Id}",
-                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), index);
+                _logger.LogInformation(LogEvents.DataMigration, "Migrating Play Configuration #{Id}",
+                    index);
 
                 var playConfiguration = new PlayConfiguration
                 {
@@ -649,15 +639,15 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
         }
         catch (SocketException ex)
         {
-            _logger.LogError(LogEvents.DataMigration, ex, "[{Now}] Migration aborted after Play Configuration #{Index}",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), index);
+            _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after Play Configuration #{Index}",
+                index);
             if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigratePlayConfigurations(mysqlConnection, cancellationToken, index);
         }
         catch (IOException ex)
         {
-            _logger.LogError(LogEvents.DataMigration, ex, "[{Now}] Migration aborted after Play Configuration #{Index}",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), index);
+            _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after Play Configuration #{Index}",
+                index);
             if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigratePlayConfigurations(mysqlConnection, cancellationToken, index);
         }
@@ -669,8 +659,7 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
         var index = startIndex;
         try
         {
-            _logger.LogInformation(LogEvents.DataMigration, "[{Now}] Migrating records...",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+            _logger.LogInformation(LogEvents.DataMigration, "Migrating records...");
             await using var mysqlCommand =
                 new MySqlCommand($"SELECT * FROM phizone_record WHERE id > {index}", mysqlConnection);
             await using var reader = await mysqlCommand.ExecuteReaderAsync(cancellationToken);
@@ -694,8 +683,8 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
                           rksFactor;
                 var culture = (CultureInfo)CultureInfo.CurrentCulture.Clone();
                 culture.NumberFormat.PercentPositivePattern = 1;
-                _logger.LogInformation(LogEvents.DataMigration, "[{Now}] Migrating Record #{Id} {Score} {Accuracy}",
-                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), index, score, accuracy.ToString("P2", culture));
+                _logger.LogInformation(LogEvents.DataMigration, "Migrating Record #{Id} {Score} {Accuracy}",
+                    index, score, accuracy.ToString("P2", culture));
                 var appId = await reader.GetInt("app_id") ?? 1;
 
                 var record = new Record
@@ -723,15 +712,15 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
         }
         catch (SocketException ex)
         {
-            _logger.LogError(LogEvents.DataMigration, ex, "[{Now}] Migration aborted after Record #{Index}",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), index);
+            _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after Record #{Index}",
+                index);
             if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateRecords(mysqlConnection, cancellationToken, index);
         }
         catch (IOException ex)
         {
-            _logger.LogError(LogEvents.DataMigration, ex, "[{Now}] Migration aborted after Record #{Index}",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), index);
+            _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after Record #{Index}",
+                index);
             if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateRecords(mysqlConnection, cancellationToken, index);
         }
@@ -743,8 +732,7 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
         var index = startIndex;
         try
         {
-            _logger.LogInformation(LogEvents.DataMigration, "[{Now}] Migrating comments...",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+            _logger.LogInformation(LogEvents.DataMigration, "Migrating comments...");
             await using var mysqlCommand =
                 new MySqlCommand($"SELECT * FROM phizone_comment WHERE id > {index}", mysqlConnection);
             await using var reader = await mysqlCommand.ExecuteReaderAsync(cancellationToken);
@@ -774,8 +762,8 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
 
                 if (resourceId == null || !await reader.IsDBNullAsync("deletion", cancellationToken)) continue;
 
-                _logger.LogInformation(LogEvents.DataMigration, "[{Now}] Migrating Comment #{Id}",
-                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), index);
+                _logger.LogInformation(LogEvents.DataMigration, "Migrating Comment #{Id}",
+                    index);
 
                 var comment = new Comment
                 {
@@ -792,15 +780,15 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
         }
         catch (SocketException ex)
         {
-            _logger.LogError(LogEvents.DataMigration, ex, "[{Now}] Migration aborted after Comment #{Index}",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), index);
+            _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after Comment #{Index}",
+                index);
             if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateComments(mysqlConnection, cancellationToken, index);
         }
         catch (IOException ex)
         {
-            _logger.LogError(LogEvents.DataMigration, ex, "[{Now}] Migration aborted after Comment #{Index}",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), index);
+            _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after Comment #{Index}",
+                index);
             if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateComments(mysqlConnection, cancellationToken, index);
         }
@@ -812,8 +800,7 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
         var index = startIndex;
         try
         {
-            _logger.LogInformation(LogEvents.DataMigration, "[{Now}] Migrating replies...",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+            _logger.LogInformation(LogEvents.DataMigration, "Migrating replies...");
             await using var mysqlCommand =
                 new MySqlCommand($"SELECT * FROM phizone_reply WHERE id > {index}", mysqlConnection);
             await using var reader = await mysqlCommand.ExecuteReaderAsync(cancellationToken);
@@ -825,8 +812,8 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
                     !_commentDictionary.ContainsKey(reader.GetInt32("comment_id")))
                     continue;
 
-                _logger.LogInformation(LogEvents.DataMigration, "[{Now}] Migrating Reply #{Id}",
-                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), index);
+                _logger.LogInformation(LogEvents.DataMigration, "Migrating Reply #{Id}",
+                    index);
 
                 var reply = new Reply
                 {
@@ -843,15 +830,15 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
         }
         catch (SocketException ex)
         {
-            _logger.LogError(LogEvents.DataMigration, ex, "[{Now}] Migration aborted after Reply #{Index}",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), index);
+            _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after Reply #{Index}",
+                index);
             if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateReplies(mysqlConnection, cancellationToken, index);
         }
         catch (IOException ex)
         {
-            _logger.LogError(LogEvents.DataMigration, ex, "[{Now}] Migration aborted after Reply #{Index}",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), index);
+            _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after Reply #{Index}",
+                index);
             if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateReplies(mysqlConnection, cancellationToken, index);
         }
@@ -863,8 +850,7 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
         var index = startIndex;
         try
         {
-            _logger.LogInformation(LogEvents.DataMigration, "[{Now}] Migrating votes...",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+            _logger.LogInformation(LogEvents.DataMigration, "Migrating votes...");
             await using var mysqlCommand =
                 new MySqlCommand($"SELECT * FROM phizone_vote WHERE id > {index} AND total > 0 ORDER BY chart_id",
                     mysqlConnection);
@@ -888,8 +874,8 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
                     lastChartId = chartId;
                 }
 
-                _logger.LogInformation(LogEvents.DataMigration, "[{Now}] Migrating Vote #{Id}",
-                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), index);
+                _logger.LogInformation(LogEvents.DataMigration, "Migrating Vote #{Id}",
+                    index);
 
                 var vote = new Vote
                 {
@@ -910,15 +896,15 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
         }
         catch (SocketException ex)
         {
-            _logger.LogError(LogEvents.DataMigration, ex, "[{Now}] Migration aborted after Vote #{Index}",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), index);
+            _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after Vote #{Index}",
+                index);
             if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateVotes(mysqlConnection, cancellationToken, index);
         }
         catch (IOException ex)
         {
-            _logger.LogError(LogEvents.DataMigration, ex, "[{Now}] Migration aborted after Vote #{Index}",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), index);
+            _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after Vote #{Index}",
+                index);
             if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateVotes(mysqlConnection, cancellationToken, index);
         }
@@ -930,8 +916,7 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
         var index = startIndex;
         try
         {
-            _logger.LogInformation(LogEvents.DataMigration, "[{Now}] Migrating likes...",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+            _logger.LogInformation(LogEvents.DataMigration, "Migrating likes...");
             await using var mysqlCommand = new MySqlCommand($"SELECT * FROM phizone_like WHERE id > {index}",
                 mysqlConnection);
             await using var reader = await mysqlCommand.ExecuteReaderAsync(cancellationToken);
@@ -939,8 +924,8 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
             while (await reader.ReadAsync(cancellationToken))
             {
                 index = reader.GetInt32("id");
-                _logger.LogInformation(LogEvents.DataMigration, "[{Now}] Migrating Like #{Id}",
-                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), index);
+                _logger.LogInformation(LogEvents.DataMigration, "Migrating Like #{Id}",
+                    index);
                 var id = await reader.GetInt("chapter_id");
                 if (id != null)
                 {
@@ -994,15 +979,15 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
         }
         catch (SocketException ex)
         {
-            _logger.LogError(LogEvents.DataMigration, ex, "[{Now}] Migration aborted after Like #{Index}",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), index);
+            _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after Like #{Index}",
+                index);
             if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateLikes(mysqlConnection, cancellationToken, index);
         }
         catch (IOException ex)
         {
-            _logger.LogError(LogEvents.DataMigration, ex, "[{Now}] Migration aborted after Like #{Index}",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), index);
+            _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after Like #{Index}",
+                index);
             if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateLikes(mysqlConnection, cancellationToken, index);
         }
@@ -1014,8 +999,7 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
         var index = startIndex;
         try
         {
-            _logger.LogInformation(LogEvents.DataMigration, "[{Now}] Migrating song submissions...",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+            _logger.LogInformation(LogEvents.DataMigration, "Migrating song submissions...");
             await using var mysqlCommand =
                 new MySqlCommand($"SELECT * FROM phizone_songupload WHERE id > {index} AND status != 2",
                     mysqlConnection);
@@ -1036,8 +1020,8 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
                     continue;
                 }
 
-                _logger.LogInformation(LogEvents.DataMigration, "[{Now}] Migrating Song Submission #{Id} {Title}",
-                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), index, title);
+                _logger.LogInformation(LogEvents.DataMigration, "Migrating Song Submission #{Id} {Title}",
+                    index, title);
                 var filePath = Path.Combine(_mediaPath, reader.GetString("song"));
                 var fileInfo =
                     await _songService.UploadAsync(title, await File.ReadAllBytesAsync(filePath, cancellationToken));
@@ -1107,15 +1091,15 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
         }
         catch (SocketException ex)
         {
-            _logger.LogError(LogEvents.DataMigration, ex, "[{Now}] Migration aborted after Song Submission #{Index}",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), index);
+            _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after Song Submission #{Index}",
+                index);
             if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateSongSubmissions(mysqlConnection, cancellationToken, index);
         }
         catch (IOException ex)
         {
-            _logger.LogError(LogEvents.DataMigration, ex, "[{Now}] Migration aborted after Song Submission #{Index}",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), index);
+            _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after Song Submission #{Index}",
+                index);
             if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateSongSubmissions(mysqlConnection, cancellationToken, index);
         }
@@ -1127,8 +1111,7 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
         var index = startIndex;
         try
         {
-            _logger.LogInformation(LogEvents.DataMigration, "[{Now}] Migrating chart submissions...",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+            _logger.LogInformation(LogEvents.DataMigration, "Migrating chart submissions...");
             await using var mysqlCommand =
                 new MySqlCommand($"SELECT * FROM phizone_chartupload WHERE id > {index} AND status != 2",
                     mysqlConnection);
@@ -1168,8 +1151,8 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
                 }
 
                 var title = song != null ? song.Title : songSubmission!.Title;
-                _logger.LogInformation(LogEvents.DataMigration, "[{Now}] Migrating Chart Submission #{Id} {Title}",
-                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), index, title);
+                _logger.LogInformation(LogEvents.DataMigration, "Migrating Chart Submission #{Id} {Title}",
+                    index, title);
 
                 var filePath = Path.Combine(_mediaPath, reader.GetString("chart"));
                 var chartSubmissionInfo = await _chartService.Upload(title, filePath);
@@ -1216,15 +1199,15 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
         }
         catch (SocketException ex)
         {
-            _logger.LogError(LogEvents.DataMigration, ex, "[{Now}] Migration aborted after Chart Submission #{Index}",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), index);
+            _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after Chart Submission #{Index}",
+                index);
             if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateChartSubmissions(mysqlConnection, cancellationToken, index);
         }
         catch (IOException ex)
         {
-            _logger.LogError(LogEvents.DataMigration, ex, "[{Now}] Migration aborted after Chart Submission #{Index}",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), index);
+            _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after Chart Submission #{Index}",
+                index);
             if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateChartSubmissions(mysqlConnection, cancellationToken, index);
         }
@@ -1236,8 +1219,7 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
         var index = startIndex;
         try
         {
-            _logger.LogInformation(LogEvents.DataMigration, "[{Now}] Migrating volunteer votes...",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+            _logger.LogInformation(LogEvents.DataMigration, "Migrating volunteer votes...");
             await using var mysqlCommand = new MySqlCommand($"SELECT * FROM phizone_volunteervote WHERE id > {index}",
                 mysqlConnection);
             await using var reader = await mysqlCommand.ExecuteReaderAsync(cancellationToken);
@@ -1246,8 +1228,8 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
             {
                 index = reader.GetInt32("id");
                 if (!_chartSubmissionDictionary.ContainsKey(reader.GetInt32("chart_id"))) continue;
-                _logger.LogInformation(LogEvents.DataMigration, "[{Now}] Migrating Volunteer Vote #{Id}",
-                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), index);
+                _logger.LogInformation(LogEvents.DataMigration, "Migrating Volunteer Vote #{Id}",
+                    index);
 
                 var volunteerVote = new VolunteerVote
                 {
@@ -1262,15 +1244,15 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
         }
         catch (SocketException ex)
         {
-            _logger.LogError(LogEvents.DataMigration, ex, "[{Now}] Migration aborted after Volunteer Vote #{Index}",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), index);
+            _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after Volunteer Vote #{Index}",
+                index);
             if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateVolunteerVotes(mysqlConnection, cancellationToken, index);
         }
         catch (IOException ex)
         {
-            _logger.LogError(LogEvents.DataMigration, ex, "[{Now}] Migration aborted after Volunteer Vote #{Index}",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), index);
+            _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after Volunteer Vote #{Index}",
+                index);
             if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateVolunteerVotes(mysqlConnection, cancellationToken, index);
         }
@@ -1282,8 +1264,7 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
         var index = startIndex;
         try
         {
-            _logger.LogInformation(LogEvents.DataMigration, "[{Now}] Migrating collaborations...",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+            _logger.LogInformation(LogEvents.DataMigration, "Migrating collaborations...");
             await using var mysqlCommand = new MySqlCommand($"SELECT * FROM phizone_collaboration WHERE id > {index}",
                 mysqlConnection);
             await using var reader = await mysqlCommand.ExecuteReaderAsync(cancellationToken);
@@ -1295,8 +1276,8 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
                 var chartSubmission =
                     await _chartSubmissionRepository.GetChartSubmissionAsync(
                         _chartSubmissionDictionary[reader.GetInt32("chart_id")]);
-                _logger.LogInformation(LogEvents.DataMigration, "[{Now}] Migrating Collaboration #{Id}",
-                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), index);
+                _logger.LogInformation(LogEvents.DataMigration, "Migrating Collaboration #{Id}",
+                    index);
                 var inviteeId = _userDictionary[reader.GetInt32("invitee_id")];
                 var date = reader.GetDateTimeOffset("time");
 
@@ -1321,15 +1302,15 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
         }
         catch (SocketException ex)
         {
-            _logger.LogError(LogEvents.DataMigration, ex, "[{Now}] Migration aborted after Collaboration #{Index}",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), index);
+            _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after Collaboration #{Index}",
+                index);
             if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateCollaborations(mysqlConnection, cancellationToken, index);
         }
         catch (IOException ex)
         {
-            _logger.LogError(LogEvents.DataMigration, ex, "[{Now}] Migration aborted after Collaboration #{Index}",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), index);
+            _logger.LogError(LogEvents.DataMigration, ex, "Migration aborted after Collaboration #{Index}",
+                index);
             if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
             await MigrateCollaborations(mysqlConnection, cancellationToken, index);
         }

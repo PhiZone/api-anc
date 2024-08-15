@@ -263,8 +263,8 @@ public class AuthenticationController(
             var claimsPrincipal = new ClaimsPrincipal(identity);
             claimsPrincipal.SetScopes(Scopes.OfflineAccess);
 
-            logger.LogInformation(LogEvents.UserInfo, "[{Now}] New login (TapTap Ghost): {UserName}",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), ghost.UserName);
+            logger.LogInformation(LogEvents.UserInfo, "New login (TapTap Ghost): {UserName}",
+                ghost.UserName);
 
             return SignIn(claimsPrincipal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
         }
@@ -729,8 +729,8 @@ public class AuthenticationController(
         user.AccessFailedCount = 0;
         await userRepository.SaveAsync();
 
-        logger.LogInformation(LogEvents.UserInfo, "[{Now}] New login ({Method}): #{Id} {UserName}",
-            DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), method, user.Id, user.UserName);
+        logger.LogInformation(LogEvents.UserInfo, "New login ({Method}): #{Id} {UserName}",
+            method, user.Id, user.UserName);
 
         return SignIn(claimsPrincipal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
     }

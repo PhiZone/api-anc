@@ -24,18 +24,15 @@ public class FileMigrationService(IServiceProvider serviceProvider, int position
         _songSubmissionRepository = scope.ServiceProvider.GetRequiredService<ISongSubmissionRepository>();
         _chartSubmissionRepository = scope.ServiceProvider.GetRequiredService<IChartSubmissionRepository>();
 
-        _logger.LogInformation(LogEvents.FileMigration, "[{Now}] File migration started",
-            DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+        _logger.LogInformation(LogEvents.FileMigration, "File migration started");
         try
         {
             await MigrateFilesAsync(cancellationToken);
-            _logger.LogInformation(LogEvents.FileMigration, "[{Now}] File migration finished",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+            _logger.LogInformation(LogEvents.FileMigration, "File migration finished");
         }
         catch (Exception ex)
         {
-            _logger.LogError(LogEvents.FileMigration, ex, "[{Now}] File migration failed",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"));
+            _logger.LogError(LogEvents.FileMigration, ex, "File migration failed");
         }
     }
 
@@ -51,8 +48,8 @@ public class FileMigrationService(IServiceProvider serviceProvider, int position
         foreach (var song in songs)
         {
             _logger.LogInformation(LogEvents.FileMigration,
-                "[{Now}] Migrating files for Song #{Id} {Current} / {Total}",
-                DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), song.Id, ++i, songs.Count);
+                "Migrating files for Song #{Id} {Current} / {Total}",
+                song.Id, ++i, songs.Count);
 
             if (song.File != null)
                 (song.File, song.FileChecksum) = await MigrateFileAsync<Song>(song.File, song.Title, cancellationToken);
@@ -72,8 +69,8 @@ public class FileMigrationService(IServiceProvider serviceProvider, int position
             foreach (var chart in charts)
             {
                 _logger.LogInformation(LogEvents.FileMigration,
-                    "[{Now}] Migrating files for Chart #{Id} {Current} / {Total}",
-                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"), chart.Id, ++j, charts.Count);
+                    "Migrating files for Chart #{Id} {Current} / {Total}",
+                    chart.Id, ++j, charts.Count);
                 if (chart.File == null) continue;
                 (chart.File, chart.FileChecksum) =
                     await MigrateFileAsync<Chart>(chart.File, chart.Title ?? song.Title, cancellationToken);
