@@ -535,7 +535,7 @@ public class RecordController(
         var records = await db.KeyExistsAsync($"{key}:records")
             ? JsonConvert.DeserializeObject<List<Record>>((await db.StringGetAsync($"{key}:records"))!)!
             : [];
-        if (records.Count > 1999) records = records.TakeLast(1999).ToList();
+        if (records.Count > 99) records = records.TakeLast(99).ToList();
         records.Add(record);
         await db.StringSetAsync($"{key}:records", (RedisValue)JsonConvert.SerializeObject(records),
             TimeSpan.FromDays(180));
