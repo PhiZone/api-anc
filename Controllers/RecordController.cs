@@ -315,8 +315,8 @@ public class RecordController(
             _ => 1
         });
 
-        if ((accuracy >= 0.98 && (highestAccuracy is >= 0.97 and < 0.98 || accuracy - highestAccuracy >= 0.01)) ||
-            (Math.Abs(accuracy - 1d) < 1e-7 && highestAccuracy < 1))
+        if (chart.IsRanked && ((accuracy >= 0.98 && (highestAccuracy is >= 0.97 and < 0.98 || accuracy - highestAccuracy >= 0.01)) ||
+            (Math.Abs(accuracy - 1d) < 1e-7 && highestAccuracy < 1)))
         {
             var pos = await recordRepository.CountRecordsAsync(r => r.ChartId == info.ChartId && r.Rks > rks) + 1;
             if (pos <= 1000)
