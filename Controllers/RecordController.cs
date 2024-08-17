@@ -550,7 +550,7 @@ public class RecordController(
         });
 
         var chartIds = records.Select(e => e.ChartId).Distinct();
-        var charts = await chartRepository.GetChartsAsync(predicate: e => chartIds.Contains(e.Id));
+        var charts = await chartRepository.GetChartsAsync(predicate: e => chartIds.Contains(e.Id), showAnonymous: true);
         var phiRks = records.OrderByDescending(e => e.Rks)
             .FirstOrDefault(r =>
                 r.OwnerId == player.Id && r.Score == 1000000 && charts.First(e => e.Id == r.ChartId).IsRanked)
