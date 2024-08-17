@@ -19,11 +19,11 @@ public class UserFilterDto : FilterDto<User>
 
     public List<UserRole>? RangeRole { get; set; }
 
-    public int? MinExperience { get; set; }
+    public ulong? MinExperience { get; set; }
 
-    public int? MaxExperience { get; set; }
+    public ulong? MaxExperience { get; set; }
 
-    public List<int>? RangeExperience { get; set; }
+    public List<ulong>? RangeExperience { get; set; }
 
     public string? ContainsTag { get; set; }
 
