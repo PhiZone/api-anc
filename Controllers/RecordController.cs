@@ -557,8 +557,8 @@ public class RecordController(
             ?.Rks ?? 0d;
         var best19Rks = records.Where(e => charts.First(f => f.Id == e.ChartId).IsRanked && e.OwnerId == player.Id)
             .GroupBy(e => e.ChartId)
-            .Select(g => g.OrderByDescending(e => e.Rks).ThenBy(e => e.DateCreated).First())
-            .Sum(r => r.Rks);
+            .Select(g => g.OrderByDescending(e => e.Rks).ThenBy(e => e.DateCreated).FirstOrDefault())
+            .Sum(r => r?.Rks ?? 0);
         var rksAfter = (phiRks + best19Rks) / 20;
 
         if (!chart.IsRanked) experienceDelta = (ulong)(experienceDelta * 0.5);
