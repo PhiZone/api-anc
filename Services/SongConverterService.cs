@@ -36,7 +36,7 @@ public class SongConverterService(
             var body = args.Body.ToArray();
             if (isSubmission)
             {
-                var song = await songSubmissionRepository.GetSongSubmissionAsync(new Guid(songId));
+                var song = await songSubmissionRepository.GetSongSubmissionAsync(Guid.Parse(songId));
                 var result = await songService.UploadAsync(song.Title, body);
                 if (result != null)
                 {
@@ -57,7 +57,7 @@ public class SongConverterService(
             }
             else
             {
-                var song = await songRepository.GetSongAsync(new Guid(songId));
+                var song = await songRepository.GetSongAsync(Guid.Parse(songId));
                 var result = await songService.UploadAsync(song.Title, body);
                 if (result != null)
                 {

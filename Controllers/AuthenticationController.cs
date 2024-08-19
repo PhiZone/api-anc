@@ -35,6 +35,7 @@ public class AuthenticationController(
     IMailService mailService,
     IResourceService resourceService,
     ITapTapService tapTapService,
+    ITapGhostService tapGhostService,
     IUserRepository userRepository,
     IApplicationRepository applicationRepository,
     IDtoMapper dtoMapper,
@@ -209,52 +210,28 @@ public class AuthenticationController(
                 return await Login(user, "TapTap");
             }
 
-            var db = redis.GetDatabase();
-            var key = $"phizone:tapghost:{tapApplicationId.Value}:{responseDto.Data.Unionid}";
-            UserDetailedDto ghost;
-            var ghostStr = await db.StringGetAsync(key);
-            if (ghostStr == RedisValue.Null)
-            {
-                ghost = new UserDetailedDto
+            var ghost = await tapGhostService.GetGhost(tapApplicationId.Value, responseDto.Data.Unionid);
+            if (ghost == null)
+                ghost = new TapGhost
                 {
-                    Id = CriticalValues.TapTapGhostUserId,
+                    ApplicationId = tapApplicationId.Value,
+                    UnionId = responseDto.Data.Unionid,
                     UserName = responseDto.Data.Name,
                     Avatar = responseDto.Data.Avatar,
-                    Gender = 0,
-                    Region = new RegionDto { Id = 47, Code = "CN", Name = "China" },
-                    Language = "zh-CN",
-                    Biography = null,
-                    Role = UserRole.Unactivated.ToString(),
                     Experience = 0,
-                    Tag = null,
                     Rks = 0,
-                    FollowerCount = 0,
-                    FolloweeCount = 0,
                     DateLastLoggedIn = DateTimeOffset.UtcNow,
-                    DateJoined = DateTimeOffset.UtcNow,
-                    DateOfBirth = null,
-                    DateFollowed = null,
-                    ApplicationLinks = null,
-                    Email = "ghost@phizone.cn",
-                    EmailConfirmed = true,
-                    PhoneNumber = null,
-                    PhoneNumberConfirmed = false,
-                    TwoFactorEnabled = false,
-                    Notifications = 0
+                    DateJoined = DateTimeOffset.UtcNow
                 };
-            }
             else
-            {
-                ghost = JsonConvert.DeserializeObject<UserDetailedDto>(ghostStr!)!;
                 ghost.DateLastLoggedIn = DateTimeOffset.UtcNow;
-            }
 
-            await db.StringSetAsync(key, JsonConvert.SerializeObject(ghost), TimeSpan.FromDays(180));
+            await tapGhostService.ModifyGhost(tapApplicationId.Value, responseDto.Data.Unionid, ghost);
 
             var identity = new ClaimsIdentity(TokenValidationParameters.DefaultAuthenticationType, Claims.Name,
                 Claims.Role);
 
-            identity.AddClaim(Claims.Subject, ghost.Id.ToString());
+            identity.AddClaim(Claims.Subject, CriticalValues.TapTapGhostUserId);
             identity.AddClaim(Claims.Name, ghost.UserName);
             identity.AddClaim("appId", tapApplicationId.Value.ToString());
             identity.AddClaim("unionId", responseDto.Data.Unionid);
@@ -329,10 +306,10 @@ public class AuthenticationController(
             var user = await userManager.FindByIdAsync(result.Principal!.GetClaim(Claims.Subject)!);
             if (user == null)
             {
-                var db = redis.GetDatabase();
-                var key =
-                    $"phizone:tapghost:{result.Principal!.GetClaim("appId")}:{result.Principal!.GetClaim("unionId")}";
-                if (!await db.KeyExistsAsync(key))
+                var appId = Guid.Parse(result.Principal!.GetClaim("appId")!);
+                var unionId = result.Principal!.GetClaim("unionId")!;
+                var ghost = await tapGhostService.GetGhost(appId, unionId);
+                if (ghost == null)
                     return Forbid(
                         new AuthenticationProperties(new Dictionary<string, string>
                         {
@@ -341,10 +318,9 @@ public class AuthenticationController(
                                 "The refresh token has expired."
                         }!), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
 
-                var ghost = JsonConvert.DeserializeObject<UserDetailedDto>((await db.StringGetAsync(key))!)!;
                 ghost.DateLastLoggedIn = DateTimeOffset.UtcNow;
 
-                await db.StringSetAsync(key, JsonConvert.SerializeObject(ghost), TimeSpan.FromDays(180));
+                await tapGhostService.ModifyGhost(appId, unionId, ghost);
                 var ghostIdentity = new ClaimsIdentity(result.Principal!.Claims,
                     TokenValidationParameters.DefaultAuthenticationType, Claims.Name,
                     Claims.Role);

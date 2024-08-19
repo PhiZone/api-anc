@@ -9,13 +9,15 @@ public static class LogEvents
     public const int FeishuInfo = 1004;
     public const int SchedulerInfo = 1005;
     public const int MessengerInfo = 1006;
-    public const int DatabaseSeederInfo = 1006;
+    public const int TapGhostInfo = 1007;
+    public const int DatabaseSeederInfo = 1008;
 
     public const int AudioFailure = 2000;
     public const int MailFailure = 2001;
     public const int ChartFailure = 2002;
     public const int FeishuFailure = 2003;
     public const int MessengerFailure = 2004;
+    public const int TapGhostFailure = 2005;
 
     public const int RecordDebug = 3000;
 

@@ -32,6 +32,8 @@ public class RecordDto
 
     public int GoodJudgment { get; set; }
 
+    public string? DeviceInfo { get; set; }
+
     public Guid ApplicationId { get; set; }
 
     public Guid ChartId { get; set; }

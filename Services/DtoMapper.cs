@@ -1,4 +1,6 @@
 ﻿using AutoMapper;
+using PhiZoneApi.Constants;
+using PhiZoneApi.Dtos.Deliverers;
 using PhiZoneApi.Dtos.Responses;
 using PhiZoneApi.Enums;
 using PhiZoneApi.Interfaces;
@@ -317,6 +319,22 @@ public class DtoMapper(
         dto.Question1 = MapPetQuestion(await petQuestionRepository.GetPetQuestionAsync(answer.Question1));
         dto.Question2 = MapPetQuestion(await petQuestionRepository.GetPetQuestionAsync(answer.Question2));
         dto.Question3 = MapPetQuestion(await petQuestionRepository.GetPetQuestionAsync(answer.Question3));
+        return dto;
+    }
+
+    public T MapTapGhost<T>(TapGhost ghost) where T : UserDetailedDto
+    {
+        var dto = mapper.Map<T>(ghost);
+        dto.Id = CriticalValues.TapTapGhostUserId;
+        dto.Region = new RegionDto
+        {
+            Id = 47,
+            Code = "CN",
+            Name = "China"
+        };
+        dto.Language = "zh-CN";
+        dto.Email = "ghost@phizone.cn";
+        dto.EmailConfirmed = true;
         return dto;
     }
 

@@ -86,6 +86,12 @@ public class RecordFilterDto : FilterDto<Record>
 
     public List<int>? RangeGoodJudgment { get; set; }
 
+    public string? ContainsDeviceInfo { get; set; }
+
+    public string? EqualsDeviceInfo { get; set; }
+
+    public List<string>? RangeDeviceInfo { get; set; }
+
     public List<Guid>? /* supposed to be nullable */ RangeApplicationId { get; set; }
 
     public DateTimeOffset? EarliestDateCreated { get; set; }

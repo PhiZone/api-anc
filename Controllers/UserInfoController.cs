@@ -29,6 +29,7 @@ public class UserInfoController(
     IResourceService resourceService,
     IUserRepository userRepository,
     ITapTapService tapTapService,
+    ITapGhostService tapGhostService,
     IApplicationRepository applicationRepository,
     INotificationRepository notificationRepository,
     IConnectionMultiplexer redis,
@@ -73,10 +74,11 @@ public class UserInfoController(
         }
         else
         {
-            var db = redis.GetDatabase();
-            var key = $"phizone:tapghost:{User.GetClaim("appId")}:{User.GetClaim("unionId")}";
-            if (!await db.KeyExistsAsync(key)) return Unauthorized();
-            dto = JsonConvert.DeserializeObject<UserDetailedDto>((await db.StringGetAsync(key))!)!;
+            var appId = Guid.Parse(User.GetClaim("appId")!);
+            var unionId = User.GetClaim("unionId")!;
+            var currentUser = await tapGhostService.GetGhost(appId, unionId);
+            if (currentUser == null) return Unauthorized();
+            dto = mapper.MapTapGhost<UserDetailedDto>(currentUser);
         }
 
         return Ok(new ResponseDto<UserDetailedDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
@@ -338,9 +340,6 @@ public class UserInfoController(
     public async Task<IActionResult> RequestTapTapGhostInheritance()
     {
         var db = redis.GetDatabase();
-        var key =
-            $"phizone:tapghost:{User.GetClaim("appId")}:{User.GetClaim("unionId")}";
-        if (!await db.KeyExistsAsync(key)) return Unauthorized();
         string code;
         do
         {
@@ -392,13 +391,14 @@ public class UserInfoController(
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidCode
             });
         key = (await db.StringGetAsync(key))!;
-        if (!await db.KeyExistsAsync($"phizone:tapghost:{key}"))
+        var appId = Guid.Parse(key.Split(':')[0]);
+        var unionId = key.Split(':')[1];
+        var ghost = await tapGhostService.GetGhost(appId, unionId);
+        if (ghost == null)
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNotFound
             });
-        var ghost = JsonConvert.DeserializeObject<UserDetailedDto>(
-            (await db.StringGetAsync($"phizone:tapghost:{key}"))!)!;
         if (currentUser.Avatar == null)
         {
             var client = new HttpClient();
@@ -408,11 +408,9 @@ public class UserInfoController(
             currentUser.Avatar = avatarUrl;
         }
 
-        if (await db.KeyExistsAsync($"phizone:tapghost:{key}:records"))
+        var records = await tapGhostService.GetRecords(appId, unionId);
+        if (records != null)
         {
-            var records =
-                JsonConvert.DeserializeObject<List<Record>>(
-                    (await db.StringGetAsync($"phizone:tapghost:{key}:records"))!)!;
             foreach (var record in records)
             {
                 record.OwnerId = currentUser.Id;
@@ -430,12 +428,10 @@ public class UserInfoController(
         currentUser.Experience += 1000;
         await userManager.UpdateAsync(currentUser);
 
-        var applicationId = Guid.Parse(key.Split(':')[0]);
-        var unionId = key.Split(':')[1];
         ApplicationUser tapUserRelation;
-        if (await applicationUserRepository.RelationExistsAsync(applicationId, currentUser.Id))
+        if (await applicationUserRepository.RelationExistsAsync(appId, currentUser.Id))
         {
-            tapUserRelation = await applicationUserRepository.GetRelationAsync(applicationId, currentUser.Id);
+            tapUserRelation = await applicationUserRepository.GetRelationAsync(appId, currentUser.Id);
             // ReSharper disable once InvertIf
             if (tapUserRelation.TapUnionId != unionId)
             {
@@ -448,7 +444,7 @@ public class UserInfoController(
         {
             tapUserRelation = new ApplicationUser
             {
-                ApplicationId = applicationId,
+                ApplicationId = appId,
                 UserId = currentUser.Id,
                 TapUnionId = unionId,
                 DateCreated = DateTimeOffset.UtcNow,
@@ -460,8 +456,6 @@ public class UserInfoController(
                     new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
         }
 
-        await db.KeyDeleteAsync($"phizone:tapghost:{key}");
-        await db.KeyDeleteAsync($"phizone:tapghost:{key}:records");
         return NoContent();
     }
 }

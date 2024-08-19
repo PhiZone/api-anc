@@ -41,9 +41,9 @@ public class ResourceRecordRepository(ApplicationDbContext context, IMeilisearch
 
     public async Task<bool> CreateResourceRecordsAsync(IEnumerable<ResourceRecord> resourceRecords)
     {
-        var enumerable = resourceRecords.ToList();
-        await context.ResourceRecords.AddRangeAsync(enumerable);
-        await meilisearchService.AddBatchAsync(enumerable);
+        var list = resourceRecords.ToList();
+        await context.ResourceRecords.AddRangeAsync(list);
+        await meilisearchService.AddBatchAsync(list);
         return await SaveAsync();
     }
 

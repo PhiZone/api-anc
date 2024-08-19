@@ -36,6 +36,8 @@ public class Record : LikeableResource, IComparable<Record>
 
     public int GoodJudgment { get; set; }
 
+    public string? DeviceInfo { get; set; }
+
     public Guid ApplicationId { get; set; }
 
     public Application Application { get; set; } = null!;

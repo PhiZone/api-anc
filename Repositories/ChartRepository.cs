@@ -96,9 +96,9 @@ public class ChartRepository(ApplicationDbContext context, IMeilisearchService m
 
     public async Task<bool> UpdateChartsAsync(IEnumerable<Chart> charts)
     {
-        var enumerable = charts.ToList();
-        context.Charts.UpdateRange(enumerable);
-        await meilisearchService.UpdateBatchAsync(enumerable);
+        var list = charts.ToList();
+        context.Charts.UpdateRange(list);
+        await meilisearchService.UpdateBatchAsync(list);
         return await SaveAsync();
     }
 

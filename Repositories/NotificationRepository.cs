@@ -54,9 +54,9 @@ public class NotificationRepository(ApplicationDbContext context, IMeilisearchSe
 
     public async Task<bool> UpdateNotificationsAsync(IEnumerable<Notification> notifications)
     {
-        var enumerable = notifications.ToList();
-        context.Notifications.UpdateRange(enumerable);
-        await meilisearchService.UpdateBatchAsync(enumerable);
+        var list = notifications.ToList();
+        context.Notifications.UpdateRange(list);
+        await meilisearchService.UpdateBatchAsync(list);
         return await SaveAsync();
     }
 

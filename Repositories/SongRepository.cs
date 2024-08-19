@@ -96,9 +96,9 @@ public class SongRepository(ApplicationDbContext context, IMeilisearchService me
 
     public async Task<bool> UpdateSongsAsync(IEnumerable<Song> songs)
     {
-        var enumerable = songs.ToList();
-        context.Songs.UpdateRange(enumerable);
-        await meilisearchService.UpdateBatchAsync(enumerable);
+        var list = songs.ToList();
+        context.Songs.UpdateRange(list);
+        await meilisearchService.UpdateBatchAsync(list);
         return await SaveAsync();
     }
 

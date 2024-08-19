@@ -56,6 +56,7 @@ public class RecordController(
     ILeaderboardService leaderboardService,
     IScriptService scriptService,
     IResourceService resourceService,
+    ITapGhostService tapGhostService,
     ILogger<RecordController> logger,
     INotificationService notificationService) : Controller
 {
@@ -282,6 +283,7 @@ public class RecordController(
             Rks = rks,
             PerfectJudgment = configuration.PerfectJudgment,
             GoodJudgment = configuration.GoodJudgment,
+            DeviceInfo = dto.DeviceInfo,
             DateCreated = DateTimeOffset.UtcNow
         };
 
@@ -310,13 +312,14 @@ public class RecordController(
         {
             >= 1000000 => 20,
             >= 960000 => 14,
-            >= 920000 => 9,
-            >= 880000 => 5,
-            _ => 1
+            >= 920000 => 10,
+            >= 880000 => 6,
+            _ => 2
         });
 
-        if (chart.IsRanked && ((accuracy >= 0.98 && (highestAccuracy is >= 0.97 and < 0.98 || accuracy - highestAccuracy >= 0.01)) ||
-            (Math.Abs(accuracy - 1d) < 1e-7 && highestAccuracy < 1)))
+        if (chart.IsRanked &&
+            ((accuracy >= 0.98 && (highestAccuracy is >= 0.97 and < 0.98 || accuracy - highestAccuracy >= 0.01)) ||
+             (Math.Abs(accuracy - 1d) < 1e-7 && highestAccuracy < 1)))
         {
             var pos = await recordRepository.CountRecordsAsync(r => r.ChartId == info.ChartId && r.Rks > rks) + 1;
             if (pos <= 1000)
@@ -428,13 +431,12 @@ public class RecordController(
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ApplicationNotFound
             });
-        var key = $"phizone:tapghost:{info.ApplicationId}:{info.PlayerId}";
-        if (!await db.KeyExistsAsync(key))
+        var player = await tapGhostService.GetGhost(info.ApplicationId, info.PlayerId);
+        if (player == null)
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNotFound
             });
-        var player = JsonConvert.DeserializeObject<UserDetailedDto>((await db.StringGetAsync(key))!)!;
 
         if (!await chartRepository.ChartExistsAsync(info.ChartId))
             return NotFound(new ResponseDto<object>
@@ -529,33 +531,30 @@ public class RecordController(
             Rks = rks,
             PerfectJudgment = info.PerfectJudgment,
             GoodJudgment = info.GoodJudgment,
+            DeviceInfo = dto.DeviceInfo,
             DateCreated = DateTimeOffset.UtcNow
         };
 
-        var records = await db.KeyExistsAsync($"{key}:records")
-            ? JsonConvert.DeserializeObject<List<Record>>((await db.StringGetAsync($"{key}:records"))!)!
-            : [];
-        if (records.Count > 99) records = records.TakeLast(99).ToList();
-        records.Add(record);
-        await db.StringSetAsync($"{key}:records", (RedisValue)JsonConvert.SerializeObject(records),
-            TimeSpan.FromDays(180));
+        await tapGhostService.CreateRecord(info.ApplicationId, info.PlayerId, record);
+        var records = await tapGhostService.GetRecords(info.ApplicationId, info.PlayerId) ?? [];
 
         experienceDelta += (ulong)(rksFactor * score switch
         {
             >= 1000000 => 20,
             >= 960000 => 14,
-            >= 920000 => 9,
-            >= 880000 => 5,
-            _ => 1
+            >= 920000 => 10,
+            >= 880000 => 6,
+            _ => 2
         });
 
-        var chartIds = records.Select(e => e.ChartId).Distinct();
+        var list = records.ToList();
+        var chartIds = list.Select(e => e.ChartId).Distinct();
         var charts = await chartRepository.GetChartsAsync(predicate: e => chartIds.Contains(e.Id), showAnonymous: true);
-        var phiRks = records.OrderByDescending(e => e.Rks)
+        var phiRks = list.OrderByDescending(e => e.Rks)
             .FirstOrDefault(r =>
-                r.OwnerId == player.Id && r.Score == 1000000 && charts.First(e => e.Id == r.ChartId).IsRanked)
+                r.Score == 1000000 && charts.First(e => e.Id == r.ChartId).IsRanked)
             ?.Rks ?? 0d;
-        var best19Rks = records.Where(e => charts.First(f => f.Id == e.ChartId).IsRanked && e.OwnerId == player.Id)
+        var best19Rks = list.Where(e => charts.First(f => f.Id == e.ChartId).IsRanked)
             .GroupBy(e => e.ChartId)
             .Select(g => g.OrderByDescending(e => e.Rks).ThenBy(e => e.DateCreated).FirstOrDefault())
             .Sum(r => r?.Rks ?? 0);
@@ -565,7 +564,7 @@ public class RecordController(
 
         player.Experience += experienceDelta;
         player.Rks = rksAfter;
-        await db.StringSetAsync(key, JsonConvert.SerializeObject(player), TimeSpan.FromDays(180));
+        await tapGhostService.ModifyGhost(info.ApplicationId, info.PlayerId, player);
 
         return StatusCode(StatusCodes.Status201Created,
             new ResponseDto<RecordResponseDto>

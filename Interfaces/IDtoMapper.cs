@@ -1,4 +1,5 @@
-﻿using PhiZoneApi.Dtos.Responses;
+﻿using PhiZoneApi.Dtos.Deliverers;
+using PhiZoneApi.Dtos.Responses;
 using PhiZoneApi.Models;
 
 namespace PhiZoneApi.Interfaces;
@@ -60,4 +61,6 @@ public interface IDtoMapper
     T MapNotification<T>(Notification notification) where T : NotificationDto;
 
     Task<T> MapPetAnswerAsync<T>(PetAnswer answer) where T : PetAnswerDto;
+
+    T MapTapGhost<T>(TapGhost ghost) where T : UserDetailedDto;
 }

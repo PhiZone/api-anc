@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using PhiZoneApi.Constants;
+using PhiZoneApi.Validators;
 
 namespace PhiZoneApi.Dtos.Requests;
 
@@ -36,4 +37,9 @@ public class RecordCreationDto
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     [MaxLength(100, ErrorMessage = ResponseCodes.ValueTooLong)]
     public string Checksum { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
+    [MaxLength(200, ErrorMessage = ResponseCodes.ValueTooLong)]
+    [UserInputValidator(ErrorMessage = ResponseCodes.ContentProhibited)]
+    public string? DeviceInfo { get; set; }
 }

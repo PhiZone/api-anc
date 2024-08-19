@@ -63,11 +63,16 @@ A template for both `./appsettings.Development.json` and `./appsettings.Producti
       "recruitmentreviewal"
     ]
   },
-  "MessengerSettings": {
-    "ApiUrl": "https://msgapi.example.com",
-    "ClientId": "yourid",
-    "ClientSecret": "yoursecret"
-  },
+   "MessengerSettings": {
+      "ApiUrl": "https://msgapi.example.com",
+      "ClientId": "yourid",
+      "ClientSecret": "yoursecret"
+   },
+   "TapGhostSettings": {
+      "ApiUrl": "https://tapapi.example.com",
+      "ClientId": "yourid",
+      "ClientSecret": "yoursecret"
+   },
   "AuthProviders": [
     {
       "Name": "GitHub",

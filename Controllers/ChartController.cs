@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
 using OpenIddict.Abstractions;
 using OpenIddict.Validation.AspNetCore;
 using PhiZoneApi.Configurations;
@@ -17,7 +16,6 @@ using PhiZoneApi.Filters;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 using PhiZoneApi.Utils;
-using StackExchange.Redis;
 using HP = PhiZoneApi.Constants.HostshipPermissions;
 
 // ReSharper disable RouteTemplates.ActionRoutePrefixCanBeExtractedToControllerRoute
@@ -59,7 +57,7 @@ public class ChartController(
     IEventRepository eventRepository,
     ITemplateService templateService,
     ILeaderboardService leaderboardService,
-    IConnectionMultiplexer redis,
+    ITapGhostService tapGhostService,
     ILogger<ChartController> logger,
     IMeilisearchService meilisearchService) : Controller
 {
@@ -200,10 +198,10 @@ public class ChartController(
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetChartTapTapGhost([FromRoute] Guid id, bool includeAssets = false)
     {
-        var db = redis.GetDatabase();
-        var key = $"phizone:tapghost:{User.GetClaim("appId")}:{User.GetClaim("unionId")}";
-        if (!await db.KeyExistsAsync(key)) return Unauthorized();
-        var currentUser = JsonConvert.DeserializeObject<UserDetailedDto>((await db.StringGetAsync(key))!)!;
+        var appId = Guid.Parse(User.GetClaim("appId")!);
+        var unionId = User.GetClaim("unionId")!;
+        var currentUser = await tapGhostService.GetGhost(appId, unionId);
+        if (currentUser == null) return Unauthorized();
         if (!await chartRepository.ChartExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
@@ -211,17 +209,22 @@ public class ChartController(
             });
         var chart = await chartRepository.GetChartAsync(id, includeAssets: includeAssets);
         var dto = dtoMapper.MapChart<ChartDetailedDto>(chart);
-        var records = JsonConvert.DeserializeObject<List<Record>>((await db.StringGetAsync($"{key}:records"))!)!;
+        var records = await tapGhostService.GetRecords(appId, unionId);
 
-        dto.PersonalBestScore = records.OrderByDescending(e => e.Score)
-            .FirstOrDefault(r => r.OwnerId == currentUser.Id && r.ChartId == id)
-            ?.Score;
-        dto.PersonalBestAccuracy = records.OrderByDescending(e => e.Accuracy)
-            .FirstOrDefault(r => r.OwnerId == currentUser.Id && r.ChartId == id)
-            ?.Accuracy;
-        dto.PersonalBestRks = records.OrderByDescending(e => e.Rks)
-            .FirstOrDefault(r => r.OwnerId == currentUser.Id && r.ChartId == id)
-            ?.Rks;
+        // ReSharper disable once InvertIf
+        if (records != null)
+        {
+            var list = records.ToList();
+            dto.PersonalBestScore = list.OrderByDescending(e => e.Score)
+                .FirstOrDefault(r => r.ChartId == id)
+                ?.Score;
+            dto.PersonalBestAccuracy = list.OrderByDescending(e => e.Accuracy)
+                .FirstOrDefault(r => r.ChartId == id)
+                ?.Accuracy;
+            dto.PersonalBestRks = list.OrderByDescending(e => e.Rks)
+                .FirstOrDefault(r => r.ChartId == id)
+                ?.Rks;
+        }
 
         return Ok(new ResponseDto<ChartDetailedDto>
         {
