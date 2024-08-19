@@ -564,7 +564,7 @@ public class RecordController(
 
         player.Experience += experienceDelta;
         player.Rks = rksAfter;
-        await tapGhostService.ModifyGhost(info.ApplicationId, info.PlayerId, player);
+        await tapGhostService.ModifyGhost(player);
 
         return StatusCode(StatusCodes.Status201Created,
             new ResponseDto<RecordResponseDto>

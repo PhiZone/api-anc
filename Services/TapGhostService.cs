@@ -70,13 +70,13 @@ public class TapGhostService : ITapGhostService
         return JsonConvert.DeserializeObject<IEnumerable<Record>>(await response.Content.ReadAsStringAsync())!;
     }
 
-    public async Task<HttpResponseMessage> ModifyGhost(Guid appId, string id, TapGhost ghost)
+    public async Task<HttpResponseMessage> ModifyGhost(TapGhost ghost)
     {
         await UpdateToken();
         var request = new HttpRequestMessage
         {
             Method = HttpMethod.Post,
-            RequestUri = new Uri($"{_tapGhostSettings.Value.ApiUrl}/ghosts/{appId}/{id}"),
+            RequestUri = new Uri($"{_tapGhostSettings.Value.ApiUrl}/ghosts"),
             Headers = { { "Authorization", $"Bearer {_token}" } },
             Content = JsonContent.Create(ghost)
         };

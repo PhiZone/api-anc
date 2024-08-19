@@ -9,7 +9,7 @@ public interface ITapGhostService
 
     Task<IEnumerable<Record>?> GetRecords(Guid appId, string id);
 
-    Task<HttpResponseMessage> ModifyGhost(Guid appId, string id, TapGhost ghost);
+    Task<HttpResponseMessage> ModifyGhost(TapGhost ghost);
 
     Task<HttpResponseMessage> CreateRecord(Guid appId, string id, Record record);
 }

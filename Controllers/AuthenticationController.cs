@@ -226,7 +226,7 @@ public class AuthenticationController(
             else
                 ghost.DateLastLoggedIn = DateTimeOffset.UtcNow;
 
-            await tapGhostService.ModifyGhost(tapApplicationId.Value, responseDto.Data.Unionid, ghost);
+            await tapGhostService.ModifyGhost(ghost);
 
             var identity = new ClaimsIdentity(TokenValidationParameters.DefaultAuthenticationType, Claims.Name,
                 Claims.Role);
@@ -320,7 +320,7 @@ public class AuthenticationController(
 
                 ghost.DateLastLoggedIn = DateTimeOffset.UtcNow;
 
-                await tapGhostService.ModifyGhost(appId, unionId, ghost);
+                await tapGhostService.ModifyGhost(ghost);
                 var ghostIdentity = new ClaimsIdentity(result.Principal!.Claims,
                     TokenValidationParameters.DefaultAuthenticationType, Claims.Name,
                     Claims.Role);
