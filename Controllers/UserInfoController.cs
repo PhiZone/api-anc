@@ -78,7 +78,7 @@ public class UserInfoController(
             var unionId = User.GetClaim("unionId")!;
             var currentUser = await tapGhostService.GetGhost(appId, unionId);
             if (currentUser == null) return Unauthorized();
-            dto = mapper.MapTapGhost<UserDetailedDto>(currentUser);
+            dto = mapper.MapGhostToUserDetailed<UserDetailedDto>(currentUser);
         }
 
         return Ok(new ResponseDto<UserDetailedDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });

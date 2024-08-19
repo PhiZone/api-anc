@@ -577,7 +577,7 @@ public class RecordController(
                     Score = score,
                     Accuracy = accuracy,
                     IsFullCombo = record.IsFullCombo,
-                    Player = mapper.Map<UserDto>(player),
+                    Player = dtoMapper.MapGhostToUser<UserDto>(player),
                     ExperienceDelta = experienceDelta,
                     RksBefore = rksBefore,
                     DateCreated = record.DateCreated

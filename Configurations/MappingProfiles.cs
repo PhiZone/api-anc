@@ -17,6 +17,7 @@ public class MappingProfiles : Profile
         CreateMap<UserDetailedDto, UserDto>();
         CreateMap<UserRegistrationDto, User>();
         CreateMap<UserRelation, UserRelationDto>();
+        CreateMap<TapGhost, UserDto>();
         CreateMap<TapGhost, UserDetailedDto>();
         CreateMap<Region, RegionDto>();
         CreateMap<Chapter, ChapterDto>();

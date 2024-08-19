@@ -322,7 +322,7 @@ public class DtoMapper(
         return dto;
     }
 
-    public T MapTapGhost<T>(TapGhost ghost) where T : UserDetailedDto
+    public T MapGhostToUser<T>(TapGhost ghost) where T : UserDto
     {
         var dto = mapper.Map<T>(ghost);
         dto.Id = CriticalValues.TapTapGhostUserId;
@@ -333,6 +333,12 @@ public class DtoMapper(
             Name = "China"
         };
         dto.Language = "zh-CN";
+        return dto;
+    }
+
+    public T MapGhostToUserDetailed<T>(TapGhost ghost) where T : UserDetailedDto
+    {
+        var dto = MapGhostToUser<T>(ghost);
         dto.Email = "ghost@phizone.cn";
         dto.EmailConfirmed = true;
         return dto;

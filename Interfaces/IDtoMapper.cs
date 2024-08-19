@@ -62,5 +62,7 @@ public interface IDtoMapper
 
     Task<T> MapPetAnswerAsync<T>(PetAnswer answer) where T : PetAnswerDto;
 
-    T MapTapGhost<T>(TapGhost ghost) where T : UserDetailedDto;
+    T MapGhostToUser<T>(TapGhost ghost) where T : UserDto;
+
+    T MapGhostToUserDetailed<T>(TapGhost ghost) where T : UserDetailedDto;
 }
