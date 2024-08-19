@@ -231,7 +231,7 @@ public class AuthenticationController(
             var identity = new ClaimsIdentity(TokenValidationParameters.DefaultAuthenticationType, Claims.Name,
                 Claims.Role);
 
-            identity.AddClaim(Claims.Subject, CriticalValues.TapTapGhostUserId);
+            identity.AddClaim(Claims.Subject, 1);
             identity.AddClaim(Claims.Name, ghost.UserName);
             identity.AddClaim("appId", tapApplicationId.Value.ToString());
             identity.AddClaim("unionId", responseDto.Data.Unionid);
