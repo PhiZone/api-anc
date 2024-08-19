@@ -75,6 +75,7 @@ public class TapGhostService : ITapGhostService
     public async Task<HttpResponseMessage> ModifyGhost(TapGhost ghost)
     {
         await UpdateToken();
+        _logger.LogInformation(JsonConvert.SerializeObject(ghost));
         var request = new HttpRequestMessage
         {
             Method = HttpMethod.Post,
