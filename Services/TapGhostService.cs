@@ -48,7 +48,7 @@ public class TapGhostService : ITapGhostService
             return null;
         }
 
-        return JsonConvert.DeserializeObject<TapGhost>(await response.Content.ReadAsStringAsync())!;
+        return JsonConvert.DeserializeObject<ResponseDto<TapGhost>>(await response.Content.ReadAsStringAsync())!.Data;
     }
 
     public async Task<IEnumerable<Record>?> GetRecords(Guid appId, string id)
