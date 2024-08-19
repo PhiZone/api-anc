@@ -98,13 +98,19 @@ public class TapGhostService : ITapGhostService
         return response;
     }
 
-    public async Task<double> CreateRecord(Guid appId, string id, Record record)
+    public async Task<double> CreateRecord(Guid appId, string id, Record record, bool isChartRanked)
     {
         await UpdateToken();
         var request = new HttpRequestMessage
         {
             Method = HttpMethod.Post,
-            RequestUri = new Uri($"{_tapGhostSettings.Value.ApiUrl}/records/{appId}/{id}"),
+            RequestUri = new UriBuilder($"{_tapGhostSettings.Value.ApiUrl}/records/{appId}/{id}")
+            {
+                Query = new QueryBuilder
+                {
+                    { "IsChartRanked", isChartRanked.ToString() },
+                }.ToString()
+            }.Uri,
             Headers = { { "Authorization", $"Bearer {_token}" } },
             Content = JsonContent.Create(record)
         };

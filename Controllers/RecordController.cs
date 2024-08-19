@@ -535,7 +535,7 @@ public class RecordController(
             DateCreated = DateTimeOffset.UtcNow
         };
 
-        var rksAfter = await tapGhostService.CreateRecord(info.ApplicationId, info.PlayerId, record);
+        var rksAfter = await tapGhostService.CreateRecord(info.ApplicationId, info.PlayerId, record, chart.IsRanked);
 
         experienceDelta += (ulong)(rksFactor * score switch
         {
