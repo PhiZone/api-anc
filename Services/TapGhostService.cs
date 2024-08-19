@@ -143,8 +143,8 @@ public class TapGhostService : ITapGhostService
                 await response.Content.ReadAsStringAsync());
         }
 
-        return JsonConvert.DeserializeObject<ResponseDto<DoubleValueDto>>(await response.Content.ReadAsStringAsync())!
-            .Data!.Value;
+        return JsonConvert.DeserializeObject<ResponseDto<RksDto>>(await response.Content.ReadAsStringAsync())!
+            .Data!.Rks;
     }
 
     private async Task UpdateToken(bool force = false)
