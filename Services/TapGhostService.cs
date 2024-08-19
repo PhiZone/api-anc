@@ -10,6 +10,8 @@ using PhiZoneApi.Dtos.Responses;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 
+// ReSharper disable TailRecursiveCall
+
 // ReSharper disable InvertIf
 
 namespace PhiZoneApi.Services;
@@ -27,7 +29,7 @@ public class TapGhostService : ITapGhostService
         _tapGhostSettings = tapGhostSettings;
         _logger = logger;
         _client = new HttpClient { BaseAddress = new Uri(tapGhostSettings.Value.ApiUrl) };
-        Task.Run(UpdateToken);
+        Task.Run(() => UpdateToken(true));
     }
 
     public async Task<TapGhost?> GetGhost(Guid appId, string id)
@@ -42,6 +44,12 @@ public class TapGhostService : ITapGhostService
         var response = await _client.SendAsync(request);
         if (!response.IsSuccessStatusCode)
         {
+            if (response.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                await UpdateToken(true);
+                return await GetGhost(appId, id);
+            }
+
             if (response.StatusCode != HttpStatusCode.NotFound)
                 _logger.LogError(LogEvents.TapGhostFailure, "An error occurred whilst retrieving ghost:\n{Error}",
                     await response.Content.ReadAsStringAsync());
@@ -59,10 +67,7 @@ public class TapGhostService : ITapGhostService
             Method = HttpMethod.Get,
             RequestUri = new UriBuilder($"{_tapGhostSettings.Value.ApiUrl}/records/{appId}/{id}")
             {
-                Query = new QueryBuilder
-                {
-                    { "PerPage", "-1" },
-                }.ToString()
+                Query = new QueryBuilder { { "PerPage", "-1" }, }.ToString()
             }.Uri,
             Headers = { { "Authorization", $"Bearer {_token}" } }
         };
@@ -70,6 +75,12 @@ public class TapGhostService : ITapGhostService
         var response = await _client.SendAsync(request);
         if (!response.IsSuccessStatusCode)
         {
+            if (response.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                await UpdateToken(true);
+                return await GetRecords(appId, id);
+            }
+
             _logger.LogError(LogEvents.TapGhostFailure, "An error occurred whilst retrieving records:\n{Error}",
                 await response.Content.ReadAsStringAsync());
             return null;
@@ -92,8 +103,16 @@ public class TapGhostService : ITapGhostService
         };
         var response = await _client.SendAsync(request);
         if (!response.IsSuccessStatusCode)
+        {
+            if (response.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                await UpdateToken(true);
+                return await ModifyGhost(ghost);
+            }
+
             _logger.LogError(LogEvents.TapGhostFailure, "An error occurred whilst modifying ghost:\n{Error}",
                 await response.Content.ReadAsStringAsync());
+        }
 
         return response;
     }
@@ -106,27 +125,32 @@ public class TapGhostService : ITapGhostService
             Method = HttpMethod.Post,
             RequestUri = new UriBuilder($"{_tapGhostSettings.Value.ApiUrl}/records/{appId}/{id}")
             {
-                Query = new QueryBuilder
-                {
-                    { "IsChartRanked", isChartRanked.ToString() },
-                }.ToString()
+                Query = new QueryBuilder { { "IsChartRanked", isChartRanked.ToString() }, }.ToString()
             }.Uri,
             Headers = { { "Authorization", $"Bearer {_token}" } },
             Content = JsonContent.Create(record)
         };
         var response = await _client.SendAsync(request);
         if (!response.IsSuccessStatusCode)
+        {
+            if (response.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                await UpdateToken(true);
+                return await CreateRecord(appId, id, record, isChartRanked);
+            }
+
             _logger.LogError(LogEvents.TapGhostFailure, "An error occurred whilst creating record:\n{Error}",
                 await response.Content.ReadAsStringAsync());
+        }
 
-        return JsonConvert.DeserializeObject<ResponseDto<DoubleValueDto>>(
-            await response.Content.ReadAsStringAsync())!.Data!.Value;
+        return JsonConvert.DeserializeObject<ResponseDto<DoubleValueDto>>(await response.Content.ReadAsStringAsync())!
+            .Data!.Value;
     }
 
-    private async Task UpdateToken()
+    private async Task UpdateToken(bool force = false)
     {
         var now = DateTimeOffset.UtcNow;
-        if (now - _lastTokenUpdate <= TimeSpan.FromHours(5.9)) return;
+        if (!force && now - _lastTokenUpdate <= TimeSpan.FromHours(5.9)) return;
 
         var request = new HttpRequestMessage
         {

@@ -413,6 +413,8 @@ public class UserInfoController(
         {
             foreach (var record in records)
             {
+                while (await recordRepository.RecordExistsAsync(record.Id))
+                    record.Id = Guid.NewGuid();
                 record.OwnerId = currentUser.Id;
                 await recordRepository.CreateRecordAsync(record);
             }
