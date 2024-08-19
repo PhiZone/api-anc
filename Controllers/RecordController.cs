@@ -535,8 +535,7 @@ public class RecordController(
             DateCreated = DateTimeOffset.UtcNow
         };
 
-        await tapGhostService.CreateRecord(info.ApplicationId, info.PlayerId, record);
-        var records = await tapGhostService.GetRecords(info.ApplicationId, info.PlayerId) ?? [];
+        var rksAfter = await tapGhostService.CreateRecord(info.ApplicationId, info.PlayerId, record);
 
         experienceDelta += (ulong)(rksFactor * score switch
         {
@@ -546,19 +545,6 @@ public class RecordController(
             >= 880000 => 6,
             _ => 2
         });
-
-        var list = records.ToList();
-        var chartIds = list.Select(e => e.ChartId).Distinct();
-        var charts = await chartRepository.GetChartsAsync(predicate: e => chartIds.Contains(e.Id), showAnonymous: true);
-        var phiRks = list.OrderByDescending(e => e.Rks)
-            .FirstOrDefault(r =>
-                r.Score == 1000000 && charts.First(e => e.Id == r.ChartId).IsRanked)
-            ?.Rks ?? 0d;
-        var best19Rks = list.Where(e => charts.First(f => f.Id == e.ChartId).IsRanked)
-            .GroupBy(e => e.ChartId)
-            .Select(g => g.OrderByDescending(e => e.Rks).ThenBy(e => e.DateCreated).FirstOrDefault())
-            .Sum(r => r?.Rks ?? 0);
-        var rksAfter = (phiRks + best19Rks) / 20;
 
         if (!chart.IsRanked) experienceDelta = (ulong)(experienceDelta * 0.5);
 

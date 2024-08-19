@@ -11,5 +11,5 @@ public interface ITapGhostService
 
     Task<HttpResponseMessage> ModifyGhost(TapGhost ghost);
 
-    Task<HttpResponseMessage> CreateRecord(Guid appId, string id, Record record);
+    Task<double> CreateRecord(Guid appId, string id, Record record);
 }

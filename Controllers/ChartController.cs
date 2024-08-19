@@ -57,7 +57,6 @@ public class ChartController(
     IEventRepository eventRepository,
     ITemplateService templateService,
     ILeaderboardService leaderboardService,
-    ITapGhostService tapGhostService,
     ILogger<ChartController> logger,
     IMeilisearchService meilisearchService) : Controller
 {
@@ -169,60 +168,6 @@ public class ChartController(
                 ?.Accuracy;
             dto.PersonalBestRks = (await recordRepository.GetRecordsAsync(["Rks"],
                     [true], 0, 1, r => r.OwnerId == currentUser.Id && r.ChartId == id)).FirstOrDefault()
-                ?.Rks;
-        }
-
-        return Ok(new ResponseDto<ChartDetailedDto>
-        {
-            Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto
-        });
-    }
-
-    /// <summary>
-    ///     Retrieves a specific chart using a TapTap ghost account.
-    /// </summary>
-    /// <param name="id">A chart's ID.</param>
-    /// <returns>A chart.</returns>
-    /// <response code="200">Returns a chart.</response>
-    /// <response code="304">
-    ///     When the resource has not been updated since last retrieval. Requires <c>If-None-Match</c>.
-    /// </response>
-    /// <response code="400">When any of the parameters is invalid.</response>
-    /// <response code="404">When the specified chart is not found.</response>
-    [HttpGet("{id:guid}/tapTap")]
-    [ServiceFilter(typeof(ETagFilter))]
-    [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<ChartDetailedDto>))]
-    [ProducesResponseType(typeof(void), StatusCodes.Status304NotModified, "text/plain")]
-    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
-    [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> GetChartTapTapGhost([FromRoute] Guid id, bool includeAssets = false)
-    {
-        var appId = Guid.Parse(User.GetClaim("appId")!);
-        var unionId = User.GetClaim("unionId")!;
-        var currentUser = await tapGhostService.GetGhost(appId, unionId);
-        if (currentUser == null) return Unauthorized();
-        if (!await chartRepository.ChartExistsAsync(id))
-            return NotFound(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
-            });
-        var chart = await chartRepository.GetChartAsync(id, includeAssets: includeAssets);
-        var dto = dtoMapper.MapChart<ChartDetailedDto>(chart);
-        var records = await tapGhostService.GetRecords(appId, unionId);
-
-        // ReSharper disable once InvertIf
-        if (records != null)
-        {
-            var list = records.ToList();
-            dto.PersonalBestScore = list.OrderByDescending(e => e.Score)
-                .FirstOrDefault(r => r.ChartId == id)
-                ?.Score;
-            dto.PersonalBestAccuracy = list.OrderByDescending(e => e.Accuracy)
-                .FirstOrDefault(r => r.ChartId == id)
-                ?.Accuracy;
-            dto.PersonalBestRks = list.OrderByDescending(e => e.Rks)
-                .FirstOrDefault(r => r.ChartId == id)
                 ?.Rks;
         }
 

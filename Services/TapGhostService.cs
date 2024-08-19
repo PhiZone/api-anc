@@ -1,4 +1,5 @@
 using System.Net;
+using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using OpenIddict.Abstractions;
@@ -38,7 +39,6 @@ public class TapGhostService : ITapGhostService
             RequestUri = new Uri($"{_tapGhostSettings.Value.ApiUrl}/ghosts/{appId}/{id}"),
             Headers = { { "Authorization", $"Bearer {_token}" } }
         };
-        _logger.LogInformation($"{_tapGhostSettings.Value.ApiUrl}/ghosts/{appId}/{id}");
         var response = await _client.SendAsync(request);
         if (!response.IsSuccessStatusCode)
         {
@@ -57,10 +57,16 @@ public class TapGhostService : ITapGhostService
         var request = new HttpRequestMessage
         {
             Method = HttpMethod.Get,
-            RequestUri = new Uri($"{_tapGhostSettings.Value.ApiUrl}/records/{appId}/{id}"),
+            RequestUri = new UriBuilder($"{_tapGhostSettings.Value.ApiUrl}/records/{appId}/{id}")
+            {
+                Query = new QueryBuilder
+                {
+                    { "PerPage", "-1" },
+                }.ToString()
+            }.Uri,
             Headers = { { "Authorization", $"Bearer {_token}" } }
         };
-        _logger.LogInformation($"{_tapGhostSettings.Value.ApiUrl}/records/{appId}/{id}");
+        _logger.LogInformation(request.RequestUri.ToString());
         var response = await _client.SendAsync(request);
         if (!response.IsSuccessStatusCode)
         {
@@ -92,7 +98,7 @@ public class TapGhostService : ITapGhostService
         return response;
     }
 
-    public async Task<HttpResponseMessage> CreateRecord(Guid appId, string id, Record record)
+    public async Task<double> CreateRecord(Guid appId, string id, Record record)
     {
         await UpdateToken();
         var request = new HttpRequestMessage
@@ -107,7 +113,8 @@ public class TapGhostService : ITapGhostService
             _logger.LogError(LogEvents.TapGhostFailure, "An error occurred whilst creating record:\n{Error}",
                 await response.Content.ReadAsStringAsync());
 
-        return response;
+        return JsonConvert.DeserializeObject<ResponseDto<DoubleValueDto>>(
+            await response.Content.ReadAsStringAsync())!.Data!.Value;
     }
 
     private async Task UpdateToken()
