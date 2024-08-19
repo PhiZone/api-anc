@@ -69,7 +69,8 @@ public class TapGhostService : ITapGhostService
             return null;
         }
 
-        return JsonConvert.DeserializeObject<IEnumerable<Record>>(await response.Content.ReadAsStringAsync())!;
+        return JsonConvert.DeserializeObject<ResponseDto<IEnumerable<Record>>>(
+            await response.Content.ReadAsStringAsync())!.Data;
     }
 
     public async Task<HttpResponseMessage> ModifyGhost(TapGhost ghost)
