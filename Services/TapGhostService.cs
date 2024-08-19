@@ -129,8 +129,11 @@ public class TapGhostService : ITapGhostService
             _logger.LogError(LogEvents.TapGhostFailure, "An error occurred whilst updating access token:\n{Error}",
                 await response.Content.ReadAsStringAsync());
 
+        var content = await response.Content.ReadAsStringAsync();
         var data =
-            JsonConvert.DeserializeObject<OpenIddictTokenResponseDto>(await response.Content.ReadAsStringAsync())!;
+            JsonConvert.DeserializeObject<OpenIddictTokenResponseDto>(content)!;
+        _logger.LogInformation(content);
+        _logger.LogInformation(data.AccessToken);
         _token = data.AccessToken;
         _lastTokenUpdate = now;
     }
