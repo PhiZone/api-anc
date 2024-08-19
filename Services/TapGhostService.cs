@@ -38,6 +38,7 @@ public class TapGhostService : ITapGhostService
             RequestUri = new Uri($"{_tapGhostSettings.Value.ApiUrl}/ghosts/{appId}/{id}"),
             Headers = { { "Authorization", $"Bearer {_token}" } }
         };
+        _logger.LogInformation($"{_tapGhostSettings.Value.ApiUrl}/ghosts/{appId}/{id}");
         var response = await _client.SendAsync(request);
         if (!response.IsSuccessStatusCode)
         {
@@ -59,6 +60,7 @@ public class TapGhostService : ITapGhostService
             RequestUri = new Uri($"{_tapGhostSettings.Value.ApiUrl}/records/{appId}/{id}"),
             Headers = { { "Authorization", $"Bearer {_token}" } }
         };
+        _logger.LogInformation($"{_tapGhostSettings.Value.ApiUrl}/records/{appId}/{id}");
         var response = await _client.SendAsync(request);
         if (!response.IsSuccessStatusCode)
         {
@@ -129,11 +131,8 @@ public class TapGhostService : ITapGhostService
             _logger.LogError(LogEvents.TapGhostFailure, "An error occurred whilst updating access token:\n{Error}",
                 await response.Content.ReadAsStringAsync());
 
-        var content = await response.Content.ReadAsStringAsync();
         var data =
-            JsonConvert.DeserializeObject<OpenIddictTokenResponseDto>(content)!;
-        _logger.LogInformation(content);
-        _logger.LogInformation(data.AccessToken);
+            JsonConvert.DeserializeObject<OpenIddictTokenResponseDto>(await response.Content.ReadAsStringAsync())!;
         _token = data.AccessToken;
         _lastTokenUpdate = now;
     }
