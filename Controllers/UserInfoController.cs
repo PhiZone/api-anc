@@ -347,8 +347,7 @@ public class UserInfoController(
         } while (await db.KeyExistsAsync($"phizone:tapghost:inherit:{code}"));
 
         await db.StringSetAsync($"phizone:tapghost:inherit:{code}",
-            $"{User.GetClaim("appId")}:{User.GetClaim("unionId")}",
-            TimeSpan.FromMinutes(10));
+            $"{User.GetClaim("appId")}:{User.GetClaim("unionId")}", TimeSpan.FromMinutes(10));
         return Ok(new ResponseDto<CodeDto>
         {
             Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = new CodeDto { Code = code }
@@ -413,8 +412,11 @@ public class UserInfoController(
         {
             foreach (var record in records)
             {
-                while (await recordRepository.RecordExistsAsync(record.Id))
+                do
+                {
                     record.Id = Guid.NewGuid();
+                } while (await recordRepository.RecordExistsAsync(record.Id));
+
                 record.OwnerId = currentUser.Id;
                 await recordRepository.CreateRecordAsync(record);
             }
