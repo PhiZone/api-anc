@@ -105,6 +105,7 @@ public class TapGhostService : ITapGhostService
         {
             if (response.StatusCode == HttpStatusCode.Unauthorized)
             {
+                _logger.LogInformation("Token {token} turns out to be invalid", _token ?? "null");
                 await UpdateToken(true);
                 return await ModifyGhost(ghost);
             }
