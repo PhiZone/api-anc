@@ -24,7 +24,8 @@ public class TapGhostService : ITapGhostService
     private readonly ITokenService _tokenService;
     private string? _token;
 
-    public TapGhostService(IOptions<TapGhostSettings> tapGhostSettings, ITokenService tokenService, ILogger<TapGhostService> logger)
+    public TapGhostService(IOptions<TapGhostSettings> tapGhostSettings, ITokenService tokenService,
+        ILogger<TapGhostService> logger)
     {
         _tapGhostSettings = tapGhostSettings;
         _tokenService = tokenService;
@@ -68,7 +69,7 @@ public class TapGhostService : ITapGhostService
             Method = HttpMethod.Get,
             RequestUri = new UriBuilder($"{_tapGhostSettings.Value.ApiUrl}/records/{appId}/{id}")
             {
-                Query = new QueryBuilder { { "PerPage", "-1" }, }.ToString()
+                Query = new QueryBuilder { { "PerPage", "-1" } }.ToString()
             }.Uri,
             Headers = { { "Authorization", $"Bearer {_token}" } }
         };
@@ -105,7 +106,6 @@ public class TapGhostService : ITapGhostService
         {
             if (response.StatusCode == HttpStatusCode.Unauthorized)
             {
-                _logger.LogInformation("Token {token} turns out to be invalid", _token ?? "null");
                 await UpdateToken(true);
                 return await ModifyGhost(ghost);
             }
@@ -125,7 +125,7 @@ public class TapGhostService : ITapGhostService
             Method = HttpMethod.Post,
             RequestUri = new UriBuilder($"{_tapGhostSettings.Value.ApiUrl}/records/{appId}/{id}")
             {
-                Query = new QueryBuilder { { "IsChartRanked", isChartRanked.ToString() }, }.ToString()
+                Query = new QueryBuilder { { "IsChartRanked", isChartRanked.ToString() } }.ToString()
             }.Uri,
             Headers = { { "Authorization", $"Bearer {_token}" } },
             Content = JsonContent.Create(record)
@@ -155,8 +155,6 @@ public class TapGhostService : ITapGhostService
             _token = token;
             return;
         }
-        if (force)
-            _logger.LogInformation(LogEvents.TapGhostInfo, "Forcing update of access token");
 
         var request = new HttpRequestMessage
         {

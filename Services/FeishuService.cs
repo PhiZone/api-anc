@@ -17,9 +17,9 @@ public class FeishuService : IFeishuService
     private readonly HttpClient _client;
     private readonly IConfiguration _config;
     private readonly IOptions<FeishuSettings> _feishuSettings;
-    private readonly ITokenService _tokenService;
     private readonly ILogger<FeishuService> _logger;
     private readonly IServiceProvider _provider;
+    private readonly ITokenService _tokenService;
     private string? _token;
 
     public FeishuService(IOptions<FeishuSettings> feishuSettings, ITokenService tokenService, IConfiguration config,
@@ -201,14 +201,10 @@ public class FeishuService : IFeishuService
         };
         var response = await _client.SendAsync(request);
         if (response.IsSuccessStatusCode)
-        {
             _logger.LogInformation(LogEvents.FeishuInfo, "Successfully updated tenant token");
-        }
         else
-        {
             _logger.LogError(LogEvents.FeishuFailure, "An error occurred whilst updating tenant token:\n{Error}",
                 await response.Content.ReadAsStringAsync());
-        }
 
         var data = JsonConvert.DeserializeObject<FeishuTokenDelivererDto>(await response.Content.ReadAsStringAsync())!;
         _token = data.TenantAccessToken;

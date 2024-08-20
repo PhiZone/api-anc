@@ -17,7 +17,8 @@ public class MessengerService : IMessengerService
     private readonly ITokenService _tokenService;
     private string? _token;
 
-    public MessengerService(IOptions<MessengerSettings> messengerSettings, ITokenService tokenService, ILogger<MessengerService> logger)
+    public MessengerService(IOptions<MessengerSettings> messengerSettings, ITokenService tokenService,
+        ILogger<MessengerService> logger)
     {
         _messengerSettings = messengerSettings;
         _tokenService = tokenService;
