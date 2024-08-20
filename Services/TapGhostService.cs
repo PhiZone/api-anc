@@ -154,6 +154,8 @@ public class TapGhostService : ITapGhostService
             _token = token;
             return;
         }
+        if (force)
+            _logger.LogInformation(LogEvents.TapGhostInfo, "Forcing update of access token");
 
         var request = new HttpRequestMessage
         {

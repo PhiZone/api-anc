@@ -9,6 +9,7 @@ public class TokenService : ITokenService
     public string? GetToken(int service, TimeSpan validFor)
     {
         var value = _dict.GetValueOrDefault(service);
+        Console.WriteLine(value);
         return DateTimeOffset.UtcNow - value.Item2 <= validFor ? value.Item1 : null;
     }
 
