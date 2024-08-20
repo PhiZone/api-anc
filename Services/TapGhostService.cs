@@ -21,12 +21,13 @@ public class TapGhostService : ITapGhostService
     private readonly HttpClient _client;
     private readonly ILogger<TapGhostService> _logger;
     private readonly IOptions<TapGhostSettings> _tapGhostSettings;
-    private DateTimeOffset _lastTokenUpdate;
+    private readonly ITokenService _tokenService;
     private string? _token;
 
-    public TapGhostService(IOptions<TapGhostSettings> tapGhostSettings, ILogger<TapGhostService> logger)
+    public TapGhostService(IOptions<TapGhostSettings> tapGhostSettings, ITokenService tokenService, ILogger<TapGhostService> logger)
     {
         _tapGhostSettings = tapGhostSettings;
+        _tokenService = tokenService;
         _logger = logger;
         _client = new HttpClient { BaseAddress = new Uri(tapGhostSettings.Value.ApiUrl) };
         Task.Run(() => UpdateToken(true));
@@ -71,7 +72,6 @@ public class TapGhostService : ITapGhostService
             }.Uri,
             Headers = { { "Authorization", $"Bearer {_token}" } }
         };
-        _logger.LogInformation(request.RequestUri.ToString());
         var response = await _client.SendAsync(request);
         if (!response.IsSuccessStatusCode)
         {
@@ -93,7 +93,6 @@ public class TapGhostService : ITapGhostService
     public async Task<HttpResponseMessage> ModifyGhost(TapGhost ghost)
     {
         await UpdateToken();
-        _logger.LogInformation(JsonConvert.SerializeObject(ghost));
         var request = new HttpRequestMessage
         {
             Method = HttpMethod.Post,
@@ -149,8 +148,12 @@ public class TapGhostService : ITapGhostService
 
     private async Task UpdateToken(bool force = false)
     {
-        var now = DateTimeOffset.UtcNow;
-        if (!force && now - _lastTokenUpdate <= TimeSpan.FromHours(5.9)) return;
+        var token = _tokenService.GetToken(CriticalValues.TapGhostServiceId, TimeSpan.FromHours(5.9));
+        if (!force && token != null)
+        {
+            _token = token;
+            return;
+        }
 
         var request = new HttpRequestMessage
         {
@@ -173,6 +176,6 @@ public class TapGhostService : ITapGhostService
         var data =
             JsonConvert.DeserializeObject<OpenIddictTokenResponseDto>(await response.Content.ReadAsStringAsync())!;
         _token = data.AccessToken;
-        _lastTokenUpdate = now;
+        _tokenService.UpdateToken(CriticalValues.TapGhostServiceId, _token);
     }
 }

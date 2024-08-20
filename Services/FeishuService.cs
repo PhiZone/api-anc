@@ -17,15 +17,16 @@ public class FeishuService : IFeishuService
     private readonly HttpClient _client;
     private readonly IConfiguration _config;
     private readonly IOptions<FeishuSettings> _feishuSettings;
+    private readonly ITokenService _tokenService;
     private readonly ILogger<FeishuService> _logger;
     private readonly IServiceProvider _provider;
-    private DateTimeOffset? _lastTokenUpdate;
     private string? _token;
 
-    public FeishuService(IOptions<FeishuSettings> feishuSettings, IConfiguration config, IServiceProvider provider,
-        ILogger<FeishuService> logger)
+    public FeishuService(IOptions<FeishuSettings> feishuSettings, ITokenService tokenService, IConfiguration config,
+        IServiceProvider provider, ILogger<FeishuService> logger)
     {
         _feishuSettings = feishuSettings;
+        _tokenService = tokenService;
         _config = config;
         _provider = provider;
         _logger = logger;
@@ -64,18 +65,18 @@ public class FeishuService : IFeishuService
                 RequestUri =
                     new Uri($"{_feishuSettings.Value.ApiUrl}/open-apis/im/v1/messages?receive_id_type=chat_id"),
                 Headers = { { "Authorization", $"Bearer {_token}" } },
-                Content = new StringContent(JsonConvert.SerializeObject(new FeishuMessageDto
-                {
-                    ReceiveId = _feishuSettings.Value.Chats[chat],
-                    MessageType = "interactive",
-                    Content = content,
-                    Uuid = Guid.NewGuid()
-                }), Encoding.UTF8, "application/json")
+                Content = new StringContent(
+                    JsonConvert.SerializeObject(new FeishuMessageDto
+                    {
+                        ReceiveId = _feishuSettings.Value.Chats[chat],
+                        MessageType = "interactive",
+                        Content = content,
+                        Uuid = Guid.NewGuid()
+                    }), Encoding.UTF8, "application/json")
             };
             var response = await _client.SendAsync(request);
             if (!response.IsSuccessStatusCode)
-                _logger.LogError(LogEvents.FeishuFailure,
-                    "An error occurred whilst announcing song update:\n{Error}",
+                _logger.LogError(LogEvents.FeishuFailure, "An error occurred whilst announcing song update:\n{Error}",
                     await response.Content.ReadAsStringAsync());
         }
     }
@@ -120,18 +121,18 @@ public class FeishuService : IFeishuService
                 RequestUri =
                     new Uri($"{_feishuSettings.Value.ApiUrl}/open-apis/im/v1/messages?receive_id_type=chat_id"),
                 Headers = { { "Authorization", $"Bearer {_token}" } },
-                Content = new StringContent(JsonConvert.SerializeObject(new FeishuMessageDto
-                {
-                    ReceiveId = _feishuSettings.Value.Chats[chat],
-                    MessageType = "interactive",
-                    Content = content,
-                    Uuid = Guid.NewGuid()
-                }), Encoding.UTF8, "application/json")
+                Content = new StringContent(
+                    JsonConvert.SerializeObject(new FeishuMessageDto
+                    {
+                        ReceiveId = _feishuSettings.Value.Chats[chat],
+                        MessageType = "interactive",
+                        Content = content,
+                        Uuid = Guid.NewGuid()
+                    }), Encoding.UTF8, "application/json")
             };
             var response = await _client.SendAsync(request);
             if (!response.IsSuccessStatusCode)
-                _logger.LogError(LogEvents.FeishuFailure,
-                    "An error occurred whilst announcing chart update:\n{Error}",
+                _logger.LogError(LogEvents.FeishuFailure, "An error occurred whilst announcing chart update:\n{Error}",
                     await response.Content.ReadAsStringAsync());
         }
     }
@@ -162,13 +163,14 @@ public class FeishuService : IFeishuService
                 RequestUri =
                     new Uri($"{_feishuSettings.Value.ApiUrl}/open-apis/im/v1/messages?receive_id_type=chat_id"),
                 Headers = { { "Authorization", $"Bearer {_token}" } },
-                Content = new StringContent(JsonConvert.SerializeObject(new FeishuMessageDto
-                {
-                    ReceiveId = _feishuSettings.Value.Chats[chat],
-                    MessageType = "interactive",
-                    Content = content,
-                    Uuid = Guid.NewGuid()
-                }), Encoding.UTF8, "application/json")
+                Content = new StringContent(
+                    JsonConvert.SerializeObject(new FeishuMessageDto
+                    {
+                        ReceiveId = _feishuSettings.Value.Chats[chat],
+                        MessageType = "interactive",
+                        Content = content,
+                        Uuid = Guid.NewGuid()
+                    }), Encoding.UTF8, "application/json")
             };
             var response = await _client.SendAsync(request);
             if (!response.IsSuccessStatusCode)
@@ -180,12 +182,10 @@ public class FeishuService : IFeishuService
 
     private async Task UpdateToken()
     {
-        var now = DateTimeOffset.UtcNow;
-        if (_lastTokenUpdate != null && now - _lastTokenUpdate <= TimeSpan.FromMinutes(89))
+        var token = _tokenService.GetToken(CriticalValues.FeishuServiceId, TimeSpan.FromMinutes(89));
+        if (token != null)
         {
-            _logger.LogInformation(LogEvents.FeishuInfo,
-                "Skipping token update since it was last updated at {LastUpdate}",
-                _lastTokenUpdate.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss"));
+            _token = token;
             return;
         }
 
@@ -193,30 +193,25 @@ public class FeishuService : IFeishuService
         {
             Method = HttpMethod.Post,
             RequestUri = new Uri($"{_feishuSettings.Value.ApiUrl}/open-apis/auth/v3/tenant_access_token/internal"),
-            Content = new StringContent(JsonConvert.SerializeObject(new FeishuTokenDto
-            {
-                AppId = _feishuSettings.Value.AppId, AppSecret = _feishuSettings.Value.AppSecret
-            }), Encoding.UTF8, "application/json")
+            Content = new StringContent(
+                JsonConvert.SerializeObject(new FeishuTokenDto
+                {
+                    AppId = _feishuSettings.Value.AppId, AppSecret = _feishuSettings.Value.AppSecret
+                }), Encoding.UTF8, "application/json")
         };
         var response = await _client.SendAsync(request);
         if (response.IsSuccessStatusCode)
         {
-            if (_lastTokenUpdate != null)
-                _logger.LogInformation(LogEvents.FeishuInfo,
-                    "Successfully updated tenant token since its last update at {LastUpdate}",
-                    _lastTokenUpdate.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss"));
-            else
-                _logger.LogInformation(LogEvents.FeishuInfo, "Successfully updated tenant token");
+            _logger.LogInformation(LogEvents.FeishuInfo, "Successfully updated tenant token");
         }
         else
         {
-            _logger.LogError(LogEvents.FeishuFailure,
-                "An error occurred whilst updating tenant token:\n{Error}",
+            _logger.LogError(LogEvents.FeishuFailure, "An error occurred whilst updating tenant token:\n{Error}",
                 await response.Content.ReadAsStringAsync());
         }
 
         var data = JsonConvert.DeserializeObject<FeishuTokenDelivererDto>(await response.Content.ReadAsStringAsync())!;
         _token = data.TenantAccessToken;
-        _lastTokenUpdate = now;
+        _tokenService.UpdateToken(CriticalValues.FeishuServiceId, _token);
     }
 }

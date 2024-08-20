@@ -14,12 +14,13 @@ public class MessengerService : IMessengerService
     private readonly HttpClient _client;
     private readonly ILogger<MessengerService> _logger;
     private readonly IOptions<MessengerSettings> _messengerSettings;
-    private DateTimeOffset _lastTokenUpdate;
+    private readonly ITokenService _tokenService;
     private string? _token;
 
-    public MessengerService(IOptions<MessengerSettings> messengerSettings, ILogger<MessengerService> logger)
+    public MessengerService(IOptions<MessengerSettings> messengerSettings, ITokenService tokenService, ILogger<MessengerService> logger)
     {
         _messengerSettings = messengerSettings;
+        _tokenService = tokenService;
         _logger = logger;
         _client = new HttpClient { BaseAddress = new Uri(messengerSettings.Value.ApiUrl) };
         Task.Run(UpdateToken);
@@ -63,8 +64,12 @@ public class MessengerService : IMessengerService
 
     private async Task UpdateToken()
     {
-        var now = DateTimeOffset.UtcNow;
-        if (now - _lastTokenUpdate <= TimeSpan.FromHours(5.9)) return;
+        var token = _tokenService.GetToken(CriticalValues.MessengerServiceId, TimeSpan.FromHours(5.9));
+        if (token != null)
+        {
+            _token = token;
+            return;
+        }
 
         var request = new HttpRequestMessage
         {
@@ -87,6 +92,6 @@ public class MessengerService : IMessengerService
         var data =
             JsonConvert.DeserializeObject<OpenIddictTokenResponseDto>(await response.Content.ReadAsStringAsync())!;
         _token = data.AccessToken;
-        _lastTokenUpdate = now;
+        _tokenService.UpdateToken(CriticalValues.MessengerServiceId, _token);
     }
 }

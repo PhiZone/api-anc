@@ -149,6 +149,7 @@ builder.Services.AddScoped<ITapTapService, TapTapService>();
 builder.Services.AddScoped<IMailService, MailService>();
 builder.Services.AddScoped<IMultimediaService, MultimediaService>();
 builder.Services.AddScoped<ITemplateService, TemplateService>();
+builder.Services.AddSingleton<ITokenService, TokenService>();
 builder.Services.AddSingleton<IResourceService, ResourceService>();
 builder.Services.AddSingleton<IFileStorageService, FileStorageService>();
 builder.Services.AddSingleton<IRabbitMqService, RabbitMqService>();
