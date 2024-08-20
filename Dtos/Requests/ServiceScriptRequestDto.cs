@@ -19,7 +19,6 @@ public class ServiceScriptRequestDto
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     [MaxLength(50000, ErrorMessage = ResponseCodes.ValueTooLong)]
-    [UserInputValidator(ErrorMessage = ResponseCodes.ContentProhibited)]
     public string Code { get; set; } = null!;
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]

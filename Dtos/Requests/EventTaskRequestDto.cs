@@ -17,7 +17,6 @@ public class EventTaskRequestDto
     public EventTaskType Type { get; set; }
 
     [MaxLength(50000, ErrorMessage = ResponseCodes.ValueTooLong)]
-    [UserInputValidator(ErrorMessage = ResponseCodes.ContentProhibited)]
     public string? Code { get; set; }
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
