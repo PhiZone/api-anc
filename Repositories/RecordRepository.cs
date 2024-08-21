@@ -82,11 +82,12 @@ public class RecordRepository(ApplicationDbContext context, IMeilisearchService 
 
     public async Task<bool> CreateRecordAsync(Record record)
     {
-        var chart = await context.Charts.Include(e => e.Song).FirstAsync(e => e.Id == record.ChartId);
+        var chart = await context.Charts.Include(e => e.Song).FirstOrDefaultAsync(e => e.Id == record.ChartId);
+        await context.Records.AddAsync(record);
+        if (chart == null) return await SaveAsync();
         chart.PlayCount = await context.Records.LongCountAsync(e => e.ChartId == record.ChartId) + 1;
         var song = await context.Songs.FirstAsync(e => e.Id == chart.SongId);
         song.PlayCount = await context.Records.LongCountAsync(e => e.Chart.SongId == chart.SongId) + 1;
-        await context.Records.AddAsync(record);
         context.Charts.Update(chart);
         context.Songs.Update(song);
         await meilisearchService.UpdateAsync(chart);
