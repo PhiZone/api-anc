@@ -401,7 +401,7 @@ public class RecordController(
     [HttpPost("tapTap")]
     [Consumes("application/json")]
     [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ResponseDto<RecordResponseDto>))]
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ResponseDto<RecordTapResponseDto>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
@@ -430,12 +430,6 @@ public class RecordController(
             return NotFound(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ApplicationNotFound
-            });
-        var player = await tapGhostService.GetGhost(info.ApplicationId, info.PlayerId);
-        if (player == null)
-            return NotFound(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNotFound
             });
 
         if (!await chartRepository.ChartExistsAsync(info.ChartId))
@@ -502,14 +496,13 @@ public class RecordController(
         var rksFactor = recordService.CalculateRksFactor(80, 160);
         var rks = recordService.CalculateRks(dto.Perfect, dto.GoodEarly + dto.GoodLate, dto.Bad, dto.Miss,
             chart.Difficulty, dto.StdDeviation) * rksFactor;
-        var rksBefore = player.Rks;
         var experienceDelta = 0ul;
 
         var culture = (CultureInfo)CultureInfo.CurrentCulture.Clone();
         culture.NumberFormat.PercentPositivePattern = 1;
         logger.LogInformation(LogEvents.RecordInfo,
-            "New record: {User} - {Chart} {Score} {Accuracy} {Rks} {StdDeviation}ms",
-            player.UserName, await resourceService.GetDisplayName(chart),
+            "New record: TapTap Ghost - {Chart} {Score} {Accuracy} {Rks} {StdDeviation}ms",
+            await resourceService.GetDisplayName(chart),
             score, accuracy.ToString("P2", culture), rks.ToString("N3"), dto.StdDeviation.ToString("N3"));
 
         var record = new Record
@@ -535,8 +528,6 @@ public class RecordController(
             DateCreated = DateTimeOffset.UtcNow
         };
 
-        var rksAfter = await tapGhostService.CreateRecord(info.ApplicationId, info.PlayerId, record, chart.IsRanked);
-
         experienceDelta += (ulong)(rksFactor * score switch
         {
             >= 1000000 => 20,
@@ -548,24 +539,20 @@ public class RecordController(
 
         if (!chart.IsRanked) experienceDelta = (ulong)(experienceDelta * 0.5);
 
-        player.Experience += experienceDelta;
-        player.Rks = rksAfter;
-        await tapGhostService.ModifyGhost(player);
+        tapGhostService.PublishRecord(info.ApplicationId, info.PlayerId, record, chart.IsRanked, experienceDelta);
 
         return StatusCode(StatusCodes.Status201Created,
-            new ResponseDto<RecordResponseDto>
+            new ResponseDto<RecordTapResponseDto>
             {
                 Status = ResponseStatus.Ok,
                 Code = ResponseCodes.Ok,
-                Data = new RecordResponseDto
+                Data = new RecordTapResponseDto
                 {
                     Id = record.Id,
                     Score = score,
                     Accuracy = accuracy,
                     IsFullCombo = record.IsFullCombo,
-                    Player = dtoMapper.MapGhostToUser<UserDto>(player),
                     ExperienceDelta = experienceDelta,
-                    RksBefore = rksBefore,
                     DateCreated = record.DateCreated
                 }
             });

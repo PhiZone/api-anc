@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text;
 using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
@@ -21,15 +22,19 @@ public class TapGhostService : ITapGhostService
     private readonly HttpClient _client;
     private readonly ILogger<TapGhostService> _logger;
     private readonly IOptions<TapGhostSettings> _tapGhostSettings;
+    private readonly IRabbitMqService _rabbitMqService;
     private readonly ITokenService _tokenService;
+    private readonly string _queue;
     private string? _token;
 
-    public TapGhostService(IOptions<TapGhostSettings> tapGhostSettings, ITokenService tokenService,
-        ILogger<TapGhostService> logger)
+    public TapGhostService(IOptions<TapGhostSettings> tapGhostSettings, IRabbitMqService rabbitMqService,
+        ITokenService tokenService, IHostEnvironment env, ILogger<TapGhostService> logger)
     {
         _tapGhostSettings = tapGhostSettings;
         _tokenService = tokenService;
         _logger = logger;
+        _rabbitMqService = rabbitMqService;
+        _queue = env.IsProduction() ? "tap-record" : "tap-record-dev";
         _client = new HttpClient { BaseAddress = new Uri(tapGhostSettings.Value.ApiUrl) };
         Task.Run(() => UpdateToken(true));
     }
@@ -53,7 +58,8 @@ public class TapGhostService : ITapGhostService
             }
 
             if (response.StatusCode != HttpStatusCode.NotFound)
-                _logger.LogError(LogEvents.TapGhostFailure, "An error occurred whilst retrieving ghost:\n{Error}",
+                _logger.LogError(LogEvents.TapGhostFailure,
+                    "An error occurred whilst retrieving ghost ({Status}):\n{Error}", response.StatusCode,
                     await response.Content.ReadAsStringAsync());
             return null;
         }
@@ -82,7 +88,8 @@ public class TapGhostService : ITapGhostService
                 return await GetRecords(appId, id);
             }
 
-            _logger.LogError(LogEvents.TapGhostFailure, "An error occurred whilst retrieving records:\n{Error}",
+            _logger.LogError(LogEvents.TapGhostFailure,
+                "An error occurred whilst retrieving records ({Status}):\n{Error}", response.StatusCode,
                 await response.Content.ReadAsStringAsync());
             return null;
         }
@@ -110,8 +117,8 @@ public class TapGhostService : ITapGhostService
                 return await ModifyGhost(ghost);
             }
 
-            _logger.LogError(LogEvents.TapGhostFailure, "An error occurred whilst modifying ghost:\n{Error}",
-                await response.Content.ReadAsStringAsync());
+            _logger.LogError(LogEvents.TapGhostFailure, "An error occurred whilst modifying ghost ({Status}):\n{Error}",
+                response.StatusCode, await response.Content.ReadAsStringAsync());
         }
 
         return response;
@@ -139,12 +146,24 @@ public class TapGhostService : ITapGhostService
                 return await CreateRecord(appId, id, record, isChartRanked);
             }
 
-            _logger.LogError(LogEvents.TapGhostFailure, "An error occurred whilst creating record:\n{Error}",
-                await response.Content.ReadAsStringAsync());
+            _logger.LogError(LogEvents.TapGhostFailure, "An error occurred whilst creating record ({Status}):\n{Error}",
+                response.StatusCode, await response.Content.ReadAsStringAsync());
         }
 
-        return JsonConvert.DeserializeObject<ResponseDto<RksDto>>(await response.Content.ReadAsStringAsync())!
-            .Data!.Rks;
+        return JsonConvert.DeserializeObject<ResponseDto<RksDto>>(await response.Content.ReadAsStringAsync())!.Data!
+            .Rks;
+    }
+
+    public void PublishRecord(Guid appId, string id, Record record, bool isChartRanked, ulong experienceDelta)
+    {
+        using var channel = _rabbitMqService.GetConnection().CreateModel();
+        var properties = channel.CreateBasicProperties();
+        properties.Headers = new Dictionary<string, object>
+        {
+            { "AppId", appId.ToString() }, { "Id", id }, { "IsChartRanked", isChartRanked.ToString() }, { "ExpDelta", experienceDelta.ToString() }
+        };
+        var body = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(record));
+        channel.BasicPublish("", _queue, false, properties, body);
     }
 
     private async Task UpdateToken(bool force = false)

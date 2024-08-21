@@ -176,6 +176,9 @@ builder.Services.AddSingleton<IHostedService>(provider => new SongConverterServi
     provider.GetService<IServiceScopeFactory>()!.CreateScope().ServiceProvider.GetService<ISongSubmissionRepository>()!,
     provider.GetService<IFeishuService>()!, provider.GetService<IHostEnvironment>()!,
     provider.GetService<ILogger<SongConverterService>>()!));
+builder.Services.AddSingleton<IHostedService>(provider => new TapRecordService(provider.GetService<IRabbitMqService>()!,
+    provider.GetService<ITapGhostService>()!, provider.GetService<IHostEnvironment>()!,
+    provider.GetService<ILogger<TapRecordService>>()!));
 builder.Services.AddHostedService<DatabaseSeeder>();
 builder.Services.AddHostedService<DataConsistencyMaintainer>();
 builder.Services.AddHostedService<EventTaskScheduler>();
