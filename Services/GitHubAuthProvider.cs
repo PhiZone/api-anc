@@ -42,7 +42,7 @@ public class GitHubAuthProvider : IAuthProvider
             ? new HttpClient()
             : new HttpClient(new HttpClientHandler { Proxy = new WebProxy { Address = new Uri(config["Proxy"]!) } });
         // ReSharper disable once InvertIf
-        if (!_client.TestConnect("https://api.github.com/"))
+        if (!_client.TestConnect("https://api.github.com/").Result)
         {
             _client = new HttpClient();
             _useMessenger = true;
