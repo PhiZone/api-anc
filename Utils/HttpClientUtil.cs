@@ -4,19 +4,15 @@ public static class HttpClientUtil
 {
     public static async Task<bool> TestConnect(this HttpClient client, string uri, double timeoutInSeconds = 5)
     {
-        var timeout = client.Timeout;
-        bool result;
-        client.Timeout = TimeSpan.FromSeconds(timeoutInSeconds);
+        using var cts = new CancellationTokenSource();
+        cts.CancelAfter(TimeSpan.FromSeconds(timeoutInSeconds));
         try
         {
-            result = (await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, uri))).IsSuccessStatusCode;
+            return (await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, uri), cts.Token)).IsSuccessStatusCode;
         }
         catch (Exception)
         {
-            result = false;
+            return false;
         }
-
-        client.Timeout = timeout;
-        return result;
     }
 }
