@@ -63,6 +63,31 @@ public class MessengerService : IMessengerService
         return response;
     }
 
+    public async Task<HttpResponseMessage> Proxy(HttpRequestMessage message)
+    {
+        var dto = new ProxyRequestDto
+        {
+            Uri = message.RequestUri!.AbsoluteUri,
+            Method = message.Method.Method,
+            Headers = message.Headers.Select(header => new HeaderDto { Key = header.Key, Value = header.Value.First() }),
+            Body = message.Content != null ? await message.Content.ReadAsStringAsync() : null
+        };
+        await UpdateToken();
+        var request = new HttpRequestMessage
+        {
+            Method = HttpMethod.Post,
+            RequestUri = new Uri($"{_messengerSettings.Value.ApiUrl}/proxy"),
+            Headers = { { "Authorization", $"Bearer {_token}" } },
+            Content = JsonContent.Create(dto)
+        };
+        var response = await _client.SendAsync(request);
+        if (!response.IsSuccessStatusCode)
+            _logger.LogError(LogEvents.MessengerFailure, "An error occurred whilst sending proxy request:\n{Error}",
+                await response.Content.ReadAsStringAsync());
+
+        return response;
+    }
+
     private async Task UpdateToken()
     {
         var token = _tokenService.GetToken(CriticalValues.MessengerServiceId, TimeSpan.FromHours(5.9));

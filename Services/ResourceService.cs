@@ -182,7 +182,7 @@ public partial class ResourceService(IServiceProvider serviceProvider, IConfigur
         return code.ToString();
     }
 
-    private bool IsValid(string input, Regex regex)
+    private static bool IsValid(string input, Regex regex)
     {
         if (string.IsNullOrEmpty(input)) return false;
         var enumerator = regex.EnumerateMatches((ReadOnlySpan<char>)input).GetEnumerator();

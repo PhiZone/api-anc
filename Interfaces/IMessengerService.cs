@@ -7,4 +7,6 @@ public interface IMessengerService
     Task<HttpResponseMessage> SendMail(MailTaskDto dto);
 
     Task<HttpResponseMessage> SendUserInput(UserInputDelivererDto dto);
+
+    Task<HttpResponseMessage> Proxy(HttpRequestMessage message);
 }

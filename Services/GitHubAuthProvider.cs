@@ -21,12 +21,15 @@ public class GitHubAuthProvider : IAuthProvider
     private readonly string _clientSecret;
     private readonly string _illustrationUrl;
     private readonly IConnectionMultiplexer _redis;
+    private readonly IMessengerService _messengerService;
     private readonly IServiceProvider _serviceProvider;
+    private readonly bool _useMessenger;
 
     public GitHubAuthProvider(IOptions<List<AuthProvider>> authProviders, IConnectionMultiplexer redis,
-        IServiceProvider serviceProvider, IConfiguration config)
+        IMessengerService messengerService, IServiceProvider serviceProvider, IConfiguration config)
     {
         _redis = redis;
+        _messengerService = messengerService;
         _serviceProvider = serviceProvider;
         var providerSettings = authProviders.Value.First(e => e.Name == "GitHub");
         _clientId = providerSettings.ClientId;
@@ -36,10 +39,13 @@ public class GitHubAuthProvider : IAuthProvider
         _illustrationUrl = providerSettings.IllustrationUrl;
         _client = string.IsNullOrEmpty(config["Proxy"])
             ? new HttpClient()
-            : new HttpClient(new HttpClientHandler
-            {
-                Proxy = new WebProxy { Address = new Uri(config["Proxy"]!) }
-            });
+            : new HttpClient(new HttpClientHandler { Proxy = new WebProxy { Address = new Uri(config["Proxy"]!) } });
+        // ReSharper disable once InvertIf
+        if (!_client.Send(new HttpRequestMessage(HttpMethod.Get, "https://api.github.com/")).IsSuccessStatusCode)
+        {
+            _client = new HttpClient();
+            _useMessenger = true;
+        }
     }
 
     public async Task InitializeAsync()
@@ -81,7 +87,8 @@ public class GitHubAuthProvider : IAuthProvider
         {
             Type = ServiceResponseType.Redirect,
             RedirectUri =
-                new UriBuilder("https://github.com/login/oauth/authorize") { Query = query.ToString() }.Uri.ToString(),
+                new UriBuilder("https://github.com/login/oauth/authorize") { Query = query.ToString() }.Uri
+                    .ToString(),
             Message = null
         };
     }
@@ -109,7 +116,7 @@ public class GitHubAuthProvider : IAuthProvider
             }.Uri,
             Headers = { { "Accept", "application/json" } }
         };
-        var response = await _client.SendAsync(request);
+        var response = await SendAsync(request);
         if (!response.IsSuccessStatusCode) return null;
 
         var content = JsonConvert.DeserializeObject<GitHubTokenDto>(await response.Content.ReadAsStringAsync())!;
@@ -139,8 +146,10 @@ public class GitHubAuthProvider : IAuthProvider
 
         return new RemoteUserDto
         {
-            Id = content.Id.ToString(), UserName = content.Name, Email = content.Email,
-            Avatar = await _client.GetByteArrayAsync(content.AvatarUrl)
+            Id = content.Id.ToString(),
+            UserName = content.Name,
+            Email = content.Email,
+            Avatar = await GetByteArrayAsync(content.AvatarUrl)
         };
     }
 
@@ -230,6 +239,19 @@ public class GitHubAuthProvider : IAuthProvider
             RequestUri = new Uri("https://api.github.com/user"),
             Headers = { { "Authorization", $"Bearer {accessToken}" }, { "User-Agent", "PhiZone" } }
         };
-        return await _client.SendAsync(request);
+        return await SendAsync(request);
+    }
+
+    private async Task<HttpResponseMessage> SendAsync(HttpRequestMessage message)
+    {
+        return await (_useMessenger ? _messengerService.Proxy(message) : _client.SendAsync(message));
+    }
+
+    private async Task<byte[]> GetByteArrayAsync(Uri uri)
+    {
+        return _useMessenger
+            ? await (await _messengerService.Proxy(new HttpRequestMessage(HttpMethod.Get, uri))).Content
+                .ReadAsByteArrayAsync()
+            : await _client.GetByteArrayAsync(uri);
     }
 }

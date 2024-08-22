@@ -21,12 +21,15 @@ public class DiscordAuthProvider : IAuthProvider
     private readonly string _clientSecret;
     private readonly string _illustrationUrl;
     private readonly IConnectionMultiplexer _redis;
+    private readonly IMessengerService _messengerService;
     private readonly IServiceProvider _serviceProvider;
+    private readonly bool _useMessenger;
 
     public DiscordAuthProvider(IOptions<List<AuthProvider>> authProviders, IConnectionMultiplexer redis,
-        IServiceProvider serviceProvider, IConfiguration config)
+        IMessengerService messengerService, IServiceProvider serviceProvider, IConfiguration config)
     {
         _redis = redis;
+        _messengerService = messengerService;
         _serviceProvider = serviceProvider;
         var providerSettings = authProviders.Value.First(e => e.Name == "Discord");
         _clientId = providerSettings.ClientId;
@@ -36,10 +39,13 @@ public class DiscordAuthProvider : IAuthProvider
         _illustrationUrl = providerSettings.IllustrationUrl;
         _client = string.IsNullOrEmpty(config["Proxy"])
             ? new HttpClient()
-            : new HttpClient(new HttpClientHandler
-            {
-                Proxy = new WebProxy { Address = new Uri(config["Proxy"]!) }
-            });
+            : new HttpClient(new HttpClientHandler { Proxy = new WebProxy { Address = new Uri(config["Proxy"]!) } });
+        // ReSharper disable once InvertIf
+        if (!_client.Send(new HttpRequestMessage(HttpMethod.Get, "https://discord.com/")).IsSuccessStatusCode)
+        {
+            _client = new HttpClient();
+            _useMessenger = true;
+        }
     }
 
     public async Task InitializeAsync()
@@ -115,7 +121,7 @@ public class DiscordAuthProvider : IAuthProvider
             Headers = { { "Accept", "application/json" } },
             Content = data
         };
-        var response = await _client.SendAsync(request);
+        var response = await SendAsync(request);
         if (!response.IsSuccessStatusCode) return null;
 
         var content = JsonConvert.DeserializeObject<DiscordTokenDto>(await response.Content.ReadAsStringAsync())!;
@@ -150,7 +156,8 @@ public class DiscordAuthProvider : IAuthProvider
             UserName = content.Username,
             Email = content.Email,
             Avatar = content.Avatar != null
-                ? await _client.GetByteArrayAsync($"https://cdn.discordapp.com/avatars/{content.Id}/{content.Avatar}")
+                ? await GetByteArrayAsync(
+                    new Uri($"https://cdn.discordapp.com/avatars/{content.Id}/{content.Avatar}"))
                 : null
         };
     }
@@ -225,7 +232,7 @@ public class DiscordAuthProvider : IAuthProvider
             Headers = { { "Accept", "application/json" } },
             Content = data
         };
-        var response = await _client.SendAsync(request);
+        var response = await SendAsync(request);
         if (!response.IsSuccessStatusCode) return false;
 
         var content = JsonConvert.DeserializeObject<DiscordTokenDto>(await response.Content.ReadAsStringAsync())!;
@@ -262,6 +269,19 @@ public class DiscordAuthProvider : IAuthProvider
             RequestUri = new Uri("https://discord.com/api/v10/users/@me"),
             Headers = { { "Authorization", $"Bearer {accessToken}" }, { "User-Agent", "PhiZone" } }
         };
-        return await _client.SendAsync(request);
+        return await SendAsync(request);
+    }
+
+    private async Task<HttpResponseMessage> SendAsync(HttpRequestMessage message)
+    {
+        return await (_useMessenger ? _messengerService.Proxy(message) : _client.SendAsync(message));
+    }
+
+    private async Task<byte[]> GetByteArrayAsync(Uri uri)
+    {
+        return _useMessenger
+            ? await (await _messengerService.Proxy(new HttpRequestMessage(HttpMethod.Get, uri))).Content
+                .ReadAsByteArrayAsync()
+            : await _client.GetByteArrayAsync(uri);
     }
 }
