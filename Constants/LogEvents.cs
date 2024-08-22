@@ -20,6 +20,7 @@ public static class LogEvents
     public const int TapGhostFailure = 2005;
 
     public const int RecordDebug = 3000;
+    public const int MessengerDebug = 3001;
 
     public const int DataMigration = 4000;
     public const int ChartMigration = 4001;
