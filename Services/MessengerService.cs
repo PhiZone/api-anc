@@ -72,7 +72,7 @@ public class MessengerService : IMessengerService
             Method = message.Method.Method,
             Headers = message.Headers.Select(header => new HeaderDto { Key = header.Key, Values = header.Value }),
             ContentType = message.Content?.Headers.ContentType?.MediaType,
-            Body = message.Content != null ? Convert.ToBase64String(await message.Content.ReadAsByteArrayAsync()) : null
+            Body = message.Content != null ? await message.Content.ReadAsStringAsync() : null
         };
         await UpdateToken();
         var request = new HttpRequestMessage
