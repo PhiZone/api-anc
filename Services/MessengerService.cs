@@ -82,8 +82,8 @@ public class MessengerService : IMessengerService
             Headers = { { "Authorization", $"Bearer {_token}" } },
             Content = JsonContent.Create(dto)
         };
-        _logger.LogDebug(LogEvents.MessengerDebug, "Proxying {Method} {Uri} through {ActualUri} with content {Content}",
-            dto.Method, dto.Uri, request.RequestUri, await request.Content.ReadAsStringAsync());
+        _logger.LogDebug(LogEvents.MessengerDebug, "Proxying {Method} {Uri} with content {Content}",
+            dto.Method, dto.Uri, await request.Content.ReadAsStringAsync());
         var response = await _client.SendAsync(request);
         if (!response.IsSuccessStatusCode)
             _logger.LogError(LogEvents.MessengerFailure,
