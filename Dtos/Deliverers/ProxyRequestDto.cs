@@ -15,5 +15,5 @@ public class HeaderDto
 {
     public string Key { get; set; } = null!;
 
-    public string Value { get; set; } = null!;
+    public IEnumerable<string> Values { get; set; } = null!;
 }

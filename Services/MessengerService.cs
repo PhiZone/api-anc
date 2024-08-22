@@ -71,7 +71,7 @@ public class MessengerService : IMessengerService
             Uri = message.RequestUri!.AbsoluteUri,
             Method = message.Method.Method,
             Headers =
-                message.Headers.Select(header => new HeaderDto { Key = header.Key, Value = header.Value.First() }),
+                message.Headers.Select(header => new HeaderDto { Key = header.Key, Values = header.Value }),
             Body = message.Content != null ? await message.Content.ReadAsStringAsync() : null
         };
         await UpdateToken();
@@ -82,6 +82,7 @@ public class MessengerService : IMessengerService
             Headers = { { "Authorization", $"Bearer {_token}" } },
             Content = JsonContent.Create(dto)
         };
+        _logger.LogInformation("Proxying {Method} {Uri}", dto.Method, dto.Uri);
         var response = await _client.SendAsync(request);
         if (!response.IsSuccessStatusCode)
             _logger.LogError(LogEvents.MessengerFailure,
