@@ -39,8 +39,8 @@ public class MessengerService : IMessengerService
         };
         var response = await _client.SendAsync(request);
         if (!response.IsSuccessStatusCode)
-            _logger.LogError(LogEvents.MessengerFailure, "An error occurred whilst sending email:\n{Error}",
-                await response.Content.ReadAsStringAsync());
+            _logger.LogError(LogEvents.MessengerFailure, "An error occurred whilst sending email ({Status}):\n{Error}",
+                response.StatusCode, await response.Content.ReadAsStringAsync());
 
         return response;
     }
@@ -57,7 +57,8 @@ public class MessengerService : IMessengerService
         };
         var response = await _client.SendAsync(request);
         if (!response.IsSuccessStatusCode)
-            _logger.LogError(LogEvents.MessengerFailure, "An error occurred whilst sending user input:\n{Error}",
+            _logger.LogError(LogEvents.MessengerFailure,
+                "An error occurred whilst sending user input ({Status}):\n{Error}", response.StatusCode,
                 await response.Content.ReadAsStringAsync());
 
         return response;
@@ -69,7 +70,8 @@ public class MessengerService : IMessengerService
         {
             Uri = message.RequestUri!.AbsoluteUri,
             Method = message.Method.Method,
-            Headers = message.Headers.Select(header => new HeaderDto { Key = header.Key, Value = header.Value.First() }),
+            Headers =
+                message.Headers.Select(header => new HeaderDto { Key = header.Key, Value = header.Value.First() }),
             Body = message.Content != null ? await message.Content.ReadAsStringAsync() : null
         };
         await UpdateToken();
@@ -82,7 +84,8 @@ public class MessengerService : IMessengerService
         };
         var response = await _client.SendAsync(request);
         if (!response.IsSuccessStatusCode)
-            _logger.LogError(LogEvents.MessengerFailure, "An error occurred whilst sending proxy request:\n{Error}",
+            _logger.LogError(LogEvents.MessengerFailure,
+                "An error occurred whilst sending proxy request ({Status}):\n{Error}", response.StatusCode,
                 await response.Content.ReadAsStringAsync());
 
         return response;
@@ -112,7 +115,8 @@ public class MessengerService : IMessengerService
         if (response.IsSuccessStatusCode)
             _logger.LogInformation(LogEvents.MessengerInfo, "Successfully updated access token");
         else
-            _logger.LogError(LogEvents.MessengerFailure, "An error occurred whilst updating access token:\n{Error}",
+            _logger.LogError(LogEvents.MessengerFailure,
+                "An error occurred whilst updating access token ({Status}):\n{Error}", response.StatusCode,
                 await response.Content.ReadAsStringAsync());
 
         var data =
