@@ -7,6 +7,7 @@ using PhiZoneApi.Dtos.Responses;
 using PhiZoneApi.Enums;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
+using PhiZoneApi.Utils;
 using StackExchange.Redis;
 using AuthProvider = PhiZoneApi.Configurations.AuthProvider;
 
@@ -41,7 +42,7 @@ public class DiscordAuthProvider : IAuthProvider
             ? new HttpClient()
             : new HttpClient(new HttpClientHandler { Proxy = new WebProxy { Address = new Uri(config["Proxy"]!) } });
         // ReSharper disable once InvertIf
-        if (!_client.Send(new HttpRequestMessage(HttpMethod.Get, "https://discord.com/")).IsSuccessStatusCode)
+        if (!_client.TestConnect("https://discord.com/"))
         {
             _client = new HttpClient();
             _useMessenger = true;
