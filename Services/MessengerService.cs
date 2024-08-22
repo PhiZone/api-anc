@@ -71,7 +71,7 @@ public class MessengerService : IMessengerService
             Uri = message.RequestUri!.AbsoluteUri,
             Method = message.Method.Method,
             Headers = message.Headers.Select(header => new HeaderDto { Key = header.Key, Values = header.Value }),
-            Body = message.Content != null ? await message.Content.ReadAsStringAsync() : null
+            Body = message.Content != null ? Convert.ToBase64String(await message.Content.ReadAsByteArrayAsync()) : null
         };
         await UpdateToken();
         var request = new HttpRequestMessage
