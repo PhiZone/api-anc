@@ -95,6 +95,16 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
                     update = true;
                 }
 
+                if (record.StdDeviation > record.GoodJudgment)
+                {
+                    logger.LogInformation(LogEvents.DataConsistencyMaintenance,
+                        "Found inconsistency for Record \"{Score} {Accuracy}\" on its {Property}: {ActualCount} > {ExpectedCount}",
+                        record.Score,
+                        record.Accuracy.ToString("P2", culture), nameof(record.StdDeviation), record.StdDeviation, record.GoodJudgment);
+                    record.StdDeviation = 40;
+                    update = true;
+                }
+
                 var rksFactor = recordService.CalculateRksFactor(record.PerfectJudgment, record.GoodJudgment);
                 var rks = recordService.CalculateRks(record.Perfect, record.GoodEarly + record.GoodLate, record.Bad,
                     record.Miss, record.Chart.Difficulty, record.StdDeviation) * rksFactor;
