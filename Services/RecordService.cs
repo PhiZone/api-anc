@@ -29,7 +29,7 @@ public class RecordService : IRecordService
         if (accuracy < 70) return 0;
 
         accuracy -= 55;
-        return Math.Min(accuracy * accuracy * difficulty / 2025 + (stdDeviation < 40
+        return Math.Max(accuracy * accuracy * difficulty / 2025 + (stdDeviation < 40
             ? 1.25e-5 * (stdDeviation - 40) * (stdDeviation - 40)
             : 2e-2 - stdDeviation / 2e3), 0);
     }
