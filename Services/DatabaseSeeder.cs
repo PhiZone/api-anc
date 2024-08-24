@@ -2,7 +2,6 @@
 using OpenIddict.Abstractions;
 using PhiZoneApi.Constants;
 using PhiZoneApi.Data;
-using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 
 // ReSharper disable StringLiteralTypo
@@ -17,15 +16,14 @@ public class DatabaseSeeder(IServiceProvider serviceProvider) : IHostedService
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         await context.Database.EnsureCreatedAsync(cancellationToken);
         var logger = scope.ServiceProvider.GetRequiredService<ILogger<DatabaseSeeder>>();
-        logger.LogInformation(LogEvents.DatabaseSeederInfo, "Populating regions, scopes, and apps");
+        logger.LogInformation(LogEvents.DatabaseSeederInfo, "Populating regions");
         await PopulateRegions(scope, cancellationToken);
+        logger.LogInformation(LogEvents.DatabaseSeederInfo, "Populating scopes");
         await PopulateScopes(scope, cancellationToken);
+        logger.LogInformation(LogEvents.DatabaseSeederInfo, "Populating internal apps");
         await PopulateInternalApps(scope, cancellationToken);
+        logger.LogInformation(LogEvents.DatabaseSeederInfo, "Populating auth providers");
         await PopulateAuthProviders(scope);
-        logger.LogInformation(LogEvents.DatabaseSeederInfo, "Populating leaderboards");
-        await PopulateLeaderboards(scope, cancellationToken);
-        logger.LogInformation(LogEvents.DatabaseSeederInfo, "Populating scripts");
-        await PopulateScripts(scope, cancellationToken);
         logger.LogInformation(LogEvents.DatabaseSeederInfo, "Database seeding completed");
     }
 
@@ -74,20 +72,6 @@ public class DatabaseSeeder(IServiceProvider serviceProvider) : IHostedService
             else
                 await appManager.UpdateAsync(client, appDescriptor, cancellationToken);
         }
-    }
-
-    private static async Task PopulateLeaderboards(IServiceScope scope, CancellationToken cancellationToken)
-    {
-        var leaderboardService = scope.ServiceProvider.GetRequiredService<ILeaderboardService>();
-        await leaderboardService.InitializeAsync(scope.ServiceProvider.GetRequiredService<ApplicationDbContext>(),
-            cancellationToken);
-    }
-
-    private static async Task PopulateScripts(IServiceScope scope, CancellationToken cancellationToken)
-    {
-        var scriptService = scope.ServiceProvider.GetRequiredService<IScriptService>();
-        await scriptService.InitializeAsync(scope.ServiceProvider.GetRequiredService<ApplicationDbContext>(),
-            cancellationToken);
     }
 
     private static async Task PopulateAuthProviders(IServiceScope scope)
@@ -354,9 +338,7 @@ public class DatabaseSeeder(IServiceProvider serviceProvider) : IHostedService
         if (await context.Regions.CountAsync(cancellationToken) >= regions.Count) return;
         foreach (var region in regions.Select(entry => new Region { Code = entry.Key, Name = entry.Value }))
         {
-            if (await context.Regions.AnyAsync(r => string.Equals(r.Code, region.Code),
-                    cancellationToken))
-                continue;
+            if (await context.Regions.AnyAsync(r => string.Equals(r.Code, region.Code), cancellationToken)) continue;
 
             await context.Regions.AddAsync(region, cancellationToken);
         }

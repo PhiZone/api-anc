@@ -11,6 +11,7 @@ public static class LogEvents
     public const int MessengerInfo = 1006;
     public const int TapGhostInfo = 1007;
     public const int DatabaseSeederInfo = 1008;
+    public const int InitializerInfo = 1009;
 
     public const int AudioFailure = 2000;
     public const int MailFailure = 2001;

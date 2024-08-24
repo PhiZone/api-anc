@@ -180,6 +180,7 @@ builder.Services.AddSingleton<IHostedService>(provider => new TapRecordService(p
     provider.GetService<ITapGhostService>()!, provider.GetService<IHostEnvironment>()!,
     provider.GetService<ILogger<TapRecordService>>()!));
 builder.Services.AddHostedService<DatabaseSeeder>();
+builder.Services.AddHostedService<Initializer>();
 builder.Services.AddHostedService<DataConsistencyMaintainer>();
 builder.Services.AddHostedService<EventTaskScheduler>();
 
