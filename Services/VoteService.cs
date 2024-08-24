@@ -114,7 +114,7 @@ public class VoteService(IVoteRepository voteRepository, IChartRepository chartR
 
     private static double GetRating(double sum, double amount, double reliability, double defaultValue = 2.5)
     {
-        if (sum == 0 || amount == 0) return defaultValue;
+        if (amount == 0) return defaultValue;
         return reliability * sum / amount + (1 - reliability) * defaultValue;
     }
 
