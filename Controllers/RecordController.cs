@@ -488,7 +488,6 @@ public class RecordController(
                     $"Max combo ({dto.MaxCombo}) is not within the expected range [{minExpectation}, {maxExpectation}]."
             });
         if (dto.StdDeviation < 1 || dto.StdDeviation > info.GoodJudgment)
-        {
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorWithMessage,
@@ -496,7 +495,6 @@ public class RecordController(
                 Message =
                     $"Standard deviation ({dto.StdDeviation}) is not within the expected range [1, {info.GoodJudgment}]."
             });
-        }
 
         db.KeyDelete($"phizone:play:tapghost:{dto.Token}");
 

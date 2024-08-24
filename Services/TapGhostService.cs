@@ -21,10 +21,10 @@ public class TapGhostService : ITapGhostService
 {
     private readonly HttpClient _client;
     private readonly ILogger<TapGhostService> _logger;
-    private readonly IOptions<TapGhostSettings> _tapGhostSettings;
-    private readonly IRabbitMqService _rabbitMqService;
-    private readonly ITokenService _tokenService;
     private readonly string _queue;
+    private readonly IRabbitMqService _rabbitMqService;
+    private readonly IOptions<TapGhostSettings> _tapGhostSettings;
+    private readonly ITokenService _tokenService;
     private string? _token;
 
     public TapGhostService(IOptions<TapGhostSettings> tapGhostSettings, IRabbitMqService rabbitMqService,
@@ -160,7 +160,8 @@ public class TapGhostService : ITapGhostService
         var properties = channel.CreateBasicProperties();
         properties.Headers = new Dictionary<string, object>
         {
-            { "AppId", appId.ToString() }, { "Id", id }, { "IsChartRanked", isChartRanked.ToString() }, { "ExpDelta", experienceDelta.ToString() }
+            { "AppId", appId.ToString() }, { "Id", id }, { "IsChartRanked", isChartRanked.ToString() },
+            { "ExpDelta", experienceDelta.ToString() }
         };
         var body = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(record));
         channel.BasicPublish("", _queue, false, properties, body);

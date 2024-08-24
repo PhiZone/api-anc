@@ -102,6 +102,17 @@ public class VoteService(IVoteRepository voteRepository, IChartRepository chartR
         return await chartRepository.UpdateChartAsync(chart);
     }
 
+    public double GetRating(double sum, double amount, double reliability, double defaultValue = 2.5)
+    {
+        if (amount == 0) return defaultValue;
+        return reliability * sum / amount + (1 - reliability) * defaultValue;
+    }
+
+    public double GetReliability(double amount)
+    {
+        return 1 - Math.Pow(1.3, -amount);
+    }
+
     private double GetMultiplier(User user)
     {
         return _multiplierList[GetUserLevel(user)];
@@ -110,16 +121,5 @@ public class VoteService(IVoteRepository voteRepository, IChartRepository chartR
     private int GetUserLevel(User user)
     {
         return _experienceList.FindLastIndex(exp => exp <= user.Experience);
-    }
-
-    private static double GetRating(double sum, double amount, double reliability, double defaultValue = 2.5)
-    {
-        if (amount == 0) return defaultValue;
-        return reliability * sum / amount + (1 - reliability) * defaultValue;
-    }
-
-    private static double GetReliability(double amount)
-    {
-        return 1 - Math.Pow(1.3, -amount);
     }
 }

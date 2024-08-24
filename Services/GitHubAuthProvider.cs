@@ -21,8 +21,8 @@ public class GitHubAuthProvider : IAuthProvider
     private readonly string _clientId;
     private readonly string _clientSecret;
     private readonly string _illustrationUrl;
-    private readonly IConnectionMultiplexer _redis;
     private readonly IMessengerService _messengerService;
+    private readonly IConnectionMultiplexer _redis;
     private readonly IServiceProvider _serviceProvider;
     private readonly bool _useMessenger;
 
