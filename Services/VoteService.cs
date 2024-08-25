@@ -110,7 +110,7 @@ public class VoteService(IVoteRepository voteRepository, IChartRepository chartR
 
     public double GetReliability(double amount)
     {
-        return 1 - Math.Pow(1.3, -amount);
+        return 1 - Math.Pow(1.8, -amount);
     }
 
     private double GetMultiplier(User user)
