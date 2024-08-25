@@ -169,7 +169,8 @@ public partial class ResourceService(IServiceProvider serviceProvider, IConfigur
 
     public string GenerateCode(int length)
     {
-        const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        // const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        const string chars = "BDFHJLNPRTVXZBDFHJLNPRTVXZ0123456789";
         var code = new StringBuilder(length);
         var random = new Random();
 

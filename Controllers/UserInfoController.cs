@@ -30,6 +30,7 @@ public class UserInfoController(
     IUserRepository userRepository,
     ITapTapService tapTapService,
     ITapGhostService tapGhostService,
+    IPhigrimService phigrimService,
     IApplicationRepository applicationRepository,
     INotificationRepository notificationRepository,
     IConnectionMultiplexer redis,
@@ -384,69 +385,58 @@ public class UserInfoController(
 
         var db = redis.GetDatabase();
         var key = $"phizone:tapghost:inherit:{dto.Code.ToUpper()}";
-        if (!await db.KeyExistsAsync(key))
-            return BadRequest(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidCode
-            });
-        key = (await db.StringGetAsync(key))!;
-        var appId = Guid.Parse(key.Split(':')[0]);
-        var unionId = key.Split(':')[1];
-        var ghost = await tapGhostService.GetGhost(appId, unionId);
-        if (ghost == null)
-            return NotFound(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNotFound
-            });
-        if (currentUser.Avatar == null)
+        if (await db.KeyExistsAsync(key))
         {
-            var client = new HttpClient();
-            var avatar = await client.GetByteArrayAsync(ghost.Avatar);
-            var avatarUrl = (await fileStorageService.UploadImage<User>(ghost.UserName, avatar, (1, 1))).Item1;
-            await fileStorageService.SendUserInput(avatarUrl, "Avatar", Request, currentUser);
-            currentUser.Avatar = avatarUrl;
-        }
-
-        var records = await tapGhostService.GetRecords(appId, unionId);
-        if (records != null)
-        {
-            foreach (var record in records)
-            {
-                do
+            key = (await db.StringGetAsync(key))!;
+            var appId = Guid.Parse(key.Split(':')[0]);
+            var unionId = key.Split(':')[1];
+            var ghost = await tapGhostService.GetGhost(appId, unionId);
+            if (ghost == null)
+                return NotFound(new ResponseDto<object>
                 {
-                    record.Id = Guid.NewGuid();
-                } while (await recordRepository.RecordExistsAsync(record.Id));
-
-                record.OwnerId = currentUser.Id;
-                await recordRepository.CreateRecordAsync(record);
-            }
-
-            var phiRks = (await recordRepository.GetRecordsAsync(["Rks"], [true], 0, 1,
-                    r => r.OwnerId == currentUser.Id && r.Score == 1000000 && r.Chart.IsRanked)).FirstOrDefault()
-                ?.Rks ?? 0d;
-            var best19Rks = (await recordRepository.GetPersonalBests(currentUser.Id)).Sum(r => r.Rks);
-            currentUser.Rks = (phiRks + best19Rks) / 20;
-            currentUser.Experience += ghost.Experience;
-        }
-
-        currentUser.Experience += 1000;
-        await userManager.UpdateAsync(currentUser);
-
-        ApplicationUser tapUserRelation;
-        if (await applicationUserRepository.RelationExistsAsync(appId, currentUser.Id))
-        {
-            tapUserRelation = await applicationUserRepository.GetRelationAsync(appId, currentUser.Id);
-            // ReSharper disable once InvertIf
-            if (tapUserRelation.TapUnionId != unionId)
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNotFound
+                });
+            if (await applicationUserRepository.RelationExistsAsync(appId, currentUser.Id))
             {
-                tapUserRelation.TapUnionId = unionId;
-                tapUserRelation.DateUpdated = DateTimeOffset.UtcNow;
-                await applicationUserRepository.UpdateRelationAsync(tapUserRelation);
+                return BadRequest(new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
+                });
             }
-        }
-        else
-        {
-            tapUserRelation = new ApplicationUser
+
+            if (currentUser.Avatar == null)
+            {
+                var client = new HttpClient();
+                var avatar = await client.GetByteArrayAsync(ghost.Avatar);
+                var avatarUrl = (await fileStorageService.UploadImage<User>(currentUser.UserName!, avatar, (1, 1)))
+                    .Item1;
+                await fileStorageService.SendUserInput(avatarUrl, "Avatar", Request, currentUser);
+                currentUser.Avatar = avatarUrl;
+            }
+
+            var records = await tapGhostService.GetRecords(appId, unionId);
+            if (records != null)
+            {
+                foreach (var record in records)
+                {
+                    do
+                    {
+                        record.Id = Guid.NewGuid();
+                    } while (await recordRepository.RecordExistsAsync(record.Id));
+
+                    record.OwnerId = currentUser.Id;
+                    await recordRepository.CreateRecordAsync(record);
+                }
+
+                var phiRks = (await recordRepository.GetRecordsAsync(["Rks"], [true], 0, 1,
+                        r => r.OwnerId == currentUser.Id && r.Score == 1000000 && r.Chart.IsRanked)).FirstOrDefault()
+                    ?.Rks ?? 0d;
+                var best19Rks = (await recordRepository.GetPersonalBests(currentUser.Id)).Sum(r => r.Rks);
+                currentUser.Rks = (phiRks + best19Rks) / 20;
+                currentUser.Experience += ghost.Experience;
+            }
+
+            var tapUserRelation = new ApplicationUser
             {
                 ApplicationId = appId,
                 UserId = currentUser.Id,
@@ -459,6 +449,103 @@ public class UserInfoController(
                 return StatusCode(StatusCodes.Status500InternalServerError,
                     new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
         }
+        else
+        {
+            var inheritance = await phigrimService.GetInheritingUser(new TapTapGhostInheritanceDelivererDto
+            {
+                Code = dto.Code.ToUpper(), PhiZoneId = currentUser.Id
+            });
+            if (inheritance == null)
+            {
+                return BadRequest(new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidCode
+                });
+            }
+
+            var remoteUser = inheritance.User;
+            if (currentUser.Avatar == null)
+            {
+                var client = new HttpClient();
+                var avatar = await client.GetByteArrayAsync(remoteUser.Avatar);
+                var avatarUrl = (await fileStorageService.UploadImage<User>(currentUser.UserName!, avatar, (1, 1)))
+                    .Item1;
+                await fileStorageService.SendUserInput(avatarUrl, "Avatar", Request, currentUser);
+                currentUser.Avatar = avatarUrl;
+            }
+
+            ResponseDto<IEnumerable<RecordDto>>? records;
+            var page = 1;
+            do
+            {
+                records = await phigrimService.GetRecords(remoteUser.Id, page++);
+                if (records?.Data == null) break;
+                foreach (var recordDto in records.Data)
+                {
+                    var record = new Record
+                    {
+                        ChartId = recordDto.ChartId,
+                        OwnerId = currentUser.Id,
+                        ApplicationId = recordDto.ApplicationId,
+                        Score = recordDto.Score,
+                        Accuracy = recordDto.Accuracy,
+                        IsFullCombo = recordDto.IsFullCombo,
+                        MaxCombo = recordDto.MaxCombo,
+                        Perfect = recordDto.Perfect,
+                        GoodEarly = recordDto.GoodEarly,
+                        GoodLate = recordDto.GoodLate,
+                        Bad = recordDto.Bad,
+                        Miss = recordDto.Miss,
+                        StdDeviation = recordDto.StdDeviation,
+                        Rks = recordDto.Rks,
+                        PerfectJudgment = recordDto.PerfectJudgment,
+                        GoodJudgment = recordDto.GoodJudgment,
+                        DeviceInfo = recordDto.DeviceInfo,
+                        DateCreated = recordDto.DateCreated
+                    };
+                    await recordRepository.CreateRecordAsync(record);
+                }
+            } while (records is { HasNext: not null } && records.HasNext.Value);
+
+            var phiRks = (await recordRepository.GetRecordsAsync(["Rks"], [true], 0, 1,
+                    r => r.OwnerId == currentUser.Id && r.Score == 1000000 && r.Chart.IsRanked)).FirstOrDefault()
+                ?.Rks ?? 0d;
+            var best19Rks = (await recordRepository.GetPersonalBests(currentUser.Id)).Sum(r => r.Rks);
+            currentUser.Rks = (phiRks + best19Rks) / 20;
+            currentUser.Experience += remoteUser.Experience;
+
+            foreach (var link in inheritance.Links)
+            {
+                ApplicationUser tapUserRelation;
+                if (await applicationUserRepository.RelationExistsAsync(link.ApplicationId, currentUser.Id))
+                {
+                    tapUserRelation =
+                        await applicationUserRepository.GetRelationAsync(link.ApplicationId, currentUser.Id);
+                    tapUserRelation.TapUnionId = link.TapUnionId;
+                }
+                else
+                {
+                    tapUserRelation = new ApplicationUser
+                    {
+                        ApplicationId = link.ApplicationId,
+                        UserId = currentUser.Id,
+                        TapUnionId = link.TapUnionId,
+                        DateCreated = DateTimeOffset.UtcNow,
+                        DateUpdated = DateTimeOffset.UtcNow
+                    };
+
+                    if (!await applicationUserRepository.CreateRelationAsync(tapUserRelation))
+                        return StatusCode(StatusCodes.Status500InternalServerError,
+                            new ResponseDto<object>
+                            {
+                                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError
+                            });
+                }
+            }
+        }
+
+        currentUser.Experience += 1000;
+        await userManager.UpdateAsync(currentUser);
 
         return NoContent();
     }

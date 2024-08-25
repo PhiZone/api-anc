@@ -156,6 +156,7 @@ builder.Services.AddSingleton<IRabbitMqService, RabbitMqService>();
 builder.Services.AddSingleton<IFeishuService, FeishuService>();
 builder.Services.AddSingleton<IMessengerService, MessengerService>();
 builder.Services.AddSingleton<ITapGhostService, TapGhostService>();
+builder.Services.AddSingleton<IPhigrimService, PhigrimService>();
 builder.Services.AddSingleton<IMeilisearchService, MeilisearchService>();
 builder.Services.AddSingleton<ILeaderboardService, LeaderboardService>();
 builder.Services.AddSingleton<IScriptService, ScriptService>();
@@ -201,6 +202,7 @@ builder.Services.Configure<TapTapSettings>(builder.Configuration.GetSection("Tap
 builder.Services.Configure<FeishuSettings>(builder.Configuration.GetSection("FeishuSettings"));
 builder.Services.Configure<MessengerSettings>(builder.Configuration.GetSection("MessengerSettings"));
 builder.Services.Configure<TapGhostSettings>(builder.Configuration.GetSection("TapGhostSettings"));
+builder.Services.Configure<PhigrimSettings>(builder.Configuration.GetSection("PhigrimSettings"));
 builder.Services.Configure<LanguageSettings>(builder.Configuration.GetSection("LanguageSettings"));
 builder.Services.Configure<RabbitMqSettings>(builder.Configuration.GetSection("RabbitMQSettings"));
 builder.Services.Configure<MeilisearchSettings>(builder.Configuration.GetSection("MeilisearchSettings"));

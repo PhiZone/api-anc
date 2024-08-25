@@ -12,6 +12,7 @@ public static class LogEvents
     public const int TapGhostInfo = 1007;
     public const int DatabaseSeederInfo = 1008;
     public const int InitializerInfo = 1009;
+    public const int PhigrimInfo = 1010;
 
     public const int AudioFailure = 2000;
     public const int MailFailure = 2001;
@@ -19,6 +20,7 @@ public static class LogEvents
     public const int FeishuFailure = 2003;
     public const int MessengerFailure = 2004;
     public const int TapGhostFailure = 2005;
+    public const int PhigrimFailure = 2006;
 
     public const int RecordDebug = 3000;
     public const int MessengerDebug = 3001;
