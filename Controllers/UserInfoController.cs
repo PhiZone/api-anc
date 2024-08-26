@@ -397,12 +397,10 @@ public class UserInfoController(
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNotFound
                 });
             if (await applicationUserRepository.RelationExistsAsync(appId, currentUser.Id))
-            {
                 return BadRequest(new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
                 });
-            }
 
             if (currentUser.Avatar == null)
             {
@@ -456,12 +454,10 @@ public class UserInfoController(
                 Code = dto.Code.ToUpper(), PhiZoneId = currentUser.Id
             });
             if (inheritance == null)
-            {
                 return BadRequest(new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidCode
                 });
-            }
 
             var remoteUser = inheritance.User;
             if (currentUser.Avatar == null)

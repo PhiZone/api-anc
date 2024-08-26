@@ -85,7 +85,6 @@ public class UserRelationController(
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetUserRelation([FromRoute] int followerId, [FromRoute] int followeeId)
     {
-        var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
         if (!await userRelationRepository.RelationExistsAsync(followerId, followeeId))
             return NotFound(new ResponseDto<object>
                 { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound });

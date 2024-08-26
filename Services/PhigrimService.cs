@@ -68,15 +68,9 @@ public class PhigrimService : IPhigrimService
     {
         await UpdateToken();
         var query = new QueryBuilder { { "RangeOwnerId", remoteId.ToString() } };
-        if (page != null)
-        {
-            query.Add("Page", page.ToString()!);
-        }
+        if (page != null) query.Add("Page", page.ToString()!);
 
-        if (perPage != null)
-        {
-            query.Add("PerPage", perPage.ToString()!);
-        }
+        if (perPage != null) query.Add("PerPage", perPage.ToString()!);
 
         var request = new HttpRequestMessage
         {

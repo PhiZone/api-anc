@@ -8,13 +8,12 @@ namespace PhiZoneApi.Dtos.Requests;
 
 public class OpenIddictTokenRequestDto
 {
-    ///<summary>The client's ID, e.g. "regular".</summary>
+    ///<summary>The client's ID, e.g. "public".</summary>
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     public string client_id { get; set; } = null!;
 
-    ///<summary>The client's secret, e.g. "c29b1587-80f9-475f-b97b-dca1884eb0e3".</summary>
-    [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
-    public string client_secret { get; set; } = null!;
+    ///<summary>The client's secret.</summary>
+    public string? client_secret { get; set; }
 
     ///<summary>The grant type desired, either <c>password</c> or <c>refresh_token</c>.</summary>
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]

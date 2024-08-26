@@ -4,9 +4,8 @@ namespace PhiZoneApi.Dtos.Deliverers;
 
 public class PhigrimInheritanceDto
 {
-    public UserDto User { get; set; } = null!;
-
     public IEnumerable<TapTapLink> Links = [];
+    public UserDto User { get; set; } = null!;
 }
 
 public class TapTapLink
