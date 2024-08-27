@@ -61,14 +61,17 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
                 if (update) context.SongSubmissions.Update(song);
             }
 
-            foreach (var chart in await context.ChartSubmissions.ToListAsync(_cancellationToken))
+            foreach (var chart in await context.ChartSubmissions.Include(e => e.Song)
+                         .Include(e => e.SongSubmission)
+                         .ToListAsync(_cancellationToken))
             {
                 var update = false;
                 if (chart.DateFileUpdated == default)
                 {
                     logger.LogInformation(LogEvents.DataConsistencyMaintenance,
                         "Found inconsistency for Chart Submission \"{Title}\" on its {Property}: {Actual} != {Expected}",
-                        chart.Title, nameof(chart.DateFileUpdated), chart.DateFileUpdated, chart.DateUpdated);
+                        chart.Title ?? chart.Song?.Title ?? chart.SongSubmission?.Title, nameof(chart.DateFileUpdated),
+                        chart.DateFileUpdated, chart.DateUpdated);
                     chart.DateFileUpdated = chart.DateUpdated;
                     update = true;
                 }
