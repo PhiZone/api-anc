@@ -17,5 +17,7 @@ public abstract class Submission : OwnedResource
 
     public List<string> Tags { get; set; } = [];
 
+    public DateTimeOffset DateFileUpdated { get; set; }
+
     public DateTimeOffset DateUpdated { get; set; }
 }

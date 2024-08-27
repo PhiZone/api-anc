@@ -63,7 +63,7 @@ public class VolunteerVoteService(
     private async Task<bool> UpdateChartSubmissionAsync(ChartSubmission chartSubmission)
     {
         var votes = await volunteerVoteRepository.GetVolunteerVotesAsync(predicate: vote =>
-            vote.ChartId == chartSubmission.Id && vote.DateCreated > chartSubmission.DateUpdated);
+            vote.ChartId == chartSubmission.Id && vote.DateCreated > chartSubmission.DateFileUpdated);
         var score = votes.Average(vote => vote.Score);
         var suggestedDifficulty = votes.Average(vote => vote.SuggestedDifficulty);
         if (_voteScoreDictionary.TryGetValue(votes.Count, out var scoreRange))

@@ -43,6 +43,7 @@ public class SongConverterService(
                     song.File = result.Value.Item1;
                     song.FileChecksum = result.Value.Item2;
                     song.Duration = result.Value.Item3;
+                    song.DateFileUpdated = DateTimeOffset.UtcNow;
                     song.DateUpdated = DateTimeOffset.UtcNow;
                     song.Status = RequestStatus.Waiting;
 
@@ -64,6 +65,7 @@ public class SongConverterService(
                     song.File = result.Value.Item1;
                     song.FileChecksum = result.Value.Item2;
                     song.Duration = result.Value.Item3;
+                    song.DateFileUpdated = DateTimeOffset.UtcNow;
                     song.DateUpdated = DateTimeOffset.UtcNow;
 
                     if (song.PreviewEnd > song.Duration) song.PreviewEnd = song.Duration.Value;

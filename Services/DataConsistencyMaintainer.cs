@@ -46,6 +46,36 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
             var culture = (CultureInfo)CultureInfo.CurrentCulture.Clone();
             culture.NumberFormat.PercentPositivePattern = 1;
 
+            foreach (var song in await context.SongSubmissions.ToListAsync(_cancellationToken))
+            {
+                var update = false;
+                if (song.DateFileUpdated == default)
+                {
+                    logger.LogInformation(LogEvents.DataConsistencyMaintenance,
+                        "Found inconsistency for Song Submission \"{Title}\" on its {Property}: {Actual} != {Expected}",
+                        song.Title, nameof(song.DateFileUpdated), song.DateFileUpdated, song.DateUpdated);
+                    song.DateFileUpdated = song.DateUpdated;
+                    update = true;
+                }
+
+                if (update) context.SongSubmissions.Update(song);
+            }
+
+            foreach (var chart in await context.ChartSubmissions.ToListAsync(_cancellationToken))
+            {
+                var update = false;
+                if (chart.DateFileUpdated == default)
+                {
+                    logger.LogInformation(LogEvents.DataConsistencyMaintenance,
+                        "Found inconsistency for Chart Submission \"{Title}\" on its {Property}: {Actual} != {Expected}",
+                        chart.Title, nameof(chart.DateFileUpdated), chart.DateFileUpdated, chart.DateUpdated);
+                    chart.DateFileUpdated = chart.DateUpdated;
+                    update = true;
+                }
+
+                if (update) context.ChartSubmissions.Update(chart);
+            }
+
             foreach (var record in await context.Records.Include(e => e.Chart).ToListAsync(_cancellationToken))
             {
                 var update = false;
@@ -57,7 +87,7 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
                 if (record.LikeCount != likeCount)
                 {
                     logger.LogInformation(LogEvents.DataConsistencyMaintenance,
-                        "Found inconsistency for Record \"{Score} {Accuracy}\" on its {Property}: {ActualCount} != {ExpectedCount}",
+                        "Found inconsistency for Record \"{Score} {Accuracy}\" on its {Property}: {Actual} != {Expected}",
                         record.Score, record.Accuracy.ToString("P2", culture), nameof(record.LikeCount),
                         record.LikeCount, likeCount);
                     record.LikeCount = likeCount;
@@ -67,7 +97,7 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
                 if (record.Score != score)
                 {
                     logger.LogInformation(LogEvents.DataConsistencyMaintenance,
-                        "Found inconsistency for Record \"{Score} {Accuracy}\" on its {Property}: {ActualCount} != {ExpectedCount}",
+                        "Found inconsistency for Record \"{Score} {Accuracy}\" on its {Property}: {Actual} != {Expected}",
                         record.Score, record.Accuracy.ToString("P2", culture), nameof(record.Score), record.Score,
                         score);
                     record.Score = score;
@@ -77,7 +107,7 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
                 if (Math.Abs(record.Accuracy - accuracy) > 1e-8)
                 {
                     logger.LogInformation(LogEvents.DataConsistencyMaintenance,
-                        "Found inconsistency for Record \"{Score} {Accuracy}\" on its {Property}: {ActualCount} != {ExpectedCount}",
+                        "Found inconsistency for Record \"{Score} {Accuracy}\" on its {Property}: {Actual} != {Expected}",
                         record.Score, record.Accuracy.ToString("P2", culture), nameof(record.Accuracy), record.Accuracy,
                         accuracy);
                     record.Accuracy = accuracy;
@@ -87,7 +117,7 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
                 if (record.StdDeviation < 0.1)
                 {
                     logger.LogInformation(LogEvents.DataConsistencyMaintenance,
-                        "Found inconsistency for Record \"{Score} {Accuracy}\" on its {Property}: {ActualCount} < {ExpectedCount}",
+                        "Found inconsistency for Record \"{Score} {Accuracy}\" on its {Property}: {Actual} < {Expected}",
                         record.Score, record.Accuracy.ToString("P2", culture), nameof(record.StdDeviation),
                         record.StdDeviation, 0.1);
                     if (record.StdDeviation > 0)
@@ -100,7 +130,7 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
                 if (record.StdDeviation > record.GoodJudgment)
                 {
                     logger.LogInformation(LogEvents.DataConsistencyMaintenance,
-                        "Found inconsistency for Record \"{Score} {Accuracy}\" on its {Property}: {ActualCount} > {ExpectedCount}",
+                        "Found inconsistency for Record \"{Score} {Accuracy}\" on its {Property}: {Actual} > {Expected}",
                         record.Score, record.Accuracy.ToString("P2", culture), nameof(record.StdDeviation),
                         record.StdDeviation, record.GoodJudgment);
                     record.StdDeviation = 40;
@@ -113,7 +143,7 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
                 if (Math.Abs(record.Rks - rks) > 1e-8)
                 {
                     logger.LogInformation(LogEvents.DataConsistencyMaintenance,
-                        "Found inconsistency for Record \"{Score} {Accuracy}\" on its {Property}: {ActualCount} != {ExpectedCount}",
+                        "Found inconsistency for Record \"{Score} {Accuracy}\" on its {Property}: {Actual} != {Expected}",
                         record.Score, record.Accuracy.ToString("P2", culture), nameof(record.Rks), record.Rks, rks);
                     record.Rks = rks;
                     update = true;
@@ -137,7 +167,7 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
                 if (user.FolloweeCount != followeeCount)
                 {
                     logger.LogInformation(LogEvents.DataConsistencyMaintenance,
-                        "Found inconsistency for User #{Id} \"{UserName}\" on {Pronoun} {Property}: {ActualCount} != {ExpectedCount}",
+                        "Found inconsistency for User #{Id} \"{UserName}\" on {Pronoun} {Property}: {Actual} != {Expected}",
                         user.Id, user.UserName, user.Gender switch
                         {
                             Gender.Male => "his",
@@ -151,7 +181,7 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
                 if (user.FollowerCount != followerCount)
                 {
                     logger.LogInformation(LogEvents.DataConsistencyMaintenance,
-                        "Found inconsistency for User \"{UserName}\" on {Pronoun} {Property}: {ActualCount} != {ExpectedCount}",
+                        "Found inconsistency for User \"{UserName}\" on {Pronoun} {Property}: {Actual} != {Expected}",
                         user.UserName, user.Gender switch
                         {
                             Gender.Male => "his",
@@ -165,7 +195,7 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
                 if (Math.Abs(user.Rks - rks) > 1e-8)
                 {
                     logger.LogInformation(LogEvents.DataConsistencyMaintenance,
-                        "Found inconsistency for User \"{UserName}\" on {Pronoun} {Property}: {ActualCount} != {ExpectedCount}",
+                        "Found inconsistency for User \"{UserName}\" on {Pronoun} {Property}: {Actual} != {Expected}",
                         user.UserName, user.Gender switch
                         {
                             Gender.Male => "his",
@@ -204,7 +234,7 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
                 if (chart.PlayCount != playCount)
                 {
                     logger.LogInformation(LogEvents.DataConsistencyMaintenance,
-                        "Found inconsistency for Chart \"{Title} [{Level} {Difficulty}]\" on its {Property}: {ActualCount} != {ExpectedCount}",
+                        "Found inconsistency for Chart \"{Title} [{Level} {Difficulty}]\" on its {Property}: {Actual} != {Expected}",
                         chart.Title ?? chart.Song.Title, chart.Level, Math.Floor(chart.Difficulty),
                         nameof(chart.PlayCount), chart.PlayCount, playCount);
                     chart.PlayCount = playCount;
@@ -214,7 +244,7 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
                 if (chart.LikeCount != likeCount)
                 {
                     logger.LogInformation(LogEvents.DataConsistencyMaintenance,
-                        "Found inconsistency for Chart \"{Title} [{Level} {Difficulty}]\" on its {Property}: {ActualCount} != {ExpectedCount}",
+                        "Found inconsistency for Chart \"{Title} [{Level} {Difficulty}]\" on its {Property}: {Actual} != {Expected}",
                         chart.Title ?? chart.Song.Title, chart.Level, Math.Floor(chart.Difficulty),
                         nameof(chart.LikeCount), chart.LikeCount, likeCount);
                     chart.LikeCount = likeCount;
@@ -224,7 +254,7 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
                 if (Math.Abs(chart.Score - score) > 1e-7)
                 {
                     logger.LogInformation(LogEvents.DataConsistencyMaintenance,
-                        "Found inconsistency for Chart \"{Title} [{Level} {Difficulty}]\" on its {Property}: {ActualCount} != {ExpectedCount}",
+                        "Found inconsistency for Chart \"{Title} [{Level} {Difficulty}]\" on its {Property}: {Actual} != {Expected}",
                         chart.Title ?? chart.Song.Title, chart.Level, Math.Floor(chart.Difficulty), nameof(chart.Score),
                         chart.Score, score);
                     chart.Score = score;
@@ -234,7 +264,7 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
                 if (Math.Abs(chart.Rating - rating) > 1e-7)
                 {
                     logger.LogInformation(LogEvents.DataConsistencyMaintenance,
-                        "Found inconsistency for Chart \"{Title} [{Level} {Difficulty}]\" on its {Property}: {ActualCount} != {ExpectedCount}",
+                        "Found inconsistency for Chart \"{Title} [{Level} {Difficulty}]\" on its {Property}: {Actual} != {Expected}",
                         chart.Title ?? chart.Song.Title, chart.Level, Math.Floor(chart.Difficulty),
                         nameof(chart.Rating), chart.Rating, rating);
                     chart.Rating = rating;
@@ -244,7 +274,7 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
                 if (Math.Abs(chart.RatingOnArrangement - ratingOnArrangement) > 1e-7)
                 {
                     logger.LogInformation(LogEvents.DataConsistencyMaintenance,
-                        "Found inconsistency for Chart \"{Title} [{Level} {Difficulty}]\" on its {Property}: {ActualCount} != {ExpectedCount}",
+                        "Found inconsistency for Chart \"{Title} [{Level} {Difficulty}]\" on its {Property}: {Actual} != {Expected}",
                         chart.Title ?? chart.Song.Title, chart.Level, Math.Floor(chart.Difficulty),
                         nameof(chart.RatingOnArrangement), chart.RatingOnArrangement, ratingOnArrangement);
                     chart.RatingOnArrangement = ratingOnArrangement;
@@ -254,7 +284,7 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
                 if (Math.Abs(chart.RatingOnGameplay - ratingOnGameplay) > 1e-7)
                 {
                     logger.LogInformation(LogEvents.DataConsistencyMaintenance,
-                        "Found inconsistency for Chart \"{Title} [{Level} {Difficulty}]\" on its {Property}: {ActualCount} != {ExpectedCount}",
+                        "Found inconsistency for Chart \"{Title} [{Level} {Difficulty}]\" on its {Property}: {Actual} != {Expected}",
                         chart.Title ?? chart.Song.Title, chart.Level, Math.Floor(chart.Difficulty),
                         nameof(chart.RatingOnGameplay), chart.RatingOnGameplay, ratingOnGameplay);
                     chart.RatingOnGameplay = ratingOnGameplay;
@@ -264,7 +294,7 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
                 if (Math.Abs(chart.RatingOnVisualEffects - ratingOnVisualEffects) > 1e-7)
                 {
                     logger.LogInformation(LogEvents.DataConsistencyMaintenance,
-                        "Found inconsistency for Chart \"{Title} [{Level} {Difficulty}]\" on its {Property}: {ActualCount} != {ExpectedCount}",
+                        "Found inconsistency for Chart \"{Title} [{Level} {Difficulty}]\" on its {Property}: {Actual} != {Expected}",
                         chart.Title ?? chart.Song.Title, chart.Level, Math.Floor(chart.Difficulty),
                         nameof(chart.RatingOnVisualEffects), chart.RatingOnVisualEffects, ratingOnVisualEffects);
                     chart.RatingOnVisualEffects = ratingOnVisualEffects;
@@ -274,7 +304,7 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
                 if (Math.Abs(chart.RatingOnCreativity - ratingOnCreativity) > 1e-7)
                 {
                     logger.LogInformation(LogEvents.DataConsistencyMaintenance,
-                        "Found inconsistency for Chart \"{Title} [{Level} {Difficulty}]\" on its {Property}: {ActualCount} != {ExpectedCount}",
+                        "Found inconsistency for Chart \"{Title} [{Level} {Difficulty}]\" on its {Property}: {Actual} != {Expected}",
                         chart.Title ?? chart.Song.Title, chart.Level, Math.Floor(chart.Difficulty),
                         nameof(chart.RatingOnCreativity), chart.RatingOnCreativity, ratingOnCreativity);
                     chart.RatingOnCreativity = ratingOnCreativity;
@@ -284,7 +314,7 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
                 if (Math.Abs(chart.RatingOnConcord - ratingOnConcord) > 1e-7)
                 {
                     logger.LogInformation(LogEvents.DataConsistencyMaintenance,
-                        "Found inconsistency for Chart \"{Title} [{Level} {Difficulty}]\" on its {Property}: {ActualCount} != {ExpectedCount}",
+                        "Found inconsistency for Chart \"{Title} [{Level} {Difficulty}]\" on its {Property}: {Actual} != {Expected}",
                         chart.Title ?? chart.Song.Title, chart.Level, Math.Floor(chart.Difficulty),
                         nameof(chart.RatingOnConcord), chart.RatingOnConcord, ratingOnConcord);
                     chart.RatingOnConcord = ratingOnConcord;
@@ -294,10 +324,20 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
                 if (Math.Abs(chart.RatingOnImpression - ratingOnImpression) > 1e-7)
                 {
                     logger.LogInformation(LogEvents.DataConsistencyMaintenance,
-                        "Found inconsistency for Chart \"{Title} [{Level} {Difficulty}]\" on its {Property}: {ActualCount} != {ExpectedCount}",
+                        "Found inconsistency for Chart \"{Title} [{Level} {Difficulty}]\" on its {Property}: {Actual} != {Expected}",
                         chart.Title ?? chart.Song.Title, chart.Level, Math.Floor(chart.Difficulty),
                         nameof(chart.RatingOnImpression), chart.RatingOnImpression, ratingOnImpression);
                     chart.RatingOnImpression = ratingOnImpression;
+                    update = true;
+                }
+
+                if (chart.DateFileUpdated == default)
+                {
+                    logger.LogInformation(LogEvents.DataConsistencyMaintenance,
+                        "Found inconsistency for Chart \"{Title} [{Level} {Difficulty}]\" on its {Property}: {Actual} != {Expected}",
+                        chart.Title ?? chart.Song.Title, chart.Level, Math.Floor(chart.Difficulty),
+                        nameof(chart.DateFileUpdated), chart.DateFileUpdated, chart.DateUpdated);
+                    chart.DateFileUpdated = chart.DateUpdated;
                     update = true;
                 }
 
@@ -312,7 +352,7 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
                 if (comment.ReplyCount != replyCount)
                 {
                     logger.LogInformation(LogEvents.DataConsistencyMaintenance,
-                        "Found inconsistency for Comment \"{Content}\" on its {Property}: {ActualCount} != {ExpectedCount}",
+                        "Found inconsistency for Comment \"{Content}\" on its {Property}: {Actual} != {Expected}",
                         comment.Content.Length > 10 ? $"{comment.Content[..10]}..." : comment.Content,
                         nameof(comment.ReplyCount), comment.ReplyCount, replyCount);
                     comment.ReplyCount = replyCount;
@@ -322,7 +362,7 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
                 if (comment.LikeCount != likeCount)
                 {
                     logger.LogInformation(LogEvents.DataConsistencyMaintenance,
-                        "Found inconsistency for Comment \"{Content}\" on its {Property}: {ActualCount} != {ExpectedCount}",
+                        "Found inconsistency for Comment \"{Content}\" on its {Property}: {Actual} != {Expected}",
                         comment.Content.Length > 10 ? $"{comment.Content[..10]}..." : comment.Content,
                         nameof(comment.LikeCount), comment.LikeCount, likeCount);
                     comment.LikeCount = likeCount;
@@ -338,7 +378,7 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
                 if (collection.LikeCount != likeCount)
                 {
                     logger.LogInformation(LogEvents.DataConsistencyMaintenance,
-                        "Found inconsistency for Collection \"{Title}\" on its {Property}: {ActualCount} != {ExpectedCount}",
+                        "Found inconsistency for Collection \"{Title}\" on its {Property}: {Actual} != {Expected}",
                         collection.Title, nameof(collection.LikeCount), collection.LikeCount, likeCount);
                     collection.LikeCount = likeCount;
                     context.Collections.Update(collection);
@@ -351,7 +391,7 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
                 if (chapter.LikeCount != likeCount)
                 {
                     logger.LogInformation(LogEvents.DataConsistencyMaintenance,
-                        "Found inconsistency for Chapter \"{Title}\" on its {Property}: {ActualCount} != {ExpectedCount}",
+                        "Found inconsistency for Chapter \"{Title}\" on its {Property}: {Actual} != {Expected}",
                         chapter.Title, nameof(chapter.LikeCount), chapter.LikeCount, likeCount);
                     chapter.LikeCount = likeCount;
                     context.Chapters.Update(chapter);
@@ -365,7 +405,7 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
                 if (announcement.LikeCount != likeCount)
                 {
                     logger.LogInformation(LogEvents.DataConsistencyMaintenance,
-                        "Found inconsistency for Announcement \"{Title}\" on its {Property}: {ActualCount} != {ExpectedCount}",
+                        "Found inconsistency for Announcement \"{Title}\" on its {Property}: {Actual} != {Expected}",
                         announcement.Title, nameof(announcement.LikeCount), announcement.LikeCount, likeCount);
                     announcement.LikeCount = likeCount;
                     context.Announcements.Update(announcement);
@@ -380,7 +420,7 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
                 if (song.PlayCount != playCount)
                 {
                     logger.LogInformation(LogEvents.DataConsistencyMaintenance,
-                        "Found inconsistency for Song \"{Title}\" on its {Property}: {ActualCount} != {ExpectedCount}",
+                        "Found inconsistency for Song \"{Title}\" on its {Property}: {Actual} != {Expected}",
                         song.Title, nameof(song.PlayCount), song.PlayCount, playCount);
                     song.PlayCount = playCount;
                     update = true;
@@ -389,9 +429,18 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
                 if (song.LikeCount != likeCount)
                 {
                     logger.LogInformation(LogEvents.DataConsistencyMaintenance,
-                        "Found inconsistency for Song \"{Title}\" on its {Property}: {ActualCount} != {ExpectedCount}",
+                        "Found inconsistency for Song \"{Title}\" on its {Property}: {Actual} != {Expected}",
                         song.Title, nameof(song.LikeCount), song.LikeCount, likeCount);
                     song.LikeCount = likeCount;
+                    update = true;
+                }
+
+                if (song.DateFileUpdated == default)
+                {
+                    logger.LogInformation(LogEvents.DataConsistencyMaintenance,
+                        "Found inconsistency for Song \"{Title}\" on its {Property}: {Actual} != {Expected}",
+                        song.Title, nameof(song.DateFileUpdated), song.DateFileUpdated, song.DateUpdated);
+                    song.DateFileUpdated = song.DateUpdated;
                     update = true;
                 }
 
@@ -404,7 +453,7 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
                 if (application.LikeCount != likeCount)
                 {
                     logger.LogInformation(LogEvents.DataConsistencyMaintenance,
-                        "Found inconsistency for Application \"{Name}\" on its {Property}: {ActualCount} != {ExpectedCount}",
+                        "Found inconsistency for Application \"{Name}\" on its {Property}: {Actual} != {Expected}",
                         application.Name, nameof(application.LikeCount), application.LikeCount, likeCount);
                     application.LikeCount = likeCount;
                     context.Applications.Update(application);
@@ -417,7 +466,7 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
                 if (reply.LikeCount != likeCount)
                 {
                     logger.LogInformation(LogEvents.DataConsistencyMaintenance,
-                        "Found inconsistency for Reply \"{Content}\" on its {Property}: {ActualCount} != {ExpectedCount}",
+                        "Found inconsistency for Reply \"{Content}\" on its {Property}: {Actual} != {Expected}",
                         reply.Content.Length > 10 ? $"{reply.Content[..10]}..." : reply.Content,
                         nameof(reply.LikeCount), reply.LikeCount, likeCount);
                     reply.LikeCount = likeCount;
@@ -431,7 +480,7 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
                 if (eventEntity.LikeCount != likeCount)
                 {
                     logger.LogInformation(LogEvents.DataConsistencyMaintenance,
-                        "Found inconsistency for Event \"{Title}\" on its {Property}: {ActualCount} != {ExpectedCount}",
+                        "Found inconsistency for Event \"{Title}\" on its {Property}: {Actual} != {Expected}",
                         eventEntity.Title, nameof(eventEntity.LikeCount), eventEntity.LikeCount, likeCount);
                     eventEntity.LikeCount = likeCount;
                     context.Events.Update(eventEntity);
@@ -445,7 +494,7 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
                 if (eventDivision.LikeCount != likeCount)
                 {
                     logger.LogInformation(LogEvents.DataConsistencyMaintenance,
-                        "Found inconsistency for Event Division \"{Title}\" on its {Property}: {ActualCount} != {ExpectedCount}",
+                        "Found inconsistency for Event Division \"{Title}\" on its {Property}: {Actual} != {Expected}",
                         eventDivision.Title, nameof(eventDivision.LikeCount), eventDivision.LikeCount, likeCount);
                     eventDivision.LikeCount = likeCount;
                     context.EventDivisions.Update(eventDivision);
@@ -458,7 +507,7 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
                 if (eventTeam.LikeCount != likeCount)
                 {
                     logger.LogInformation(LogEvents.DataConsistencyMaintenance,
-                        "Found inconsistency for Event Team \"{Name}\" on its {Property}: {ActualCount} != {ExpectedCount}",
+                        "Found inconsistency for Event Team \"{Name}\" on its {Property}: {Actual} != {Expected}",
                         eventTeam.Name, nameof(eventTeam.LikeCount), eventTeam.LikeCount, likeCount);
                     eventTeam.LikeCount = likeCount;
                     context.EventTeams.Update(eventTeam);

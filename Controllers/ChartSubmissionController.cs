@@ -302,6 +302,7 @@ public class ChartSubmissionController(
                         : RequestStatus.Waiting,
             Owner = currentUser,
             DateCreated = DateTimeOffset.UtcNow,
+            DateFileUpdated = DateTimeOffset.UtcNow,
             DateUpdated = DateTimeOffset.UtcNow
         };
 
@@ -593,6 +594,7 @@ public class ChartSubmissionController(
             chartSubmission.NoteCount = chartSubmissionInfo.Value.Item4;
             chartSubmission.Status = RequestStatus.Waiting;
             chartSubmission.VolunteerStatus = RequestStatus.Waiting;
+            chartSubmission.DateFileUpdated = DateTimeOffset.UtcNow;
             chartSubmission.DateUpdated = DateTimeOffset.UtcNow;
         }
 

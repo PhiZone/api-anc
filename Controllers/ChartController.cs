@@ -302,6 +302,7 @@ public class ChartController(
             SongId = dto.SongId,
             Owner = currentUser,
             DateCreated = DateTimeOffset.UtcNow,
+            DateFileUpdated = DateTimeOffset.UtcNow,
             DateUpdated = DateTimeOffset.UtcNow
         };
 
@@ -456,6 +457,7 @@ public class ChartController(
             chart.FileChecksum = chartInfo.Value.Item2;
             chart.Format = chartInfo.Value.Item3;
             chart.NoteCount = chartInfo.Value.Item4;
+            chart.DateFileUpdated = DateTimeOffset.UtcNow;
             chart.DateUpdated = DateTimeOffset.UtcNow;
         }
 

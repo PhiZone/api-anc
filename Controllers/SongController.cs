@@ -270,6 +270,7 @@ public class SongController(
             PreviewEnd = dto.PreviewEnd,
             OwnerId = currentUser.Id,
             DateCreated = DateTimeOffset.UtcNow,
+            DateFileUpdated = DateTimeOffset.UtcNow,
             DateUpdated = DateTimeOffset.UtcNow
         };
 
@@ -443,6 +444,7 @@ public class SongController(
                 song.File = songInfo.Value.Item1;
                 song.FileChecksum = songInfo.Value.Item2;
                 song.Duration = songInfo.Value.Item3;
+                song.DateFileUpdated = DateTimeOffset.UtcNow;
                 song.DateUpdated = DateTimeOffset.UtcNow;
 
                 if (song.PreviewEnd > song.Duration) song.PreviewEnd = song.Duration.Value;

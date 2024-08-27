@@ -67,6 +67,7 @@ public class SubmissionService(
                 PreviewEnd = songSubmission.PreviewEnd,
                 OwnerId = songSubmission.OwnerId,
                 DateCreated = DateTimeOffset.UtcNow,
+                DateFileUpdated = DateTimeOffset.UtcNow,
                 DateUpdated = DateTimeOffset.UtcNow
             };
             await songRepository.CreateSongAsync(song);
@@ -113,6 +114,9 @@ public class SubmissionService(
             song.EditionType = songSubmission.EditionType;
             song.Edition = songSubmission.Edition;
             song.File = songSubmission.File;
+            song.DateFileUpdated = song.FileChecksum == songSubmission.FileChecksum
+                ? song.DateFileUpdated
+                : DateTimeOffset.UtcNow;
             song.FileChecksum = songSubmission.FileChecksum;
             song.AuthorName = songSubmission.AuthorName;
             song.Illustration = songSubmission.Illustration;
@@ -275,6 +279,7 @@ public class SubmissionService(
                 SongId = songId.Value,
                 OwnerId = chartSubmission.OwnerId,
                 DateCreated = DateTimeOffset.UtcNow,
+                DateFileUpdated = DateTimeOffset.UtcNow,
                 DateUpdated = DateTimeOffset.UtcNow
             };
             await chartRepository.CreateChartAsync(chart);
@@ -319,6 +324,9 @@ public class SubmissionService(
             chart.Difficulty = chartSubmission.Difficulty;
             chart.Format = chartSubmission.Format;
             chart.File = chartSubmission.File;
+            chart.DateFileUpdated = chart.FileChecksum == chartSubmission.FileChecksum
+                ? chart.DateFileUpdated
+                : DateTimeOffset.UtcNow;
             chart.FileChecksum = chartSubmission.FileChecksum;
             chart.AuthorName = chartSubmission.AuthorName;
             chart.Illustration = chartSubmission.Illustration;

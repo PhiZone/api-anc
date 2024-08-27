@@ -257,6 +257,7 @@ public class SongSubmissionController(
             Status = RequestStatus.Waiting,
             OwnerId = currentUser.Id,
             DateCreated = DateTimeOffset.UtcNow,
+            DateFileUpdated = DateTimeOffset.UtcNow,
             DateUpdated = DateTimeOffset.UtcNow
         };
 
@@ -473,6 +474,7 @@ public class SongSubmissionController(
                 songSubmission.File = songSubmissionInfo.Value.Item1;
                 songSubmission.FileChecksum = songSubmissionInfo.Value.Item2;
                 songSubmission.Duration = songSubmissionInfo.Value.Item3;
+                songSubmission.DateFileUpdated = DateTimeOffset.UtcNow;
                 songSubmission.DateUpdated = DateTimeOffset.UtcNow;
                 songSubmission.Status = RequestStatus.Waiting;
 
