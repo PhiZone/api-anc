@@ -816,6 +816,9 @@ public class ChartController(
             DateCreated = DateTimeOffset.UtcNow,
             DateUpdated = DateTimeOffset.UtcNow
         };
+        
+        chart.DateFileUpdated = DateTimeOffset.UtcNow;
+        chart.DateUpdated = DateTimeOffset.UtcNow;
 
         if (!await chartAssetRepository.CreateChartAssetAsync(chartAsset) ||
             !await chartRepository.UpdateChartAsync(chart))
@@ -965,6 +968,7 @@ public class ChartController(
             chartAsset.File = (await fileStorageService.Upload<ChartAsset>(
                 chart.Title ?? (await songRepository.GetSongAsync(chart.SongId)).Title, dto.File)).Item1;
             chartAsset.DateUpdated = DateTimeOffset.UtcNow;
+            chart.DateFileUpdated = DateTimeOffset.UtcNow;
             chart.DateUpdated = DateTimeOffset.UtcNow;
         }
 

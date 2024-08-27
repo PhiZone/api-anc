@@ -58,5 +58,7 @@ public class SongSubmissionDto
 
     public DateTimeOffset DateCreated { get; set; }
 
+    public DateTimeOffset DateFileUpdated { get; set; }
+
     public DateTimeOffset DateUpdated { get; set; }
 }

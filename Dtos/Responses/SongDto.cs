@@ -62,6 +62,8 @@ public class SongDto
 
     public DateTimeOffset DateCreated { get; set; }
 
+    public DateTimeOffset DateFileUpdated { get; set; }
+
     public DateTimeOffset DateUpdated { get; set; }
 
     public DateTimeOffset? DateLiked { get; set; }

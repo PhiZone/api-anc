@@ -1003,6 +1003,7 @@ public class ChartSubmissionController(
 
         chartSubmission.Status = RequestStatus.Waiting;
         chartSubmission.VolunteerStatus = RequestStatus.Waiting;
+        chartSubmission.DateFileUpdated = DateTimeOffset.UtcNow;
         chartSubmission.DateUpdated = DateTimeOffset.UtcNow;
 
         var (eventDivision, eventTeam, response) =
@@ -1109,6 +1110,7 @@ public class ChartSubmissionController(
 
         chartSubmission.Status = RequestStatus.Waiting;
         chartSubmission.VolunteerStatus = RequestStatus.Waiting;
+        chartSubmission.DateFileUpdated = DateTimeOffset.UtcNow;
         chartSubmission.DateUpdated = DateTimeOffset.UtcNow;
 
         var (eventDivision, eventTeam, response) =
@@ -1295,6 +1297,7 @@ public class ChartSubmissionController(
             chartAsset.DateUpdated = DateTimeOffset.UtcNow;
             chartSubmission.Status = RequestStatus.Waiting;
             chartSubmission.VolunteerStatus = RequestStatus.Waiting;
+            chartSubmission.DateFileUpdated = DateTimeOffset.UtcNow;
             chartSubmission.DateUpdated = DateTimeOffset.UtcNow;
         }
 
