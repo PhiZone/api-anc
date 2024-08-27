@@ -69,9 +69,10 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
                 if (chart.DateFileUpdated == default)
                 {
                     logger.LogInformation(LogEvents.DataConsistencyMaintenance,
-                        "Found inconsistency for Chart Submission \"{Title}\" on its {Property}: {Actual} != {Expected}",
-                        chart.Title ?? chart.Song?.Title ?? chart.SongSubmission?.Title, nameof(chart.DateFileUpdated),
-                        chart.DateFileUpdated, chart.DateUpdated);
+                        "Found inconsistency for Chart Submission \"{Title} [{Level} {Difficulty}]\" on its {Property}: {Actual} != {Expected}",
+                        chart.Title ?? chart.Song?.Title ?? chart.SongSubmission?.Title, chart.Level,
+                        Math.Floor(chart.Difficulty), nameof(chart.DateFileUpdated), chart.DateFileUpdated,
+                        chart.DateUpdated);
                     chart.DateFileUpdated = chart.DateUpdated;
                     update = true;
                 }
@@ -518,6 +519,8 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
             }
 
             await context.SaveChangesAsync(_cancellationToken);
+            logger.LogInformation(LogEvents.DataConsistencyMaintenance,
+                "Data consistency has been checked successfully");
         }
         catch (Exception e)
         {
