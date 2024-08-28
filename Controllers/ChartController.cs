@@ -816,7 +816,7 @@ public class ChartController(
             DateCreated = DateTimeOffset.UtcNow,
             DateUpdated = DateTimeOffset.UtcNow
         };
-        
+
         chart.DateFileUpdated = DateTimeOffset.UtcNow;
         chart.DateUpdated = DateTimeOffset.UtcNow;
 

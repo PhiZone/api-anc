@@ -2,6 +2,7 @@
 using PhiZoneApi.Constants;
 using PhiZoneApi.Interfaces;
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats.Webp;
 using SixLabors.ImageSharp.Processing;
 
 namespace PhiZoneApi.Services;
@@ -82,7 +83,11 @@ public class MultimediaService(ILogger<MultimediaService> logger) : IMultimediaS
         });
 
         var stream = new MemoryStream();
-        image.SaveAsWebpAsync(stream);
+        var webpEncoder = new WebpEncoder
+        {
+            Quality = 100
+        };
+        image.SaveAsync(stream, webpEncoder);
         return stream;
     }
 
