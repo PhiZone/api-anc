@@ -45,8 +45,8 @@ public class EventTeam : LikeableResource, IComparable<EventTeam>
 
         if (Score == null) return 1;
         if (other.Score == null) return -1;
-        if (Math.Abs(Score.Value - other.Score.Value) < 1e-5) return 0;
-        return Score > other.Score ? -1 : 1;
+        if (Math.Abs(Score.Value - other.Score.Value) > 1e-5) return Score > other.Score ? -1 : 1;
+        return DateCreated.CompareTo(other.DateCreated);
     }
 
     public override string GetDisplay()

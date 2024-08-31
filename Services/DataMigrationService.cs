@@ -13,6 +13,7 @@ namespace PhiZoneApi.Services;
 public class DataMigrationService(IServiceProvider serviceProvider) : IHostedService
 {
     private IAdmissionRepository _admissionRepository = null!;
+    private IApplicationRepository _applicationRepository = null!;
     private IChapterRepository _chapterRepository = null!;
     private IChartRepository _chartRepository = null!;
     private IConfiguration _configuration = null!;
@@ -29,6 +30,7 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
 
         _logger = scope.ServiceProvider.GetRequiredService<ILogger<DataMigrationService>>();
         _configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+        _applicationRepository = scope.ServiceProvider.GetRequiredService<IApplicationRepository>();
         _chapterRepository = scope.ServiceProvider.GetRequiredService<IChapterRepository>();
         _admissionRepository = scope.ServiceProvider.GetRequiredService<IAdmissionRepository>();
         _songRepository = scope.ServiceProvider.GetRequiredService<ISongRepository>();
@@ -63,6 +65,7 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
         await MigrateSongs(mysqlConnection, cancellationToken);
         await MigrateSongAdmissions(mysqlConnection, cancellationToken);
         await MigrateCharts(mysqlConnection, cancellationToken);
+        await MigrateApplications(mysqlConnection, cancellationToken);
         await MigrateUsers(mysqlConnection, cancellationToken);
         await MigrateApplicationUsers(mysqlConnection, cancellationToken);
     }
@@ -223,6 +226,37 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
         {
             _logger.LogError(LogEvents.DataMigration, ex,
                 "An error occurred whilst migrating charts (at position {Position})", position);
+        }
+    }
+
+    private async Task MigrateApplications(MySqlConnection mysqlConnection, CancellationToken cancellationToken)
+    {
+        try
+        {
+            _logger.LogInformation(LogEvents.DataMigration, "Migrating applications...");
+            await using var transaction = await mysqlConnection.BeginTransactionAsync(cancellationToken);
+            var command = new MySqlCommand { Connection = mysqlConnection, Transaction = transaction };
+            var applications = await _applicationRepository.GetApplicationsAsync();
+            command.CommandText = string.Join('\n',
+                from application in applications select GetInsertCommand(application, "Applications"));
+            await command.ExecuteNonQueryAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+        }
+        catch (SocketException ex)
+        {
+            _logger.LogError(LogEvents.DataMigration, ex, "An error occurred whilst migrating applications");
+            if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
+            await MigrateApplications(mysqlConnection, cancellationToken);
+        }
+        catch (IOException ex)
+        {
+            _logger.LogError(LogEvents.DataMigration, ex, "An error occurred whilst migrating applications");
+            if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
+            await MigrateApplications(mysqlConnection, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(LogEvents.DataMigration, ex, "An error occurred whilst migrating applications");
         }
     }
 
