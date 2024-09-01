@@ -377,17 +377,13 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
             else if ((property.PropertyType == typeof(int) || property.PropertyType == typeof(int?)) &&
                      property.Name.EndsWith("Id") && property.Name != "RegionId" && value != null)
             {
-                if (property.Name == "PhiZoneId")
-                {
-                    var user = (User)entry;
-                    value = user.Id;
-                }
-                else if (property.Name != "Id")
+                if (property.Name != "Id")
                 {
                     value = 1;
                 }
                 else
                 {
+                    propertyMap.Add("PhiZoneId", $"'{value.ToString()!.Replace("'", "''")}'");
                     value = null;
                 }
             }
