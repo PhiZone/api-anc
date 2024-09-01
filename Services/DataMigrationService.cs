@@ -361,7 +361,7 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
         }
     }
 
-    private static string GetInsertCommand(object entry, string table)
+    private string GetInsertCommand(object entry, string table)
     {
         var type = entry.GetType();
         var properties = type.GetProperties(BindingFlags.Public | BindingFlags.Instance);
@@ -388,10 +388,13 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
                 value = ((DateTimeOffset?)value)?.ToString("yyyy-MM-dd HH:mm:ss");
             }
             else if ((property.PropertyType == typeof(int) || property.PropertyType == typeof(int?)) &&
-                     property.Name.EndsWith("Id") && property.Name != "RegionId" && property.Name != "UserId" &&
-                     value != null)
+                     property.Name.EndsWith("Id") && property.Name != "RegionId" && value != null)
             {
-                if (property.Name != "Id")
+                if (property.Name == "UserId")
+                {
+                    value = _userIdDict[(int)value];
+                }
+                else if (property.Name != "Id")
                 {
                     value = 1;
                 }
