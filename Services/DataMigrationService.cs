@@ -23,6 +23,7 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
     private IApplicationUserRepository _applicationUserRepository = null!;
     private readonly List<Guid> _migratedChapters = [];
     private readonly List<Guid> _migratedSongs = [];
+    private readonly Dictionary<int, int> _userIdDict = new();
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
@@ -268,6 +269,10 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
         {
             _logger.LogInformation(LogEvents.DataMigration, "Migrating users...");
             ICollection<User> users;
+            var initialUserCount =
+                Convert.ToInt32(
+                    await new MySqlCommand("SELECT COUNT(*) FROM Users", mysqlConnection).ExecuteScalarAsync(
+                        cancellationToken));
             do
             {
                 await using var transaction = await mysqlConnection.BeginTransactionAsync(cancellationToken);
@@ -276,7 +281,15 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
                 users = await _userRepository.GetUsersAsync(position: position, take: 50,
                     predicate: e => e.ApplicationLinks.Any(f => f.ApplicationId == applicationId));
                 if (users.Count == 0) break;
-                command.CommandText = string.Join('\n', from user in users select GetInsertCommand(user, "Users"));
+                var idBegin = initialUserCount + position + 1;
+                command.CommandText = string.Join('\n', from user in users.Select((e, i) =>
+                    {
+                        var newId = idBegin + i;
+                        _userIdDict.Add(e.Id, newId);
+                        e.Id = newId;
+                        return e;
+                    })
+                    select GetInsertCommand(user, "Users"));
                 await command.ExecuteNonQueryAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
                 position += 50;
@@ -375,7 +388,8 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
                 value = ((DateTimeOffset?)value)?.ToString("yyyy-MM-dd HH:mm:ss");
             }
             else if ((property.PropertyType == typeof(int) || property.PropertyType == typeof(int?)) &&
-                     property.Name.EndsWith("Id") && property.Name != "RegionId" && value != null)
+                     property.Name.EndsWith("Id") && property.Name != "RegionId" && property.Name != "UserId" &&
+                     value != null)
             {
                 if (property.Name != "Id")
                 {
@@ -384,7 +398,6 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
                 else
                 {
                     propertyMap.Add("PhiZoneId", $"'{value.ToString()!.Replace("'", "''")}'");
-                    value = null;
                 }
             }
 
