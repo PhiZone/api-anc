@@ -24,6 +24,7 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
     private readonly List<Guid> _migratedChapters = [];
     private readonly List<Guid> _migratedSongs = [];
     private readonly Dictionary<int, int> _userIdDict = new();
+    private readonly Dictionary<int, int> _reverseUserIdDict = new();
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
@@ -286,6 +287,7 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
                     {
                         var newId = idBegin + i;
                         _userIdDict.Add(e.Id, newId);
+                        _reverseUserIdDict.Add(newId, e.Id);
                         e.Id = newId;
                         return e;
                     })
@@ -400,7 +402,7 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
                 }
                 else
                 {
-                    propertyMap.Add("PhiZoneId", $"'{value.ToString()!.Replace("'", "''")}'");
+                    propertyMap.Add("PhiZoneId", $"'{_reverseUserIdDict[(int)value].ToString().Replace("'", "''")}'");
                 }
             }
 
