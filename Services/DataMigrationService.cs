@@ -282,7 +282,7 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
                 users = await _userRepository.GetUsersAsync(position: position, take: 50,
                     predicate: e => e.ApplicationLinks.Any(f => f.ApplicationId == applicationId));
                 if (users.Count == 0) break;
-                var idBegin = initialUserCount + position + 1;
+                var idBegin = initialUserCount + position - startPosition + 1;
                 command.CommandText = string.Join('\n', from user in users.Select((e, i) =>
                     {
                         var newId = idBegin + i;

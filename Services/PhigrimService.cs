@@ -38,7 +38,7 @@ public class PhigrimService : IPhigrimService
         await UpdateToken();
         var request = new HttpRequestMessage
         {
-            Method = HttpMethod.Get,
+            Method = HttpMethod.Post,
             RequestUri = new Uri($"{_phigrimSettings.Value.ApiUrl}/me/bindings/tapTap/inherit"),
             Headers = { { "Authorization", $"Bearer {_token}" } },
             Content = JsonContent.Create(dto)
