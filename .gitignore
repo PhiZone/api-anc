@@ -468,3 +468,4 @@ appsettings.Development.json*
 appsettings.Production.json*
 deploy.sh
 Resources/resources.json
+Resources/Descriptors/

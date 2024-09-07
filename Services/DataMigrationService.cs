@@ -12,19 +12,19 @@ namespace PhiZoneApi.Services;
 
 public class DataMigrationService(IServiceProvider serviceProvider) : IHostedService
 {
+    private readonly List<Guid> _migratedChapters = [];
+    private readonly List<Guid> _migratedSongs = [];
+    private readonly Dictionary<int, int> _reverseUserIdDict = new();
+    private readonly Dictionary<int, int> _userIdDict = new();
     private IAdmissionRepository _admissionRepository = null!;
     private IApplicationRepository _applicationRepository = null!;
+    private IApplicationUserRepository _applicationUserRepository = null!;
     private IChapterRepository _chapterRepository = null!;
     private IChartRepository _chartRepository = null!;
     private IConfiguration _configuration = null!;
     private ILogger<DataMigrationService> _logger = null!;
     private ISongRepository _songRepository = null!;
     private IUserRepository _userRepository = null!;
-    private IApplicationUserRepository _applicationUserRepository = null!;
-    private readonly List<Guid> _migratedChapters = [];
-    private readonly List<Guid> _migratedSongs = [];
-    private readonly Dictionary<int, int> _userIdDict = new();
-    private readonly Dictionary<int, int> _reverseUserIdDict = new();
 
     public async Task StartAsync(CancellationToken cancellationToken)
     {
@@ -393,17 +393,11 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
                      property.Name.EndsWith("Id") && property.Name != "RegionId" && value != null)
             {
                 if (property.Name == "UserId")
-                {
                     value = _userIdDict[(int)value];
-                }
                 else if (property.Name != "Id")
-                {
                     value = 1;
-                }
                 else
-                {
                     propertyMap.Add("PhiZoneId", $"'{_reverseUserIdDict[(int)value].ToString().Replace("'", "''")}'");
-                }
             }
 
             if (value != null) propertyMap.Add(property.Name, $"'{value.ToString()!.Replace("'", "''")}'");

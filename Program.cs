@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Versioning;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Design;
+using Microsoft.EntityFrameworkCore.Design.Internal;
 using Microsoft.OpenApi.Models;
 using Newtonsoft.Json.Serialization;
 using OpenIddict.Abstractions;
@@ -165,6 +167,9 @@ builder.Services.AddSingleton<AuthProviderFactory>();
 builder.Services.AddSingleton<IAuthProvider, GitHubAuthProvider>();
 builder.Services.AddSingleton<IAuthProvider, PhiraAuthProvider>();
 builder.Services.AddSingleton<IAuthProvider, DiscordAuthProvider>();
+#pragma warning disable EF1001
+builder.Services.AddSingleton<IPluralizer, HumanizerPluralizer>();
+#pragma warning restore EF1001
 builder.Services.AddSingleton<IConnectionMultiplexer>(
     ConnectionMultiplexer.Connect(builder.Configuration.GetValue<string>("RedisConnection") ?? "localhost"));
 builder.Services.AddSingleton<IHostedService>(provider => new MailSenderService(

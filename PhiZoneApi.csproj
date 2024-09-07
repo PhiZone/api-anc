@@ -51,4 +51,7 @@
             <HintPath>Libraries\Storage.Standard.dll</HintPath>
         </Reference>
     </ItemGroup>
+    <ItemGroup>
+        <Folder Include="Resources\Descriptors\"/>
+    </ItemGroup>
 </Project>
