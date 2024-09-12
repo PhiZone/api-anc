@@ -45,7 +45,7 @@ public class MappingProfiles : Profile
         CreateMap<Record, EventRecordEntryDto>();
         CreateMap<Tag, TagDto>();
         CreateMap<Tag, EventTagDto>();
-        CreateMap<TagRequestDto, Tag>();
+        CreateMap<TagRequestDto, Tag>().ReverseMap();
         CreateMap<Like, LikeDto>();
         CreateMap<Comment, CommentDto>();
         CreateMap<Reply, ReplyDto>();
