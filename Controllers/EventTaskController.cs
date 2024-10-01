@@ -125,8 +125,8 @@ public class EventTaskController(
         var eventTask = await eventTaskRepository.GetEventTaskAsync(id);
         var eventDivision = await eventDivisionRepository.GetEventDivisionAsync(eventTask.DivisionId);
         var eventEntity = await eventRepository.GetEventAsync(eventDivision.EventId);
-        if ((currentUser == null || eventEntity.Hostships.All(f => f.UserId != currentUser.Id) ||
-             !resourceService.HasPermission(currentUser, UserRole.Administrator)) &&
+        if ((currentUser == null || (eventEntity.Hostships.All(f => f.UserId != currentUser.Id) &&
+                                     !resourceService.HasPermission(currentUser, UserRole.Administrator))) &&
             eventDivision.DateUnveiled >= DateTimeOffset.UtcNow)
             return NotFound(new ResponseDto<object>
             {
