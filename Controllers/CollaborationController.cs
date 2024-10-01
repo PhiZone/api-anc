@@ -352,17 +352,20 @@ public class CollaborationController(
                 });
 
         Submission submission;
+        bool isChart;
         if (await chartSubmissionRepository.ChartSubmissionExistsAsync(collaboration.SubmissionId))
         {
             submission = await chartSubmissionRepository.GetChartSubmissionAsync(collaboration.SubmissionId);
+            isChart = true;
         }
         else
         {
             submission = await songSubmissionRepository.GetSongSubmissionAsync(collaboration.SubmissionId);
+            isChart = false;
         }
 
         var (eventDivision, eventTeam, response) =
-            await CheckForEvent(submission, currentUser, EventTaskType.PreUpdateSubmission);
+            await CheckForEvent(submission, currentUser, EventTaskType.PreUpdateSubmission, isChart: isChart);
         if (response != null) return response;
 
         if (collaboration.Status == RequestStatus.Approved && submission.RepresentationId != null)
@@ -381,12 +384,12 @@ public class CollaborationController(
     }
 
     private async Task<(EventDivision?, EventTeam?, IActionResult?)> GetEvent(IEnumerable<string> tags,
-        User currentUser, bool tagChanged = false)
+        User currentUser, bool tagChanged = false, bool isChart = false)
     {
         var normalizedTags = tags.Select(resourceService.Normalize);
         var eventDivisions = await eventDivisionRepository.GetEventDivisionsAsync(predicate: e =>
-            e.Type == EventDivisionType.Song && e.Status != EventDivisionStatus.Created &&
-            normalizedTags.Contains(e.TagName));
+            (isChart ? e.Type == EventDivisionType.Chart : e.Type == EventDivisionType.Song) &&
+            e.Status != EventDivisionStatus.Created && normalizedTags.Contains(e.TagName));
         if (eventDivisions.Count == 0) return (null, null, null);
 
         var eventDivision = eventDivisions.FirstOrDefault(e =>
@@ -415,10 +418,10 @@ public class CollaborationController(
     }
 
     private async Task<(EventDivision?, EventTeam?, IActionResult?)> CheckForEvent(Submission submission,
-        User currentUser, EventTaskType taskType, bool tagChanged = false)
+        User currentUser, EventTaskType taskType, bool tagChanged = false, bool isChart = false)
     {
         var owner = (await userRepository.GetUserByIdAsync(submission.OwnerId))!;
-        var result = await GetEvent(submission.Tags, owner, tagChanged);
+        var result = await GetEvent(submission.Tags, owner, tagChanged, isChart);
         if (result.Item1 == null || result.Item2 == null || result.Item3 != null) return result;
 
         var eventDivision = result.Item1;
