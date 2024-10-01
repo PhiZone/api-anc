@@ -34,10 +34,14 @@ public class CollaborationController(
     IFilterService filterService,
     ITemplateService templateService,
     INotificationService notificationService,
+    IScriptService scriptService,
     ISongSubmissionRepository songSubmissionRepository,
     IChartSubmissionRepository chartSubmissionRepository,
     IAuthorshipRepository authorshipRepository,
     ISongRepository songRepository,
+    IUserRepository userRepository,
+    IEventDivisionRepository eventDivisionRepository,
+    IEventTeamRepository eventTeamRepository,
     IChartRepository chartRepository) : Controller
 {
     /// <summary>
@@ -347,15 +351,89 @@ public class CollaborationController(
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
-        var chartSubmission = await chartSubmissionRepository.GetChartSubmissionAsync(collaboration.SubmissionId);
-        if (collaboration.Status == RequestStatus.Approved && chartSubmission.RepresentationId != null)
-            await authorshipRepository.RemoveAuthorshipAsync(chartSubmission.RepresentationId.Value,
+        Submission submission;
+        if (await chartSubmissionRepository.ChartSubmissionExistsAsync(collaboration.SubmissionId))
+        {
+            submission = await chartSubmissionRepository.GetChartSubmissionAsync(collaboration.SubmissionId);
+        }
+        else
+        {
+            submission = await songSubmissionRepository.GetSongSubmissionAsync(collaboration.SubmissionId);
+        }
+
+        var (eventDivision, eventTeam, response) =
+            await CheckForEvent(submission, currentUser, EventTaskType.PreUpdateSubmission);
+        if (response != null) return response;
+
+        if (collaboration.Status == RequestStatus.Approved && submission.RepresentationId != null)
+            await authorshipRepository.RemoveAuthorshipAsync(submission.RepresentationId.Value,
                 collaboration.InviteeId);
 
         if (!await collaborationRepository.RemoveCollaborationAsync(id))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
+        if (eventDivision != null && eventTeam != null)
+            await scriptService.RunEventTaskAsync(eventTeam.DivisionId, submission, eventTeam.Id, currentUser,
+                [EventTaskType.PostUpdateSubmission]);
+
         return NoContent();
+    }
+
+    private async Task<(EventDivision?, EventTeam?, IActionResult?)> GetEvent(IEnumerable<string> tags,
+        User currentUser, bool tagChanged = false)
+    {
+        var normalizedTags = tags.Select(resourceService.Normalize);
+        var eventDivisions = await eventDivisionRepository.GetEventDivisionsAsync(predicate: e =>
+            e.Type == EventDivisionType.Song && e.Status != EventDivisionStatus.Created &&
+            normalizedTags.Contains(e.TagName));
+        if (eventDivisions.Count == 0) return (null, null, null);
+
+        var eventDivision = eventDivisions.FirstOrDefault(e =>
+            tagChanged
+                ? e.Status == EventDivisionStatus.Started
+                : e.Status is EventDivisionStatus.Started or EventDivisionStatus.Ended);
+        if (eventDivision == null)
+            return (null, null,
+                BadRequest(new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.DivisionNotStarted
+                }));
+
+        var eventTeams = await eventTeamRepository.GetEventTeamsAsync(predicate: e =>
+            e.DivisionId == eventDivision.Id && e.Participations.Any(f => f.ParticipantId == currentUser.Id));
+
+        if (eventTeams.Count == 0)
+            return (eventDivision, null,
+                BadRequest(new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.NotEnrolled
+                }));
+
+        var eventTeam = eventTeams.First();
+        return (eventDivision, eventTeam, null);
+    }
+
+    private async Task<(EventDivision?, EventTeam?, IActionResult?)> CheckForEvent(Submission submission,
+        User currentUser, EventTaskType taskType, bool tagChanged = false)
+    {
+        var owner = (await userRepository.GetUserByIdAsync(submission.OwnerId))!;
+        var result = await GetEvent(submission.Tags, owner, tagChanged);
+        if (result.Item1 == null || result.Item2 == null || result.Item3 != null) return result;
+
+        var eventDivision = result.Item1;
+        var eventTeam = result.Item2;
+
+        var firstFailure = await scriptService.RunEventTaskAsync(eventTeam.DivisionId, submission, eventTeam.Id,
+            currentUser, [taskType]);
+
+        if (firstFailure != null)
+            return (eventDivision, eventTeam,
+                BadRequest(new ResponseDto<object>
+                {
+                    Status = firstFailure.Status, Code = firstFailure.Code, Message = firstFailure.Message
+                }));
+
+        return (eventDivision, eventTeam, null);
     }
 }

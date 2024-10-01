@@ -293,7 +293,8 @@ public class ChartSubmissionController(
             VolunteerStatus = RequestStatus.Waiting,
             AdmissionStatus =
                 song != null
-                    ? song.OwnerId == currentUser.Id || song.Accessibility == Accessibility.AllowAny
+                    ?
+                    song.OwnerId == currentUser.Id || song.Accessibility == Accessibility.AllowAny
                         ? RequestStatus.Approved
                         : RequestStatus.Waiting
                     : songSubmission!.OwnerId == currentUser.Id ||
@@ -411,8 +412,7 @@ public class ChartSubmissionController(
                 [EventTaskType.PostSubmission]);
 
         logger.LogInformation(LogEvents.ChartInfo, "New chart submission: {Title} [{Level} {Difficulty}]",
-            dto.Title ?? song?.Title ?? songSubmission!.Title, dto.Level,
-            Math.Floor(dto.Difficulty));
+            dto.Title ?? song?.Title ?? songSubmission!.Title, dto.Level, Math.Floor(dto.Difficulty));
 
         return StatusCode(StatusCodes.Status201Created,
             new ResponseDto<CreatedResponseDto<Guid>>
@@ -1493,10 +1493,18 @@ public class ChartSubmissionController(
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
             });
 
+        var (eventDivision, eventTeam, response) =
+            await CheckForEvent(chartSubmission, currentUser, EventTaskType.PreUpdateSubmission);
+        if (response != null) return response;
+
         var collaboration = await CreateCollaboration(chartSubmission, invitee, dto.Position, currentUser);
         if (collaboration == null)
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+
+        if (eventDivision != null && eventTeam != null)
+            await scriptService.RunEventTaskAsync(eventTeam.DivisionId, chartSubmission, eventTeam.Id, currentUser,
+                [EventTaskType.PostUpdateSubmission]);
 
         return StatusCode(StatusCodes.Status201Created,
             new ResponseDto<CreatedResponseDto<Guid>>

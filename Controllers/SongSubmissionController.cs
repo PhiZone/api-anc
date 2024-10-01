@@ -203,8 +203,7 @@ public class SongSubmissionController(
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidTimeRelation
                 });
-            logger.LogInformation(LogEvents.SongInfo, "New song submission: {Title}",
-                dto.Title);
+            logger.LogInformation(LogEvents.SongInfo, "New song submission: {Title}", dto.Title);
         }
         else if (!(TimeSpan.Zero <= dto.PreviewStart && dto.PreviewStart < dto.PreviewEnd))
         {
@@ -284,8 +283,7 @@ public class SongSubmissionController(
         if (!wait)
         {
             await songService.PublishAsync(dto.File, songSubmission.Id, true);
-            logger.LogInformation(LogEvents.SongInfo, "Scheduled new song submission: {Title}",
-                dto.Title);
+            logger.LogInformation(LogEvents.SongInfo, "Scheduled new song submission: {Title}", dto.Title);
         }
         else
         {
@@ -1001,10 +999,18 @@ public class SongSubmissionController(
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AlreadyDone
             });
 
+        var (eventDivision, eventTeam, response) =
+            await CheckForEvent(songSubmission, currentUser, EventTaskType.PreUpdateSubmission);
+        if (response != null) return response;
+
         var collaboration = await CreateCollaboration(songSubmission, invitee, dto.Position, currentUser);
         if (collaboration == null)
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+
+        if (eventDivision != null && eventTeam != null)
+            await scriptService.RunEventTaskAsync(eventTeam.DivisionId, songSubmission, eventTeam.Id, currentUser,
+                [EventTaskType.PostUpdateSubmission]);
 
         return StatusCode(StatusCodes.Status201Created,
             new ResponseDto<CreatedResponseDto<Guid>>
