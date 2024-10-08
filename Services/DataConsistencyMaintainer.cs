@@ -80,6 +80,8 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
                 if (update) context.ChartSubmissions.Update(chart);
             }
 
+            await context.SaveChangesAsync(_cancellationToken);
+
             foreach (var record in await context.Records.Include(e => e.Chart).ToListAsync(_cancellationToken))
             {
                 var update = false;
@@ -156,6 +158,8 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
                 if (update) context.Records.Update(record);
             }
 
+            await context.SaveChangesAsync(_cancellationToken);
+
             foreach (var user in await context.Users.ToListAsync(_cancellationToken))
             {
                 var update = false;
@@ -212,6 +216,8 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
 
                 if (update) context.Users.Update(user);
             }
+
+            await context.SaveChangesAsync(_cancellationToken);
 
             foreach (var chart in await context.Charts.Include(e => e.Song).ToListAsync(_cancellationToken))
             {
@@ -376,6 +382,8 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
                 if (update) context.Comments.Update(comment);
             }
 
+            await context.SaveChangesAsync(_cancellationToken);
+
             foreach (var collection in await context.Collections.ToListAsync(_cancellationToken))
             {
                 var likeCount = await context.Likes.CountAsync(e => e.ResourceId == collection.Id, _cancellationToken);
@@ -451,6 +459,8 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
                 if (update) context.Songs.Update(song);
             }
 
+            await context.SaveChangesAsync(_cancellationToken);
+
             foreach (var application in await context.Applications.ToListAsync(_cancellationToken))
             {
                 var likeCount = await context.Likes.CountAsync(e => e.ResourceId == application.Id, _cancellationToken);
@@ -477,6 +487,8 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
                     context.Replies.Update(reply);
                 }
             }
+
+            await context.SaveChangesAsync(_cancellationToken);
 
             foreach (var eventEntity in await context.Events.ToListAsync(_cancellationToken))
             {
