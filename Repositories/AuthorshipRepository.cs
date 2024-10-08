@@ -17,7 +17,7 @@ public class AuthorshipRepository(ApplicationDbContext context) : IAuthorshipRep
         var result = context.Authorships.Include(e => e.Author)
             .ThenInclude(e => e.Region)
             .Where(authorship => authorship.AuthorId == authorId &&
-                                 authorship.Resource.EventPresences.Any(e =>
+                                 !authorship.Resource.EventPresences.Any(e =>
                                      e.IsAnonymous != null && e.IsAnonymous.Value))
             .OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
@@ -32,7 +32,7 @@ public class AuthorshipRepository(ApplicationDbContext context) : IAuthorshipRep
         var result = context.Authorships.Include(e => e.Author)
             .ThenInclude(e => e.Region)
             .Where(authorship => authorship.ResourceId == resourceId &&
-                                 authorship.Resource.EventPresences.Any(e =>
+                                 !authorship.Resource.EventPresences.Any(e =>
                                      e.IsAnonymous != null && e.IsAnonymous.Value))
             .OrderBy(order, desc);
         if (predicate != null) result = result.Where(predicate);
