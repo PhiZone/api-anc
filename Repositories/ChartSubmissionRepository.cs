@@ -79,10 +79,26 @@ public class ChartSubmissionRepository(ApplicationDbContext context, IMeilisearc
         return await SaveAsync();
     }
 
+    public async Task<bool> UpdateChartSubmissionsAsync(IEnumerable<ChartSubmission> charts)
+    {
+        var list = charts.ToList();
+        context.ChartSubmissions.UpdateRange(list);
+        await meilisearchService.UpdateBatchAsync(list);
+        return await SaveAsync();
+    }
+
     public async Task<bool> RemoveChartSubmissionAsync(Guid id)
     {
         context.ChartSubmissions.Remove((await context.ChartSubmissions.FirstOrDefaultAsync(chart => chart.Id == id))!);
         await meilisearchService.DeleteAsync<ChartSubmission>(id);
+        return await SaveAsync();
+    }
+
+    public async Task<bool> RemoveChartSubmissionsAsync(IEnumerable<ChartSubmission> charts)
+    {
+        var list = charts.ToList();
+        context.ChartSubmissions.RemoveRange(list);
+        await meilisearchService.DeleteBatchAsync(list);
         return await SaveAsync();
     }
 

@@ -25,6 +25,8 @@ public interface ISongRepository
 
     Task<bool> RemoveSongAsync(Guid id);
 
+    Task<bool> RemoveSongsAsync(IEnumerable<Song> songs);
+
     Task<bool> SaveAsync();
 
     Task<int> CountSongsAsync(Expression<Func<Song, bool>>? predicate = null, bool? showAnonymous = false);

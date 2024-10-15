@@ -26,6 +26,8 @@ public interface IChartRepository
 
     Task<bool> RemoveChartAsync(Guid id);
 
+    Task<bool> RemoveChartsAsync(IEnumerable<Chart> charts);
+
     Task<bool> SaveAsync();
 
     Task<int> CountChartsAsync(Expression<Func<Chart, bool>>? predicate = null, bool? showAnonymous = false);

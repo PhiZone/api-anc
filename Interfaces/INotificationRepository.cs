@@ -21,6 +21,8 @@ public interface INotificationRepository
 
     Task<bool> RemoveNotificationAsync(Guid id);
 
+    Task<bool> RemoveNotificationsAsync(IEnumerable<Notification> notifications);
+
     Task<bool> SaveAsync();
 
     Task<int> CountNotificationsAsync(Expression<Func<Notification, bool>>? predicate = null);

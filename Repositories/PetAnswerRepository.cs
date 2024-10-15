@@ -46,6 +46,14 @@ public class PetAnswerRepository(ApplicationDbContext context, IMeilisearchServi
         await meilisearchService.UpdateAsync(petAnswer);
         return await SaveAsync();
     }
+    
+    public async Task<bool> UpdatePetAnswersAsync(IEnumerable<PetAnswer> petAnswers)
+    {
+        var list = petAnswers.ToList();
+        context.PetAnswers.UpdateRange(list);
+        await meilisearchService.UpdateBatchAsync(list);
+        return await SaveAsync();
+    }
 
     public async Task<bool> RemovePetAnswerAsync(Guid id)
     {

@@ -56,10 +56,26 @@ public class SongSubmissionRepository(ApplicationDbContext context, IMeilisearch
         return await SaveAsync();
     }
 
+    public async Task<bool> UpdateSongSubmissionsAsync(IEnumerable<SongSubmission> songs)
+    {
+        var list = songs.ToList();
+        context.SongSubmissions.UpdateRange(list);
+        await meilisearchService.UpdateBatchAsync(list);
+        return await SaveAsync();
+    }
+
     public async Task<bool> RemoveSongSubmissionAsync(Guid id)
     {
         context.SongSubmissions.Remove((await context.SongSubmissions.FirstOrDefaultAsync(song => song.Id == id))!);
         await meilisearchService.DeleteAsync<SongSubmission>(id);
+        return await SaveAsync();
+    }
+
+    public async Task<bool> RemoveSongSubmissionsAsync(IEnumerable<SongSubmission> songs)
+    {
+        var list = songs.ToList();
+        context.SongSubmissions.RemoveRange(list);
+        await meilisearchService.DeleteBatchAsync(list);
         return await SaveAsync();
     }
 

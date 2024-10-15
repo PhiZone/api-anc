@@ -17,6 +17,8 @@ public interface IPetAnswerRepository
 
     Task<bool> UpdatePetAnswerAsync(PetAnswer petAnswer);
 
+    Task<bool> UpdatePetAnswersAsync(IEnumerable<PetAnswer> petAnswers);
+
     Task<bool> RemovePetAnswerAsync(Guid id);
 
     Task<bool> SaveAsync();

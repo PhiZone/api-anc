@@ -109,6 +109,14 @@ public class SongRepository(ApplicationDbContext context, IMeilisearchService me
         return await SaveAsync();
     }
 
+    public async Task<bool> RemoveSongsAsync(IEnumerable<Song> songs)
+    {
+        var list = songs.ToList();
+        context.Songs.RemoveRange(list);
+        await meilisearchService.DeleteBatchAsync(list);
+        return await SaveAsync();
+    }
+
     public async Task<bool> SaveAsync()
     {
         var saved = await context.SaveChangesAsync();

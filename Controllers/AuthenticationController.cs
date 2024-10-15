@@ -38,6 +38,12 @@ public class AuthenticationController(
     ITapGhostService tapGhostService,
     IUserRepository userRepository,
     IApplicationRepository applicationRepository,
+    INotificationRepository notificationRepository,
+    IChartRepository chartRepository,
+    ISongRepository songRepository,
+    IChartSubmissionRepository chartSubmissionRepository,
+    ISongSubmissionRepository songSubmissionRepository,
+    IPetAnswerRepository petAnswerRepository,
     IDtoMapper dtoMapper,
     AuthProviderFactory factory,
     ILogger<AuthenticationController> logger) : Controller
@@ -240,8 +246,7 @@ public class AuthenticationController(
             var claimsPrincipal = new ClaimsPrincipal(identity);
             claimsPrincipal.SetScopes(Scopes.OfflineAccess);
 
-            logger.LogInformation(LogEvents.UserInfo, "New login (TapTap Ghost): {UserName}",
-                ghost.UserName);
+            logger.LogInformation(LogEvents.UserInfo, "New login (TapTap Ghost): {UserName}", ghost.UserName);
 
             return SignIn(claimsPrincipal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
         }
@@ -322,8 +327,7 @@ public class AuthenticationController(
 
                 await tapGhostService.ModifyGhost(ghost);
                 var ghostIdentity = new ClaimsIdentity(result.Principal!.Claims,
-                    TokenValidationParameters.DefaultAuthenticationType, Claims.Name,
-                    Claims.Role);
+                    TokenValidationParameters.DefaultAuthenticationType, Claims.Name, Claims.Role);
 
                 ghostIdentity.SetDestinations(GetDestinations);
 
@@ -639,6 +643,65 @@ public class AuthenticationController(
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidCode
             });
 
+        await notificationRepository.RemoveNotificationsAsync(
+            await notificationRepository.GetNotificationsAsync(predicate: e =>
+                e.OwnerId == user.Id || e.OperatorId == user.Id));
+        var rankedCharts = await chartRepository.GetChartsAsync(predicate: e => e.OwnerId == user.Id && e.IsRanked);
+        foreach (var chart in rankedCharts)
+        {
+            chart.OwnerId = CriticalValues.PhiZoneOfficialUserId;
+        }
+
+        await chartRepository.UpdateChartsAsync(rankedCharts);
+        var rankedChartIds = rankedCharts.Select(f => f.Id);
+        var rankedChartSubmissions = await chartSubmissionRepository.GetChartSubmissionsAsync(predicate: e =>
+            e.OwnerId == user.Id && e.RepresentationId != null && rankedChartIds.Contains(e.RepresentationId.Value));
+        foreach (var chart in rankedChartSubmissions)
+        {
+            chart.OwnerId = CriticalValues.PhiZoneOfficialUserId;
+        }
+
+        await chartSubmissionRepository.UpdateChartSubmissionsAsync(rankedChartSubmissions);
+        await chartSubmissionRepository.RemoveChartSubmissionsAsync(
+            await chartSubmissionRepository.GetChartSubmissionsAsync(predicate: e => e.OwnerId == user.Id));
+        await chartRepository.RemoveChartsAsync(
+            await chartRepository.GetChartsAsync(predicate: e => e.OwnerId == user.Id));
+        var preservedSongs =
+            await songRepository.GetSongsAsync(predicate: e => e.OwnerId == user.Id && e.Charts.Count > 0);
+        foreach (var song in preservedSongs)
+        {
+            song.OwnerId = CriticalValues.PhiZoneOfficialUserId;
+        }
+
+        await songRepository.UpdateSongsAsync(preservedSongs);
+        var preservedSongIds = preservedSongs.Select(e => e.Id);
+        var preservedSongSubmissions = await songSubmissionRepository.GetSongSubmissionsAsync(predicate: e =>
+            e.OwnerId == user.Id && e.RepresentationId != null && preservedSongIds.Contains(e.RepresentationId.Value));
+        foreach (var song in preservedSongSubmissions)
+        {
+            song.OwnerId = CriticalValues.PhiZoneOfficialUserId;
+        }
+
+        await songSubmissionRepository.UpdateSongSubmissionsAsync(preservedSongSubmissions);
+        await songSubmissionRepository.RemoveSongSubmissionsAsync(
+            await songSubmissionRepository.GetSongSubmissionsAsync(predicate: e => e.OwnerId == user.Id));
+        await songRepository.RemoveSongsAsync(await songRepository.GetSongsAsync(predicate: e => e.OwnerId == user.Id));
+
+        var reviewedSongSubmissions =
+            await songSubmissionRepository.GetSongSubmissionsAsync(predicate: e => e.ReviewerId == user.Id);
+        foreach (var song in reviewedSongSubmissions)
+        {
+            song.ReviewerId = CriticalValues.PhiZoneOfficialUserId;
+        }
+
+        await songSubmissionRepository.UpdateSongSubmissionsAsync(reviewedSongSubmissions);
+        var petAnswers = await petAnswerRepository.GetPetAnswersAsync(predicate: e => e.AssessorId == user.Id);
+        foreach (var answer in petAnswers)
+        {
+            answer.AssessorId = CriticalValues.PhiZoneOfficialUserId;
+        }
+
+        await petAnswerRepository.UpdatePetAnswersAsync(petAnswers);
         await userManager.DeleteAsync(user);
         return NoContent();
     }
@@ -705,8 +768,8 @@ public class AuthenticationController(
         user.AccessFailedCount = 0;
         await userRepository.SaveAsync();
 
-        logger.LogInformation(LogEvents.UserInfo, "New login ({Method}): #{Id} {UserName}",
-            method, user.Id, user.UserName);
+        logger.LogInformation(LogEvents.UserInfo, "New login ({Method}): #{Id} {UserName}", method, user.Id,
+            user.UserName);
 
         return SignIn(claimsPrincipal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
     }

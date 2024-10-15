@@ -109,6 +109,14 @@ public class ChartRepository(ApplicationDbContext context, IMeilisearchService m
         return await SaveAsync();
     }
 
+    public async Task<bool> RemoveChartsAsync(IEnumerable<Chart> charts)
+    {
+        var list = charts.ToList();
+        context.Charts.RemoveRange(list);
+        await meilisearchService.DeleteBatchAsync(list);
+        return await SaveAsync();
+    }
+
     public async Task<bool> SaveAsync()
     {
         var saved = await context.SaveChangesAsync();

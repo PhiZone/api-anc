@@ -24,7 +24,11 @@ public interface IChartSubmissionRepository
 
     Task<bool> UpdateChartSubmissionAsync(ChartSubmission chart);
 
+    Task<bool> UpdateChartSubmissionsAsync(IEnumerable<ChartSubmission> charts);
+
     Task<bool> RemoveChartSubmissionAsync(Guid id);
+
+    Task<bool> RemoveChartSubmissionsAsync(IEnumerable<ChartSubmission> chartSubmissions);
 
     Task<bool> SaveAsync();
 

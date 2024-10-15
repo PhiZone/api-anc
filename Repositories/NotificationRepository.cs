@@ -68,6 +68,14 @@ public class NotificationRepository(ApplicationDbContext context, IMeilisearchSe
         return await SaveAsync();
     }
 
+    public async Task<bool> RemoveNotificationsAsync(IEnumerable<Notification> notifications)
+    {
+        var list = notifications.ToList();
+        context.Notifications.RemoveRange(list);
+        await meilisearchService.DeleteBatchAsync(list);
+        return await SaveAsync();
+    }
+
     public async Task<bool> SaveAsync()
     {
         var saved = await context.SaveChangesAsync();

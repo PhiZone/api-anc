@@ -14,6 +14,7 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
 {
     private readonly List<Guid> _migratedChapters = [];
     private readonly List<Guid> _migratedSongs = [];
+    private readonly List<Guid> _migratedCharts = [];
     private readonly Dictionary<int, int> _reverseUserIdDict = new();
     private readonly Dictionary<int, int> _userIdDict = new();
     private IAdmissionRepository _admissionRepository = null!;
@@ -21,6 +22,7 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
     private IApplicationUserRepository _applicationUserRepository = null!;
     private IChapterRepository _chapterRepository = null!;
     private IChartRepository _chartRepository = null!;
+    private IChartAssetRepository _chartAssetRepository = null!;
     private IConfiguration _configuration = null!;
     private ILogger<DataMigrationService> _logger = null!;
     private ISongRepository _songRepository = null!;
@@ -37,6 +39,7 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
         _admissionRepository = scope.ServiceProvider.GetRequiredService<IAdmissionRepository>();
         _songRepository = scope.ServiceProvider.GetRequiredService<ISongRepository>();
         _chartRepository = scope.ServiceProvider.GetRequiredService<IChartRepository>();
+        _chartAssetRepository = scope.ServiceProvider.GetRequiredService<IChartAssetRepository>();
         _userRepository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
         _applicationUserRepository = scope.ServiceProvider.GetRequiredService<IApplicationUserRepository>();
         scope.ServiceProvider.GetRequiredService<IPlayConfigurationRepository>();
@@ -67,6 +70,7 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
         await MigrateSongs(mysqlConnection, cancellationToken);
         await MigrateSongAdmissions(mysqlConnection, cancellationToken);
         await MigrateCharts(mysqlConnection, cancellationToken);
+        await MigrateChartAssets(mysqlConnection, cancellationToken);
         await MigrateApplications(mysqlConnection, cancellationToken);
         await MigrateUsers(mysqlConnection, cancellationToken);
         await MigrateApplicationUsers(mysqlConnection, cancellationToken);
@@ -207,6 +211,7 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
                 command.CommandText = string.Join('\n', from chart in charts select GetInsertCommand(chart, "Charts"));
                 await command.ExecuteNonQueryAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
+                _migratedCharts.AddRange(charts.Select(e => e.Id));
                 position += 50;
             } while (charts.Count > 0);
         }
@@ -228,6 +233,48 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
         {
             _logger.LogError(LogEvents.DataMigration, ex,
                 "An error occurred whilst migrating charts (at position {Position})", position);
+        }
+    }
+
+    private async Task MigrateChartAssets(MySqlConnection mysqlConnection, CancellationToken cancellationToken,
+        int startPosition = 0)
+    {
+        var position = startPosition;
+        try
+        {
+            _logger.LogInformation(LogEvents.DataMigration, "Migrating chart assets...");
+            ICollection<ChartAsset> chartAssets;
+            do
+            {
+                await using var transaction = await mysqlConnection.BeginTransactionAsync(cancellationToken);
+                var command = new MySqlCommand { Connection = mysqlConnection, Transaction = transaction };
+                chartAssets = await _chartAssetRepository.GetChartAssetsAsync(position: position, take: 50,
+                    predicate: e => _migratedCharts.Contains(e.ChartId));
+                if (chartAssets.Count == 0) break;
+                command.CommandText = string.Join('\n', from chartAsset in chartAssets select GetInsertCommand(chartAsset, "ChartAssets"));
+                await command.ExecuteNonQueryAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+                position += 50;
+            } while (chartAssets.Count > 0);
+        }
+        catch (SocketException ex)
+        {
+            _logger.LogError(LogEvents.DataMigration, ex,
+                "An error occurred whilst migrating chart assets (at position {Position})", position);
+            if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
+            await MigrateChartAssets(mysqlConnection, cancellationToken, position);
+        }
+        catch (IOException ex)
+        {
+            _logger.LogError(LogEvents.DataMigration, ex,
+                "An error occurred whilst migrating chart assets (at position {Position})", position);
+            if (mysqlConnection.State == ConnectionState.Closed) await mysqlConnection.OpenAsync(cancellationToken);
+            await MigrateChartAssets(mysqlConnection, cancellationToken, position);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(LogEvents.DataMigration, ex,
+                "An error occurred whilst migrating chart assets (at position {Position})", position);
         }
     }
 
