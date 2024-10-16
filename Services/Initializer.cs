@@ -8,6 +8,7 @@ using PhiZoneApi.Constants;
 using PhiZoneApi.Data;
 using PhiZoneApi.Dtos.Deliverers;
 using PhiZoneApi.Dtos.Filters;
+using PhiZoneApi.Enums;
 using PhiZoneApi.Interfaces;
 
 // ReSharper disable InvertIf
@@ -71,16 +72,21 @@ public partial class Initializer(IServiceProvider serviceProvider, ILogger<Initi
                     if (!arg.IsEnum) continue;
                     var enumDictionary = new Dictionary<int, string>();
                     var values = Enum.GetValues(arg);
+                    if (arg == typeof(Accessibility) &&
+                        (filter == typeof(ChartFilterDto) || filter == typeof(ChartSubmissionFilterDto)))
+                        values = values.Cast<Accessibility>().Where(e => e != Accessibility.RequireReview).ToArray();
                     foreach (var value in values)
                         enumDictionary[(int)value] = $"{pluralizer.Pluralize(label)}.{(int)value}";
+                    var useSelect = values.Length > 4;
 
                     descriptor.Add(new SearchOptionsDescriptorEntry
                     {
-                        Type = values.Length > 4 ? "select" : "radio",
+                        Type = useSelect ? "select" : "radio",
                         Label = label,
                         Value = "",
                         Param = property.Name,
-                        Items = enumDictionary
+                        Items = enumDictionary,
+                        Options = useSelect ? new EntryOptions { Multiple = true } : null
                     });
                 }
                 else if (type == typeof(string))
@@ -113,7 +119,8 @@ public partial class Initializer(IServiceProvider serviceProvider, ILogger<Initi
                     var isAccuracy = property.Name.Contains("Accuracy");
                     var isRange = isRating || isDifficulty || isAccuracy;
                     descriptor.Add(isRange
-                        ? new SearchOptionsDescriptorEntry
+                        ?
+                        new SearchOptionsDescriptorEntry
                         {
                             Type = "slider",
                             Label = label,
