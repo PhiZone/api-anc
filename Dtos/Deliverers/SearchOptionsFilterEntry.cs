@@ -2,7 +2,7 @@ using Newtonsoft.Json;
 
 namespace PhiZoneApi.Dtos.Deliverers;
 
-public class SearchOptionsDescriptorEntry
+public class SearchOptionsFilterEntry
 {
     public string Type { get; set; } = null!;
 

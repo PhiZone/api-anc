@@ -60,7 +60,7 @@ public partial class Initializer(IServiceProvider serviceProvider, ILogger<Initi
         {
             if (filter == typeof(FilterDto<>) || filter == typeof(PublicResourceFilterDto<>)) continue;
             var filterType = GetGenericTypeArgumentForBase(filter, typeof(FilterDto<>))!;
-            var descriptor = new List<SearchOptionsDescriptorEntry>();
+            var filterDescriptor = new List<SearchOptionsFilterEntry>();
             foreach (var property in filter.GetProperties(BindingFlags.Public | BindingFlags.Instance))
             {
                 if (((List<string>) ["PreviewStart", "PreviewEnd"]).Any(e => property.Name.Contains(e))) continue;
@@ -79,7 +79,7 @@ public partial class Initializer(IServiceProvider serviceProvider, ILogger<Initi
                         enumDictionary[(int)value] = $"{pluralizer.Pluralize(label)}.{(int)value}";
                     var useSelect = values.Length > 4;
 
-                    descriptor.Add(new SearchOptionsDescriptorEntry
+                    filterDescriptor.Add(new SearchOptionsFilterEntry
                     {
                         Type = useSelect ? "select" : "radio",
                         Label = label,
@@ -92,7 +92,7 @@ public partial class Initializer(IServiceProvider serviceProvider, ILogger<Initi
                 else if (type == typeof(string))
                 {
                     if (property.Name.StartsWith("Equals")) continue;
-                    descriptor.Add(new SearchOptionsDescriptorEntry
+                    filterDescriptor.Add(new SearchOptionsFilterEntry
                     {
                         Type = "input",
                         Label = label,
@@ -103,7 +103,7 @@ public partial class Initializer(IServiceProvider serviceProvider, ILogger<Initi
                 }
                 else if (property.Name.StartsWith("Is"))
                 {
-                    descriptor.Add(new SearchOptionsDescriptorEntry
+                    filterDescriptor.Add(new SearchOptionsFilterEntry
                     {
                         Type = "toggle", Label = label, Value = false, Param = property.Name
                     });
@@ -118,9 +118,9 @@ public partial class Initializer(IServiceProvider serviceProvider, ILogger<Initi
                     var isDifficulty = property.Name.Contains("Difficulty");
                     var isAccuracy = property.Name.Contains("Accuracy");
                     var isRange = isRating || isDifficulty || isAccuracy;
-                    descriptor.Add(isRange
+                    filterDescriptor.Add(isRange
                         ?
-                        new SearchOptionsDescriptorEntry
+                        new SearchOptionsFilterEntry
                         {
                             Type = "slider",
                             Label = label,
@@ -145,7 +145,7 @@ public partial class Initializer(IServiceProvider serviceProvider, ILogger<Initi
                                 }
                         }
                         : isGroup
-                            ? new SearchOptionsDescriptorEntry
+                            ? new SearchOptionsFilterEntry
                             {
                                 Type = "input_group",
                                 Label = label,
@@ -201,7 +201,7 @@ public partial class Initializer(IServiceProvider serviceProvider, ILogger<Initi
                                     }
                                 }
                             }
-                            : new SearchOptionsDescriptorEntry
+                            : new SearchOptionsFilterEntry
                             {
                                 Type = "input",
                                 Label = label,
@@ -215,24 +215,34 @@ public partial class Initializer(IServiceProvider serviceProvider, ILogger<Initi
                 }
             }
 
-            descriptor.Sort((a, b) =>
+            var orderDescriptor = filterType.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                .Select(property =>
+                    new SearchOptionsOrderEntry { Label = GetLabel(filterType, property, true), Field = property.Name })
+                .ToList();
+
+            filterDescriptor.Sort((a, b) =>
             {
                 var typeComparison = GetTypePriority(a.Type) - GetTypePriority(b.Type);
                 return typeComparison != 0 ? typeComparison : string.CompareOrdinal(a.Label, b.Label);
             });
 
-            var path = $"Resources/Descriptors/{filter.Name}.json";
-            var directory = Path.GetDirectoryName(path)!;
-            if (!Directory.Exists(directory)) Directory.CreateDirectory(directory);
-
-            File.WriteAllText(path,
-                JsonConvert.SerializeObject(descriptor, Formatting.Indented,
-                    new JsonSerializerSettings
-                    {
-                        ContractResolver = new CamelCasePropertyNamesContractResolver(),
-                        NullValueHandling = NullValueHandling.Ignore
-                    }));
+            Save(filterDescriptor, $"Resources/Descriptors/Filters/{filter.Name}.json");
+            Save(orderDescriptor, $"Resources/Descriptors/Orders/{filter.Name}.json");
         }
+    }
+
+    private static void Save(object? obj, string path)
+    {
+        var directory = Path.GetDirectoryName(path)!;
+        if (!Directory.Exists(directory)) Directory.CreateDirectory(directory);
+
+        File.WriteAllText(path,
+            JsonConvert.SerializeObject(obj, Formatting.Indented,
+                new JsonSerializerSettings
+                {
+                    ContractResolver = new CamelCasePropertyNamesContractResolver(),
+                    NullValueHandling = NullValueHandling.Ignore
+                }));
     }
 
     private static int GetTypePriority(string type)
