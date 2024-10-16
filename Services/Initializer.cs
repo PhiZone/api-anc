@@ -70,22 +70,28 @@ public partial class Initializer(IServiceProvider serviceProvider, ILogger<Initi
                 {
                     var arg = type.GetGenericArguments()[0];
                     if (!arg.IsEnum) continue;
-                    var enumDictionary = new Dictionary<int, string>();
-                    var values = Enum.GetValues(arg);
+                    var values = Enum.GetValues(arg).OfType<object>().ToList();
                     if (arg == typeof(Accessibility) &&
                         (filter == typeof(ChartFilterDto) || filter == typeof(ChartSubmissionFilterDto)))
-                        values = values.Cast<Accessibility>().Where(e => e != Accessibility.RequireReview).ToArray();
-                    foreach (var value in values)
-                        enumDictionary[(int)value] = $"{pluralizer.Pluralize(label)}.{(int)value}";
-                    var useSelect = values.Length > 4;
+                        values = values.Cast<Accessibility>()
+                            .Where(e => e != Accessibility.RequireReview)
+                            .Select(e => (object)e)
+                            .ToList();
+                    var useSelect = values.Count > 4;
 
                     filterDescriptor.Add(new SearchOptionsFilterEntry
                     {
                         Type = useSelect ? "select" : "radio",
                         Label = label,
-                        Value = "",
+                        Value = useSelect ? new List<object>() : "",
                         Param = property.Name,
-                        Items = enumDictionary,
+                        Items = useSelect
+                            ? values.Select((e, i) => new
+                            {
+                                Id = i, Label = $"{pluralizer.Pluralize(label)}.{(int)e}", Value = (int)e
+                            })
+                            : values.Select(e =>
+                                new { Label = $"{pluralizer.Pluralize(label)}.{(int)e}", Value = (int)e }),
                         Options = useSelect ? new EntryOptions { Multiple = true } : null
                     });
                 }
