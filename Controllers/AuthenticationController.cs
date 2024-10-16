@@ -647,19 +647,13 @@ public class AuthenticationController(
             await notificationRepository.GetNotificationsAsync(predicate: e =>
                 e.OwnerId == user.Id || e.OperatorId == user.Id));
         var rankedCharts = await chartRepository.GetChartsAsync(predicate: e => e.OwnerId == user.Id && e.IsRanked);
-        foreach (var chart in rankedCharts)
-        {
-            chart.OwnerId = CriticalValues.PhiZoneOfficialUserId;
-        }
+        foreach (var chart in rankedCharts) chart.OwnerId = CriticalValues.PhiZoneOfficialUserId;
 
         await chartRepository.UpdateChartsAsync(rankedCharts);
         var rankedChartIds = rankedCharts.Select(f => f.Id);
         var rankedChartSubmissions = await chartSubmissionRepository.GetChartSubmissionsAsync(predicate: e =>
             e.OwnerId == user.Id && e.RepresentationId != null && rankedChartIds.Contains(e.RepresentationId.Value));
-        foreach (var chart in rankedChartSubmissions)
-        {
-            chart.OwnerId = CriticalValues.PhiZoneOfficialUserId;
-        }
+        foreach (var chart in rankedChartSubmissions) chart.OwnerId = CriticalValues.PhiZoneOfficialUserId;
 
         await chartSubmissionRepository.UpdateChartSubmissionsAsync(rankedChartSubmissions);
         await chartSubmissionRepository.RemoveChartSubmissionsAsync(
@@ -668,19 +662,13 @@ public class AuthenticationController(
             await chartRepository.GetChartsAsync(predicate: e => e.OwnerId == user.Id));
         var preservedSongs =
             await songRepository.GetSongsAsync(predicate: e => e.OwnerId == user.Id && e.Charts.Count > 0);
-        foreach (var song in preservedSongs)
-        {
-            song.OwnerId = CriticalValues.PhiZoneOfficialUserId;
-        }
+        foreach (var song in preservedSongs) song.OwnerId = CriticalValues.PhiZoneOfficialUserId;
 
         await songRepository.UpdateSongsAsync(preservedSongs);
         var preservedSongIds = preservedSongs.Select(e => e.Id);
         var preservedSongSubmissions = await songSubmissionRepository.GetSongSubmissionsAsync(predicate: e =>
             e.OwnerId == user.Id && e.RepresentationId != null && preservedSongIds.Contains(e.RepresentationId.Value));
-        foreach (var song in preservedSongSubmissions)
-        {
-            song.OwnerId = CriticalValues.PhiZoneOfficialUserId;
-        }
+        foreach (var song in preservedSongSubmissions) song.OwnerId = CriticalValues.PhiZoneOfficialUserId;
 
         await songSubmissionRepository.UpdateSongSubmissionsAsync(preservedSongSubmissions);
         await songSubmissionRepository.RemoveSongSubmissionsAsync(
@@ -689,17 +677,11 @@ public class AuthenticationController(
 
         var reviewedSongSubmissions =
             await songSubmissionRepository.GetSongSubmissionsAsync(predicate: e => e.ReviewerId == user.Id);
-        foreach (var song in reviewedSongSubmissions)
-        {
-            song.ReviewerId = CriticalValues.PhiZoneOfficialUserId;
-        }
+        foreach (var song in reviewedSongSubmissions) song.ReviewerId = CriticalValues.PhiZoneOfficialUserId;
 
         await songSubmissionRepository.UpdateSongSubmissionsAsync(reviewedSongSubmissions);
         var petAnswers = await petAnswerRepository.GetPetAnswersAsync(predicate: e => e.AssessorId == user.Id);
-        foreach (var answer in petAnswers)
-        {
-            answer.AssessorId = CriticalValues.PhiZoneOfficialUserId;
-        }
+        foreach (var answer in petAnswers) answer.AssessorId = CriticalValues.PhiZoneOfficialUserId;
 
         await petAnswerRepository.UpdatePetAnswersAsync(petAnswers);
         await userManager.DeleteAsync(user);

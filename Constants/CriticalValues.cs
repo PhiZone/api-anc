@@ -8,6 +8,6 @@ public static class CriticalValues
     public const int FeishuServiceId = 2;
     public const int TapGhostServiceId = 3;
     public const int PhigrimServiceId = 4;
-    
+
     public const int PhiZoneOfficialUserId = 1;
 }

@@ -13,16 +13,16 @@ namespace PhiZoneApi.Services;
 public class DataMigrationService(IServiceProvider serviceProvider) : IHostedService
 {
     private readonly List<Guid> _migratedChapters = [];
-    private readonly List<Guid> _migratedSongs = [];
     private readonly List<Guid> _migratedCharts = [];
+    private readonly List<Guid> _migratedSongs = [];
     private readonly Dictionary<int, int> _reverseUserIdDict = new();
     private readonly Dictionary<int, int> _userIdDict = new();
     private IAdmissionRepository _admissionRepository = null!;
     private IApplicationRepository _applicationRepository = null!;
     private IApplicationUserRepository _applicationUserRepository = null!;
     private IChapterRepository _chapterRepository = null!;
-    private IChartRepository _chartRepository = null!;
     private IChartAssetRepository _chartAssetRepository = null!;
+    private IChartRepository _chartRepository = null!;
     private IConfiguration _configuration = null!;
     private ILogger<DataMigrationService> _logger = null!;
     private ISongRepository _songRepository = null!;
@@ -251,7 +251,8 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
                 chartAssets = await _chartAssetRepository.GetChartAssetsAsync(position: position, take: 50,
                     predicate: e => _migratedCharts.Contains(e.ChartId));
                 if (chartAssets.Count == 0) break;
-                command.CommandText = string.Join('\n', from chartAsset in chartAssets select GetInsertCommand(chartAsset, "ChartAssets"));
+                command.CommandText = string.Join('\n',
+                    from chartAsset in chartAssets select GetInsertCommand(chartAsset, "ChartAssets"));
                 await command.ExecuteNonQueryAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
                 position += 50;
