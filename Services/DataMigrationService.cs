@@ -5,6 +5,7 @@ using MySqlConnector;
 using PhiZoneApi.Constants;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
+using PhiZoneApi.Utils;
 
 // ReSharper disable StringLiteralTypo
 
@@ -419,7 +420,7 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
 
         foreach (var property in properties)
         {
-            if (!IsPrimitiveType(property.PropertyType) || property.PropertyType.IsSubclassOf(typeof(Delegate)) ||
+            if (!property.PropertyType.IsPrimitive() || property.PropertyType.IsSubclassOf(typeof(Delegate)) ||
                 (property.GetMethod != null && property.GetMethod.IsStatic) || property.Name == "DateFileUpdated")
                 continue;
 
@@ -454,20 +455,5 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
         return "INSERT INTO " + table + " (" + string.Join(", ", propertyMap.Keys) + ") VALUES (" +
                string.Join(", ", propertyMap.Values) + ") ON DUPLICATE KEY UPDATE " +
                string.Join(", ", propertyMap.Select(e => $"{e.Key} = {e.Value}")) + ";";
-    }
-
-    private static bool IsPrimitiveType(Type type)
-    {
-        var types = new[]
-        {
-            typeof(bool), typeof(byte), typeof(sbyte), typeof(short), typeof(ushort), typeof(int), typeof(uint),
-            typeof(long), typeof(ulong), typeof(float), typeof(double), typeof(decimal), typeof(string),
-            typeof(char), typeof(DateTime), typeof(DateTimeOffset), typeof(TimeSpan), typeof(Guid), typeof(bool?),
-            typeof(byte?), typeof(sbyte?), typeof(short?), typeof(ushort?), typeof(int?), typeof(uint?),
-            typeof(long?), typeof(ulong?), typeof(float?), typeof(double?), typeof(decimal?), typeof(char?),
-            typeof(DateTime?), typeof(DateTimeOffset?), typeof(TimeSpan?), typeof(Guid?)
-        };
-
-        return types.Contains(type) || type.IsEnum;
     }
 }

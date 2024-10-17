@@ -10,6 +10,7 @@ using PhiZoneApi.Dtos.Deliverers;
 using PhiZoneApi.Dtos.Filters;
 using PhiZoneApi.Enums;
 using PhiZoneApi.Interfaces;
+using PhiZoneApi.Utils;
 
 // ReSharper disable InvertIf
 
@@ -222,6 +223,9 @@ public partial class Initializer(IServiceProvider serviceProvider, ILogger<Initi
             }
 
             var orderDescriptor = filterType.GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                .Where(e => e.PropertyType.IsPrimitive() && !e.PropertyType.IsSubclassOf(typeof(Delegate)) &&
+                            !(e.GetMethod != null && e.GetMethod.IsStatic) && !e.Name.StartsWith("File") &&
+                            !e.Name.EndsWith("Id"))
                 .Select(property =>
                     new SearchOptionsOrderEntry { Label = GetLabel(filterType, property, true), Field = property.Name })
                 .ToList();
@@ -233,7 +237,7 @@ public partial class Initializer(IServiceProvider serviceProvider, ILogger<Initi
             });
 
             Save(filterDescriptor, $"Resources/Descriptors/Filters/{filter.Name}.json");
-            Save(orderDescriptor, $"Resources/Descriptors/Orders/{filter.Name}.json");
+            Save(orderDescriptor, $"Resources/Descriptors/Orders/{filterType.Name}.json");
         }
     }
 
