@@ -1,6 +1,7 @@
 ﻿using Microsoft.CodeAnalysis.CSharp.Scripting;
 using Microsoft.CodeAnalysis.Scripting;
 using Microsoft.EntityFrameworkCore;
+using NickStrupat;
 using PhiZoneApi.Constants;
 using PhiZoneApi.Data;
 using PhiZoneApi.Dtos.Deliverers;
@@ -34,7 +35,6 @@ public class ScriptService(IServiceProvider serviceProvider, ILogger<ScriptServi
         {
             var script = CSharpScript.Create<ServiceResponseDto>(service.Code,
                 ScriptOptions, typeof(ServiceScriptGlobals));
-            script.Compile(cancellationToken);
             _serviceScripts.Add(service.Id, script);
         }
 
@@ -44,7 +44,6 @@ public class ScriptService(IServiceProvider serviceProvider, ILogger<ScriptServi
         {
             var script = CSharpScript.Create<EventTaskResponseDto?>(task.Code,
                 ScriptOptions, typeof(EventTaskScriptGlobals));
-            script.Compile(cancellationToken);
             _eventTaskScripts.Add(task.Id, script);
         }
     }
@@ -59,7 +58,6 @@ public class ScriptService(IServiceProvider serviceProvider, ILogger<ScriptServi
             var service = await serviceScriptRepository.GetServiceScriptAsync(id);
             var script = CSharpScript.Create<ServiceResponseDto>(service.Code,
                 ScriptOptions, typeof(ServiceScriptGlobals));
-            script.Compile(cancellationToken ?? CancellationToken.None);
             _serviceScripts.Add(service.Id, script);
         }
 
@@ -99,7 +97,6 @@ public class ScriptService(IServiceProvider serviceProvider, ILogger<ScriptServi
             if (task.Code == null) return null;
             var script = CSharpScript.Create<EventTaskResponseDto?>(task.Code,
                 ScriptOptions, typeof(EventTaskScriptGlobals));
-            script.Compile(cancellationToken ?? CancellationToken.None);
             _eventTaskScripts.Add(task.Id, script);
         }
 
