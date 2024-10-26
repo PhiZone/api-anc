@@ -10,6 +10,7 @@ using PhiZoneApi.Dtos.Deliverers;
 using PhiZoneApi.Dtos.Filters;
 using PhiZoneApi.Enums;
 using PhiZoneApi.Interfaces;
+using PhiZoneApi.Models;
 using PhiZoneApi.Utils;
 
 // ReSharper disable InvertIf
@@ -86,13 +87,21 @@ public partial class Initializer(IServiceProvider serviceProvider, ILogger<Initi
                         Label = label,
                         Value = useSelect ? new List<object>() : "",
                         Param = property.Name,
-                        Items = useSelect
-                            ? values.Select((e, i) => new
+                        Items = arg == typeof(UserRole)
+                            ?
+                            values.Select((e, i) => new
                             {
-                                Id = i, Label = $"{pluralizer.Pluralize(label)}.{(int)e}", Value = (int)e
+                                Id = i, Label = $"{pluralizer.Pluralize(label)}.{e}", Value = (int)e
                             })
-                            : values.Select(e =>
-                                new { Label = $"{pluralizer.Pluralize(label)}.{(int)e}", Value = (int)e }),
+                            : useSelect
+                                ? values.Select((e, i) => new
+                                {
+                                    Id = i, Label = $"{pluralizer.Pluralize(label)}.{(int)e}", Value = (int)e
+                                })
+                                : values.Select(e => new
+                                {
+                                    Label = $"{pluralizer.Pluralize(label)}.{(int)e}", Value = (int)e
+                                }),
                         Options = useSelect ? new EntryOptions { Multiple = true } : null
                     });
                 }
@@ -225,7 +234,13 @@ public partial class Initializer(IServiceProvider serviceProvider, ILogger<Initi
             var orderDescriptor = filterType.GetProperties(BindingFlags.Public | BindingFlags.Instance)
                 .Where(e => e.PropertyType.IsPrimitive() && !e.PropertyType.IsSubclassOf(typeof(Delegate)) &&
                             !(e.GetMethod != null && e.GetMethod.IsStatic) && !e.Name.StartsWith("File") &&
-                            !e.Name.EndsWith("Id"))
+                            !e.Name.StartsWith("Normalized") && !e.Name.StartsWith("Preview") &&
+                            !e.Name.StartsWith("Illustration") && !e.Name.StartsWith("Lyrics") &&
+                            !e.Name.StartsWith("License") && !e.Name.StartsWith("Phone") &&
+                            !e.Name.StartsWith("Email") && !e.Name.StartsWith("AccessFailed") &&
+                            !e.Name.StartsWith("DateLastModifiedUserName") && !e.Name.StartsWith("Lockout") &&
+                            !e.Name.EndsWith("Id") && !e.Name.EndsWith("Stamp") && !e.Name.EndsWith("Hash") &&
+                            !e.Name.EndsWith("Content") && !e.Name.EndsWith("Confirmed") && !e.Name.EndsWith("Enabled"))
                 .Select(property =>
                     new SearchOptionsOrderEntry { Label = GetLabel(filterType, property, true), Field = property.Name })
                 .ToList();
@@ -308,13 +323,20 @@ public partial class Initializer(IServiceProvider serviceProvider, ILogger<Initi
             : string.Join('_', PascalToSnake(property.Name).Split('_')[1..]);
         if (((List<string>)
             [
-                "date_created", "date_updated", "accessibility", "illustrator", "owner_id", "description", "name",
-                "author_name", "is_hidden", "is_locked", "is_unveiled", "like_count", "play_count"
-            ]).Any(e => name.Contains(e)))
+                "date_created", "date_updated", "date_file_updated", "accessibility", "illustrator", "owner_id",
+                "description", "name", "author_name", "is_hidden", "is_locked", "is_unveiled", "like_count",
+                "play_count"
+            ]).Contains(name) ||
+            (((List<Type>) [typeof(Chapter), typeof(Collection), typeof(Event)]).Contains(filterType) &&
+             name.EndsWith("title")))
             prefix = "common";
-
-        return
-            $"{prefix.Replace("event_", "event.").Replace("hostship", "event.hostship")}.{name.Replace("rating_on", "r")}";
+        prefix = prefix.Replace("event_", "event.").Replace("hostship", "event.hostship");
+        name = name.Replace("user_name", "username")
+            .Replace("rating_on", "r")
+            .Replace("date_last_logged_in", "last_login")
+            .Replace("experience", "exp")
+            .Replace("biography", "bio");
+        return $"{prefix}.{name}";
     }
 
     private static string PascalToSnake(string input)
