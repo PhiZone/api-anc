@@ -239,8 +239,10 @@ public partial class Initializer(IServiceProvider serviceProvider, ILogger<Initi
                             !e.Name.StartsWith("License") && !e.Name.StartsWith("Phone") &&
                             !e.Name.StartsWith("Email") && !e.Name.StartsWith("AccessFailed") &&
                             !e.Name.StartsWith("DateLastModifiedUserName") && !e.Name.StartsWith("Lockout") &&
-                            !e.Name.EndsWith("Id") && !e.Name.EndsWith("Stamp") && !e.Name.EndsWith("Hash") &&
-                            !e.Name.EndsWith("Content") && !e.Name.EndsWith("Confirmed") && !e.Name.EndsWith("Enabled"))
+                            !e.Name.EndsWith("Id") && !e.Name.EndsWith("Avatar") && !e.Name.EndsWith("Homepage") &&
+                            !e.Name.EndsWith("Endpoint") && !e.Name.EndsWith("Secret") && !e.Name.EndsWith("Stamp") &&
+                            !e.Name.EndsWith("Hash") && !e.Name.EndsWith("Content") && !e.Name.EndsWith("Confirmed") &&
+                            !e.Name.EndsWith("Enabled"))
                 .Select(property =>
                     new SearchOptionsOrderEntry { Label = GetLabel(filterType, property, true), Field = property.Name })
                 .ToList();
@@ -324,13 +326,15 @@ public partial class Initializer(IServiceProvider serviceProvider, ILogger<Initi
         if (((List<string>)
             [
                 "date_created", "date_updated", "date_file_updated", "accessibility", "illustrator", "owner_id",
-                "description", "name", "author_name", "is_hidden", "is_locked", "is_unveiled", "like_count",
+                "description", "name", "type", "author_name", "is_hidden", "is_locked", "is_unveiled", "like_count",
                 "play_count"
             ]).Contains(name) ||
             (((List<Type>) [typeof(Chapter), typeof(Collection), typeof(Event)]).Contains(filterType) &&
              name.EndsWith("title")))
             prefix = "common";
-        prefix = prefix.Replace("event_", "event.").Replace("hostship", "event.hostship");
+        prefix = prefix.Replace("event_", "event.")
+            .Replace("hostship", "event.hostship")
+            .Replace("service_script", "service");
         name = name.Replace("user_name", "username")
             .Replace("rating_on", "r")
             .Replace("date_last_logged_in", "last_login")
