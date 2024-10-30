@@ -846,9 +846,9 @@ public class EventTeamController(
         var participants = participations.Select(e => e.ParticipantId);
         foreach (var participation in participations)
         {
-            await participationRepository.RemoveParticipationAsync(eventTeam.Id, participation.ParticipantId);
             await scriptService.RunEventTaskAsync(eventTeam.DivisionId, participation, eventTeam.Id, currentUser,
                 [EventTaskType.OnWithdrawal]);
+            await participationRepository.RemoveParticipationAsync(eventTeam.Id, participation.ParticipantId);
         }
 
         foreach (var user in
@@ -873,12 +873,11 @@ public class EventTeamController(
                     }
                 });
 
+        await scriptService.RunEventTaskAsync(eventTeam.DivisionId, eventTeam, eventTeam.Id, currentUser,
+            [EventTaskType.OnDisbandment]);
         if (!await eventTeamRepository.RemoveEventTeamAsync(id))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
-
-        await scriptService.RunEventTaskAsync(eventTeam.DivisionId, eventTeam, eventTeam.Id, currentUser,
-            [EventTaskType.OnDisbandment]);
 
         leaderboardService.Remove(eventTeam);
 
