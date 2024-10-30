@@ -464,13 +464,19 @@ public class EventTeamController(
             await fileStorageService.SendUserInput(iconUrl, "Icon", Request, currentUser);
         }
 
+        Guid teamId;
+        do
+        {
+            teamId = Guid.NewGuid();
+        } while (await eventTeamRepository.EventTeamExistsAsync(teamId));
+
         var eventTeam = new EventTeam
         {
+            Id = teamId,
             Name = dto.Name,
             Icon = iconUrl,
             Description = dto.Description,
-            Status =
-                dto.ClaimedParticipantCount == 1 ? ParticipationStatus.Prepared : ParticipationStatus.Registered,
+            Status = dto.ClaimedParticipantCount == 1 ? ParticipationStatus.Prepared : ParticipationStatus.Registered,
             ClaimedParticipantCount = dto.ClaimedParticipantCount,
             ClaimedSubmissionCount = dto.ClaimedSubmissionCount,
             DivisionId = dto.DivisionId,
