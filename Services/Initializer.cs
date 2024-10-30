@@ -337,13 +337,13 @@ public partial class Initializer(IServiceProvider serviceProvider, ILogger<Initi
              name.EndsWith("title")) || (((List<Type>) [typeof(Record)]).Contains(filterType) && name == "score") ||
             (!isEnum && filterType != typeof(EventTeam) && ((List<string>) ["type", "status"]).Contains(name)))
             prefix = "common";
-        if (filterType == typeof(SongSubmission) && typeof(Song)
-                .GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                .Any(e => e.Name == property.Name))
+        else if (filterType == typeof(SongSubmission) && typeof(Song)
+                     .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                     .Any(e => e.Name == property.Name))
             prefix = "song";
-        if (filterType == typeof(ChartSubmission) && typeof(Chart)
-                .GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                .Any(e => e.Name == property.Name))
+        else if (filterType == typeof(ChartSubmission) && typeof(Chart)
+                     .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                     .Any(e => e.Name == property.Name))
             prefix = "chart";
         prefix = prefix.Replace("event_", "event.")
             .Replace("hostship", "event.hostship")
