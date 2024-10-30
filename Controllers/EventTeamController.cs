@@ -842,12 +842,15 @@ public class EventTeamController(
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
 
-        if (!await eventTeamRepository.RemoveEventTeamAsync(id))
-            return StatusCode(StatusCodes.Status500InternalServerError,
-                new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+        var participations = await participationRepository.GetParticipantsAsync(eventTeam.Id);
+        var participants = participations.Select(e => e.ParticipantId);
+        foreach (var participation in participations)
+        {
+            await participationRepository.RemoveParticipationAsync(eventTeam.Id, participation.ParticipantId);
+            await scriptService.RunEventTaskAsync(eventTeam.DivisionId, participation, eventTeam.Id, currentUser,
+                [EventTaskType.OnWithdrawal]);
+        }
 
-        var participants =
-            (await participationRepository.GetParticipantsAsync(eventTeam.Id)).Select(e => e.ParticipantId);
         foreach (var user in
                  await userRepository.GetUsersAsync(["Id"], [false], 0, -1,
                      e => participants.Contains(e.Id) && e.Id != currentUser.Id))
@@ -869,6 +872,10 @@ public class EventTeamController(
                         resourceService.GetRichText<EventTeam>(eventTeam.Id.ToString(), eventTeam.GetDisplay())
                     }
                 });
+
+        if (!await eventTeamRepository.RemoveEventTeamAsync(id))
+            return StatusCode(StatusCodes.Status500InternalServerError,
+                new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
         await scriptService.RunEventTaskAsync(eventTeam.DivisionId, eventTeam, eventTeam.Id, currentUser,
             [EventTaskType.OnDisbandment]);
