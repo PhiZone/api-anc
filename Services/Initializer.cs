@@ -324,26 +324,28 @@ public partial class Initializer(IServiceProvider serviceProvider, ILogger<Initi
         bool isEnum = false)
     {
         var prefix = PascalToSnake(filterType.Name);
-        var name = preserveAction || property.Name.StartsWith("Is")
+        var nameNoun = property.Name.StartsWith("Is")
             ? PascalToSnake(property.Name)
             : string.Join('_', PascalToSnake(property.Name).Split('_')[1..]);
+        var name = preserveAction ? PascalToSnake(property.Name) : nameNoun;
         if (((List<string>)
             [
                 "date_created", "date_updated", "date_file_updated", "accessibility", "illustrator", "owner_id",
                 "description", "name", "author_name", "is_hidden", "is_locked", "is_unveiled", "like_count",
                 "play_count"
-            ]).Contains(name) ||
+            ]).Contains(nameNoun) ||
             (((List<Type>) [typeof(Chapter), typeof(Collection), typeof(Event)]).Contains(filterType) &&
-             name.EndsWith("title")) || (((List<Type>) [typeof(Record)]).Contains(filterType) && name == "score") ||
-            (!isEnum && filterType != typeof(EventTeam) && ((List<string>) ["type", "status"]).Contains(name)))
+             nameNoun.EndsWith("title")) ||
+            (((List<Type>) [typeof(Record)]).Contains(filterType) && nameNoun == "score") ||
+            (!isEnum && filterType != typeof(EventTeam) && ((List<string>) ["type", "status"]).Contains(nameNoun)))
             prefix = "common";
         else if (filterType == typeof(SongSubmission) && typeof(Song)
                      .GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                     .Any(e => PascalToSnake(e.Name) == name))
+                     .Any(e => PascalToSnake(e.Name) == nameNoun))
             prefix = "song";
         else if (filterType == typeof(ChartSubmission) && typeof(Chart)
                      .GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                     .Any(e => PascalToSnake(e.Name) == name))
+                     .Any(e => PascalToSnake(e.Name) == nameNoun))
             prefix = "chart";
         prefix = prefix.Replace("event_", "event.")
             .Replace("hostship", "event.hostship")
