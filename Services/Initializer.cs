@@ -339,11 +339,11 @@ public partial class Initializer(IServiceProvider serviceProvider, ILogger<Initi
             prefix = "common";
         else if (filterType == typeof(SongSubmission) && typeof(Song)
                      .GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                     .Any(e => e.Name == property.Name))
+                     .Any(e => PascalToSnake(e.Name) == name))
             prefix = "song";
         else if (filterType == typeof(ChartSubmission) && typeof(Chart)
                      .GetProperties(BindingFlags.Public | BindingFlags.Instance)
-                     .Any(e => e.Name == property.Name))
+                     .Any(e => PascalToSnake(e.Name) == name))
             prefix = "chart";
         prefix = prefix.Replace("event_", "event.")
             .Replace("hostship", "event.hostship")
@@ -355,6 +355,7 @@ public partial class Initializer(IServiceProvider serviceProvider, ILogger<Initi
             .Replace("date_last_logged_in", "last_login")
             .Replace("experience", "exp")
             .Replace("biography", "bio");
+        if (isEnum && name.EndsWith("_status")) name = "status";
         return $"{prefix}.{name}";
     }
 
