@@ -80,6 +80,7 @@ public partial class Initializer(IServiceProvider serviceProvider, ILogger<Initi
                             .Select(e => (object)e)
                             .ToList();
                     var useSelect = values.Count > 4;
+                    var labelForEnum = GetLabel(filterType, property, isEnum: true);
 
                     filterDescriptor.Add(new SearchOptionsFilterEntry
                     {
@@ -91,16 +92,18 @@ public partial class Initializer(IServiceProvider serviceProvider, ILogger<Initi
                             ?
                             values.Select((e, i) => new
                             {
-                                Id = i, Label = $"{pluralizer.Pluralize(label)}.{e}", Value = (int)e
+                                Id = i, Label = $"{pluralizer.Pluralize(labelForEnum)}.{e}", Value = (int)e
                             })
                             : useSelect
                                 ? values.Select((e, i) => new
                                 {
-                                    Id = i, Label = $"{pluralizer.Pluralize(label)}.{(int)e}", Value = (int)e
+                                    Id = i,
+                                    Label = $"{pluralizer.Pluralize(labelForEnum)}.{(int)e}",
+                                    Value = (int)e
                                 })
                                 : values.Select(e => new
                                 {
-                                    Label = $"{pluralizer.Pluralize(label)}.{(int)e}", Value = (int)e
+                                    Label = $"{pluralizer.Pluralize(labelForEnum)}.{(int)e}", Value = (int)e
                                 }),
                         Options = useSelect ? new EntryOptions { Multiple = true } : null
                     });
@@ -239,10 +242,10 @@ public partial class Initializer(IServiceProvider serviceProvider, ILogger<Initi
                             !e.Name.StartsWith("License") && !e.Name.StartsWith("Phone") &&
                             !e.Name.StartsWith("Email") && !e.Name.StartsWith("AccessFailed") &&
                             !e.Name.StartsWith("DateLastModifiedUserName") && !e.Name.StartsWith("Lockout") &&
-                            !e.Name.EndsWith("Id") && !e.Name.EndsWith("Avatar") && !e.Name.EndsWith("Homepage") &&
-                            !e.Name.EndsWith("Endpoint") && !e.Name.EndsWith("Secret") && !e.Name.EndsWith("Stamp") &&
-                            !e.Name.EndsWith("Hash") && !e.Name.EndsWith("Content") && !e.Name.EndsWith("Confirmed") &&
-                            !e.Name.EndsWith("Enabled"))
+                            !e.Name.EndsWith("Id") && !e.Name.EndsWith("Code") && !e.Name.EndsWith("Avatar") &&
+                            !e.Name.EndsWith("Homepage") && !e.Name.EndsWith("Endpoint") &&
+                            !e.Name.EndsWith("Secret") && !e.Name.EndsWith("Stamp") && !e.Name.EndsWith("Hash") &&
+                            !e.Name.EndsWith("Content") && !e.Name.EndsWith("Confirmed") && !e.Name.EndsWith("Enabled"))
                 .Select(property =>
                     new SearchOptionsOrderEntry { Label = GetLabel(filterType, property, true), Field = property.Name })
                 .ToList();
@@ -317,7 +320,8 @@ public partial class Initializer(IServiceProvider serviceProvider, ILogger<Initi
         return false;
     }
 
-    private static string GetLabel(Type filterType, PropertyInfo property, bool preserveAction = false)
+    private static string GetLabel(Type filterType, PropertyInfo property, bool preserveAction = false,
+        bool isEnum = false)
     {
         var prefix = PascalToSnake(filterType.Name);
         var name = preserveAction || property.Name.StartsWith("Is")
@@ -326,15 +330,26 @@ public partial class Initializer(IServiceProvider serviceProvider, ILogger<Initi
         if (((List<string>)
             [
                 "date_created", "date_updated", "date_file_updated", "accessibility", "illustrator", "owner_id",
-                "description", "name", "type", "author_name", "is_hidden", "is_locked", "is_unveiled", "like_count",
+                "description", "name", "author_name", "is_hidden", "is_locked", "is_unveiled", "like_count",
                 "play_count"
             ]).Contains(name) ||
             (((List<Type>) [typeof(Chapter), typeof(Collection), typeof(Event)]).Contains(filterType) &&
-             name.EndsWith("title")))
+             name.EndsWith("title")) || (((List<Type>) [typeof(Record)]).Contains(filterType) && name == "score") ||
+            (!isEnum && filterType != typeof(EventTeam) && ((List<string>) ["type", "status"]).Contains(name)))
             prefix = "common";
+        if (filterType == typeof(SongSubmission) && typeof(Song)
+                .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                .Any(e => e.Name == property.Name))
+            prefix = "song";
+        if (filterType == typeof(ChartSubmission) && typeof(Chart)
+                .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                .Any(e => e.Name == property.Name))
+            prefix = "chart";
         prefix = prefix.Replace("event_", "event.")
             .Replace("hostship", "event.hostship")
-            .Replace("service_script", "service");
+            .Replace("service_script", "service")
+            .Replace("song_submission", "studio.submission")
+            .Replace("chart_submission", "studio.submission");
         name = name.Replace("user_name", "username")
             .Replace("rating_on", "r")
             .Replace("date_last_logged_in", "last_login")
