@@ -246,8 +246,10 @@ public partial class Initializer(IServiceProvider serviceProvider, ILogger<Initi
                             !e.Name.EndsWith("Homepage") && !e.Name.EndsWith("Endpoint") &&
                             !e.Name.EndsWith("Secret") && !e.Name.EndsWith("Stamp") && !e.Name.EndsWith("Hash") &&
                             !e.Name.EndsWith("Content") && !e.Name.EndsWith("Confirmed") && !e.Name.EndsWith("Enabled"))
-                .Select(property =>
-                    new SearchOptionsOrderEntry { Label = GetLabel(filterType, property, true), Field = property.Name })
+                .Select(property => new SearchOptionsOrderEntry
+                {
+                    Label = GetLabel(filterType, property, noTruncation: true), Field = property.Name
+                })
                 .ToList();
 
             filterDescriptor.Sort((a, b) =>
@@ -321,10 +323,10 @@ public partial class Initializer(IServiceProvider serviceProvider, ILogger<Initi
     }
 
     private static string GetLabel(Type filterType, PropertyInfo property, bool preserveAction = false,
-        bool isEnum = false)
+        bool noTruncation = false, bool isEnum = false)
     {
         var prefix = PascalToSnake(filterType.Name);
-        var nameNoun = property.Name.StartsWith("Is")
+        var nameNoun = noTruncation || property.Name.StartsWith("Is")
             ? PascalToSnake(property.Name)
             : string.Join('_', PascalToSnake(property.Name).Split('_')[1..]);
         var name = preserveAction ? PascalToSnake(property.Name) : nameNoun;

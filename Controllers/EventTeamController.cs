@@ -479,7 +479,24 @@ public class EventTeamController(
         };
 
         var firstFailure = await scriptService.RunEventTaskAsync(eventTeam.DivisionId, eventTeam, eventTeam.Id,
-            currentUser, [EventTaskType.PreRegistration, EventTaskType.PreParticipation]);
+            currentUser, [EventTaskType.PreRegistration]);
+
+        if (firstFailure != null)
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = firstFailure.Status, Code = firstFailure.Code, Message = firstFailure.Message
+            });
+
+        var participation = new Participation
+        {
+            TeamId = eventTeam.Id,
+            ParticipantId = currentUser.Id,
+            Position = "Leader",
+            DateCreated = DateTimeOffset.UtcNow
+        };
+
+        firstFailure = await scriptService.RunEventTaskAsync(eventTeam.DivisionId, participation, eventTeam.Id,
+            currentUser, [EventTaskType.PreParticipation]);
 
         if (firstFailure != null)
             return BadRequest(new ResponseDto<object>
@@ -491,16 +508,13 @@ public class EventTeamController(
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
-        await participationRepository.CreateParticipationAsync(new Participation
-        {
-            TeamId = eventTeam.Id,
-            ParticipantId = currentUser.Id,
-            Position = "Leader",
-            DateCreated = DateTimeOffset.UtcNow
-        });
+        await participationRepository.CreateParticipationAsync(participation);
 
         await scriptService.RunEventTaskAsync(eventTeam.DivisionId, eventTeam, eventTeam.Id, currentUser,
-            [EventTaskType.PostRegistration, EventTaskType.PostParticipation]);
+            [EventTaskType.PostRegistration]);
+
+        await scriptService.RunEventTaskAsync(eventTeam.DivisionId, participation, eventTeam.Id, currentUser,
+            [EventTaskType.PostParticipation]);
 
         return StatusCode(StatusCodes.Status201Created,
             new ResponseDto<CreatedResponseDto<Guid>>
