@@ -244,8 +244,9 @@ public partial class Initializer(IServiceProvider serviceProvider, ILogger<Initi
                             !e.Name.StartsWith("DateLastModifiedUserName") && !e.Name.StartsWith("Lockout") &&
                             !e.Name.EndsWith("Id") && !e.Name.EndsWith("Code") && !e.Name.EndsWith("Avatar") &&
                             !e.Name.EndsWith("Homepage") && !e.Name.EndsWith("Endpoint") &&
-                            !e.Name.EndsWith("Secret") && !e.Name.EndsWith("Stamp") && !e.Name.EndsWith("Hash") &&
-                            !e.Name.EndsWith("Content") && !e.Name.EndsWith("Confirmed") && !e.Name.EndsWith("Enabled"))
+                            !e.Name.EndsWith("Secret") && !e.Name.EndsWith("Proof") && !e.Name.EndsWith("Stamp") &&
+                            !e.Name.EndsWith("Hash") && !e.Name.EndsWith("Content") && !e.Name.EndsWith("Confirmed") &&
+                            !e.Name.EndsWith("Enabled"))
                 .Select(property => new SearchOptionsOrderEntry
                 {
                     Label = GetLabel(filterType, property, noTruncation: true), Field = property.Name
