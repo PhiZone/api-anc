@@ -335,7 +335,7 @@ public partial class Initializer(IServiceProvider serviceProvider, ILogger<Initi
             [
                 "date_created", "date_updated", "date_file_updated", "accessibility", "illustrator", "owner_id",
                 "description", "name", "author_name", "is_hidden", "is_locked", "is_unveiled", "like_count",
-                "play_count"
+                "play_count", "source"
             ]).Contains(nameNoun) ||
             (((List<Type>) [typeof(Chapter), typeof(Collection), typeof(Event)]).Contains(filterType) &&
              nameNoun.EndsWith("title")) ||
