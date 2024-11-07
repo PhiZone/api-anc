@@ -167,6 +167,7 @@ builder.Services.AddSingleton<AuthProviderFactory>();
 builder.Services.AddSingleton<IAuthProvider, GitHubAuthProvider>();
 builder.Services.AddSingleton<IAuthProvider, PhiraAuthProvider>();
 builder.Services.AddSingleton<IAuthProvider, DiscordAuthProvider>();
+builder.Services.AddSingleton<IAuthProvider, QqAuthProvider>();
 #pragma warning disable EF1001
 builder.Services.AddSingleton<IPluralizer, HumanizerPluralizer>();
 #pragma warning restore EF1001
