@@ -50,7 +50,7 @@ public class QqAuthProvider : IAuthProvider
                 Illustration = _illustrationUrl,
                 Illustrator = "QQ",
                 Homepage = "https://im.qq.com",
-                Type = ApplicationType.MobilePlayer,
+                Type = ApplicationType.AuthProvider,
                 DateCreated = DateTimeOffset.UtcNow,
                 DateUpdated = DateTimeOffset.UtcNow
             };
