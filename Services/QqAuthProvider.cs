@@ -1,5 +1,4 @@
-﻿using System.Web;
-using Microsoft.AspNetCore.Http.Extensions;
+﻿using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using PhiZoneApi.Dtos.Deliverers;
@@ -69,7 +68,7 @@ public class QqAuthProvider : IAuthProvider
             { "client_id", _clientId },
             { "state", state },
             { "scope", "get_user_info" },
-            { "redirect_uri", $"https://www.phizone.cn/session/redirect/{HttpUtility.UrlEncode(redirectUri)}" }
+            { "redirect_uri", $"https://www.phizone.cn/session/redirect?uri={redirectUri}" }
         };
         if (user != null) query.Add("login", user.Email!);
 
@@ -108,7 +107,7 @@ public class QqAuthProvider : IAuthProvider
                     { "client_id", _clientId },
                     { "client_secret", _clientSecret },
                     { "code", code },
-                    { "redirect_uri", $"https://www.phizone.cn/session/redirect/{HttpUtility.UrlEncode(redirectUri)}" },
+                    { "redirect_uri", $"https://www.phizone.cn/session/redirect?uri={redirectUri}" },
                     { "fmt", "json" }
                 }.ToString()
             }.Uri,
