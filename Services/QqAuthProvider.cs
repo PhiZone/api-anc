@@ -87,13 +87,10 @@ public class QqAuthProvider : IAuthProvider
     {
         var db = _redis.GetDatabase();
         var key = $"phizone:qq:{state}";
-        Console.WriteLine(key);
         if (!await db.KeyExistsAsync(key)) return null;
 
         var userId = await db.StringGetAsync(key);
         await db.KeyDeleteAsync(key);
-        Console.WriteLine(userId);
-        Console.WriteLine((user == null && userId != string.Empty) || (user != null && userId != user.Id.ToString()));
         if ((user == null && userId != string.Empty) || (user != null && userId != user.Id.ToString())) return null;
 
         var request = new HttpRequestMessage
@@ -114,7 +111,6 @@ public class QqAuthProvider : IAuthProvider
             Headers = { { "Accept", "application/json" } }
         };
         var response = await _client.SendAsync(request);
-        Console.WriteLine(await response.Content.ReadAsStringAsync());
         if (!response.IsSuccessStatusCode) return null;
 
         var content = JsonConvert.DeserializeObject<QqTokenDto>(await response.Content.ReadAsStringAsync())!;
@@ -141,7 +137,7 @@ public class QqAuthProvider : IAuthProvider
         if (!response.IsSuccessStatusCode) return null;
 
         var content = JsonConvert.DeserializeObject<QqUserDto>(await response.Content.ReadAsStringAsync())!;
-        Console.WriteLine(content.Nickname);
+
         return new RemoteUserDto
         {
             Id = id,
@@ -162,16 +158,16 @@ public class QqAuthProvider : IAuthProvider
 
         var applicationUser = await applicationUserRepository.GetRelationAsync(_applicationId, user.Id);
         if (applicationUser.AccessToken == null) return false;
-        Console.WriteLine(applicationUser.AccessToken);
+
         var id = await GetOpenIdAsync(applicationUser.AccessToken);
         if (id == null) return false;
         var response = await RetrieveIdentityAsync(applicationUser.AccessToken, id);
         if (!response.IsSuccessStatusCode) return false;
-        
+
         var content = JsonConvert.DeserializeObject<QqUserDto>(await response.Content.ReadAsStringAsync())!;
         var existingUser = await userRepository.GetUserByRemoteIdAsync(_applicationId, id);
         if (existingUser != null && existingUser.Id != user.Id) return false;
-        Console.WriteLine(content.Nickname);
+
         applicationUser.RemoteUserId = id;
         applicationUser.RemoteUserName = content.Nickname;
         await applicationUserRepository.UpdateRelationAsync(applicationUser);
@@ -290,7 +286,6 @@ public class QqAuthProvider : IAuthProvider
         var response = await _client.SendAsync(request);
         if (!response.IsSuccessStatusCode) return null;
         var content = JsonConvert.DeserializeObject<QqOpenIdDto>(await response.Content.ReadAsStringAsync())!;
-        Console.WriteLine(content.OpenId);
         return content.OpenId;
     }
 }
