@@ -111,6 +111,7 @@ public class QqAuthProvider : IAuthProvider
             Headers = { { "Accept", "application/json" } }
         };
         var response = await _client.SendAsync(request);
+        Console.WriteLine(await response.Content.ReadAsStringAsync());
         if (!response.IsSuccessStatusCode) return null;
 
         var content = JsonConvert.DeserializeObject<QqTokenDto>(await response.Content.ReadAsStringAsync())!;
