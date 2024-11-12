@@ -68,7 +68,7 @@ public class QqAuthProvider : IAuthProvider
             { "client_id", _clientId },
             { "state", state },
             { "scope", "get_user_info" },
-            { "redirect_uri", $"https://redirect.phizone.cn/?uri={redirectUri}" }
+            { "redirect_uri", $"https://www.phizone.cn/session/redirect?uri={redirectUri}" }
         };
         if (user != null) query.Add("login", user.Email!);
 
@@ -104,7 +104,7 @@ public class QqAuthProvider : IAuthProvider
                     { "client_id", _clientId },
                     { "client_secret", _clientSecret },
                     { "code", code },
-                    { "redirect_uri", $"https://redirect.phizone.cn/?uri={redirectUri}" },
+                    { "redirect_uri", $"https://www.phizone.cn/session/redirect?uri={redirectUri}" },
                     { "fmt", "json" }
                 }.ToString()
             }.Uri,
@@ -141,7 +141,7 @@ public class QqAuthProvider : IAuthProvider
         {
             Id = id,
             UserName = content.Nickname,
-            Email = $"{id}@nabudaoqqhao.com",
+            Email = $"{id}@qq.phizone.cn",
             Avatar = !string.IsNullOrEmpty(content.FigureUrlQq2)
                 ? await _client.GetByteArrayAsync(content.FigureUrlQq2)
                 : null
