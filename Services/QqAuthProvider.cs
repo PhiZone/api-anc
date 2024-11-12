@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http.Extensions;
+﻿using System.Web;
+using Microsoft.AspNetCore.Http.Extensions;
 using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using PhiZoneApi.Dtos.Deliverers;
@@ -68,7 +69,7 @@ public class QqAuthProvider : IAuthProvider
             { "client_id", _clientId },
             { "state", state },
             { "scope", "get_user_info" },
-            { "redirect_uri", $"https://www.phizone.cn/session/redirect/{redirectUri}" }
+            { "redirect_uri", $"https://www.phizone.cn/session/redirect/{HttpUtility.UrlEncode(redirectUri)}" }
         };
         if (user != null) query.Add("login", user.Email!);
 
@@ -98,7 +99,7 @@ public class QqAuthProvider : IAuthProvider
 
         var request = new HttpRequestMessage
         {
-            Method = HttpMethod.Post,
+            Method = HttpMethod.Get,
             RequestUri = new UriBuilder("https://graph.qq.com/oauth2.0/token")
             {
                 Query = new QueryBuilder
@@ -107,7 +108,7 @@ public class QqAuthProvider : IAuthProvider
                     { "client_id", _clientId },
                     { "client_secret", _clientSecret },
                     { "code", code },
-                    { "redirect_uri", $"https://www.phizone.cn/session/redirect/{redirectUri}" },
+                    { "redirect_uri", $"https://www.phizone.cn/session/redirect/{HttpUtility.UrlEncode(redirectUri)}" },
                     { "fmt", "json" }
                 }.ToString()
             }.Uri,
@@ -214,7 +215,7 @@ public class QqAuthProvider : IAuthProvider
 
         var request = new HttpRequestMessage
         {
-            Method = HttpMethod.Post,
+            Method = HttpMethod.Get,
             RequestUri = new UriBuilder("https://api.qq.cn/oauth/token")
             {
                 Query = new QueryBuilder
