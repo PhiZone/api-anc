@@ -87,10 +87,13 @@ public class QqAuthProvider : IAuthProvider
     {
         var db = _redis.GetDatabase();
         var key = $"phizone:qq:{state}";
+        Console.WriteLine(key);
         if (!await db.KeyExistsAsync(key)) return null;
 
         var userId = await db.StringGetAsync(key);
         await db.KeyDeleteAsync(key);
+        Console.WriteLine(userId);
+        Console.WriteLine((user == null && userId != string.Empty) || (user != null && userId != user.Id.ToString()));
         if ((user == null && userId != string.Empty) || (user != null && userId != user.Id.ToString())) return null;
 
         var request = new HttpRequestMessage
