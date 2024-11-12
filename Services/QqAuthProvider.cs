@@ -68,7 +68,7 @@ public class QqAuthProvider : IAuthProvider
             { "client_id", _clientId },
             { "state", state },
             { "scope", "get_user_info" },
-            { "redirect_uri", $"https://www.phizone.cn/session/redirect?uri={redirectUri}" }
+            { "redirect_uri", $"https://www.phizone.cn/session/redirect/{redirectUri}" }
         };
         if (user != null) query.Add("login", user.Email!);
 
@@ -107,7 +107,7 @@ public class QqAuthProvider : IAuthProvider
                     { "client_id", _clientId },
                     { "client_secret", _clientSecret },
                     { "code", code },
-                    { "redirect_uri", $"https://www.phizone.cn/session/redirect?uri={redirectUri}" },
+                    { "redirect_uri", $"https://www.phizone.cn/session/redirect/{redirectUri}" },
                     { "fmt", "json" }
                 }.ToString()
             }.Uri,
