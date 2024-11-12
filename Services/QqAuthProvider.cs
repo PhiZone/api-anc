@@ -123,7 +123,7 @@ public class QqAuthProvider : IAuthProvider
     public async Task<User?> GetIdentityAsync(string accessToken)
     {
         var id = await GetOpenIdAsync(accessToken);
-
+        if (id == null) return null;
         await using var scope = _serviceProvider.CreateAsyncScope();
         var userRepository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
         return await userRepository.GetUserByRemoteIdAsync(_applicationId, id);
@@ -132,11 +132,12 @@ public class QqAuthProvider : IAuthProvider
     public async Task<RemoteUserDto?> GetRemoteIdentityAsync(string accessToken)
     {
         var id = await GetOpenIdAsync(accessToken);
+        if (id == null) return null;
         var response = await RetrieveIdentityAsync(accessToken, id);
         if (!response.IsSuccessStatusCode) return null;
 
         var content = JsonConvert.DeserializeObject<QqUserDto>(await response.Content.ReadAsStringAsync())!;
-
+        Console.WriteLine(content.Nickname);
         return new RemoteUserDto
         {
             Id = id,
@@ -157,15 +158,16 @@ public class QqAuthProvider : IAuthProvider
 
         var applicationUser = await applicationUserRepository.GetRelationAsync(_applicationId, user.Id);
         if (applicationUser.AccessToken == null) return false;
-
+        Console.WriteLine(applicationUser.AccessToken);
         var id = await GetOpenIdAsync(applicationUser.AccessToken);
+        if (id == null) return false;
         var response = await RetrieveIdentityAsync(applicationUser.AccessToken, id);
         if (!response.IsSuccessStatusCode) return false;
-
+        
         var content = JsonConvert.DeserializeObject<QqUserDto>(await response.Content.ReadAsStringAsync())!;
         var existingUser = await userRepository.GetUserByRemoteIdAsync(_applicationId, id);
         if (existingUser != null && existingUser.Id != user.Id) return false;
-
+        Console.WriteLine(content.Nickname);
         applicationUser.RemoteUserId = id;
         applicationUser.RemoteUserName = content.Nickname;
         await applicationUserRepository.UpdateRelationAsync(applicationUser);
@@ -270,7 +272,7 @@ public class QqAuthProvider : IAuthProvider
         return await _client.SendAsync(request);
     }
 
-    private async Task<string> GetOpenIdAsync(string accessToken)
+    private async Task<string?> GetOpenIdAsync(string accessToken)
     {
         var request = new HttpRequestMessage
         {
@@ -282,8 +284,9 @@ public class QqAuthProvider : IAuthProvider
             Headers = { { "Authorization", $"Bearer {accessToken}" } }
         };
         var response = await _client.SendAsync(request);
-        if (!response.IsSuccessStatusCode) return accessToken[5..];
+        if (!response.IsSuccessStatusCode) return null;
         var content = JsonConvert.DeserializeObject<QqOpenIdDto>(await response.Content.ReadAsStringAsync())!;
+        Console.WriteLine(content.OpenId);
         return content.OpenId;
     }
 }
