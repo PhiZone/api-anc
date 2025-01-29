@@ -73,7 +73,7 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
         await MigrateCharts(mysqlConnection, cancellationToken);
         await MigrateChartAssets(mysqlConnection, cancellationToken);
         await MigrateApplications(mysqlConnection, cancellationToken);
-        await MigrateUsers(mysqlConnection, cancellationToken);
+        // await MigrateUsers(mysqlConnection, cancellationToken);
         await MigrateApplicationUsers(mysqlConnection, cancellationToken);
     }
 
