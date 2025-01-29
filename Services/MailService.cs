@@ -4,6 +4,7 @@ using PhiZoneApi.Constants;
 using PhiZoneApi.Dtos.Deliverers;
 using PhiZoneApi.Enums;
 using PhiZoneApi.Interfaces;
+using RabbitMQ.Client;
 using StackExchange.Redis;
 
 namespace PhiZoneApi.Services;
@@ -52,8 +53,8 @@ public class MailService(
 
         try
         {
-            using var channel = rabbitMqService.GetConnection().CreateModel();
-            channel.BasicPublish("", _queue, false, null, body);
+            await using var channel = await rabbitMqService.GetConnection().CreateChannelAsync();
+            await channel.BasicPublishAsync("", _queue, false, new BasicProperties(), body);
         }
         catch (Exception)
         {

@@ -16,23 +16,23 @@ public class SongConverterService(
     IHostEnvironment env,
     ILogger<SongConverterService> logger) : BackgroundService
 {
-    private readonly IModel _channel = rabbitMqService.GetConnection().CreateModel();
+    private readonly IChannel _channel = rabbitMqService.GetConnection().CreateChannelAsync().Result;
     private readonly string _queue = env.IsProduction() ? "song" : "song-dev";
 
-    protected override Task ExecuteAsync(CancellationToken stoppingToken)
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _channel.QueueDeclare(_queue, false, false, false, null);
+        await _channel.QueueDeclareAsync(_queue, false, false, false, null, false, false, stoppingToken);
 
-        var consumer = new EventingBasicConsumer(_channel);
-        consumer.Received += async (_, args) =>
+        var consumer = new AsyncEventingBasicConsumer(_channel);
+        consumer.ReceivedAsync += async (_, args) =>
         {
             if (args.BasicProperties.Headers == null ||
                 !args.BasicProperties.Headers.TryGetValue("SongId", out var songIdObj) ||
                 !args.BasicProperties.Headers.TryGetValue("IsSubmission", out var isSubmissionObj))
                 return;
 
-            var songId = Encoding.UTF8.GetString((byte[])songIdObj);
-            var isSubmission = bool.Parse(Encoding.UTF8.GetString((byte[])isSubmissionObj));
+            var songId = Encoding.UTF8.GetString((byte[])songIdObj!);
+            var isSubmission = bool.Parse(Encoding.UTF8.GetString((byte[])isSubmissionObj!));
             var body = args.Body.ToArray();
             if (isSubmission)
             {
@@ -77,11 +77,9 @@ public class SongConverterService(
                 }
             }
 
-            _channel.BasicAck(args.DeliveryTag, false);
+            await _channel.BasicAckAsync(args.DeliveryTag, false, stoppingToken);
         };
 
-        _channel.BasicConsume(_queue, false, consumer);
-
-        return Task.CompletedTask;
+        await _channel.BasicConsumeAsync(_queue, false, consumer, stoppingToken);
     }
 }

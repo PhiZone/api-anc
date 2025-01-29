@@ -2,6 +2,7 @@
 using PhiZoneApi.Constants;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
+using RabbitMQ.Client;
 
 namespace PhiZoneApi.Services;
 
@@ -57,12 +58,14 @@ public class SongService(
         await using var stream = file.OpenReadStream();
         using var memoryStream = new MemoryStream();
         await stream.CopyToAsync(memoryStream);
-        using var channel = rabbitMqService.GetConnection().CreateModel();
-        var properties = channel.CreateBasicProperties();
-        properties.Headers = new Dictionary<string, object>
+        await using var channel = await rabbitMqService.GetConnection().CreateChannelAsync();
+        var properties = new BasicProperties
         {
-            { "SongId", songId.ToString() }, { "IsSubmission", isSubmission.ToString() }
+            Headers = new Dictionary<string, object?>
+            {
+                { "SongId", songId.ToString() }, { "IsSubmission", isSubmission.ToString() }
+            }
         };
-        channel.BasicPublish("", _queue, false, properties, memoryStream.ToArray());
+        await channel.BasicPublishAsync("", _queue, false, properties, memoryStream.ToArray());
     }
 }
