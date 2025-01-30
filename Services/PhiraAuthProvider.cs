@@ -139,8 +139,10 @@ public class PhiraAuthProvider : IAuthProvider
             UserName = content.Name,
             Email = content.Email,
             Avatar = content.Avatar != null
-                ? await _client.GetByteArrayAsync(content.Avatar.Replace("api.phira.cn/files/",
-                    "files-cf.phira.cn/"))
+                ? await _client.GetByteArrayAsync(content.Avatar
+                    // .Replace("api.phira.cn/files/",
+                    // "files-cf.phira.cn/")
+                )
                 : null
         };
     }
