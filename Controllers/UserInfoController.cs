@@ -431,7 +431,7 @@ public class UserInfoController(
                     ?.Rks ?? 0d;
                 var best19Rks = (await recordRepository.GetPersonalBests(currentUser.Id)).Sum(r => r.Rks);
                 currentUser.Rks = (phiRks + best19Rks) / 20;
-                currentUser.Experience += ghost.Experience;
+                currentUser.Experience = Math.Max(currentUser.Experience, ghost.Experience);
             }
 
             var tapUserRelation = new ApplicationUser
@@ -508,7 +508,7 @@ public class UserInfoController(
                 ?.Rks ?? 0d;
             var best19Rks = (await recordRepository.GetPersonalBests(currentUser.Id)).Sum(r => r.Rks);
             currentUser.Rks = (phiRks + best19Rks) / 20;
-            currentUser.Experience += remoteUser.Experience;
+            currentUser.Experience = Math.Max(currentUser.Experience, remoteUser.Experience);
 
             foreach (var link in inheritance.Links)
             {
@@ -540,7 +540,6 @@ public class UserInfoController(
             }
         }
 
-        currentUser.Experience += 1000;
         await userManager.UpdateAsync(currentUser);
 
         return NoContent();

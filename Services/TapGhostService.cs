@@ -10,6 +10,7 @@ using PhiZoneApi.Dtos.Deliverers;
 using PhiZoneApi.Dtos.Responses;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
+using RabbitMQ.Client;
 
 // ReSharper disable TailRecursiveCall
 
@@ -154,17 +155,19 @@ public class TapGhostService : ITapGhostService
             .Rks;
     }
 
-    public void PublishRecord(Guid appId, string id, Record record, bool isChartRanked, ulong experienceDelta)
+    public async Task PublishRecord(Guid appId, string id, Record record, bool isChartRanked, ulong experienceDelta)
     {
-        using var channel = _rabbitMqService.GetConnection().CreateModel();
-        var properties = channel.CreateBasicProperties();
-        properties.Headers = new Dictionary<string, object>
+        await using var channel = await _rabbitMqService.GetConnection().CreateChannelAsync();
+        var properties = new BasicProperties
         {
-            { "AppId", appId.ToString() }, { "Id", id }, { "IsChartRanked", isChartRanked.ToString() },
-            { "ExpDelta", experienceDelta.ToString() }
+            Headers = new Dictionary<string, object?>
+            {
+                { "AppId", appId.ToString() }, { "Id", id }, { "IsChartRanked", isChartRanked.ToString() },
+                { "ExpDelta", experienceDelta.ToString() }
+            }
         };
         var body = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(record));
-        channel.BasicPublish("", _queue, false, properties, body);
+        await channel.BasicPublishAsync("", _queue, false, properties, body);
     }
 
     private async Task UpdateToken(bool force = false)

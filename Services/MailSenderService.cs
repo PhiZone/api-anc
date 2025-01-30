@@ -10,25 +10,23 @@ namespace PhiZoneApi.Services;
 public class MailSenderService(IMailService mailService, IRabbitMqService rabbitMqService, IHostEnvironment env)
     : BackgroundService
 {
-    private readonly IModel _channel = rabbitMqService.GetConnection().CreateModel();
+    private readonly IChannel _channel = rabbitMqService.GetConnection().CreateChannelAsync().Result;
     private readonly string _queue = env.IsProduction() ? "email" : "email-dev";
 
-    protected override Task ExecuteAsync(CancellationToken stoppingToken)
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        _channel.QueueDeclare(_queue, false, false, false, null);
+        await _channel.QueueDeclareAsync(_queue, false, false, false, null, false, false, stoppingToken);
 
-        var consumer = new EventingBasicConsumer(_channel);
-        consumer.Received += async (_, args) =>
+        var consumer = new AsyncEventingBasicConsumer(_channel);
+        consumer.ReceivedAsync += async (_, args) =>
         {
             var body = args.Body.ToArray();
             var message = Encoding.UTF8.GetString(body);
             var mailDto = JsonConvert.DeserializeObject<MailTaskDto>(message);
             await mailService.SendMailAsync(mailDto!);
-            _channel.BasicAck(args.DeliveryTag, false);
+            await _channel.BasicAckAsync(args.DeliveryTag, false, stoppingToken);
         };
 
-        _channel.BasicConsume(_queue, false, consumer);
-
-        return Task.CompletedTask;
+        await _channel.BasicConsumeAsync(_queue, false, consumer, stoppingToken);
     }
 }

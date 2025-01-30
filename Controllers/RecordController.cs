@@ -547,7 +547,7 @@ public class RecordController(
 
         if (!chart.IsRanked) experienceDelta = (ulong)(experienceDelta * 0.5);
 
-        tapGhostService.PublishRecord(info.ApplicationId, info.PlayerId, record, chart.IsRanked, experienceDelta);
+        await tapGhostService.PublishRecord(info.ApplicationId, info.PlayerId, record, chart.IsRanked, experienceDelta);
 
         return StatusCode(StatusCodes.Status201Created,
             new ResponseDto<RecordTapResponseDto>

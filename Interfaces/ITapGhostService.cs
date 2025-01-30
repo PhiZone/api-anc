@@ -13,5 +13,5 @@ public interface ITapGhostService
 
     Task<double> CreateRecord(Guid appId, string id, Record record, bool isChartRanked);
 
-    void PublishRecord(Guid appId, string id, Record record, bool isChartRanked, ulong experienceDelta);
+    Task PublishRecord(Guid appId, string id, Record record, bool isChartRanked, ulong experienceDelta);
 }

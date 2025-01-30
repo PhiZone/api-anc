@@ -19,7 +19,7 @@ public class RabbitMqService : IRabbitMqService
             UserName = settings.UserName,
             Password = settings.Password
         };
-        _connection = factory.CreateConnection();
+        _connection = factory.CreateConnectionAsync().Result;
     }
 
     public IConnection GetConnection()

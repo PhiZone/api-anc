@@ -14,27 +14,27 @@
         <PackageReference Include="ComputerInfo" Version="0.2.0" />
         <PackageReference Include="HtmlSanitizer" Version="8.1.870"/>
         <PackageReference Include="MailKit" Version="4.8.0"/>
-        <PackageReference Include="MeiliSearch" Version="0.15.3"/>
+        <PackageReference Include="MeiliSearch" Version="0.15.4"/>
         <PackageReference Include="Microsoft.AspNetCore.Mvc.Versioning" Version="5.1.0"/>
         <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="4.11.0"/>
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.11.0"/>
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.11.0"/>
-        <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.10"/>
+        <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.11"/>
         <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.10"/>
         <PackageReference Include="NVorbis" Version="0.10.5"/>
         <PackageReference Include="OpenIddict.AspNetCore" Version="5.8.0"/>
         <PackageReference Include="OpenIddict.EntityFrameworkCore" Version="5.8.0"/>
         <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="8.0.2"/>
-        <PackageReference Include="RabbitMQ.Client" Version="6.7.0"/>
+        <PackageReference Include="RabbitMQ.Client" Version="7.0.0"/>
         <PackageReference Include="Romanization.NET" Version="0.9.5"/>
         <PackageReference Include="SixLabors.ImageSharp" Version="3.1.5"/>
         <PackageReference Include="StackExchange.Redis" Version="2.8.16"/>
-        <PackageReference Include="Swashbuckle.AspNetCore" Version="6.9.0"/>
+        <PackageReference Include="Swashbuckle.AspNetCore" Version="7.2.0"/>
         <PackageReference Include="Swashbuckle.AspNetCore.Newtonsoft" Version="6.9.0"/>
         <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.2.0"/>
-        <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.10"/>
+        <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.11"/>
         <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="8.0.10"/>
-        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.10"/>
+        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.11"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.10"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.10"/>
     </ItemGroup>
