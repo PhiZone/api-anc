@@ -14,7 +14,7 @@
         <PackageReference Include="ComputerInfo" Version="0.2.0" />
         <PackageReference Include="HtmlSanitizer" Version="8.1.870"/>
         <PackageReference Include="MailKit" Version="4.8.0"/>
-        <PackageReference Include="MeiliSearch" Version="0.15.4"/>
+        <PackageReference Include="MeiliSearch" Version="0.15.5"/>
         <PackageReference Include="Microsoft.AspNetCore.Mvc.Versioning" Version="5.1.0"/>
         <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="4.11.0"/>
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.11.0"/>
