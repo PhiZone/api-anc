@@ -18,6 +18,8 @@ public class ResourceRecord : Resource
 
     public ResourceRecordStrategy Strategy { get; set; }
 
+    public string? Media { get; set; }
+
     public string Source { get; set; } = null!;
 
     public string CopyrightOwner { get; set; } = null!;

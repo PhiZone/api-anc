@@ -10,7 +10,7 @@ public class SongSubmissionDto
 
     public EditionType EditionType { get; set; }
 
-    public string Edition { get; set; } = null!;
+    public string? Edition { get; set; }
 
     public string AuthorName { get; set; } = null!;
 
@@ -54,7 +54,7 @@ public class SongSubmissionDto
 
     public string? Message { get; set; }
 
-    public int OwnerId { get; set; }
+    public int? OwnerId { get; set; }
 
     public DateTimeOffset DateCreated { get; set; }
 

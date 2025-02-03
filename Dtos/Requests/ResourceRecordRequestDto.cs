@@ -31,8 +31,13 @@ public class ResourceRecordRequestDto
     [Range(0, 4, ErrorMessage = ResponseCodes.ValueOutOfRange)]
     public ResourceRecordStrategy Strategy { get; set; }
 
+    [Url(ErrorMessage = ResponseCodes.InvalidUrl)]
+    [MaxLength(4000, ErrorMessage = ResponseCodes.ValueTooLong)]
+    public string? Media { get; set; }
+
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     [Url(ErrorMessage = ResponseCodes.InvalidUrl)]
+    [MaxLength(4000, ErrorMessage = ResponseCodes.ValueTooLong)]
     public string Source { get; set; } = null!;
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
