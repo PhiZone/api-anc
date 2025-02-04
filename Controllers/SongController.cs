@@ -228,8 +228,7 @@ public class SongController(
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidTimeRelation
                 });
-            logger.LogInformation(LogEvents.SongInfo, "New song: {Title}",
-                dto.Title);
+            logger.LogInformation(LogEvents.SongInfo, "New song: {Title}", dto.Title);
         }
         else if (!(TimeSpan.Zero <= dto.PreviewStart && dto.PreviewStart < dto.PreviewEnd))
         {
@@ -284,8 +283,7 @@ public class SongController(
         if (!wait)
         {
             await songService.PublishAsync(dto.File, song.Id);
-            logger.LogInformation(LogEvents.SongInfo, "Scheduled new song: {Title}",
-                dto.Title);
+            logger.LogInformation(LogEvents.SongInfo, "Scheduled new song: {Title}", dto.Title);
         }
 
         return StatusCode(StatusCodes.Status201Created,
@@ -784,6 +782,7 @@ public class SongController(
     ///     When the resource has not been updated since last retrieval. Requires <c>If-None-Match</c>.
     /// </response>
     /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
     /// <response code="404">When the specified song, chapter, or admission is not found.</response>
     [HttpGet("{id:guid}/chapters/{chapterId:guid}")]
     [ServiceFilter(typeof(ETagFilter))]
@@ -791,6 +790,7 @@ public class SongController(
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<AdmissionDto<ChapterDto, SongDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetAdmission([FromRoute] Guid id, [FromRoute] Guid chapterId)
     {
@@ -816,10 +816,8 @@ public class SongController(
         var song = await songRepository.GetSongAsync(id);
         var chapter = await chapterRepository.GetChapterAsync(chapterId);
         var admission = await admissionRepository.GetAdmissionAsync(chapterId, id);
-        if (((currentUser != null && (song.OwnerId == currentUser.Id || chapter.OwnerId == currentUser.Id) &&
-              !resourceService.HasPermission(currentUser, UserRole.Qualified)) ||
-             (currentUser != null && song.OwnerId != currentUser.Id && chapter.OwnerId != currentUser.Id &&
-              !resourceService.HasPermission(currentUser, UserRole.Moderator))) &&
+        if ((currentUser == null || !(song.OwnerId == currentUser.Id || chapter.OwnerId == currentUser.Id) ||
+             !resourceService.HasPermission(currentUser, UserRole.Moderator)) &&
             admission.Status != RequestStatus.Approved)
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>

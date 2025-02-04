@@ -1481,10 +1481,8 @@ public class ChartSubmissionController(
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         var chartSubmission = await chartSubmissionRepository.GetChartSubmissionAsync(id);
-        if ((chartSubmission.OwnerId == currentUser.Id &&
-             !resourceService.HasPermission(currentUser, UserRole.Qualified)) ||
-            (chartSubmission.OwnerId != currentUser.Id &&
-             !resourceService.HasPermission(currentUser, UserRole.Volunteer)))
+        if (chartSubmission.OwnerId == currentUser.Id ||
+            !resourceService.HasPermission(currentUser, UserRole.Volunteer))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {

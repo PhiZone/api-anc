@@ -201,8 +201,7 @@ public class ChartController(
                   (tagDto.TagsToExclude == null || (e.Tags.All(tag => !tagsToExclude!.Contains(tag.NormalizedName)) &&
                                                     e.Song.Tags.All(tag =>
                                                         !tagsToExclude!.Contains(tag.NormalizedName))))));
-        var chart = await chartRepository.GetRandomChartAsync(predicateExpr, currentUser?.Id,
-            includeAssets);
+        var chart = await chartRepository.GetRandomChartAsync(predicateExpr, currentUser?.Id, includeAssets);
 
         if (chart == null)
             return NotFound(new ResponseDto<object>
@@ -309,9 +308,8 @@ public class ChartController(
         if (!await chartRepository.CreateChartAsync(chart))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
-        logger.LogInformation(LogEvents.ChartInfo, "New chart: {Title} [{Level} {Difficulty}]",
-            dto.Title ?? song.Title, dto.Level,
-            Math.Floor(dto.Difficulty));
+        logger.LogInformation(LogEvents.ChartInfo, "New chart: {Title} [{Level} {Difficulty}]", dto.Title ?? song.Title,
+            dto.Level, Math.Floor(dto.Difficulty));
 
         await tagRepository.CreateTagsAsync(dto.Tags, chart);
 
@@ -670,13 +668,11 @@ public class ChartController(
     /// <response code="200">Returns an array of chart assets.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
-    /// <response code="403">When the user does not have sufficient permission.</response>
     [HttpGet("{id:guid}/assets")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<ChartAssetDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
-    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetChartAssets([FromRoute] Guid id, [FromQuery] ArrayRequestDto dto,
         [FromQuery] ChartAssetFilterDto? filterDto = null)
     {
@@ -725,7 +721,6 @@ public class ChartController(
     /// </response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
-    /// <response code="403">When the user does not have sufficient permission.</response>
     /// <response code="404">When the specified chart or the asset is not found.</response>
     /// <response code="500">When an internal server error has occurred.</response>
     [HttpGet("{id:guid}/assets/{assetId:guid}")]
@@ -735,7 +730,6 @@ public class ChartController(
     [ProducesResponseType(typeof(void), StatusCodes.Status304NotModified, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
-    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetChartAsset([FromRoute] Guid id, [FromRoute] Guid assetId)
     {
@@ -1165,6 +1159,7 @@ public class ChartController(
     ///     When the resource has not been updated since last retrieval. Requires <c>If-None-Match</c>.
     /// </response>
     /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
     /// <response code="404">When the specified chart, collection, or admission is not found.</response>
     [HttpGet("{id:guid}/collections/{collectionId:guid}")]
     [ServiceFilter(typeof(ETagFilter))]
@@ -1172,6 +1167,7 @@ public class ChartController(
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<AdmissionDto<CollectionDto, ChartDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetAdmission([FromRoute] Guid id, [FromRoute] Guid collectionId)
     {
@@ -1197,10 +1193,8 @@ public class ChartController(
         var chart = await chartRepository.GetChartAsync(id);
         var collection = await collectionRepository.GetCollectionAsync(collectionId);
         var admission = await admissionRepository.GetAdmissionAsync(collectionId, id);
-        if (((currentUser != null && (chart.OwnerId == currentUser.Id || collection.OwnerId == currentUser.Id) &&
-              !resourceService.HasPermission(currentUser, UserRole.Qualified)) ||
-             (currentUser != null && chart.OwnerId != currentUser.Id && collection.OwnerId != currentUser.Id &&
-              !resourceService.HasPermission(currentUser, UserRole.Moderator))) &&
+        if ((currentUser == null || !(chart.OwnerId == currentUser.Id || collection.OwnerId == currentUser.Id) ||
+             !resourceService.HasPermission(currentUser, UserRole.Moderator)) &&
             admission.Status != RequestStatus.Approved)
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
@@ -1389,11 +1383,13 @@ public class ChartController(
     /// <returns>The leaderboard (an array of records).</returns>
     /// <response code="200">Returns an array of records.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
     /// <response code="404">When the specified chart is not found.</response>
     [HttpGet("{id:guid}/leaderboard")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<RecordDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetLeaderboard([FromRoute] Guid id, [FromQuery] LeaderboardRequestDto dto)
     {
@@ -1528,6 +1524,7 @@ public class ChartController(
     /// <response code="201">Returns an empty body.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
     /// <response code="404">When the specified chart is not found.</response>
     [HttpPost("{id:guid}/likes")]
     [Produces("application/json")]
@@ -1535,6 +1532,7 @@ public class ChartController(
     [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> CreateLike([FromRoute] Guid id)
     {
@@ -1579,6 +1577,7 @@ public class ChartController(
     /// <response code="204">Returns an empty body.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
     /// <response code="404">When the specified chart is not found.</response>
     [HttpDelete("{id:guid}/likes")]
     [Produces("application/json")]
@@ -1586,6 +1585,7 @@ public class ChartController(
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> RemoveLike([FromRoute] Guid id)
     {
@@ -1802,6 +1802,7 @@ public class ChartController(
     /// <response code="201">Returns an empty body.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
     /// <response code="404">When the specified chart is not found.</response>
     /// <response code="500">When an internal server error has occurred.</response>
     [HttpPost("{id:guid}/votes")]
@@ -1810,6 +1811,7 @@ public class ChartController(
     [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> CreateVote([FromRoute] Guid id, [FromBody] VoteRequestDto dto)
@@ -1848,6 +1850,7 @@ public class ChartController(
     /// <response code="204">Returns an empty body.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
     /// <response code="404">When the specified chart is not found.</response>
     [HttpDelete("{id:guid}/votes")]
     [Produces("application/json")]
@@ -1855,6 +1858,7 @@ public class ChartController(
     [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> RemoveVote([FromRoute] Guid id)
     {
