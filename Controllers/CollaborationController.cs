@@ -59,12 +59,7 @@ public class CollaborationController(
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         var isVolunteer = resourceService.HasPermission(currentUser, UserRole.Volunteer);
-        if (!resourceService.HasPermission(currentUser, UserRole.Qualified))
-            return StatusCode(StatusCodes.Status403Forbidden,
-                new ResponseDto<object>
-                {
-                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
-                });
+
         dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
             dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
         dto.Page = dto.Page > 1 ? dto.Page : 1;

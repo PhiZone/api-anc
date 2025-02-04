@@ -267,12 +267,7 @@ public class ServiceScriptController(
     public async Task<IActionResult> UseService([FromRoute] Guid id, [FromBody] ServiceScriptUsageDto dto)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!resourceService.HasPermission(currentUser, UserRole.Qualified))
-            return StatusCode(StatusCodes.Status403Forbidden,
-                new ResponseDto<object>
-                {
-                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
-                });
+
         if (!await serviceScriptRepository.ServiceScriptExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {

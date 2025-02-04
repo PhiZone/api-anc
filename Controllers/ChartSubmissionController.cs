@@ -64,24 +64,17 @@ public class ChartSubmissionController(
     /// <response code="200">Returns an array of chart submissions.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
-    /// <response code="403">When the user does not have sufficient permission.</response>
     [HttpGet]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<ChartSubmissionDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
-    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetChartSubmissions([FromQuery] ArrayRequestDto dto,
         [FromQuery] ChartSubmissionFilterDto? filterDto = null)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         var isVolunteer = resourceService.HasPermission(currentUser, UserRole.Volunteer);
-        if (!resourceService.HasPermission(currentUser, UserRole.Qualified))
-            return StatusCode(StatusCodes.Status403Forbidden,
-                new ResponseDto<object>
-                {
-                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
-                });
+
         dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
             dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage;
         dto.Page = dto.Page > 1 ? dto.Page : 1;
@@ -132,7 +125,6 @@ public class ChartSubmissionController(
     /// </response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
-    /// <response code="403">When the user does not have sufficient permission.</response>
     /// <response code="404">When the specified chart submission is not found.</response>
     [HttpGet("{id:guid}")]
     [ServiceFilter(typeof(ETagFilter))]
@@ -141,17 +133,11 @@ public class ChartSubmissionController(
     [ProducesResponseType(typeof(void), StatusCodes.Status304NotModified, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
-    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetChartSubmission([FromRoute] Guid id)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!resourceService.HasPermission(currentUser, UserRole.Qualified))
-            return StatusCode(StatusCodes.Status403Forbidden,
-                new ResponseDto<object>
-                {
-                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
-                });
+
         if (!await chartSubmissionRepository.ChartSubmissionExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
@@ -173,7 +159,6 @@ public class ChartSubmissionController(
     /// <response code="201">Returns the ID of the chart submission.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
-    /// <response code="403">When the user does not have sufficient permission.</response>
     /// <response code="500">When an internal server error has occurred.</response>
     [HttpPost]
     [Consumes("multipart/form-data")]
@@ -181,17 +166,11 @@ public class ChartSubmissionController(
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ResponseDto<CreatedResponseDto<Guid>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
-    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> CreateChartSubmission([FromForm] ChartSubmissionCreationDto dto)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!resourceService.HasPermission(currentUser, UserRole.Qualified))
-            return StatusCode(StatusCodes.Status403Forbidden,
-                new ResponseDto<object>
-                {
-                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
-                });
+
 
         var authors = resourceService.GetAuthorIds(dto.AuthorName);
         if (!authors.Contains(currentUser.Id))
@@ -455,10 +434,8 @@ public class ChartSubmissionController(
         var chartSubmission = await chartSubmissionRepository.GetChartSubmissionAsync(id);
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if ((chartSubmission.OwnerId == currentUser.Id &&
-             !resourceService.HasPermission(currentUser, UserRole.Qualified)) ||
-            (chartSubmission.OwnerId != currentUser.Id &&
-             !resourceService.HasPermission(currentUser, UserRole.Moderator)))
+        if (chartSubmission.OwnerId == currentUser.Id ||
+            !resourceService.HasPermission(currentUser, UserRole.Moderator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -548,10 +525,8 @@ public class ChartSubmissionController(
         var chartSubmission = await chartSubmissionRepository.GetChartSubmissionAsync(id);
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if ((chartSubmission.OwnerId == currentUser.Id &&
-             !resourceService.HasPermission(currentUser, UserRole.Qualified)) ||
-            (chartSubmission.OwnerId != currentUser.Id &&
-             !resourceService.HasPermission(currentUser, UserRole.Moderator)))
+        if (chartSubmission.OwnerId == currentUser.Id ||
+            !resourceService.HasPermission(currentUser, UserRole.Moderator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -654,10 +629,8 @@ public class ChartSubmissionController(
         var chartSubmission = await chartSubmissionRepository.GetChartSubmissionAsync(id);
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if ((chartSubmission.OwnerId == currentUser.Id &&
-             !resourceService.HasPermission(currentUser, UserRole.Qualified)) ||
-            (chartSubmission.OwnerId != currentUser.Id &&
-             !resourceService.HasPermission(currentUser, UserRole.Moderator)))
+        if (chartSubmission.OwnerId == currentUser.Id ||
+            !resourceService.HasPermission(currentUser, UserRole.Moderator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -725,10 +698,8 @@ public class ChartSubmissionController(
         var chartSubmission = await chartSubmissionRepository.GetChartSubmissionAsync(id);
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if ((chartSubmission.OwnerId == currentUser.Id &&
-             !resourceService.HasPermission(currentUser, UserRole.Qualified)) ||
-            (chartSubmission.OwnerId != currentUser.Id &&
-             !resourceService.HasPermission(currentUser, UserRole.Moderator)))
+        if (chartSubmission.OwnerId == currentUser.Id ||
+            !resourceService.HasPermission(currentUser, UserRole.Moderator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -788,10 +759,8 @@ public class ChartSubmissionController(
         var chartSubmission = await chartSubmissionRepository.GetChartSubmissionAsync(id);
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if ((chartSubmission.OwnerId == currentUser.Id &&
-             !resourceService.HasPermission(currentUser, UserRole.Qualified)) ||
-            (chartSubmission.OwnerId != currentUser.Id &&
-             !resourceService.HasPermission(currentUser, UserRole.Moderator)))
+        if (chartSubmission.OwnerId == currentUser.Id ||
+            !resourceService.HasPermission(currentUser, UserRole.Moderator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -848,12 +817,7 @@ public class ChartSubmissionController(
             });
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!resourceService.HasPermission(currentUser, UserRole.Qualified))
-            return StatusCode(StatusCodes.Status403Forbidden,
-                new ResponseDto<object>
-                {
-                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
-                });
+
         dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
             dto.PerPage == 0 ? dataSettings.Value.PaginationPerPage : dataSettings.Value.PaginationMaxPerPage * 100;
         dto.Page = dto.Page > 1 ? dto.Page : 1;
@@ -909,14 +873,6 @@ public class ChartSubmissionController(
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ParentNotFound
             });
 
-        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!resourceService.HasPermission(currentUser, UserRole.Qualified))
-            return StatusCode(StatusCodes.Status403Forbidden,
-                new ResponseDto<object>
-                {
-                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
-                });
-
         if (!await chartAssetSubmissionRepository.ChartAssetSubmissionExistsAsync(assetId))
             return NotFound(new ResponseDto<object>
             {
@@ -966,10 +922,8 @@ public class ChartSubmissionController(
         var chartSubmission = await chartSubmissionRepository.GetChartSubmissionAsync(id);
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if ((chartSubmission.OwnerId == currentUser.Id &&
-             !resourceService.HasPermission(currentUser, UserRole.Qualified)) ||
-            (chartSubmission.OwnerId != currentUser.Id &&
-             !resourceService.HasPermission(currentUser, UserRole.Moderator)))
+        if (chartSubmission.OwnerId == currentUser.Id ||
+            !resourceService.HasPermission(currentUser, UserRole.Moderator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -1063,10 +1017,8 @@ public class ChartSubmissionController(
         var chartSubmission = await chartSubmissionRepository.GetChartSubmissionAsync(id);
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if ((chartSubmission.OwnerId == currentUser.Id &&
-             !resourceService.HasPermission(currentUser, UserRole.Qualified)) ||
-            (chartSubmission.OwnerId != currentUser.Id &&
-             !resourceService.HasPermission(currentUser, UserRole.Moderator)))
+        if (chartSubmission.OwnerId == currentUser.Id ||
+            !resourceService.HasPermission(currentUser, UserRole.Moderator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -1169,10 +1121,8 @@ public class ChartSubmissionController(
         var chartSubmission = await chartSubmissionRepository.GetChartSubmissionAsync(id);
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if ((chartSubmission.OwnerId == currentUser.Id &&
-             !resourceService.HasPermission(currentUser, UserRole.Qualified)) ||
-            (chartSubmission.OwnerId != currentUser.Id &&
-             !resourceService.HasPermission(currentUser, UserRole.Moderator)))
+        if (chartSubmission.OwnerId == currentUser.Id ||
+            !resourceService.HasPermission(currentUser, UserRole.Moderator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -1267,10 +1217,8 @@ public class ChartSubmissionController(
         var chartSubmission = await chartSubmissionRepository.GetChartSubmissionAsync(id);
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if ((chartSubmission.OwnerId == currentUser.Id &&
-             !resourceService.HasPermission(currentUser, UserRole.Qualified)) ||
-            (chartSubmission.OwnerId != currentUser.Id &&
-             !resourceService.HasPermission(currentUser, UserRole.Moderator)))
+        if (chartSubmission.OwnerId == currentUser.Id ||
+            !resourceService.HasPermission(currentUser, UserRole.Moderator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -1349,10 +1297,8 @@ public class ChartSubmissionController(
         var chartSubmission = await chartSubmissionRepository.GetChartSubmissionAsync(id);
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if ((chartSubmission.OwnerId == currentUser.Id &&
-             !resourceService.HasPermission(currentUser, UserRole.Qualified)) ||
-            (chartSubmission.OwnerId != currentUser.Id &&
-             !resourceService.HasPermission(currentUser, UserRole.Moderator)))
+        if (chartSubmission.OwnerId == currentUser.Id ||
+            !resourceService.HasPermission(currentUser, UserRole.Moderator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -1410,12 +1356,7 @@ public class ChartSubmissionController(
         [FromBody] ServiceScriptUsageDto dto)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (!resourceService.HasPermission(currentUser, UserRole.Qualified))
-            return StatusCode(StatusCodes.Status403Forbidden,
-                new ResponseDto<object>
-                {
-                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
-                });
+
         if (!await chartSubmissionRepository.ChartSubmissionExistsAsync(id))
             return NotFound(new ResponseDto<object>
             {
@@ -1470,10 +1411,8 @@ public class ChartSubmissionController(
         var chartSubmission = await chartSubmissionRepository.GetChartSubmissionAsync(id);
 
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if ((chartSubmission.OwnerId == currentUser.Id &&
-             !resourceService.HasPermission(currentUser, UserRole.Qualified)) ||
-            (chartSubmission.OwnerId != currentUser.Id &&
-             !resourceService.HasPermission(currentUser, UserRole.Moderator)))
+        if (chartSubmission.OwnerId == currentUser.Id ||
+            !resourceService.HasPermission(currentUser, UserRole.Moderator))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
