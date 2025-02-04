@@ -241,6 +241,7 @@ public class AdmissionController(
     /// </response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
     /// <response code="404">When the specified song, chapter, or admission is not found.</response>
     [HttpGet("chapters/{chapterId:guid}/{songId:guid}")]
     [ServiceFilter(typeof(ETagFilter))]
@@ -249,6 +250,7 @@ public class AdmissionController(
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<AdmissionDto<ChapterDto, SongDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetChapterAdmission([FromRoute] Guid chapterId, [FromRoute] Guid songId)
     {
@@ -303,6 +305,7 @@ public class AdmissionController(
     /// </response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
     /// <response code="404">When the specified chart, collection, or admission is not found.</response>
     [HttpGet("collections/{collectionId:guid}/{chartId:guid}")]
     [ServiceFilter(typeof(ETagFilter))]
@@ -311,6 +314,7 @@ public class AdmissionController(
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<AdmissionDto<CollectionDto, ChartDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetCollectionAdmission([FromRoute] Guid collectionId, [FromRoute] Guid chartId)
     {
@@ -365,6 +369,7 @@ public class AdmissionController(
     /// </response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
     /// <response code="404">When the specified chart submission, song, or admission is not found.</response>
     [HttpGet("songs/{songId:guid}/{chartSubmissionId:guid}")]
     [ServiceFilter(typeof(ETagFilter))]
@@ -374,6 +379,7 @@ public class AdmissionController(
         Type = typeof(ResponseDto<AdmissionDto<SongDto, ChartSubmissionDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetSongAdmission([FromRoute] Guid songId, [FromRoute] Guid chartSubmissionId)
     {
@@ -428,6 +434,7 @@ public class AdmissionController(
     /// </response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
     /// <response code="404">When the specified chart submission, song submission, or admission is not found.</response>
     [HttpGet("songSubmissions/{songSubmissionId:guid}/{chartSubmissionId:guid}")]
     [ServiceFilter(typeof(ETagFilter))]
@@ -437,6 +444,7 @@ public class AdmissionController(
         Type = typeof(ResponseDto<AdmissionDto<SongSubmissionDto, ChartSubmissionDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetSongSubmissionAdmission([FromRoute] Guid songSubmissionId,
         [FromRoute] Guid chartSubmissionId)
