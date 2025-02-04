@@ -50,6 +50,8 @@ public partial class Initializer(
             logger.LogInformation(LogEvents.InitializerInfo, "Initializing scripts");
             var scriptService = scope.ServiceProvider.GetRequiredService<IScriptService>();
             await scriptService.InitializeAsync(context, _cancellationToken);
+            logger.LogInformation(LogEvents.InitializerInfo, "Initializing SeekTune");
+            await seekTuneService.InitializeAsync(context, _cancellationToken);
             logger.LogInformation(LogEvents.InitializerInfo, "Initialization completed");
         }
         catch (Exception e)
@@ -142,8 +144,7 @@ public partial class Initializer(
                     var isAccuracy = property.Name.Contains("Accuracy");
                     var isRange = isRating || isDifficulty || isAccuracy;
                     filterDescriptor.Add(isRange
-                        ?
-                        new SearchOptionsFilterEntry
+                        ? new SearchOptionsFilterEntry
                         {
                             Type = "slider",
                             Label = label,
