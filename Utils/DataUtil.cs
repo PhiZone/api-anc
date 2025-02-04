@@ -19,7 +19,7 @@ public static class DataUtil
 
         return types.Contains(type) || type.IsEnum;
     }
-    
+
     public static async Task<string?> GetStr(this MySqlDataReader reader, string name)
     {
         return await reader.IsDBNullAsync(name) ? null : reader.GetString(name);

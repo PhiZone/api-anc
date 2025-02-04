@@ -89,8 +89,7 @@ public partial class Initializer(IServiceProvider serviceProvider, ILogger<Initi
                         Value = useSelect ? new List<object>() : "",
                         Param = property.Name,
                         Items = arg == typeof(UserRole)
-                            ?
-                            values.Select((e, i) => new
+                            ? values.Select((e, i) => new
                             {
                                 Id = i, Label = $"{pluralizer.Pluralize(labelForEnum)}.{e}", Value = (int)e
                             })
@@ -138,8 +137,7 @@ public partial class Initializer(IServiceProvider serviceProvider, ILogger<Initi
                     var isAccuracy = property.Name.Contains("Accuracy");
                     var isRange = isRating || isDifficulty || isAccuracy;
                     filterDescriptor.Add(isRange
-                        ?
-                        new SearchOptionsFilterEntry
+                        ? new SearchOptionsFilterEntry
                         {
                             Type = "slider",
                             Label = label,

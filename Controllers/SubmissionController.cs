@@ -83,8 +83,14 @@ public class SubmissionController(
     /// <summary>
     ///     Uploads song and illustration for the user's submission session.
     /// </summary>
-    /// <returns>A list of similar songs already available on PhiZone, one of similar song submissions on PhiZone, and one of songs with potentially infringed copyright.</returns>
-    /// <response code="201">Returns a list of similar songs already available on PhiZone, one of similar song submissions on PhiZone, and one of songs with potentially infringed copyright.</response>
+    /// <returns>
+    ///     A list of similar songs already available on PhiZone, one of similar song submissions on PhiZone, and one of
+    ///     songs with potentially infringed copyright.
+    /// </returns>
+    /// <response code="201">
+    ///     Returns a list of similar songs already available on PhiZone, one of similar song submissions on
+    ///     PhiZone, and one of songs with potentially infringed copyright.
+    /// </response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="500">When an internal server error has occurred.</response>
@@ -101,29 +107,31 @@ public class SubmissionController(
         var db = redis.GetDatabase();
         var key = $"phizone:session:submission:{currentUser.Id}";
         if (!await db.KeyExistsAsync(key))
-        {
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
             });
-        }
 
         var session = JsonConvert.DeserializeObject<SubmissionSession>((await db.StringGetAsync(key))!)!;
         var songPath = Path.GetTempFileName();
         var illustrationPath = Path.GetTempFileName();
 
-        await using (var fileStream = new FileStream(songPath, FileMode.Create)) await dto.Song.CopyToAsync(fileStream);
+        await using (var fileStream = new FileStream(songPath, FileMode.Create))
+        {
+            await dto.Song.CopyToAsync(fileStream);
+        }
+
         await using (var fileStream = new FileStream(illustrationPath, FileMode.Create))
+        {
             await dto.Illustration.CopyToAsync(fileStream);
+        }
 
         var songResults = await seekTuneService.FindMatches(songPath);
         var resourceRecordResults = await seekTuneService.FindMatches(songPath, true);
 
         if (songResults == null || resourceRecordResults == null)
-        {
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
-        }
 
         session.SongPath = songPath;
         session.IllustrationPath = illustrationPath;
@@ -165,22 +173,18 @@ public class SubmissionController(
         var db = redis.GetDatabase();
         var key = $"phizone:session:submission:{currentUser.Id}";
         if (!await db.KeyExistsAsync(key))
-        {
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
             });
-        }
 
         var session = JsonConvert.DeserializeObject<SubmissionSession>((await db.StringGetAsync(key))!)!;
         if (session.Status != SubmissionSessionStatus.SongFinished || session.SongPath == null ||
             session.IllustrationPath == null)
-        {
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
             });
-        }
 
         var songFile = LoadFile(session.SongPath);
         var illustrationFile = LoadFile(session.IllustrationPath);
@@ -322,21 +326,17 @@ public class SubmissionController(
         var db = redis.GetDatabase();
         var key = $"phizone:session:submission:{currentUser.Id}";
         if (!await db.KeyExistsAsync(key))
-        {
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
             });
-        }
 
         var session = JsonConvert.DeserializeObject<SubmissionSession>((await db.StringGetAsync(key))!)!;
         if (session.Status != SubmissionSessionStatus.SongFinished)
-        {
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
             });
-        }
 
         var authors = resourceService.GetAuthorIds(dto.AuthorName);
         if (!authors.Contains(currentUser.Id))
@@ -438,8 +438,7 @@ public class SubmissionController(
             VolunteerStatus = RequestStatus.Waiting,
             AdmissionStatus =
                 song != null
-                    ?
-                    song.OwnerId == currentUser.Id || song.Accessibility == Accessibility.AllowAny
+                    ? song.OwnerId == currentUser.Id || song.Accessibility == Accessibility.AllowAny
                         ? RequestStatus.Approved
                         : RequestStatus.Waiting
                     : songSubmission!.OwnerId == currentUser.Id ||
@@ -482,21 +481,17 @@ public class SubmissionController(
         var db = redis.GetDatabase();
         var key = $"phizone:session:submission:{currentUser.Id}";
         if (!await db.KeyExistsAsync(key))
-        {
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
             });
-        }
 
         var session = JsonConvert.DeserializeObject<SubmissionSession>((await db.StringGetAsync(key))!)!;
         if (session.Status != SubmissionSessionStatus.ChartFinished || session.Chart == null)
-        {
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
             });
-        }
 
         var chartSubmission = session.Chart;
         var assets = session.Assets;
@@ -514,7 +509,7 @@ public class SubmissionController(
                 chartSubmission.Title ?? (chartSubmission.SongId != null
                     ? (await songRepository.GetSongAsync(chartSubmission.SongId.Value)).Title
                     : (await songSubmissionRepository.GetSongSubmissionAsync(
-                        chartSubmission.SongSubmissionId!.Value)).Title), dto.File)).Item1,
+                        chartSubmission.SongSubmissionId!.Value)).Title), dto.File)).Item1
         };
 
         session.Assets.Add(chartAsset);
@@ -547,21 +542,17 @@ public class SubmissionController(
         var db = redis.GetDatabase();
         var key = $"phizone:session:submission:{currentUser.Id}";
         if (!await db.KeyExistsAsync(key))
-        {
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
             });
-        }
 
         var session = JsonConvert.DeserializeObject<SubmissionSession>((await db.StringGetAsync(key))!)!;
         if (session.Status != SubmissionSessionStatus.ChartFinished || session.Chart == null)
-        {
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
             });
-        }
 
         var chartSubmission = session.Chart;
         var assets = session.Assets;
@@ -613,21 +604,17 @@ public class SubmissionController(
         var db = redis.GetDatabase();
         var key = $"phizone:session:submission:{currentUser.Id}";
         if (!await db.KeyExistsAsync(key))
-        {
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
             });
-        }
 
         var session = JsonConvert.DeserializeObject<SubmissionSession>((await db.StringGetAsync(key))!)!;
         if (session.Chart == null)
-        {
             return BadRequest(new ResponseDto<object>
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
             });
-        }
 
         var chartSubmission = session.Chart;
         var (eventDivision, eventTeam, response) = await GetEvent(chartSubmission.Tags, currentUser, true);
@@ -751,11 +738,9 @@ public class SubmissionController(
                      DateCreated = DateTimeOffset.UtcNow,
                      DateUpdated = DateTimeOffset.UtcNow
                  }))
-        {
             if (!await chartAssetSubmissionRepository.CreateChartAssetSubmissionAsync(chartAsset))
                 return StatusCode(StatusCodes.Status500InternalServerError,
                     new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
-        }
 
         chartSubmission.DateCreated = DateTimeOffset.UtcNow;
         chartSubmission.DateFileUpdated = DateTimeOffset.UtcNow;

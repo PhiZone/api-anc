@@ -11,7 +11,7 @@
     <ItemGroup>
         <PackageReference Include="AutoMapper" Version="12.0.1"/>
         <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="12.0.1"/>
-        <PackageReference Include="ComputerInfo" Version="0.2.0" />
+        <PackageReference Include="ComputerInfo" Version="0.2.0"/>
         <PackageReference Include="HtmlSanitizer" Version="8.1.870"/>
         <PackageReference Include="MailKit" Version="4.8.0"/>
         <PackageReference Include="MeiliSearch" Version="0.15.5"/>
@@ -54,6 +54,6 @@
     </ItemGroup>
     <ItemGroup>
         <Folder Include="Resources\Descriptors\Filters\"/>
-        <Folder Include="Resources\Descriptors\Orders\" />
+        <Folder Include="Resources\Descriptors\Orders\"/>
     </ItemGroup>
 </Project>

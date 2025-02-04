@@ -7,8 +7,8 @@ namespace PhiZoneApi.Services;
 
 public class SeekTuneService(IConfiguration config) : ISeekTuneService
 {
-    private readonly string _seekTuneApiUrl = config["SeekTuneApiUrl"]!;
     private readonly HttpClient _client = new() { BaseAddress = new Uri(config["SeekTuneApiUrl"]!) };
+    private readonly string _seekTuneApiUrl = config["SeekTuneApiUrl"]!;
 
     public async Task<List<SeekTuneFindResult>?> FindMatches(string pathToSong, bool resourceRecords = false)
     {

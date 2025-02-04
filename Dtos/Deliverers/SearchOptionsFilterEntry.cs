@@ -31,7 +31,7 @@ public class EntryOptions
     public string? InputType { get; set; }
 
     public string? Placeholder { get; set; }
-    
+
     public bool? Multiple { get; set; }
 
     public bool? IsRange { get; set; }
