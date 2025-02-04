@@ -17,7 +17,10 @@ using PhiZoneApi.Utils;
 
 namespace PhiZoneApi.Services;
 
-public partial class Initializer(IServiceProvider serviceProvider, ILogger<Initializer> logger) : IHostedService
+public partial class Initializer(
+    IServiceProvider serviceProvider,
+    ISeekTuneService seekTuneService,
+    ILogger<Initializer> logger) : IHostedService
 {
     private CancellationToken _cancellationToken;
 
@@ -54,6 +57,8 @@ public partial class Initializer(IServiceProvider serviceProvider, ILogger<Initi
             logger.LogError(LogEvents.InitializerFailure, e, "An error has occurred during initialization");
         }
     }
+
+    #region FilterDescriptors
 
     private static void GenerateSearchOptionsDescriptors(IPluralizer pluralizer)
     {
@@ -137,7 +142,8 @@ public partial class Initializer(IServiceProvider serviceProvider, ILogger<Initi
                     var isAccuracy = property.Name.Contains("Accuracy");
                     var isRange = isRating || isDifficulty || isAccuracy;
                     filterDescriptor.Add(isRange
-                        ? new SearchOptionsFilterEntry
+                        ?
+                        new SearchOptionsFilterEntry
                         {
                             Type = "slider",
                             Label = label,
@@ -394,4 +400,6 @@ public partial class Initializer(IServiceProvider serviceProvider, ILogger<Initi
 
     [GeneratedRegex(@"(?<=\.)earliest_")]
     private static partial Regex EarliestLabelRegex();
+
+    #endregion
 }
