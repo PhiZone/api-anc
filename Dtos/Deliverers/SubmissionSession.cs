@@ -1,4 +1,5 @@
 ﻿using PhiZoneApi.Enums;
+using PhiZoneApi.Models;
 
 namespace PhiZoneApi.Dtos.Deliverers;
 
@@ -14,9 +15,9 @@ public class SubmissionSession
 
     public SongResults? SongResults { get; set; }
 
-    public string? Chart { get; set; }
+    public ChartSubmission? Chart { get; set; }
 
-    public IEnumerable<Asset> Assets { get; set; } = [];
+    public List<SessionChartAsset> Assets { get; set; } = [];
 }
 
 public class SongResults
@@ -26,7 +27,7 @@ public class SongResults
     public IEnumerable<SeekTuneFindResult> ResourceRecordMatches { get; set; } = [];
 }
 
-public class Asset
+public class SessionChartAsset
 {
     public ChartAssetType Type { get; set; }
 

@@ -155,6 +155,7 @@ public class ResourceRecordController(
             AuthorName = dto.AuthorName,
             Description = dto.Description,
             Strategy = dto.Strategy,
+            Media = dto.Media,
             Source = dto.Source,
             CopyrightOwner = dto.CopyrightOwner,
             DateCreated = DateTimeOffset.UtcNow,
@@ -211,6 +212,7 @@ public class ResourceRecordController(
             AuthorName = dto.AuthorName,
             Description = dto.Description,
             Strategy = dto.Strategy,
+            Media = dto.Media,
             Source = dto.Source,
             CopyrightOwner = dto.CopyrightOwner,
             DateCreated = DateTimeOffset.UtcNow,
@@ -288,6 +290,7 @@ public class ResourceRecordController(
         resourceRecord.AuthorName = dto.AuthorName;
         resourceRecord.Description = dto.Description;
         resourceRecord.Strategy = dto.Strategy;
+        resourceRecord.Media = dto.Media;
         resourceRecord.Source = dto.Source;
         resourceRecord.CopyrightOwner = dto.CopyrightOwner;
         resourceRecord.DateUpdated = DateTimeOffset.UtcNow;

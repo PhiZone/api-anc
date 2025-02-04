@@ -38,7 +38,9 @@ public interface IDtoMapper
 
     Task<T> MapChartCollectionAsync<T>(Admission admission, User? currentUser = null) where T : CollectionAdmitterDto;
 
-    Task<T> MapCollectionChartAsync<T>(Admission admission, User? currentUser) where T : ChartAdmitteeDto;
+    Task<T> MapCollectionChartAsync<T>(Admission admission, User? currentUser = null) where T : ChartAdmitteeDto;
+
+    T MapSongSubmission<T>(SongSubmission song, User? currentUser = null) where T : SongSubmissionDto;
 
     T MapChartSubmission<T>(ChartSubmission chart) where T : ChartSubmissionDto;
 

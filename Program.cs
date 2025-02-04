@@ -160,6 +160,7 @@ builder.Services.AddSingleton<IMessengerService, MessengerService>();
 builder.Services.AddSingleton<ITapGhostService, TapGhostService>();
 builder.Services.AddSingleton<IPhigrimService, PhigrimService>();
 builder.Services.AddSingleton<IMeilisearchService, MeilisearchService>();
+builder.Services.AddSingleton<ISeekTuneService, SeekTuneService>();
 builder.Services.AddSingleton<ILeaderboardService, LeaderboardService>();
 builder.Services.AddSingleton<IScriptService, ScriptService>();
 builder.Services.AddSingleton<EventTaskScheduler>();

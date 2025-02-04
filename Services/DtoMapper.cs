@@ -20,7 +20,8 @@ public class DtoMapper(
     IEventResourceRepository eventResourceRepository,
     ISongSubmissionRepository songSubmissionRepository,
     IChartSubmissionRepository chartSubmissionRepository,
-    IPetQuestionRepository petQuestionRepository) : IDtoMapper
+    IPetQuestionRepository petQuestionRepository,
+    IResourceService resourceService) : IDtoMapper
 {
     public T MapUser<T>(User user) where T : UserDto
     {
@@ -207,6 +208,22 @@ public class DtoMapper(
         return dto;
     }
 
+    public T MapSongSubmission<T>(SongSubmission song, User? currentUser = null) where T : SongSubmissionDto
+    {
+        var dto = mapper.Map<T>(song);
+        if (currentUser == null || (song.OwnerId != currentUser.Id &&
+                                    !resourceService.HasPermission(currentUser, UserRole.Moderator)))
+        {
+            dto.License = null;
+            dto.OriginalityProof = null;
+            dto.ReviewerId = null;
+            dto.Message = null;
+            dto.OwnerId = null;
+        }
+
+        return dto;
+    }
+
     public T MapChartSubmission<T>(ChartSubmission chart) where T : ChartSubmissionDto
     {
         var dto = mapper.Map<T>(chart);
@@ -326,12 +343,7 @@ public class DtoMapper(
     {
         var dto = mapper.Map<T>(ghost);
         dto.Id = CriticalValues.TapTapGhostUserId;
-        dto.Region = new RegionDto
-        {
-            Id = 47,
-            Code = "CN",
-            Name = "China"
-        };
+        dto.Region = new RegionDto { Id = 47, Code = "CN", Name = "China" };
         dto.Language = "zh-CN";
         return dto;
     }

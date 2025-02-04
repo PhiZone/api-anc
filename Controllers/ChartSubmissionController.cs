@@ -931,7 +931,7 @@ public class ChartSubmissionController(
         {
             Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto
         });
-    }
+    } 
 
     /// <summary>
     ///     Creates a new chart submission's asset.

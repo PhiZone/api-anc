@@ -102,7 +102,7 @@ public class SongSubmissionController(
             total = await songSubmissionRepository.CountSongSubmissionsAsync(predicateExpr);
         }
 
-        var list = mapper.Map<List<SongSubmissionDto>>(songSubmissions);
+        var list = songSubmissions.Select(e => dtoMapper.MapSongSubmission<SongSubmissionDto>(e, currentUser));
 
         return Ok(new ResponseDto<IEnumerable<SongSubmissionDto>>
         {
@@ -153,7 +153,7 @@ public class SongSubmissionController(
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
         var songSubmission = await songSubmissionRepository.GetSongSubmissionAsync(id);
-        var dto = mapper.Map<SongSubmissionDto>(songSubmission);
+        var dto = dtoMapper.MapSongSubmission<SongSubmissionDto>(songSubmission, currentUser);
 
         return Ok(
             new ResponseDto<SongSubmissionDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });
@@ -304,7 +304,7 @@ public class SongSubmissionController(
     }
 
     /// <summary>
-    ///     Updates a song submission.
+    ///     Updates a song1 submission.
     /// </summary>
     /// <param name="id">A song submission's ID.</param>
     /// <param name="patchDocument">A JSON Patch Document.</param>
@@ -856,7 +856,9 @@ public class SongSubmissionController(
         if ((songSubmission.OwnerId == currentUser.Id &&
              !resourceService.HasPermission(currentUser, UserRole.Qualified)) ||
             (songSubmission.OwnerId != currentUser.Id &&
-             !resourceService.HasPermission(currentUser, UserRole.Moderator)))
+             !resourceService.HasPermission(currentUser, UserRole.Moderator)) ||
+            (songSubmission.RepresentationId != null &&
+             !resourceService.HasPermission(currentUser, UserRole.Administrator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {

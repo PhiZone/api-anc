@@ -31,6 +31,7 @@ public class MappingProfiles : Profile
         CreateMap<Song, EventSongEntryDto>();
         CreateMap<Song, SongAdmitteeDto>();
         CreateMap<Song, SongUpdateDto>().ForMember(x => x.Tags, opt => opt.Ignore());
+        CreateMap<Song, SongMatchDto>();
         CreateMap<Chart, ChartDto>();
         CreateMap<Chart, EventChartPromptDto>();
         CreateMap<Chart, EventChartEntryDto>();
@@ -76,6 +77,7 @@ public class MappingProfiles : Profile
         CreateMap<Vote, VoteDto>();
         CreateMap<VolunteerVote, VolunteerVoteDto>();
         CreateMap<SongSubmission, SongSubmissionDto>();
+        CreateMap<SongSubmission, SongSubmissionMatchDto>();
         CreateMap<ChartSubmission, ChartSubmissionDto>();
         CreateMap<SongSubmission, SongSubmissionUpdateDto>();
         CreateMap<ChartSubmission, ChartSubmissionUpdateDto>();
@@ -83,6 +85,7 @@ public class MappingProfiles : Profile
         CreateMap<Collaboration, CollaborationUpdateDto>();
         CreateMap<Notification, NotificationDto>();
         CreateMap<ResourceRecord, ResourceRecordDto>();
+        CreateMap<ResourceRecord, ResourceRecordMatchDto>();
         CreateMap<PetAnswer, PetAnswerDto>()
             .ForMember(x => x.Question1, opt => opt.Ignore())
             .ForMember(x => x.Question2, opt => opt.Ignore())
