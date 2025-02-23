@@ -13,6 +13,7 @@ public static class LogEvents
     public const int DatabaseSeederInfo = 1008;
     public const int InitializerInfo = 1009;
     public const int PhigrimInfo = 1010;
+    public const int SeekTuneInfo = 1011;
 
     public const int AudioFailure = 2000;
     public const int MailFailure = 2001;
