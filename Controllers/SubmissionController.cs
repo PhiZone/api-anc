@@ -126,8 +126,8 @@ public class SubmissionController(
             await dto.Illustration.CopyToAsync(fileStream);
         }
 
-        var songResults = await seekTuneService.FindMatches(songPath);
-        var resourceRecordResults = await seekTuneService.FindMatches(songPath, true);
+        var songResults = (await seekTuneService.FindMatches(songPath, take: 5));
+        var resourceRecordResults = await seekTuneService.FindMatches(songPath, true, 5);
 
         if (songResults == null || resourceRecordResults == null)
             return StatusCode(StatusCodes.Status500InternalServerError,
@@ -438,7 +438,8 @@ public class SubmissionController(
             VolunteerStatus = RequestStatus.Waiting,
             AdmissionStatus =
                 song != null
-                    ? song.OwnerId == currentUser.Id || song.Accessibility == Accessibility.AllowAny
+                    ?
+                    song.OwnerId == currentUser.Id || song.Accessibility == Accessibility.AllowAny
                         ? RequestStatus.Approved
                         : RequestStatus.Waiting
                     : songSubmission!.OwnerId == currentUser.Id ||
@@ -772,7 +773,7 @@ public class SubmissionController(
     private async Task<SubmissionSongDto> GenerateMatchSummary(List<SeekTuneFindResult> songResults,
         List<SeekTuneFindResult> resourceRecordResults, User currentUser)
     {
-        var songIds = songResults.Select(e => e.Id).ToList();
+        var songIds = new List<Guid>();
         var songSubmissionIds = songResults.Select(e => e.Id);
         var songSubmissions =
             await songSubmissionRepository.GetSongSubmissionsAsync(predicate: e => songSubmissionIds.Contains(e.Id));
@@ -786,7 +787,11 @@ public class SubmissionController(
             .Select(e => dtoMapper.MapSong<SongMatchDto>(e))
             .Select(e =>
             {
-                e.Score = songResults.First(f => f.Id == e.Id).Score;
+                e.Score = songResults.First(f =>
+                        f.Id == e.Id || f.Id == songSubmissions
+                            .First(g => g.RepresentationId != null && g.RepresentationId.Value == e.Id)
+                            .Id)
+                    .Score;
                 return e;
             });
         var songSubmissionMatches = songSubmissions
@@ -807,9 +812,9 @@ public class SubmissionController(
 
         return new SubmissionSongDto
         {
-            SongMatches = songMatches,
-            SongSubmissionMatches = songSubmissionMatches,
-            ResourceRecordMatches = resourceRecordMatches
+            SongMatches = songMatches.OrderByDescending(e => e.Score),
+            SongSubmissionMatches = songSubmissionMatches.OrderByDescending(e => e.Score),
+            ResourceRecordMatches = resourceRecordMatches.OrderByDescending(e => e.Score)
         };
     }
 
