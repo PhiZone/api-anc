@@ -1,6 +1,6 @@
 ﻿namespace PhiZoneApi.Dtos.Deliverers;
 
-public abstract class SeekTuneFindResult
+public class SeekTuneFindResult
 {
     public Guid Id { get; set; }
 
