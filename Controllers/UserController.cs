@@ -935,7 +935,7 @@ public class UserController(
         });
     }
 
-    private async Task<string> GenerateLoginTokenAsync(User user)
+    private async Task<string> GenerateLoginTokenAsync(User user, TimeSpan? expiry = null)
     {
         var db = redis.GetDatabase();
         string token;
@@ -946,7 +946,7 @@ public class UserController(
             key = $"phizone:login:{token}";
         } while (await db.KeyExistsAsync(key));
 
-        await db.StringSetAsync(key, user.Id.ToString(), TimeSpan.FromSeconds(30));
+        await db.StringSetAsync(key, user.Id.ToString(), expiry ?? TimeSpan.FromSeconds(30));
         return token;
     }
 }
