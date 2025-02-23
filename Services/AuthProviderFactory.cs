@@ -10,7 +10,7 @@ public class AuthProviderFactory(IEnumerable<IAuthProvider> authProviders)
         foreach (var authProvider in authProviders) await authProvider.InitializeAsync();
     }
 
-    public IAuthProvider? GetAuthProvider(AuthProvider provider)
+    public IAuthProvider? GetAuthProvider(AuthProvider? provider)
     {
         return authProviders.SingleOrDefault(e => e.GetType().Name == $"{provider}AuthProvider");
     }

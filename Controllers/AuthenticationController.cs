@@ -128,7 +128,7 @@ public class AuthenticationController(
                             "The specified authentication provider does not exist."
                     }!), OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
 
-            var authProvider = factory.GetAuthProvider((providerEnum as AuthProvider?)!.Value);
+            var authProvider = factory.GetAuthProvider(providerEnum as AuthProvider?);
             if (authProvider == null)
                 return Forbid(
                     new AuthenticationProperties(new Dictionary<string, string>
@@ -408,7 +408,7 @@ public class AuthenticationController(
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
 
-        var authProvider = factory.GetAuthProvider((providerEnum as AuthProvider?)!.Value);
+        var authProvider = factory.GetAuthProvider(providerEnum as AuthProvider?);
         if (authProvider == null)
             return NotFound(new ResponseDto<object>
             {

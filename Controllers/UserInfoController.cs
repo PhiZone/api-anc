@@ -119,7 +119,7 @@ public class UserInfoController(
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        var authProvider = factory.GetAuthProvider((providerEnum as AuthProvider?)!.Value);
+        var authProvider = factory.GetAuthProvider(providerEnum as AuthProvider?);
         if (authProvider == null)
             return NotFound(new ResponseDto<object>
             {
@@ -255,7 +255,7 @@ public class UserInfoController(
             {
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.ResourceNotFound
             });
-        var authProvider = factory.GetAuthProvider((providerEnum as AuthProvider?)!.Value);
+        var authProvider = factory.GetAuthProvider(providerEnum as AuthProvider?);
         if (authProvider == null)
             return NotFound(new ResponseDto<object>
             {

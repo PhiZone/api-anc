@@ -376,7 +376,7 @@ public class UserController(
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.AuthProviderNotFound
             });
 
-        var authProvider = factory.GetAuthProvider((providerEnum as AuthProvider?)!.Value);
+        var authProvider = factory.GetAuthProvider(providerEnum as AuthProvider?);
         if (authProvider == null)
             return BadRequest(new ResponseDto<object>
             {
