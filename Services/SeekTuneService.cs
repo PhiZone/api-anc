@@ -27,10 +27,7 @@ public class SeekTuneService(IConfiguration config, ILogger<SeekTuneService> log
                      .OrderBy(e => e.DateCreated)
                      .ToListAsync(cancellationToken))
         {
-            await CreateFingerprint(songSubmission.Id, songSubmission.Title,
-                songSubmission is { EditionType: EditionType.Original, Edition: null }
-                    ? null
-                    : $"{(int)songSubmission.EditionType}{(songSubmission.Edition != null ? $" - {songSubmission.Edition}" : "")}",
+            await CreateFingerprint(songSubmission.Id, songSubmission.Title, songSubmission.Edition,
                 songSubmission.AuthorName, songSubmission.File!, true);
             if (songSubmission.RepresentationId != null) songIds.Add(songSubmission.RepresentationId.Value);
         }
@@ -38,22 +35,16 @@ public class SeekTuneService(IConfiguration config, ILogger<SeekTuneService> log
         foreach (var song in await context.Songs.Where(e => e.File != null && !songIds.Contains(e.Id))
                      .OrderBy(e => e.DateCreated)
                      .ToListAsync(cancellationToken))
-            await CreateFingerprint(song.Id, song.Title,
-                song is { EditionType: EditionType.Original, Edition: null }
-                    ? null
-                    : $"{(int)song.EditionType}{(song.Edition != null ? $" - {song.Edition}" : "")}", song.AuthorName,
-                song.File!, true);
+            await CreateFingerprint(song.Id, song.Title, song.Edition, song.AuthorName, song.File!, true);
 
-        foreach (var resourceRecord in
-                 await context.ResourceRecords.Where(e => e.Media != null).ToListAsync(cancellationToken))
-            await CreateFingerprint(resourceRecord.Id, resourceRecord.Title,
-                resourceRecord is { EditionType: EditionType.Original, Edition: null }
-                    ? null
-                    : $"{(int)resourceRecord.EditionType}{(resourceRecord.Edition != null ? $" - {resourceRecord.Edition}" : "")}",
+        foreach (var resourceRecord in await context.ResourceRecords.Where(e => e.Media != null)
+                     .ToListAsync(cancellationToken))
+            await CreateFingerprint(resourceRecord.Id, resourceRecord.Title, resourceRecord.Edition,
                 resourceRecord.AuthorName, resourceRecord.Media!, true, true);
     }
 
-    public async Task<List<SeekTuneFindResult>?> FindMatches(string pathToSong, bool resourceRecords = false, int take = -1)
+    public async Task<List<SeekTuneFindResult>?> FindMatches(string pathToSong, bool resourceRecords = false,
+        int take = -1)
     {
         var route = resourceRecords ? "resourceRecords" : "songs";
         var request = new HttpRequestMessage
@@ -73,7 +64,8 @@ public class SeekTuneService(IConfiguration config, ILogger<SeekTuneService> log
 
         if (!response.IsSuccessStatusCode) return null;
 
-        var matches = JsonConvert.DeserializeObject<IEnumerable<SeekTuneFindResult>>(content)!.OrderByDescending(e => e.Score);
+        var matches =
+            JsonConvert.DeserializeObject<IEnumerable<SeekTuneFindResult>>(content)!.OrderByDescending(e => e.Score);
         return (take >= 0 ? matches.Take(take) : matches).ToList();
     }
 
@@ -87,7 +79,7 @@ public class SeekTuneService(IConfiguration config, ILogger<SeekTuneService> log
             { isUrl ? "songUrl" : "songPath", songLocation },
             { "title", $"{title}{(version != null ? $" ({version})" : "")}" },
             { "artist", artist },
-            { "pzID", id.ToString() }
+            { "uuid", id.ToString() }
         });
         var request = new HttpRequestMessage
         {
@@ -108,7 +100,7 @@ public class SeekTuneService(IConfiguration config, ILogger<SeekTuneService> log
             Method = HttpMethod.Get,
             RequestUri = new UriBuilder($"{_seekTuneUrl}/{route}/checkExists")
             {
-                Query = new QueryBuilder { { "pzID", id.ToString() } }.ToString()
+                Query = new QueryBuilder { { "uuid", id.ToString() } }.ToString()
             }.Uri
         };
         var response = await _client.SendAsync(request);
