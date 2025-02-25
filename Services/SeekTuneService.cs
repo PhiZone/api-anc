@@ -14,7 +14,7 @@ public class SeekTuneService(IConfiguration config, ILogger<SeekTuneService> log
 {
     private readonly HttpClient _client = new()
     {
-        BaseAddress = new Uri(config["SeekTuneUrl"]!), Timeout = TimeSpan.FromMinutes(10)
+        BaseAddress = new Uri(config["SeekTuneUrl"]!), Timeout = TimeSpan.FromMinutes(15)
     };
 
     private readonly string _seekTuneUrl = config["SeekTuneUrl"]!;
@@ -85,11 +85,19 @@ public class SeekTuneService(IConfiguration config, ILogger<SeekTuneService> log
         {
             Method = HttpMethod.Post, RequestUri = new Uri($"{_seekTuneUrl}/{route}/create"), Content = data
         };
-        var response = await _client.SendAsync(request);
-        var content = await response.Content.ReadAsStringAsync();
-        logger.LogInformation(LogEvents.SeekTuneInfo, "Fingerprint creation response ({Status}): {Content}",
-            response.StatusCode, content);
-        return response.IsSuccessStatusCode;
+        try
+        {
+            var response = await _client.SendAsync(request);
+            var content = await response.Content.ReadAsStringAsync();
+            logger.LogInformation(LogEvents.SeekTuneInfo, "Fingerprint creation response ({Status}): {Content}",
+                response.StatusCode, content);
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception e)
+        {
+            logger.LogError(LogEvents.SeekTuneFailure, e, "Failed to create fingerprint for {Id}", id);
+            return false;
+        }
     }
 
     public async Task<bool> CheckIfExists(Guid id, bool resourceRecords = false)

@@ -23,6 +23,7 @@ public static class LogEvents
     public const int TapGhostFailure = 2005;
     public const int PhigrimFailure = 2006;
     public const int InitializerFailure = 2007;
+    public const int SeekTuneFailure = 2008;
 
     public const int RecordDebug = 3000;
     public const int MessengerDebug = 3001;
