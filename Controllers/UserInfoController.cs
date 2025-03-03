@@ -86,6 +86,46 @@ public class UserInfoController(
     }
 
     /// <summary>
+    ///     Generates and retrieves a login code.
+    /// </summary>
+    /// <param name="expiry">How long the code is valid for, in seconds. Cannot be greater than 3600.</param>
+    /// <returns>A login code.</returns>
+    /// <response code="200">Returns a login code.</response>
+    /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
+    [HttpPost("loginCode")]
+    [Produces("application/json")]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<UserDetailedDto>))]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GenerateLoginCode([FromQuery] int expiry)
+    {
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+
+        if (!resourceService.HasPermission(currentUser, UserRole.Member))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+
+        if (expiry is <= 0 or > 3600)
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidData
+            });
+
+        var code = await resourceService.GenerateLoginTokenAsync(currentUser, TimeSpan.FromSeconds(expiry));
+        return StatusCode(StatusCodes.Status201Created,
+            new ResponseDto<CodeDto>
+            {
+                Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = new CodeDto { Code = code }
+            });
+    }
+
+    /// <summary>
     ///     Binds a user to an account on a specified authentication provider.
     /// </summary>
     /// <returns>An empty body.</returns>

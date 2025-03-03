@@ -238,7 +238,7 @@ public class UserController(
             {
                 Status = ResponseStatus.Ok,
                 Code = ResponseCodes.Ok,
-                Data = new LoginTokenDto { Token = await GenerateLoginTokenAsync(user) }
+                Data = new LoginTokenDto { Token = await resourceService.GenerateLoginTokenAsync(user) }
             });
     }
 
@@ -341,7 +341,7 @@ public class UserController(
             {
                 Status = ResponseStatus.Ok,
                 Code = ResponseCodes.Ok,
-                Data = new LoginTokenDto { Token = await GenerateLoginTokenAsync(user) }
+                Data = new LoginTokenDto { Token = await resourceService.GenerateLoginTokenAsync(user) }
             });
     }
 
@@ -494,7 +494,7 @@ public class UserController(
             {
                 Status = ResponseStatus.Ok,
                 Code = ResponseCodes.Ok,
-                Data = new LoginTokenDto { Token = await GenerateLoginTokenAsync(user) }
+                Data = new LoginTokenDto { Token = await resourceService.GenerateLoginTokenAsync(user) }
             });
     }
 
@@ -933,20 +933,5 @@ public class UserController(
             Code = ResponseCodes.Ok,
             Data = new UserPersonalBestsDto { Phi1 = phi1Dto, Best19 = b19Dto }
         });
-    }
-
-    private async Task<string> GenerateLoginTokenAsync(User user, TimeSpan? expiry = null)
-    {
-        var db = redis.GetDatabase();
-        string token;
-        string key;
-        do
-        {
-            token = Guid.NewGuid().ToString();
-            key = $"phizone:login:{token}";
-        } while (await db.KeyExistsAsync(key));
-
-        await db.StringSetAsync(key, user.Id.ToString(), expiry ?? TimeSpan.FromSeconds(30));
-        return token;
     }
 }

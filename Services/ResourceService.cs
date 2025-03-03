@@ -8,6 +8,7 @@ using PhiZoneApi.Dtos.Deliverers;
 using PhiZoneApi.Enums;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
+using StackExchange.Redis;
 
 namespace PhiZoneApi.Services;
 
@@ -165,6 +166,23 @@ public partial class ResourceService(IServiceProvider serviceProvider, IConfigur
             DateCreated = DateTimeOffset.UtcNow
         });
         return true;
+    }
+
+    public async Task<string> GenerateLoginTokenAsync(User user, TimeSpan? expiry = null)
+    {
+        await using var scope = serviceProvider.CreateAsyncScope();
+        var redis = scope.ServiceProvider.GetRequiredService<IConnectionMultiplexer>();
+        var db = redis.GetDatabase();
+        string token;
+        string key;
+        do
+        {
+            token = Guid.NewGuid().ToString();
+            key = $"phizone:login:{token}";
+        } while (await db.KeyExistsAsync(key));
+
+        await db.StringSetAsync(key, user.Id.ToString(), expiry ?? TimeSpan.FromSeconds(30));
+        return token;
     }
 
     public string GenerateCode(int length)

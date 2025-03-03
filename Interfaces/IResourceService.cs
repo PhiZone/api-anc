@@ -33,5 +33,7 @@ public interface IResourceService
 
     Task<bool> IsUserInputValidAsync(string input, string memberName);
 
+    Task<string> GenerateLoginTokenAsync(User user, TimeSpan? expiry = null);
+
     string GenerateCode(int length);
 }
