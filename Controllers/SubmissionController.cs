@@ -126,7 +126,7 @@ public class SubmissionController(
             await dto.Illustration.CopyToAsync(fileStream);
         }
 
-        var songResults = (await seekTuneService.FindMatches(songPath, take: 5));
+        var songResults = await seekTuneService.FindMatches(songPath, take: 5);
         var resourceRecordResults = await seekTuneService.FindMatches(songPath, true, 5);
 
         if (songResults == null || resourceRecordResults == null)
@@ -438,8 +438,7 @@ public class SubmissionController(
             VolunteerStatus = RequestStatus.Waiting,
             AdmissionStatus =
                 song != null
-                    ?
-                    song.OwnerId == currentUser.Id || song.Accessibility == Accessibility.AllowAny
+                    ? song.OwnerId == currentUser.Id || song.Accessibility == Accessibility.AllowAny
                         ? RequestStatus.Approved
                         : RequestStatus.Waiting
                     : songSubmission!.OwnerId == currentUser.Id ||
