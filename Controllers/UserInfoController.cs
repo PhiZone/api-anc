@@ -86,21 +86,21 @@ public class UserInfoController(
     }
 
     /// <summary>
-    ///     Generates and retrieves a login code.
+    ///     Generates and retrieves a login token.
     /// </summary>
-    /// <param name="expiry">How long the code is valid for, in seconds. Cannot be greater than 3600.</param>
-    /// <returns>A login code.</returns>
-    /// <response code="200">Returns a login code.</response>
+    /// <param name="expiry">How long the token is valid for, in seconds. Cannot be greater than 3600.</param>
+    /// <returns>A login token.</returns>
+    /// <response code="200">Returns a login token.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
     /// <response code="403">When the user does not have sufficient permission.</response>
-    [HttpPost("loginCode")]
+    [HttpPost("loginToken")]
     [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<UserDetailedDto>))]
+    [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<TokenDto>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> GenerateLoginCode([FromQuery] int expiry)
+    public async Task<IActionResult> GenerateLoginToken([FromQuery] int expiry)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
 
@@ -117,11 +117,11 @@ public class UserInfoController(
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidData
             });
 
-        var code = await resourceService.GenerateLoginTokenAsync(currentUser, TimeSpan.FromSeconds(expiry));
+        var token = await resourceService.GenerateLoginTokenAsync(currentUser, TimeSpan.FromSeconds(expiry));
         return StatusCode(StatusCodes.Status201Created,
-            new ResponseDto<CodeDto>
+            new ResponseDto<TokenDto>
             {
-                Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = new CodeDto { Code = code }
+                Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = new TokenDto { Token = token }
             });
     }
 
