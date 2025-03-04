@@ -100,7 +100,7 @@ public class UserInfoController(
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> GenerateLoginToken([FromQuery] int? expiry)
+    public async Task<IActionResult> GenerateLoginToken([FromQuery] int expiry = 30)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
 
@@ -117,7 +117,7 @@ public class UserInfoController(
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidData
             });
 
-        var token = await resourceService.GenerateLoginTokenAsync(currentUser, TimeSpan.FromSeconds(expiry ?? 30));
+        var token = await resourceService.GenerateLoginTokenAsync(currentUser, TimeSpan.FromSeconds(expiry));
         return Ok(new ResponseDto<TokenDto>
         {
             Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = new TokenDto { Token = token }
