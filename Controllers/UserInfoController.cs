@@ -118,11 +118,10 @@ public class UserInfoController(
             });
 
         var token = await resourceService.GenerateLoginTokenAsync(currentUser, TimeSpan.FromSeconds(expiry));
-        return StatusCode(StatusCodes.Status201Created,
-            new ResponseDto<TokenDto>
-            {
-                Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = new TokenDto { Token = token }
-            });
+        return Ok(new ResponseDto<TokenDto>
+        {
+            Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = new TokenDto { Token = token }
+        });
     }
 
     /// <summary>
