@@ -88,7 +88,7 @@ public class UserInfoController(
     /// <summary>
     ///     Generates and retrieves a login token.
     /// </summary>
-    /// <param name="expiry">How long the token is valid for, in seconds. Cannot be greater than 3600.</param>
+    /// <param name="expiry">How long the token is valid for, in seconds. Cannot be greater than 3600. Defaults to 30.</param>
     /// <returns>A login token.</returns>
     /// <response code="200">Returns a login token.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
@@ -100,7 +100,7 @@ public class UserInfoController(
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> GenerateLoginToken([FromQuery] int expiry)
+    public async Task<IActionResult> GenerateLoginToken([FromQuery] int? expiry)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
 
@@ -117,7 +117,7 @@ public class UserInfoController(
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidData
             });
 
-        var token = await resourceService.GenerateLoginTokenAsync(currentUser, TimeSpan.FromSeconds(expiry));
+        var token = await resourceService.GenerateLoginTokenAsync(currentUser, TimeSpan.FromSeconds(expiry ?? 30));
         return Ok(new ResponseDto<TokenDto>
         {
             Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = new TokenDto { Token = token }
