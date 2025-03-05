@@ -26,6 +26,7 @@ public class SubmissionController(
     ISeekTuneService seekTuneService,
     ISongRepository songRepository,
     ISongSubmissionRepository songSubmissionRepository,
+    IResourceRecordRepository resourceRecordRepository,
     IChartSubmissionRepository chartSubmissionRepository,
     IChartAssetSubmissionRepository chartAssetSubmissionRepository,
     UserManager<User> userManager,
@@ -135,25 +136,23 @@ public class SubmissionController(
         var illustrationPath = await SaveFile(dto.Illustration, session.Id);
 
         await hubContext.Clients.Group(session.Id.ToString())
-            .ReceiveFileProgress(SessionFileStatus.Analyzing, dto.Song.Name, "Searching for duplications with SeekTune",
-                0, 0);
+            .ReceiveFileProgress(SessionFileStatus.Analyzing, "Searching for potential song duplications", 0);
         var songResults = await seekTuneService.FindMatches(songPath, take: 5);
         await hubContext.Clients.Group(session.Id.ToString())
-            .ReceiveFileProgress(SessionFileStatus.Analyzing, dto.Song.Name,
-                "Searching for potential copyright infringements with SeekTune", 0, 0);
+            .ReceiveFileProgress(SessionFileStatus.Analyzing,
+                "Searching for potential copyright infringements", 0);
         var resourceRecordResults = await seekTuneService.FindMatches(songPath, true, 5);
 
         if (songResults == null || resourceRecordResults == null)
         {
             await hubContext.Clients.Group(session.Id.ToString())
-                .ReceiveFileProgress(SessionFileStatus.Failed, null, "Unable to search for results with SeekTune", 0,
-                    0);
+                .ReceiveFileProgress(SessionFileStatus.Failed, "Unable to search for matching results", 0);
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
         }
 
         await hubContext.Clients.Group(session.Id.ToString())
-            .ReceiveFileProgress(SessionFileStatus.Finalizing, null, "Generating search summary", 0, 0);
+            .ReceiveFileProgress(SessionFileStatus.Finalizing, "Generating search summary", 0);
         session.SongPath = songPath;
         session.IllustrationPath = illustrationPath;
         session.SongResults = new SongResults
@@ -165,7 +164,7 @@ public class SubmissionController(
         await db.StringSetAsync(key, JsonConvert.SerializeObject(session), TimeSpan.FromDays(1));
         var summary = await GenerateMatchSummary(songResults, resourceRecordResults, currentUser);
         await hubContext.Clients.Group(session.Id.ToString())
-            .ReceiveFileProgress(SessionFileStatus.Succeeded, null, null, 0, 0);
+            .ReceiveFileProgress(SessionFileStatus.Succeeded, null, 0);
         return StatusCode(StatusCodes.Status201Created,
             new ResponseDto<SubmissionSongDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = summary });
     }
@@ -865,7 +864,10 @@ public class SubmissionController(
                 e.Score = songResults.First(f => f.Id == e.Id).Score;
                 return e;
             });
-        var resourceRecordMatches = mapper.Map<IEnumerable<ResourceRecordMatchDto>>(resourceRecordResults)
+        var resourceRecordIds = resourceRecordResults.Select(e => e.Id);
+        var resourceRecordMatches = mapper
+            .Map<IEnumerable<ResourceRecordMatchDto>>(await resourceRecordRepository.GetResourceRecordsAsync(
+                predicate: e => resourceRecordIds.Contains(e.Id) && e.Strategy != ResourceRecordStrategy.Accept))
             .Select(e =>
             {
                 e.Score = resourceRecordResults.First(f => f.Id == e.Id).Score;
@@ -1011,7 +1013,8 @@ public class SubmissionController(
 
             var progress = bytesRead * 1d / totalBytes;
             await hubContext.Clients.Group(sessionId.ToString())
-                .ReceiveFileProgress(SessionFileStatus.Uploading, formFile.Name, null, progress, bytesRead);
+                .ReceiveFileProgress(SessionFileStatus.Uploading, $"Uploading {formFile.Name.ToLowerInvariant()}",
+                    progress);
         }
 
         return filePath;
