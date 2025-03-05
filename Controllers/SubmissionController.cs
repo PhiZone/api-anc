@@ -990,8 +990,13 @@ public class SubmissionController(
 
     private async Task<string> SaveFile(IFormFile formFile, Guid sessionId)
     {
-        var filePath = Path.Combine(Path.GetTempPath(), $"PZSubmissionSaves{DateTimeOffset.UtcNow:yyyyMMdd}",
-            $"{sessionId}_{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}");
+        var directory = Path.Combine(Path.GetTempPath(), $"PZSubmissionSaves{DateTimeOffset.UtcNow:yyyyMMdd}");
+        if (!Path.Exists(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+
+        var filePath = Path.Combine(directory, $"{sessionId}_{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}");
         await using var fileStream = new FileStream(filePath, FileMode.Create);
         var buffer = new byte[8192];
         var totalBytes = formFile.Length;
