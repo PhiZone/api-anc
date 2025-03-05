@@ -344,7 +344,7 @@ public class SubmissionController(
     [HttpPost("{id:guid}/chart")]
     [Consumes("multipart/form-data")]
     [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ResponseDto<CreatedResponseDto<Guid>>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
@@ -508,12 +508,13 @@ public class SubmissionController(
     [HttpPost("{id:guid}/chart/assets")]
     [Consumes("multipart/form-data")]
     [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ResponseDto<CreatedResponseDto<Guid>>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> CreateChartSubmissionAsset([FromRoute] Guid id, [FromForm] ChartAssetCreationDto dto)
+    public async Task<IActionResult> CreateChartSubmissionAsset([FromRoute] Guid id,
+        [FromForm] ChartAssetCreationDto dto)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if (!resourceService.HasPermission(currentUser, UserRole.Member))
@@ -576,13 +577,13 @@ public class SubmissionController(
     [HttpPost("{id:guid}/chart/assets/batch")]
     [Consumes("multipart/form-data")]
     [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status201Created,
-        Type = typeof(ResponseDto<CreatedResponseDto<IEnumerable<Guid>>>))]
+    [ProducesResponseType(typeof(void), StatusCodes.Status201Created, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> CreateChartSubmissionAssets([FromRoute] Guid id, [FromForm] IEnumerable<ChartAssetCreationDto> dtos)
+    public async Task<IActionResult> CreateChartSubmissionAssets([FromRoute] Guid id,
+        [FromForm] IEnumerable<ChartAssetCreationDto> dtos)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if (!resourceService.HasPermission(currentUser, UserRole.Member))
