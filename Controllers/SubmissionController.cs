@@ -113,7 +113,7 @@ public class SubmissionController(
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> UploadSongAndIllustration([FromRoute] Guid id, [FromBody] SongIllustrationDto dto)
+    public async Task<IActionResult> UploadSongAndIllustration([FromRoute] Guid id, [FromForm] SongIllustrationDto dto)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if (!resourceService.HasPermission(currentUser, UserRole.Member))
