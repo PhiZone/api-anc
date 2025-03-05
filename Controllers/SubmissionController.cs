@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using Newtonsoft.Json;
 using OpenIddict.Abstractions;
 using OpenIddict.Validation.AspNetCore;
@@ -10,13 +11,14 @@ using PhiZoneApi.Dtos.Deliverers;
 using PhiZoneApi.Dtos.Requests;
 using PhiZoneApi.Dtos.Responses;
 using PhiZoneApi.Enums;
+using PhiZoneApi.Hubs;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 using StackExchange.Redis;
 
 namespace PhiZoneApi.Controllers;
 
-[Route("studio/submission")]
+[Route("studio/submissions")]
 [ApiVersion("2.0")]
 [ApiController]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
@@ -43,40 +45,48 @@ public class SubmissionController(
     ITemplateService templateService,
     IFeishuService feishuService,
     IConnectionMultiplexer redis,
+    IHubContext<SubmissionHub, ISubmissionClient> hubContext,
     ILogger<SubmissionController> logger) : Controller
 {
     /// <summary>
-    ///     Creates or renews a submission session.
+    ///     Creates a submission session.
     /// </summary>
-    /// <returns>The status of the user's submission session.</returns>
+    /// <returns>The ID of the user's submission session.</returns>
     /// <response code="201">Returns the status of the user's submission session.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
     /// <response code="500">When an internal server error has occurred.</response>
     [HttpPost]
     [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ResponseDto<SubmissionSessionStatusDto>))]
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ResponseDto<CreatedResponseDto<Guid>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> CreateSubmissionSession()
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!resourceService.HasPermission(currentUser, UserRole.Member))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
         var db = redis.GetDatabase();
-        var key = $"phizone:session:submission:{currentUser.Id}";
-        SubmissionSession session;
-        if (await db.KeyExistsAsync(key))
-            session = JsonConvert.DeserializeObject<SubmissionSession>((await db.StringGetAsync(key))!)!;
-        else
-            session = new SubmissionSession { UserId = currentUser.Id, Status = SubmissionSessionStatus.Waiting };
+        var id = Guid.NewGuid();
 
-        await db.StringSetAsync(key, JsonConvert.SerializeObject(session), TimeSpan.FromDays(3));
+        while (await db.KeyExistsAsync($"phizone:session:submission:{id}")) id = Guid.NewGuid();
+        var session = new SubmissionSession { Id = id, Status = SubmissionSessionStatus.Waiting };
+
+        await db.StringSetAsync($"phizone:session:submission:{id}", JsonConvert.SerializeObject(session),
+            TimeSpan.FromDays(1));
         return StatusCode(StatusCodes.Status201Created,
-            new ResponseDto<SubmissionSessionStatusDto>
+            new ResponseDto<CreatedResponseDto<Guid>>
             {
                 Status = ResponseStatus.Ok,
                 Code = ResponseCodes.Ok,
-                Data = new SubmissionSessionStatusDto { Status = session.Status }
+                Data = new CreatedResponseDto<Guid> { Id = session.Id }
             });
     }
 
@@ -93,19 +103,27 @@ public class SubmissionController(
     /// </response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
     /// <response code="500">When an internal server error has occurred.</response>
-    [HttpPost("song")]
+    [HttpPost("{id:guid}/song")]
     [Consumes("multipart/form-data")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ResponseDto<SubmissionSongDto>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> UploadSongAndIllustration(SongIllustrationDto dto)
+    public async Task<IActionResult> UploadSongAndIllustration([FromRoute] Guid id, [FromBody] SongIllustrationDto dto)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!resourceService.HasPermission(currentUser, UserRole.Member))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
         var db = redis.GetDatabase();
-        var key = $"phizone:session:submission:{currentUser.Id}";
+        var key = $"phizone:session:submission:{id}";
         if (!await db.KeyExistsAsync(key))
             return BadRequest(new ResponseDto<object>
             {
@@ -113,26 +131,29 @@ public class SubmissionController(
             });
 
         var session = JsonConvert.DeserializeObject<SubmissionSession>((await db.StringGetAsync(key))!)!;
-        var songPath = Path.GetTempFileName();
-        var illustrationPath = Path.GetTempFileName();
+        var songPath = await SaveFile(dto.Song, session.Id);
+        var illustrationPath = await SaveFile(dto.Illustration, session.Id);
 
-        await using (var fileStream = new FileStream(songPath, FileMode.Create))
-        {
-            await dto.Song.CopyToAsync(fileStream);
-        }
-
-        await using (var fileStream = new FileStream(illustrationPath, FileMode.Create))
-        {
-            await dto.Illustration.CopyToAsync(fileStream);
-        }
-
+        await hubContext.Clients.Group(session.Id.ToString())
+            .ReceiveFileProgress(SessionFileStatus.Analyzing, dto.Song.Name, "Searching for duplications with SeekTune",
+                0, 0);
         var songResults = await seekTuneService.FindMatches(songPath, take: 5);
+        await hubContext.Clients.Group(session.Id.ToString())
+            .ReceiveFileProgress(SessionFileStatus.Analyzing, dto.Song.Name,
+                "Searching for potential copyright infringements with SeekTune", 0, 0);
         var resourceRecordResults = await seekTuneService.FindMatches(songPath, true, 5);
 
         if (songResults == null || resourceRecordResults == null)
+        {
+            await hubContext.Clients.Group(session.Id.ToString())
+                .ReceiveFileProgress(SessionFileStatus.Failed, null, "Unable to search for results with SeekTune", 0,
+                    0);
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+        }
 
+        await hubContext.Clients.Group(session.Id.ToString())
+            .ReceiveFileProgress(SessionFileStatus.Finalizing, null, "Generating search summary", 0, 0);
         session.SongPath = songPath;
         session.IllustrationPath = illustrationPath;
         session.SongResults = new SongResults
@@ -141,14 +162,12 @@ public class SubmissionController(
         };
         session.Status = SubmissionSessionStatus.SongFinished;
 
-        await db.StringSetAsync(key, JsonConvert.SerializeObject(session), TimeSpan.FromDays(3));
+        await db.StringSetAsync(key, JsonConvert.SerializeObject(session), TimeSpan.FromDays(1));
+        var summary = await GenerateMatchSummary(songResults, resourceRecordResults, currentUser);
+        await hubContext.Clients.Group(session.Id.ToString())
+            .ReceiveFileProgress(SessionFileStatus.Succeeded, null, null, 0, 0);
         return StatusCode(StatusCodes.Status201Created,
-            new ResponseDto<SubmissionSongDto>
-            {
-                Status = ResponseStatus.Ok,
-                Code = ResponseCodes.Ok,
-                Data = await GenerateMatchSummary(songResults, resourceRecordResults, currentUser)
-            });
+            new ResponseDto<SubmissionSongDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = summary });
     }
 
     /// <summary>
@@ -158,20 +177,28 @@ public class SubmissionController(
     /// <response code="201">Returns the ID of the song submission.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
     /// <response code="500">When an internal server error has occurred.</response>
-    [HttpPost("song/new")]
+    [HttpPost("{id:guid}/song/new")]
     [Consumes("multipart/form-data")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ResponseDto<CreatedResponseDto<Guid>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> CreateSongSubmission([FromForm] SessionSongCreationDto dto,
+    public async Task<IActionResult> CreateSongSubmission([FromRoute] Guid id, [FromForm] SessionSongCreationDto dto,
         [FromQuery] bool wait = false)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!resourceService.HasPermission(currentUser, UserRole.Member))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
         var db = redis.GetDatabase();
-        var key = $"phizone:session:submission:{currentUser.Id}";
+        var key = $"phizone:session:submission:{id}";
         if (!await db.KeyExistsAsync(key))
             return BadRequest(new ResponseDto<object>
             {
@@ -270,9 +297,9 @@ public class SubmissionController(
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
-        foreach (var id in authors.Where(e => e != currentUser.Id).Distinct())
+        foreach (var userId in authors.Where(e => e != currentUser.Id).Distinct())
         {
-            var invitee = await userRepository.GetUserByIdAsync(id);
+            var invitee = await userRepository.GetUserByIdAsync(userId);
             if (invitee == null)
                 return BadRequest(new ResponseDto<object>
                 {
@@ -312,19 +339,27 @@ public class SubmissionController(
     /// <response code="201">Returns an empty body.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
     /// <response code="500">When an internal server error has occurred.</response>
-    [HttpPost("chart")]
+    [HttpPost("{id:guid}/chart")]
     [Consumes("multipart/form-data")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ResponseDto<CreatedResponseDto<Guid>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> UploadChart([FromForm] ChartSubmissionCreationDto dto)
+    public async Task<IActionResult> UploadChart([FromRoute] Guid id, [FromForm] ChartSubmissionCreationDto dto)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!resourceService.HasPermission(currentUser, UserRole.Member))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
         var db = redis.GetDatabase();
-        var key = $"phizone:session:submission:{currentUser.Id}";
+        var key = $"phizone:session:submission:{id}";
         if (!await db.KeyExistsAsync(key))
             return BadRequest(new ResponseDto<object>
             {
@@ -438,7 +473,8 @@ public class SubmissionController(
             VolunteerStatus = RequestStatus.Waiting,
             AdmissionStatus =
                 song != null
-                    ? song.OwnerId == currentUser.Id || song.Accessibility == Accessibility.AllowAny
+                    ?
+                    song.OwnerId == currentUser.Id || song.Accessibility == Accessibility.AllowAny
                         ? RequestStatus.Approved
                         : RequestStatus.Waiting
                     : songSubmission!.OwnerId == currentUser.Id ||
@@ -454,7 +490,7 @@ public class SubmissionController(
         session.Chart = chartSubmission;
         session.Status = SubmissionSessionStatus.ChartFinished;
 
-        await db.StringSetAsync(key, JsonConvert.SerializeObject(session), TimeSpan.FromDays(3));
+        await db.StringSetAsync(key, JsonConvert.SerializeObject(session), TimeSpan.FromDays(1));
 
         return StatusCode(StatusCodes.Status201Created);
     }
@@ -467,19 +503,27 @@ public class SubmissionController(
     /// <response code="201">Returns an empty body.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
     /// <response code="500">When an internal server error has occurred.</response>
-    [HttpPost("chart/assets")]
+    [HttpPost("{id:guid}/chart/assets")]
     [Consumes("multipart/form-data")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ResponseDto<CreatedResponseDto<Guid>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> CreateChartSubmissionAsset([FromForm] ChartAssetCreationDto dto)
+    public async Task<IActionResult> CreateChartSubmissionAsset([FromRoute] Guid id, [FromForm] ChartAssetCreationDto dto)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!resourceService.HasPermission(currentUser, UserRole.Member))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
         var db = redis.GetDatabase();
-        var key = $"phizone:session:submission:{currentUser.Id}";
+        var key = $"phizone:session:submission:{id}";
         if (!await db.KeyExistsAsync(key))
             return BadRequest(new ResponseDto<object>
             {
@@ -514,7 +558,7 @@ public class SubmissionController(
 
         session.Assets.Add(chartAsset);
 
-        await db.StringSetAsync(key, JsonConvert.SerializeObject(session), TimeSpan.FromDays(3));
+        await db.StringSetAsync(key, JsonConvert.SerializeObject(session), TimeSpan.FromDays(1));
 
         return StatusCode(StatusCodes.Status201Created);
     }
@@ -527,20 +571,28 @@ public class SubmissionController(
     /// <response code="201">Returns an empty body.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
     /// <response code="500">When an internal server error has occurred.</response>
-    [HttpPost("chart/assets/batch")]
+    [HttpPost("{id:guid}/chart/assets/batch")]
     [Consumes("multipart/form-data")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status201Created,
         Type = typeof(ResponseDto<CreatedResponseDto<IEnumerable<Guid>>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> CreateChartSubmissionAssets([FromForm] IEnumerable<ChartAssetCreationDto> dtos)
+    public async Task<IActionResult> CreateChartSubmissionAssets([FromRoute] Guid id, [FromForm] IEnumerable<ChartAssetCreationDto> dtos)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!resourceService.HasPermission(currentUser, UserRole.Member))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
         var db = redis.GetDatabase();
-        var key = $"phizone:session:submission:{currentUser.Id}";
+        var key = $"phizone:session:submission:{id}";
         if (!await db.KeyExistsAsync(key))
             return BadRequest(new ResponseDto<object>
             {
@@ -579,7 +631,7 @@ public class SubmissionController(
             assets.Add(chartAsset);
         }
 
-        await db.StringSetAsync(key, JsonConvert.SerializeObject(session), TimeSpan.FromDays(3));
+        await db.StringSetAsync(key, JsonConvert.SerializeObject(session), TimeSpan.FromDays(1));
 
         return StatusCode(StatusCodes.Status201Created);
     }
@@ -591,18 +643,26 @@ public class SubmissionController(
     /// <response code="201">Returns the ID of the chart submission.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
     /// <response code="401">When the user is not authorized.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
     /// <response code="500">When an internal server error has occurred.</response>
-    [HttpPost("chart/new")]
+    [HttpPost("{id:guid}/chart/new")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ResponseDto<CreatedResponseDto<Guid>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> CreateChartSubmission()
+    public async Task<IActionResult> CreateChartSubmission([FromRoute] Guid id)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!resourceService.HasPermission(currentUser, UserRole.Member))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
         var db = redis.GetDatabase();
-        var key = $"phizone:session:submission:{currentUser.Id}";
+        var key = $"phizone:session:submission:{id}";
         if (!await db.KeyExistsAsync(key))
             return BadRequest(new ResponseDto<object>
             {
@@ -715,9 +775,9 @@ public class SubmissionController(
 
         var authors = resourceService.GetAuthorIds(chartSubmission.AuthorName);
 
-        foreach (var id in authors.Where(e => e != currentUser.Id).Distinct())
+        foreach (var userId in authors.Where(e => e != currentUser.Id).Distinct())
         {
-            var invitee = await userRepository.GetUserByIdAsync(id);
+            var invitee = await userRepository.GetUserByIdAsync(userId);
             if (invitee == null)
                 return BadRequest(new ResponseDto<object>
                 {
@@ -749,6 +809,8 @@ public class SubmissionController(
         if (!await chartSubmissionRepository.UpdateChartSubmissionAsync(chartSubmission))
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
+
+        await db.KeyDeleteAsync(key);
 
         await feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
 
@@ -923,5 +985,29 @@ public class SubmissionController(
         };
 
         return formFile;
+    }
+
+    private async Task<string> SaveFile(IFormFile formFile, Guid sessionId)
+    {
+        var filePath = Path.Combine(Path.GetTempPath(), $"PZSubmissionSaves{DateTimeOffset.UtcNow:yyyyMMdd}",
+            $"{sessionId}_{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}");
+        await using var fileStream = new FileStream(filePath, FileMode.Create);
+        var buffer = new byte[8192];
+        var totalBytes = formFile.Length;
+        long bytesRead = 0;
+        int currentBlockSize;
+
+        var formFileStream = formFile.OpenReadStream();
+        while ((currentBlockSize = await formFileStream.ReadAsync(buffer)) > 0)
+        {
+            await fileStream.WriteAsync(buffer.AsMemory(0, currentBlockSize));
+            bytesRead += currentBlockSize;
+
+            var progress = bytesRead * 1d / totalBytes;
+            await hubContext.Clients.Group(sessionId.ToString())
+                .ReceiveFileProgress(SessionFileStatus.Uploading, formFile.Name, null, progress, bytesRead);
+        }
+
+        return filePath;
     }
 }

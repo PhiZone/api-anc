@@ -5,7 +5,7 @@ namespace PhiZoneApi.Dtos.Deliverers;
 
 public class SubmissionSession
 {
-    public int UserId { get; set; }
+    public Guid Id { get; set; }
 
     public SubmissionSessionStatus Status { get; set; }
 

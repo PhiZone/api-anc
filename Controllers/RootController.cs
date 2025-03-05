@@ -26,8 +26,7 @@ public class RootController(
     IReplyRepository replyRepository,
     IConnectionMultiplexer redis,
     UserManager<User> userManager,
-    IResourceService resourceService)
-    : Controller
+    IResourceService resourceService) : Controller
 {
     /// <summary>
     ///     Retrieves an abstract of site info.
@@ -91,13 +90,18 @@ public class RootController(
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
 
-
         var db = redis.GetDatabase();
         return Ok(new ResponseDto<HeadlineDto>
         {
             Status = ResponseStatus.Ok,
             Code = ResponseCodes.Ok,
-            Data = new HeadlineDto { Headline = await db.StringGetAsync("phizone:studio_headline") }
+            Data = new HeadlineDto
+            {
+                Headline = await db.StringGetAsync(
+                    resourceService.HasPermission(currentUser, UserRole.Qualified)
+                        ? "phizone:studio_headline"
+                        : "phizone:studio_headline_public")
+            }
         });
     }
 }

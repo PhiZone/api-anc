@@ -14,6 +14,7 @@ using OpenIddict.Abstractions;
 using PhiZoneApi.Configurations;
 using PhiZoneApi.Data;
 using PhiZoneApi.Filters;
+using PhiZoneApi.Hubs;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 using PhiZoneApi.Repositories;
@@ -95,6 +96,8 @@ builder.Services.AddIdentity<User, Role>()
     .AddDefaultTokenProviders();
 
 builder.Services.AddHttpContextAccessor();
+
+builder.Services.AddSignalR();
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserRelationRepository, UserRelationRepository>();
@@ -275,5 +278,6 @@ app.UseAuthorization();
 
 app.MapControllers();
 app.MapDefaultControllerRoute();
+app.MapHub<SubmissionHub>("/hubs/submission");
 
 app.Run();
