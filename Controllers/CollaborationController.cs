@@ -50,14 +50,22 @@ public class CollaborationController(
     /// <returns>An array of collaborations.</returns>
     /// <response code="200">Returns an array of collaborations.</response>
     /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
     [HttpGet]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<IEnumerable<CollaborationDto>>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetCollaborations([FromQuery] ArrayRequestDto dto,
         [FromQuery] CollaborationFilterDto? filterDto = null, [FromQuery] bool all = false)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
+        if (!resourceService.HasPermission(currentUser, UserRole.Member))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
         var isVolunteer = resourceService.HasPermission(currentUser, UserRole.Volunteer);
 
         dto.PerPage = dto.PerPage > 0 && dto.PerPage < dataSettings.Value.PaginationMaxPerPage ? dto.PerPage :
@@ -94,6 +102,7 @@ public class CollaborationController(
     ///     When the resource has not been updated since last retrieval. Requires <c>If-None-Match</c>.
     /// </response>
     /// <response code="400">When any of the parameters is invalid.</response>
+    /// <response code="403">When the user does not have sufficient permission.</response>
     /// <response code="404">When the specified collaboration is not found.</response>
     [HttpGet("{id:guid}")]
     [ServiceFilter(typeof(ETagFilter))]
@@ -101,6 +110,7 @@ public class CollaborationController(
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<CollaborationDto>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status304NotModified, "text/plain")]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     public async Task<IActionResult> GetCollaboration([FromRoute] Guid id)
     {
@@ -111,8 +121,14 @@ public class CollaborationController(
             });
         var collaboration = await collaborationRepository.GetCollaborationAsync(id);
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (collaboration.InviterId == currentUser.Id || collaboration.InviteeId == currentUser.Id ||
-            !resourceService.HasPermission(currentUser, UserRole.Volunteer))
+        if (!resourceService.HasPermission(currentUser, UserRole.Member))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+        if (!(collaboration.InviterId == currentUser.Id || collaboration.InviteeId == currentUser.Id ||
+            resourceService.HasPermission(currentUser, UserRole.Volunteer)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -155,8 +171,14 @@ public class CollaborationController(
             });
         var collaboration = await collaborationRepository.GetCollaborationAsync(id);
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (collaboration.InviterId == currentUser.Id ||
-            !resourceService.HasPermission(currentUser, UserRole.Administrator))
+        if (!resourceService.HasPermission(currentUser, UserRole.Member))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+        if (!(collaboration.InviterId == currentUser.Id ||
+            resourceService.HasPermission(currentUser, UserRole.Administrator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -226,8 +248,14 @@ public class CollaborationController(
                 Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidOperation
             });
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (collaboration.InviteeId == currentUser.Id ||
-            !resourceService.HasPermission(currentUser, UserRole.Administrator))
+        if (!resourceService.HasPermission(currentUser, UserRole.Member))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+        if (!(collaboration.InviteeId == currentUser.Id ||
+            resourceService.HasPermission(currentUser, UserRole.Administrator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -330,8 +358,14 @@ public class CollaborationController(
 
         var collaboration = await collaborationRepository.GetCollaborationAsync(id);
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
-        if (collaboration.InviterId == currentUser.Id ||
-            !resourceService.HasPermission(currentUser, UserRole.Administrator))
+        if (!resourceService.HasPermission(currentUser, UserRole.Member))
+            return StatusCode(StatusCodes.Status403Forbidden,
+                new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
+                });
+        if (!(collaboration.InviterId == currentUser.Id ||
+            resourceService.HasPermission(currentUser, UserRole.Administrator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
