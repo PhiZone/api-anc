@@ -344,7 +344,8 @@ public class SongSubmissionController(
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        if (!(songSubmission.OwnerId == currentUser.Id || resourceService.HasPermission(currentUser, UserRole.Moderator)))
+        if (!(songSubmission.OwnerId == currentUser.Id ||
+              resourceService.HasPermission(currentUser, UserRole.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -454,7 +455,8 @@ public class SongSubmissionController(
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        if (!(songSubmission.OwnerId == currentUser.Id || resourceService.HasPermission(currentUser, UserRole.Moderator)))
+        if (!(songSubmission.OwnerId == currentUser.Id ||
+              resourceService.HasPermission(currentUser, UserRole.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -547,7 +549,8 @@ public class SongSubmissionController(
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        if (!(songSubmission.OwnerId == currentUser.Id || resourceService.HasPermission(currentUser, UserRole.Moderator)))
+        if (!(songSubmission.OwnerId == currentUser.Id ||
+              resourceService.HasPermission(currentUser, UserRole.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -619,7 +622,8 @@ public class SongSubmissionController(
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        if (!(songSubmission.OwnerId == currentUser.Id || resourceService.HasPermission(currentUser, UserRole.Moderator)))
+        if (!(songSubmission.OwnerId == currentUser.Id ||
+              resourceService.HasPermission(currentUser, UserRole.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -685,7 +689,8 @@ public class SongSubmissionController(
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        if (!(songSubmission.OwnerId == currentUser.Id || resourceService.HasPermission(currentUser, UserRole.Moderator)))
+        if (!(songSubmission.OwnerId == currentUser.Id ||
+              resourceService.HasPermission(currentUser, UserRole.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -752,7 +757,8 @@ public class SongSubmissionController(
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        if (!(songSubmission.OwnerId == currentUser.Id || resourceService.HasPermission(currentUser, UserRole.Moderator)))
+        if (!(songSubmission.OwnerId == currentUser.Id ||
+              resourceService.HasPermission(currentUser, UserRole.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -819,7 +825,8 @@ public class SongSubmissionController(
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        if (!(songSubmission.OwnerId == currentUser.Id || resourceService.HasPermission(currentUser, UserRole.Moderator)))
+        if (!(songSubmission.OwnerId == currentUser.Id ||
+              resourceService.HasPermission(currentUser, UserRole.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -883,7 +890,7 @@ public class SongSubmissionController(
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
         if (!(songSubmission.OwnerId == currentUser.Id ||
-            resourceService.HasPermission(currentUser, UserRole.Moderator)) ||
+              resourceService.HasPermission(currentUser, UserRole.Moderator)) ||
             (songSubmission.RepresentationId != null &&
              !resourceService.HasPermission(currentUser, UserRole.Administrator)))
             return StatusCode(StatusCodes.Status403Forbidden,
@@ -1013,7 +1020,8 @@ public class SongSubmissionController(
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        if (!(songSubmission.OwnerId == currentUser.Id || resourceService.HasPermission(currentUser, UserRole.Moderator)))
+        if (!(songSubmission.OwnerId == currentUser.Id ||
+              resourceService.HasPermission(currentUser, UserRole.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {

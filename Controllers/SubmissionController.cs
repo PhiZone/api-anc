@@ -472,8 +472,7 @@ public class SubmissionController(
             VolunteerStatus = RequestStatus.Waiting,
             AdmissionStatus =
                 song != null
-                    ?
-                    song.OwnerId == currentUser.Id || song.Accessibility == Accessibility.AllowAny
+                    ? song.OwnerId == currentUser.Id || song.Accessibility == Accessibility.AllowAny
                         ? RequestStatus.Approved
                         : RequestStatus.Waiting
                     : songSubmission!.OwnerId == currentUser.Id ||
@@ -993,10 +992,7 @@ public class SubmissionController(
     private async Task<string> SaveFile(IFormFile formFile, Guid sessionId)
     {
         var directory = Path.Combine(Path.GetTempPath(), $"PZSubmissionSaves{DateTimeOffset.UtcNow:yyyyMMdd}");
-        if (!Path.Exists(directory))
-        {
-            Directory.CreateDirectory(directory);
-        }
+        if (!Path.Exists(directory)) Directory.CreateDirectory(directory);
 
         var filePath = Path.Combine(directory, $"{sessionId}_{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}");
         await using var fileStream = new FileStream(filePath, FileMode.Create);

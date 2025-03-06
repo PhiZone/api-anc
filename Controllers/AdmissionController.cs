@@ -311,12 +311,12 @@ public class AdmissionController(
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        
+
         var song = await songRepository.GetSongAsync(songId);
         var chapter = await chapterRepository.GetChapterAsync(chapterId);
         var admission = await admissionRepository.GetAdmissionAsync(chapterId, songId);
         if (!(song.OwnerId == currentUser.Id || chapter.OwnerId == currentUser.Id ||
-             resourceService.HasPermission(currentUser, UserRole.Moderator)) &&
+              resourceService.HasPermission(currentUser, UserRole.Moderator)) &&
             admission.Status != RequestStatus.Approved)
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
@@ -382,12 +382,12 @@ public class AdmissionController(
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        
+
         var chart = await chartRepository.GetChartAsync(chartId);
         var collection = await collectionRepository.GetCollectionAsync(collectionId);
         var admission = await admissionRepository.GetAdmissionAsync(collectionId, chartId);
         if (!(chart.OwnerId == currentUser.Id || collection.OwnerId == currentUser.Id ||
-             resourceService.HasPermission(currentUser, UserRole.Moderator)) &&
+              resourceService.HasPermission(currentUser, UserRole.Moderator)) &&
             admission.Status != RequestStatus.Approved)
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
@@ -454,12 +454,12 @@ public class AdmissionController(
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        
+
         var chart = await chartSubmissionRepository.GetChartSubmissionAsync(chartSubmissionId);
         var song = await songRepository.GetSongAsync(songId);
         var admission = await admissionRepository.GetAdmissionAsync(songId, chartSubmissionId);
         if (!(chart.OwnerId == currentUser.Id || song.OwnerId == currentUser.Id ||
-             resourceService.HasPermission(currentUser, UserRole.Moderator)) &&
+              resourceService.HasPermission(currentUser, UserRole.Moderator)) &&
             admission.Status != RequestStatus.Approved)
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
@@ -527,12 +527,12 @@ public class AdmissionController(
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        
+
         var chart = await chartSubmissionRepository.GetChartSubmissionAsync(chartSubmissionId);
         var songSubmission = await songSubmissionRepository.GetSongSubmissionAsync(songSubmissionId);
         var admission = await admissionRepository.GetAdmissionAsync(songSubmissionId, chartSubmissionId);
         if (!(chart.OwnerId == currentUser.Id || songSubmission.OwnerId == currentUser.Id ||
-             resourceService.HasPermission(currentUser, UserRole.Moderator)) &&
+              resourceService.HasPermission(currentUser, UserRole.Moderator)) &&
             admission.Status != RequestStatus.Approved)
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
@@ -598,7 +598,7 @@ public class AdmissionController(
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
         if (!(admission.RequesterId == currentUser.Id ||
-            resourceService.HasPermission(currentUser, UserRole.Administrator)))
+              resourceService.HasPermission(currentUser, UserRole.Administrator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -667,7 +667,7 @@ public class AdmissionController(
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
         if (!(admission.RequesterId == currentUser.Id ||
-            resourceService.HasPermission(currentUser, UserRole.Administrator)))
+              resourceService.HasPermission(currentUser, UserRole.Administrator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -743,7 +743,8 @@ public class AdmissionController(
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        if (!(admission.RequesteeId == currentUser.Id || resourceService.HasPermission(currentUser, UserRole.Moderator)))
+        if (!(admission.RequesteeId == currentUser.Id ||
+              resourceService.HasPermission(currentUser, UserRole.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -839,7 +840,8 @@ public class AdmissionController(
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        if (!(admission.RequesteeId == currentUser.Id || resourceService.HasPermission(currentUser, UserRole.Moderator)))
+        if (!(admission.RequesteeId == currentUser.Id ||
+              resourceService.HasPermission(currentUser, UserRole.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -936,7 +938,7 @@ public class AdmissionController(
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
         if (!(admission.RequesteeId == currentUser.Id ||
-            resourceService.HasPermission(currentUser, UserRole.Administrator)))
+              resourceService.HasPermission(currentUser, UserRole.Administrator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -1039,7 +1041,8 @@ public class AdmissionController(
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        if (!(admission.RequesteeId == currentUser.Id || resourceService.HasPermission(currentUser, UserRole.Moderator)))
+        if (!(admission.RequesteeId == currentUser.Id ||
+              resourceService.HasPermission(currentUser, UserRole.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {

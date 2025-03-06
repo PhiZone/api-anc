@@ -464,7 +464,7 @@ public class ChartSubmissionController(
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
         if (!(chartSubmission.OwnerId == currentUser.Id ||
-            resourceService.HasPermission(currentUser, UserRole.Moderator)))
+              resourceService.HasPermission(currentUser, UserRole.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -561,7 +561,7 @@ public class ChartSubmissionController(
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
         if (!(chartSubmission.OwnerId == currentUser.Id ||
-            resourceService.HasPermission(currentUser, UserRole.Moderator)))
+              resourceService.HasPermission(currentUser, UserRole.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -671,7 +671,7 @@ public class ChartSubmissionController(
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
         if (!(chartSubmission.OwnerId == currentUser.Id ||
-            resourceService.HasPermission(currentUser, UserRole.Moderator)))
+              resourceService.HasPermission(currentUser, UserRole.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -746,7 +746,7 @@ public class ChartSubmissionController(
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
         if (!(chartSubmission.OwnerId == currentUser.Id ||
-            resourceService.HasPermission(currentUser, UserRole.Moderator)))
+              resourceService.HasPermission(currentUser, UserRole.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -813,7 +813,7 @@ public class ChartSubmissionController(
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
         if (!(chartSubmission.OwnerId == currentUser.Id ||
-            resourceService.HasPermission(currentUser, UserRole.Moderator)))
+              resourceService.HasPermission(currentUser, UserRole.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -996,7 +996,7 @@ public class ChartSubmissionController(
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
         if (!(chartSubmission.OwnerId == currentUser.Id ||
-            resourceService.HasPermission(currentUser, UserRole.Moderator)))
+              resourceService.HasPermission(currentUser, UserRole.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -1097,7 +1097,7 @@ public class ChartSubmissionController(
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
         if (!(chartSubmission.OwnerId == currentUser.Id ||
-            resourceService.HasPermission(currentUser, UserRole.Moderator)))
+              resourceService.HasPermission(currentUser, UserRole.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -1207,7 +1207,7 @@ public class ChartSubmissionController(
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
         if (!(chartSubmission.OwnerId == currentUser.Id ||
-            resourceService.HasPermission(currentUser, UserRole.Moderator)))
+              resourceService.HasPermission(currentUser, UserRole.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -1309,7 +1309,7 @@ public class ChartSubmissionController(
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
         if (!(chartSubmission.OwnerId == currentUser.Id ||
-            resourceService.HasPermission(currentUser, UserRole.Moderator)))
+              resourceService.HasPermission(currentUser, UserRole.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -1395,7 +1395,7 @@ public class ChartSubmissionController(
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
         if (!(chartSubmission.OwnerId == currentUser.Id ||
-            resourceService.HasPermission(currentUser, UserRole.Moderator)))
+              resourceService.HasPermission(currentUser, UserRole.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -1521,7 +1521,7 @@ public class ChartSubmissionController(
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
         if (!(chartSubmission.OwnerId == currentUser.Id ||
-            resourceService.HasPermission(currentUser, UserRole.Moderator)))
+              resourceService.HasPermission(currentUser, UserRole.Moderator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {

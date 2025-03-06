@@ -128,7 +128,7 @@ public class CollaborationController(
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
         if (!(collaboration.InviterId == currentUser.Id || collaboration.InviteeId == currentUser.Id ||
-            resourceService.HasPermission(currentUser, UserRole.Volunteer)))
+              resourceService.HasPermission(currentUser, UserRole.Volunteer)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -178,7 +178,7 @@ public class CollaborationController(
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
         if (!(collaboration.InviterId == currentUser.Id ||
-            resourceService.HasPermission(currentUser, UserRole.Administrator)))
+              resourceService.HasPermission(currentUser, UserRole.Administrator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -255,7 +255,7 @@ public class CollaborationController(
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
         if (!(collaboration.InviteeId == currentUser.Id ||
-            resourceService.HasPermission(currentUser, UserRole.Administrator)))
+              resourceService.HasPermission(currentUser, UserRole.Administrator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
@@ -365,7 +365,7 @@ public class CollaborationController(
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
         if (!(collaboration.InviterId == currentUser.Id ||
-            resourceService.HasPermission(currentUser, UserRole.Administrator)))
+              resourceService.HasPermission(currentUser, UserRole.Administrator)))
             return StatusCode(StatusCodes.Status403Forbidden,
                 new ResponseDto<object>
                 {
