@@ -136,7 +136,7 @@ public class SubmissionController(
         var illustrationPath = await SaveFile(dto.Illustration, session.Id);
 
         await hubContext.Clients.Group(session.Id.ToString())
-            .ReceiveFileProgress(SessionFileStatus.Analyzing, "Searching for potential song duplications", null);
+            .ReceiveFileProgress(SessionFileStatus.Analyzing, "Searching for potential song duplicates", null);
         var songResults = await seekTuneService.FindMatches(songPath, take: 5);
         await hubContext.Clients.Group(session.Id.ToString())
             .ReceiveFileProgress(SessionFileStatus.Analyzing,
