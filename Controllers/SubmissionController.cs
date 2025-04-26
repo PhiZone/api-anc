@@ -136,23 +136,23 @@ public class SubmissionController(
         var illustrationPath = await SaveFile(dto.Illustration, session.Id);
 
         await hubContext.Clients.Group(session.Id.ToString())
-            .ReceiveFileProgress(SessionFileStatus.Analyzing, "Searching for potential song duplications", 0);
+            .ReceiveFileProgress(SessionFileStatus.Analyzing, "Searching for potential song duplications", null);
         var songResults = await seekTuneService.FindMatches(songPath, take: 5);
         await hubContext.Clients.Group(session.Id.ToString())
             .ReceiveFileProgress(SessionFileStatus.Analyzing,
-                "Searching for potential copyright infringements", 0);
+                "Searching for potential copyright infringements", null);
         var resourceRecordResults = await seekTuneService.FindMatches(songPath, true, 5);
 
         if (songResults == null || resourceRecordResults == null)
         {
             await hubContext.Clients.Group(session.Id.ToString())
-                .ReceiveFileProgress(SessionFileStatus.Failed, "Unable to search for matching results", 0);
+                .ReceiveFileProgress(SessionFileStatus.Failed, "Unable to search for matching results", 1);
             return StatusCode(StatusCodes.Status500InternalServerError,
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
         }
 
         await hubContext.Clients.Group(session.Id.ToString())
-            .ReceiveFileProgress(SessionFileStatus.Finalizing, "Generating search summary", 0);
+            .ReceiveFileProgress(SessionFileStatus.Finalizing, "Generating search summary", 1);
         session.SongPath = songPath;
         session.IllustrationPath = illustrationPath;
         session.SongResults = new SongResults
@@ -164,7 +164,7 @@ public class SubmissionController(
         await db.StringSetAsync(key, JsonConvert.SerializeObject(session), TimeSpan.FromDays(1));
         var summary = await GenerateMatchSummary(songResults, resourceRecordResults, currentUser);
         await hubContext.Clients.Group(session.Id.ToString())
-            .ReceiveFileProgress(SessionFileStatus.Succeeded, null, 0);
+            .ReceiveFileProgress(SessionFileStatus.Succeeded, null, 1);
         return StatusCode(StatusCodes.Status201Created,
             new ResponseDto<SubmissionSongDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = summary });
     }
