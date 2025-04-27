@@ -58,7 +58,7 @@ public class SeekTuneService(IConfiguration config, ILogger<SeekTuneService> log
         var response = await _client.SendAsync(request);
         var content = await response.Content.ReadAsStringAsync();
         logger.LogInformation(LogEvents.SeekTuneInfo, "Match find response ({Status}): {Content}", response.StatusCode,
-            content);
+            content.Length > 200 ? $"{content[..200]}..." : content);
 
         if (response.StatusCode == HttpStatusCode.NotFound) return [];
 
