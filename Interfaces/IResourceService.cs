@@ -1,4 +1,5 @@
-﻿using PhiZoneApi.Enums;
+﻿using PhiZoneApi.Dtos.Deliverers;
+using PhiZoneApi.Enums;
 using PhiZoneApi.Models;
 
 namespace PhiZoneApi.Interfaces;
@@ -22,6 +23,10 @@ public interface IResourceService
     Task<(bool, bool)> IsPreparedOrFinished(EventTeam eventTeam);
 
     bool HasPermission(User? user, UserRole role);
+
+    Task CleanupSession(Guid sessionId);
+    
+    void CleanupSession(SubmissionSession session);
 
     Task<(string, List<User>)> ParseUserContent(string content);
 

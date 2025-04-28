@@ -97,6 +97,26 @@ public partial class ResourceService(IServiceProvider serviceProvider, IConfigur
         return user != null && GetPriority(user.Role) >= GetPriority(role);
     }
 
+    public async Task CleanupSession(Guid id)
+    {
+        await using var scope = serviceProvider.CreateAsyncScope();
+        var redis = scope.ServiceProvider.GetRequiredService<IConnectionMultiplexer>();
+        var db = redis.GetDatabase();
+        var key = $"phizone:session:submission:{id}";
+        if (!await db.KeyExistsAsync(key)) return;
+
+        var session = JsonConvert.DeserializeObject<SubmissionSession>((await db.StringGetAsync(key))!)!;
+        CleanupSession(session);
+        await db.KeyDeleteAsync(key);
+    }
+
+    public void CleanupSession(SubmissionSession session)
+    {
+        if (Path.Exists(session.SongPath)) File.Delete(session.SongPath);
+        if (Path.Exists(session.IllustrationPath)) File.Delete(session.IllustrationPath);
+        if (Path.Exists(session.SongPath + ".wav")) File.Delete(session.SongPath + ".wav");
+    }
+
     public async Task<(string, List<User>)> ParseUserContent(string content)
     {
         await using var scope = serviceProvider.CreateAsyncScope();
@@ -237,7 +257,6 @@ public partial class ResourceService(IServiceProvider serviceProvider, IConfigur
         @"^([A-Za-z0-9_]{4,24}|[a-zA-Z0-9_\u4e00-\u9fff\u3041-\u309f\u30a0-\u30ff\uac00-\ud7a3]{3,12}|[\u4e00-\u9fff\u3041-\u309f\u30a0-\u30ff\uac00-\ud7a3]{2,12})$")]
     private static partial Regex UserNameRegex();
 
-    [GeneratedRegex(
-        @"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$")]
+    [GeneratedRegex(@"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$")]
     private static partial Regex EmailRegex();
 }

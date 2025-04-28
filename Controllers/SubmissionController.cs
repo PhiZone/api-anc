@@ -139,8 +139,7 @@ public class SubmissionController(
             .ReceiveFileProgress(SessionFileStatus.Analyzing, "Searching for potential song duplicates", null);
         var songResults = await seekTuneService.FindMatches(songPath, take: 5);
         await hubContext.Clients.Group(session.Id.ToString())
-            .ReceiveFileProgress(SessionFileStatus.Analyzing,
-                "Searching for potential copyright infringements", null);
+            .ReceiveFileProgress(SessionFileStatus.Analyzing, "Searching for potential copyright infringements", null);
         var resourceRecordResults = await seekTuneService.FindMatches(songPath, true, 5);
 
         if (songResults == null || resourceRecordResults == null)
@@ -163,8 +162,7 @@ public class SubmissionController(
 
         await db.StringSetAsync(key, JsonConvert.SerializeObject(session), TimeSpan.FromDays(1));
         var summary = await GenerateMatchSummary(songResults, resourceRecordResults, currentUser);
-        await hubContext.Clients.Group(session.Id.ToString())
-            .ReceiveFileProgress(SessionFileStatus.Succeeded, null, 1);
+        await hubContext.Clients.Group(session.Id.ToString()).ReceiveFileProgress(SessionFileStatus.Succeeded, null, 1);
         return StatusCode(StatusCodes.Status201Created,
             new ResponseDto<SubmissionSongDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = summary });
     }
@@ -472,7 +470,8 @@ public class SubmissionController(
             VolunteerStatus = RequestStatus.Waiting,
             AdmissionStatus =
                 song != null
-                    ? song.OwnerId == currentUser.Id || song.Accessibility == Accessibility.AllowAny
+                    ?
+                    song.OwnerId == currentUser.Id || song.Accessibility == Accessibility.AllowAny
                         ? RequestStatus.Approved
                         : RequestStatus.Waiting
                     : songSubmission!.OwnerId == currentUser.Id ||
@@ -816,6 +815,8 @@ public class SubmissionController(
         if (eventDivision != null && eventTeam != null)
             await scriptService.RunEventTaskAsync(eventTeam.DivisionId, chartSubmission, eventTeam.Id, currentUser,
                 [EventTaskType.PostSubmission]);
+        
+        resourceService.CleanupSession(session);
 
         logger.LogInformation(LogEvents.ChartInfo, "New chart submission: {Title} [{Level} {Difficulty}]",
             chartSubmission.Title ?? song?.Title ?? songSubmission!.Title, chartSubmission.Level,
