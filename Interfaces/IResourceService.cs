@@ -25,7 +25,7 @@ public interface IResourceService
     bool HasPermission(User? user, UserRole role);
 
     Task CleanupSession(Guid sessionId);
-    
+
     void CleanupSession(SubmissionSession session);
 
     Task<(string, List<User>)> ParseUserContent(string content);

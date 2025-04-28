@@ -14,6 +14,7 @@ public static class LogEvents
     public const int InitializerInfo = 1009;
     public const int PhigrimInfo = 1010;
     public const int SeekTuneInfo = 1011;
+    public const int SubmissionHubInfo = 1012;
 
     public const int AudioFailure = 2000;
     public const int MailFailure = 2001;
