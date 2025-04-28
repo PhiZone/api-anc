@@ -57,8 +57,8 @@ public class RegionController(
             var result = await meilisearchService.SearchAsync<Region>(dto.Search, dto.PerPage, dto.Page);
             var idList = result.Hits.Select(item => item.Id).ToList();
             regions =
-                (await regionRepository.GetRegionsAsync(predicate: e => idList.Contains(e.Id))).OrderBy(
-                    e => idList.IndexOf(e.Id));
+                (await regionRepository.GetRegionsAsync(predicate: e => idList.Contains(e.Id))).OrderBy(e =>
+                    idList.IndexOf(e.Id));
             total = result.TotalHits;
         }
         else

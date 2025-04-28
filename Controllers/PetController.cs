@@ -335,8 +335,8 @@ public class PetController : Controller
                 !isModerator ? currentUser.Id : null);
             var idList = result.Hits.Select(item => item.Id).ToList();
             answers =
-                (await _petAnswerRepository.GetPetAnswersAsync(predicate: e => idList.Contains(e.Id))).OrderBy(
-                    e => idList.IndexOf(e.Id));
+                (await _petAnswerRepository.GetPetAnswersAsync(predicate: e => idList.Contains(e.Id))).OrderBy(e =>
+                    idList.IndexOf(e.Id));
             total = result.TotalHits;
         }
         else

@@ -92,8 +92,8 @@ public class SongSubmissionController(
                 !isModerator ? currentUser.Id : null);
             var idList = result.Hits.Select(item => item.Id).ToList();
             songSubmissions =
-                (await songSubmissionRepository.GetSongSubmissionsAsync(predicate: e => idList.Contains(e.Id))).OrderBy(
-                    e => idList.IndexOf(e.Id));
+                (await songSubmissionRepository.GetSongSubmissionsAsync(predicate: e => idList.Contains(e.Id)))
+                .OrderBy(e => idList.IndexOf(e.Id));
             total = result.TotalHits;
         }
         else

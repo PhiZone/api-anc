@@ -28,8 +28,7 @@ public class VoteRepository(ApplicationDbContext context) : IVoteRepository
 
     public async Task<Vote> GetVoteAsync(Guid chartId, int userId)
     {
-        return (await context.Votes.FirstOrDefaultAsync(
-            vote => vote.Chart.Id == chartId && vote.OwnerId == userId))!;
+        return (await context.Votes.FirstOrDefaultAsync(vote => vote.Chart.Id == chartId && vote.OwnerId == userId))!;
     }
 
     public async Task<bool> VoteExistsAsync(Guid id)
@@ -39,8 +38,7 @@ public class VoteRepository(ApplicationDbContext context) : IVoteRepository
 
     public async Task<bool> VoteExistsAsync(Guid chartId, int userId)
     {
-        return (await context.Votes.AnyAsync(
-            vote => vote.Chart.Id == chartId && vote.OwnerId == userId))!;
+        return (await context.Votes.AnyAsync(vote => vote.Chart.Id == chartId && vote.OwnerId == userId))!;
     }
 
     public async Task<bool> CreateVoteAsync(Vote vote)
