@@ -37,6 +37,8 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
     {
         try
         {
+            Cleanup();
+
             await using var scope = serviceProvider.CreateAsyncScope();
             var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             var recordRepository = scope.ServiceProvider.GetRequiredService<IRecordRepository>();
@@ -538,6 +540,21 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
         {
             logger.LogWarning(LogEvents.DataConsistencyMaintenance, e,
                 "An error has occurred whilst checking for data consistency");
+        }
+    }
+
+    private void Cleanup()
+    {
+        for (var i = -2; i >= -7; i--)
+        {
+            var directory = Path.Combine(Path.GetTempPath(),
+                $"PZSubmissionSaves{DateTimeOffset.UtcNow.AddDays(i):yyyyMMdd}");
+            if (Path.Exists(directory))
+            {
+                Directory.Delete(directory, true);
+                logger.LogInformation(LogEvents.DataConsistencyMaintenance,
+                    "Deleted temporary directory {Directory}", directory);
+            }
         }
     }
 }
