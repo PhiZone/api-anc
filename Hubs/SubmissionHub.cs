@@ -6,24 +6,23 @@ namespace PhiZoneApi.Hubs;
 
 public class SubmissionHub(IResourceService resourceService, ILogger<SubmissionHub> logger) : Hub<ISubmissionClient>
 {
-    private readonly Dictionary<string, Guid> _userGroupDictionary = new();
-
     public async Task Register(Guid sessionId)
     {
         await Groups.AddToGroupAsync(Context.ConnectionId, sessionId.ToString());
-        _userGroupDictionary.Add(Context.ConnectionId, sessionId);
+        resourceService.JoinSession(Context.ConnectionId, sessionId);
         logger.LogInformation(LogEvents.SubmissionHubInfo, "Registered user {ConnectionId} with session {SessionId}",
             Context.ConnectionId, sessionId);
     }
 
     public override async Task<Task> OnDisconnectedAsync(Exception? exception)
     {
+        var sessionId = resourceService.GetSessionId(Context.ConnectionId);
         // ReSharper disable once InvertIf
-        if (_userGroupDictionary.TryGetValue(Context.ConnectionId, out var sessionId))
+        if (sessionId != null)
         {
-            await Groups.RemoveFromGroupAsync(Context.ConnectionId, sessionId.ToString());
-            await resourceService.CleanupSession(sessionId);
-            _userGroupDictionary.Remove(Context.ConnectionId);
+            await Groups.RemoveFromGroupAsync(Context.ConnectionId, sessionId.Value.ToString());
+            await resourceService.CleanupSession(sessionId.Value);
+            resourceService.LeaveSession(Context.ConnectionId);
         }
 
         return base.OnDisconnectedAsync(exception);

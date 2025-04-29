@@ -18,6 +18,8 @@ public partial class ResourceService(IServiceProvider serviceProvider, IConfigur
         Path.Combine(Directory.GetCurrentDirectory(),
             configuration.GetSection("ResourceSettings").GetValue<string>("DirectoryPath")!, "resources.json")))!;
 
+    private readonly Dictionary<string, Guid> _userSubmissionSessionDictionary = new();
+
     public string GetRichText<T>(string id, string display, string? addition = null)
     {
         return $"[PZ{typeof(T).Name}{addition}:{id}:{display}:PZRT]";
@@ -95,6 +97,21 @@ public partial class ResourceService(IServiceProvider serviceProvider, IConfigur
     public bool HasPermission(User? user, UserRole role)
     {
         return user != null && GetPriority(user.Role) >= GetPriority(role);
+    }
+
+    public void JoinSession(string connectionId, Guid sessionId)
+    {
+        _userSubmissionSessionDictionary[connectionId] = sessionId;
+    }
+
+    public Guid? GetSessionId(string connectionId)
+    {
+        return _userSubmissionSessionDictionary.TryGetValue(connectionId, out var sessionId) ? sessionId : null;
+    }
+
+    public void LeaveSession(string connectionId)
+    {
+        _userSubmissionSessionDictionary.Remove(connectionId);
     }
 
     public async Task CleanupSession(Guid id)
