@@ -477,7 +477,7 @@ public class SubmissionController(
                       songSubmission.Accessibility == Accessibility.AllowAny
                         ? RequestStatus.Approved
                         : RequestStatus.Waiting,
-            Owner = currentUser,
+            OwnerId = currentUser.Id,
             DateCreated = DateTimeOffset.UtcNow,
             DateFileUpdated = DateTimeOffset.UtcNow,
             DateUpdated = DateTimeOffset.UtcNow
