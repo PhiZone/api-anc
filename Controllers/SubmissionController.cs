@@ -109,7 +109,7 @@ public class SubmissionController(
     [HttpPost("{id:guid}/song")]
     [Consumes("multipart/form-data")]
     [Produces("application/json")]
-    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ResponseDto<SubmissionSongDto>))]
+    [ProducesResponseType(StatusCodes.Status201Created, Type = typeof(ResponseDto<SongRecognitionSummaryDto>))]
     [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(typeof(void), StatusCodes.Status401Unauthorized, "text/plain")]
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
@@ -154,17 +154,18 @@ public class SubmissionController(
             .ReceiveFileProgress(SessionFileStatus.Finalizing, "Generating search summary", 1);
         session.SongPath = songPath;
         session.IllustrationPath = illustrationPath;
-        session.SongResults = new SongResults
+        session.RecognitionResults = new RecognitionResults
         {
             SongMatches = songResults, ResourceRecordMatches = resourceRecordResults
         };
         session.Status = SubmissionSessionStatus.SongFinished;
 
         await db.StringSetAsync(key, JsonConvert.SerializeObject(session), TimeSpan.FromDays(1));
-        var summary = await GenerateMatchSummary(songResults, resourceRecordResults, currentUser);
+        var summary = await resourceService.GenerateMatchSummary(songResults, resourceRecordResults, currentUser);
         await hubContext.Clients.Group(session.Id.ToString()).ReceiveFileProgress(SessionFileStatus.Succeeded, null, 1);
         return StatusCode(StatusCodes.Status201Created,
-            new ResponseDto<SubmissionSongDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = summary });
+            new ResponseDto<SongRecognitionSummaryDto>
+                { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = summary });
     }
 
     /// <summary>
@@ -322,6 +323,9 @@ public class SubmissionController(
 
         await seekTuneService.CreateFingerprint(songSubmission.Id, songSubmission.Title, songSubmission.Edition,
             songSubmission.AuthorName, GetSongPathForSeekTune(session));
+
+        await db.StringSetAsync($"phizone:persistent:seektune:{songSubmission.Id}",
+            JsonConvert.SerializeObject(session.RecognitionResults));
 
         return StatusCode(StatusCodes.Status201Created,
             new ResponseDto<CreatedResponseDto<Guid>>
@@ -831,57 +835,6 @@ public class SubmissionController(
                 Code = ResponseCodes.Ok,
                 Data = new CreatedResponseDto<Guid> { Id = chartSubmission.Id }
             });
-    }
-
-    private async Task<SubmissionSongDto> GenerateMatchSummary(List<SeekTuneFindResult> songResults,
-        List<SeekTuneFindResult> resourceRecordResults, User currentUser)
-    {
-        var songIds = new List<Guid>();
-        var songSubmissionIds = songResults.Select(e => e.Id);
-        var songSubmissions =
-            await songSubmissionRepository.GetSongSubmissionsAsync(predicate: e => songSubmissionIds.Contains(e.Id));
-        foreach (var songSubmission in songSubmissions)
-            if (songSubmission.RepresentationId != null)
-                songIds.Add(songSubmission.RepresentationId!.Value);
-
-        var songMatches =
-            (await songRepository.GetSongsAsync(predicate: e =>
-                songIds.Contains(e.Id) && (e.Accessibility != Accessibility.RefuseAny || e.OwnerId == currentUser.Id)))
-            .Select(e => dtoMapper.MapSong<SongMatchDto>(e))
-            .Select(e =>
-            {
-                e.Score = songResults.First(f =>
-                        f.Id == e.Id || f.Id == songSubmissions
-                            .First(g => g.RepresentationId != null && g.RepresentationId.Value == e.Id)
-                            .Id)
-                    .Score;
-                return e;
-            });
-        var songSubmissionMatches = songSubmissions
-            .Where(e => e.RepresentationId == null &&
-                        (e.Accessibility != Accessibility.RefuseAny || e.OwnerId == currentUser.Id))
-            .Select(e => dtoMapper.MapSongSubmission<SongSubmissionMatchDto>(e, currentUser))
-            .Select(e =>
-            {
-                e.Score = songResults.First(f => f.Id == e.Id).Score;
-                return e;
-            });
-        var resourceRecordIds = resourceRecordResults.Select(e => e.Id);
-        var resourceRecordMatches = mapper
-            .Map<IEnumerable<ResourceRecordMatchDto>>(await resourceRecordRepository.GetResourceRecordsAsync(
-                predicate: e => resourceRecordIds.Contains(e.Id) && e.Strategy != ResourceRecordStrategy.Accept))
-            .Select(e =>
-            {
-                e.Score = resourceRecordResults.First(f => f.Id == e.Id).Score;
-                return e;
-            });
-
-        return new SubmissionSongDto
-        {
-            SongMatches = songMatches.OrderByDescending(e => e.Score),
-            SongSubmissionMatches = songSubmissionMatches.OrderByDescending(e => e.Score),
-            ResourceRecordMatches = resourceRecordMatches.OrderByDescending(e => e.Score)
-        };
     }
 
     private async Task<(EventDivision?, EventTeam?, IActionResult?)> GetEvent(IEnumerable<string> tags,

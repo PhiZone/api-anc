@@ -4,10 +4,12 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using Newtonsoft.Json;
 using OpenIddict.Abstractions;
 using OpenIddict.Validation.AspNetCore;
 using PhiZoneApi.Configurations;
 using PhiZoneApi.Constants;
+using PhiZoneApi.Dtos.Deliverers;
 using PhiZoneApi.Dtos.Filters;
 using PhiZoneApi.Dtos.Requests;
 using PhiZoneApi.Dtos.Responses;
@@ -16,6 +18,7 @@ using PhiZoneApi.Filters;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
 using PhiZoneApi.Utils;
+using StackExchange.Redis;
 
 // ReSharper disable InvertIf
 
@@ -49,6 +52,7 @@ public class SongSubmissionController(
     INotificationService notificationService,
     ITemplateService templateService,
     IFeishuService feishuService,
+    IConnectionMultiplexer redis,
     ISeekTuneService seekTuneService,
     ILogger<SongSubmissionController> logger,
     IMeilisearchService meilisearchService) : Controller
@@ -157,6 +161,17 @@ public class SongSubmissionController(
             });
         var songSubmission = await songSubmissionRepository.GetSongSubmissionAsync(id);
         var dto = dtoMapper.MapSongSubmission<SongSubmissionDto>(songSubmission, currentUser);
+
+        var db = redis.GetDatabase();
+        var key = $"phizone:persistent:seektune:{songSubmission.Id}";
+        if (await db.KeyExistsAsync(key))
+        {
+            var results = JsonConvert.DeserializeObject<RecognitionResults>((await db.StringGetAsync(key))!)!;
+            var summary =
+                await resourceService.GenerateMatchSummary(results.SongMatches, results.ResourceRecordMatches,
+                    currentUser);
+            dto.RecognitionSummary = summary;
+        }
 
         return Ok(
             new ResponseDto<SongSubmissionDto> { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = dto });

@@ -1,10 +1,12 @@
 ﻿using System.Text;
 using System.Text.RegularExpressions;
+using AutoMapper;
 using Ganss.Xss;
 using Microsoft.AspNetCore.Identity;
 using Newtonsoft.Json;
 using OpenIddict.Abstractions;
 using PhiZoneApi.Dtos.Deliverers;
+using PhiZoneApi.Dtos.Responses;
 using PhiZoneApi.Enums;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
@@ -132,6 +134,66 @@ public partial class ResourceService(IServiceProvider serviceProvider, IConfigur
         if (Path.Exists(session.SongPath)) File.Delete(session.SongPath);
         if (Path.Exists(session.IllustrationPath)) File.Delete(session.IllustrationPath);
         if (Path.Exists(session.SongPath + ".wav")) File.Delete(session.SongPath + ".wav");
+    }
+
+    public async Task<SongRecognitionSummaryDto> GenerateMatchSummary(IEnumerable<SeekTuneFindResult> songResults,
+        IEnumerable<SeekTuneFindResult> resourceRecordResults, User currentUser)
+    {
+        await using var scope = serviceProvider.CreateAsyncScope();
+        var songRepository = scope.ServiceProvider.GetRequiredService<ISongRepository>();
+        var songSubmissionRepository = scope.ServiceProvider.GetRequiredService<ISongSubmissionRepository>();
+        var resourceRecordRepository = scope.ServiceProvider.GetRequiredService<IResourceRecordRepository>();
+        var dtoMapper = scope.ServiceProvider.GetRequiredService<IDtoMapper>();
+        var mapper = scope.ServiceProvider.GetRequiredService<IMapper>();
+
+        var songIds = new List<Guid>();
+        var songResultsList = songResults.ToList();
+        var songSubmissionIds = songResultsList.Select(e => e.Id);
+        var songSubmissions =
+            await songSubmissionRepository.GetSongSubmissionsAsync(predicate: e => songSubmissionIds.Contains(e.Id));
+        foreach (var songSubmission in songSubmissions)
+            if (songSubmission.RepresentationId != null)
+                songIds.Add(songSubmission.RepresentationId!.Value);
+
+        var songMatches =
+            (await songRepository.GetSongsAsync(predicate: e =>
+                songIds.Contains(e.Id) && (e.Accessibility != Accessibility.RefuseAny || e.OwnerId == currentUser.Id)))
+            .Select(e => dtoMapper.MapSong<SongMatchDto>(e))
+            .Select(e =>
+            {
+                e.Score = songResultsList.First(f =>
+                        f.Id == e.Id || f.Id == songSubmissions
+                            .First(g => g.RepresentationId != null && g.RepresentationId.Value == e.Id)
+                            .Id)
+                    .Score;
+                return e;
+            });
+        var songSubmissionMatches = songSubmissions
+            .Where(e => e.RepresentationId == null &&
+                        (e.Accessibility != Accessibility.RefuseAny || e.OwnerId == currentUser.Id))
+            .Select(e => dtoMapper.MapSongSubmission<SongSubmissionMatchDto>(e, currentUser))
+            .Select(e =>
+            {
+                e.Score = songResultsList.First(f => f.Id == e.Id).Score;
+                return e;
+            });
+        var resourceRecordResultsList = resourceRecordResults.ToList();
+        var resourceRecordIds = resourceRecordResultsList.Select(e => e.Id);
+        var resourceRecordMatches = mapper
+            .Map<IEnumerable<ResourceRecordMatchDto>>(await resourceRecordRepository.GetResourceRecordsAsync(
+                predicate: e => resourceRecordIds.Contains(e.Id) && e.Strategy != ResourceRecordStrategy.Accept))
+            .Select(e =>
+            {
+                e.Score = resourceRecordResultsList.First(f => f.Id == e.Id).Score;
+                return e;
+            });
+
+        return new SongRecognitionSummaryDto
+        {
+            SongMatches = songMatches.OrderByDescending(e => e.Score),
+            SongSubmissionMatches = songSubmissionMatches.OrderByDescending(e => e.Score),
+            ResourceRecordMatches = resourceRecordMatches.OrderByDescending(e => e.Score)
+        };
     }
 
     public async Task<(string, List<User>)> ParseUserContent(string content)

@@ -13,14 +13,14 @@ public class SubmissionSession
 
     public string? IllustrationPath { get; set; }
 
-    public SongResults? SongResults { get; set; }
+    public RecognitionResults? RecognitionResults { get; set; }
 
     public ChartSubmission? Chart { get; set; }
 
     public List<SessionChartAsset> Assets { get; set; } = [];
 }
 
-public class SongResults
+public class RecognitionResults
 {
     public IEnumerable<SeekTuneFindResult> SongMatches { get; set; } = [];
 

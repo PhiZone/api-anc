@@ -1,6 +1,6 @@
 ﻿namespace PhiZoneApi.Dtos.Responses;
 
-public class SubmissionSongDto
+public class SongRecognitionSummaryDto
 {
     public IEnumerable<SongMatchDto> SongMatches { get; set; } = [];
 

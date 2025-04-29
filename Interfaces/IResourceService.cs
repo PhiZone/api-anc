@@ -1,4 +1,5 @@
 ﻿using PhiZoneApi.Dtos.Deliverers;
+using PhiZoneApi.Dtos.Responses;
 using PhiZoneApi.Enums;
 using PhiZoneApi.Models;
 
@@ -33,6 +34,9 @@ public interface IResourceService
     Task CleanupSession(Guid sessionId);
 
     void CleanupSession(SubmissionSession session);
+
+    Task<SongRecognitionSummaryDto> GenerateMatchSummary(IEnumerable<SeekTuneFindResult> songResults,
+        IEnumerable<SeekTuneFindResult> resourceRecordResults, User currentUser);
 
     Task<(string, List<User>)> ParseUserContent(string content);
 

@@ -61,4 +61,6 @@ public class SongSubmissionDto
     public DateTimeOffset DateFileUpdated { get; set; }
 
     public DateTimeOffset DateUpdated { get; set; }
+
+    public SongRecognitionSummaryDto? RecognitionSummary { get; set; }
 }
