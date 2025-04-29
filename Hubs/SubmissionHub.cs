@@ -23,6 +23,8 @@ public class SubmissionHub(IResourceService resourceService, ILogger<SubmissionH
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, sessionId.Value.ToString());
             await resourceService.CleanupSession(sessionId.Value);
             resourceService.LeaveSession(Context.ConnectionId);
+            logger.LogInformation(LogEvents.SubmissionHubInfo, "Removed user {ConnectionId} from session {SessionId}",
+                Context.ConnectionId, sessionId);
         }
 
         return base.OnDisconnectedAsync(exception);
