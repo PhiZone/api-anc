@@ -19,7 +19,6 @@ namespace PhiZoneApi.Services;
 
 public partial class Initializer(
     IServiceProvider serviceProvider,
-    ISeekTuneService seekTuneService,
     ILogger<Initializer> logger) : IHostedService
 {
     private CancellationToken _cancellationToken;
@@ -50,8 +49,6 @@ public partial class Initializer(
             logger.LogInformation(LogEvents.InitializerInfo, "Initializing scripts");
             var scriptService = scope.ServiceProvider.GetRequiredService<IScriptService>();
             await scriptService.InitializeAsync(context, _cancellationToken);
-            logger.LogInformation(LogEvents.InitializerInfo, "Initializing SeekTune");
-            await seekTuneService.InitializeAsync(context, _cancellationToken);
             logger.LogInformation(LogEvents.InitializerInfo, "Initialization completed");
         }
         catch (Exception e)

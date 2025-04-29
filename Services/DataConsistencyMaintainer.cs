@@ -41,12 +41,15 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
 
             await using var scope = serviceProvider.CreateAsyncScope();
             var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var seekTuneService = scope.ServiceProvider.GetRequiredService<ISeekTuneService>();
             var recordRepository = scope.ServiceProvider.GetRequiredService<IRecordRepository>();
             var recordService = scope.ServiceProvider.GetRequiredService<IRecordService>();
             var voteRepository = scope.ServiceProvider.GetRequiredService<IVoteRepository>();
             var voteService = scope.ServiceProvider.GetRequiredService<IVoteService>();
             var culture = (CultureInfo)CultureInfo.CurrentCulture.Clone();
             culture.NumberFormat.PercentPositivePattern = 1;
+
+            await seekTuneService.SyncFingerprints(context, _cancellationToken);
 
             foreach (var song in await context.SongSubmissions.ToListAsync(_cancellationToken))
             {

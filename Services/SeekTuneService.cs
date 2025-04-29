@@ -19,8 +19,9 @@ public class SeekTuneService(IConfiguration config, ILogger<SeekTuneService> log
 
     private readonly string _seekTuneUrl = config["SeekTuneUrl"]!;
 
-    public async Task InitializeAsync(ApplicationDbContext context, CancellationToken cancellationToken)
+    public async Task SyncFingerprints(ApplicationDbContext context, CancellationToken cancellationToken)
     {
+        logger.LogInformation(LogEvents.SeekTuneInfo, "Synchronizing fingerprints");
         var songIds = new List<Guid>();
         foreach (var songSubmission in await context.SongSubmissions
                      .Where(e => e.File != null && e.Status != RequestStatus.Rejected)
@@ -96,6 +97,37 @@ public class SeekTuneService(IConfiguration config, ILogger<SeekTuneService> log
         catch (Exception e)
         {
             logger.LogError(LogEvents.SeekTuneFailure, e, "Failed to create fingerprint for {Id}", id);
+            return false;
+        }
+    }
+
+    public async Task<bool> UpdateFingerprint(Guid id, string title, string? version, string artist,
+        string songLocation, bool isUrl = false, bool resourceRecords = false)
+    {
+        if (!await CheckIfExists(id, resourceRecords)) return false;
+        var route = resourceRecords ? "resourceRecords" : "songs";
+        var data = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            { isUrl ? "songUrl" : "songPath", songLocation },
+            { "title", $"{title}{(version != null ? $" ({version})" : "")}" },
+            { "artist", artist },
+            { "uuid", id.ToString() }
+        });
+        var request = new HttpRequestMessage
+        {
+            Method = HttpMethod.Patch, RequestUri = new Uri($"{_seekTuneUrl}/{route}/update"), Content = data
+        };
+        try
+        {
+            var response = await _client.SendAsync(request);
+            var content = await response.Content.ReadAsStringAsync();
+            logger.LogInformation(LogEvents.SeekTuneInfo, "Fingerprint update response ({Status}): {Content}",
+                response.StatusCode, content);
+            return response.IsSuccessStatusCode;
+        }
+        catch (Exception e)
+        {
+            logger.LogError(LogEvents.SeekTuneFailure, e, "Failed to update fingerprint for {Id}", id);
             return false;
         }
     }

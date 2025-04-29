@@ -320,6 +320,9 @@ public class SubmissionController(
             await scriptService.RunEventTaskAsync(eventTeam.DivisionId, songSubmission, eventTeam.Id, currentUser,
                 [EventTaskType.PostSubmission]);
 
+        await seekTuneService.CreateFingerprint(songSubmission.Id, songSubmission.Title, songSubmission.Edition,
+            songSubmission.AuthorName, GetSongPathForSeekTune(session));
+
         return StatusCode(StatusCodes.Status201Created,
             new ResponseDto<CreatedResponseDto<Guid>>
             {
@@ -987,6 +990,11 @@ public class SubmissionController(
         };
 
         return formFile;
+    }
+
+    private string GetSongPathForSeekTune(SubmissionSession session)
+    {
+        return Path.Exists($"{session.SongPath}.wav") ? $"{session.SongPath}.wav" : session.SongPath!;
     }
 
     private async Task<string> SaveFile(IFormFile formFile, Guid sessionId)

@@ -29,7 +29,7 @@ public interface IResourceService
     Guid? GetSessionId(string connectionId);
 
     void LeaveSession(string connectionId);
-    
+
     Task CleanupSession(Guid sessionId);
 
     void CleanupSession(SubmissionSession session);

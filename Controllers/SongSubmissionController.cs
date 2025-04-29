@@ -49,6 +49,7 @@ public class SongSubmissionController(
     INotificationService notificationService,
     ITemplateService templateService,
     IFeishuService feishuService,
+    ISeekTuneService seekTuneService,
     ILogger<SongSubmissionController> logger,
     IMeilisearchService meilisearchService) : Controller
 {
@@ -296,6 +297,9 @@ public class SongSubmissionController(
             await scriptService.RunEventTaskAsync(eventTeam.DivisionId, songSubmission, eventTeam.Id, currentUser,
                 [EventTaskType.PostSubmission]);
 
+        await seekTuneService.CreateFingerprint(songSubmission.Id, songSubmission.Title, songSubmission.Edition,
+            songSubmission.AuthorName, songSubmission.File!, true);
+
         return StatusCode(StatusCodes.Status201Created,
             new ResponseDto<CreatedResponseDto<Guid>>
             {
@@ -507,6 +511,9 @@ public class SongSubmissionController(
         if (eventDivision != null && eventTeam != null)
             await scriptService.RunEventTaskAsync(eventTeam.DivisionId, songSubmission, eventTeam.Id, currentUser,
                 [EventTaskType.PostUpdateSubmission]);
+
+        await seekTuneService.UpdateFingerprint(songSubmission.Id, songSubmission.Title, songSubmission.Edition,
+            songSubmission.AuthorName, songSubmission.File!, true);
 
         return NoContent();
     }
