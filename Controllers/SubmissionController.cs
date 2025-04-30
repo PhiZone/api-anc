@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
@@ -26,14 +25,11 @@ public class SubmissionController(
     ISeekTuneService seekTuneService,
     ISongRepository songRepository,
     ISongSubmissionRepository songSubmissionRepository,
-    IResourceRecordRepository resourceRecordRepository,
     IChartSubmissionRepository chartSubmissionRepository,
     IChartAssetSubmissionRepository chartAssetSubmissionRepository,
     UserManager<User> userManager,
     ISongService songService,
     IFileStorageService fileStorageService,
-    IMapper mapper,
-    IDtoMapper dtoMapper,
     IAdmissionRepository admissionRepository,
     IChartService chartService,
     IScriptService scriptService,
