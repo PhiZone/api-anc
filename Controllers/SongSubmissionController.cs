@@ -306,14 +306,13 @@ public class SongSubmissionController(
         else
         {
             await feishuService.Notify(songSubmission, FeishuResources.ContentReviewalChat);
+            await seekTuneService.CreateFingerprint(songSubmission.Id, songSubmission.Title, songSubmission.Edition,
+                songSubmission.AuthorName, songSubmission.File!, true);
         }
 
         if (eventDivision != null && eventTeam != null)
             await scriptService.RunEventTaskAsync(eventTeam.DivisionId, songSubmission, eventTeam.Id, currentUser,
                 [EventTaskType.PostSubmission]);
-
-        await seekTuneService.CreateFingerprint(songSubmission.Id, songSubmission.Title, songSubmission.Edition,
-            songSubmission.AuthorName, songSubmission.File!, true);
 
         return StatusCode(StatusCodes.Status201Created,
             new ResponseDto<CreatedResponseDto<Guid>>

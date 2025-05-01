@@ -28,8 +28,7 @@ public class SongService(
         }
         catch (Exception e)
         {
-            logger.LogWarning(LogEvents.AudioFailure, e, "Failed to read audio from {File}",
-                fileName);
+            logger.LogWarning(LogEvents.AudioFailure, e, "Failed to read audio from {File}", fileName);
             return null;
         }
     }
@@ -47,13 +46,12 @@ public class SongService(
         }
         catch (Exception e)
         {
-            logger.LogWarning(LogEvents.AudioFailure, e, "Failed to read audio from {File}",
-                fileName);
+            logger.LogWarning(LogEvents.AudioFailure, e, "Failed to read audio from {File}", fileName);
             return null;
         }
     }
 
-    public async Task PublishAsync(IFormFile file, Guid songId, bool isSubmission = false)
+    public async Task PublishAsync(IFormFile file, Guid songId, bool isSubmission = false, bool burn = true)
     {
         await using var stream = file.OpenReadStream();
         using var memoryStream = new MemoryStream();
@@ -63,7 +61,9 @@ public class SongService(
         {
             Headers = new Dictionary<string, object?>
             {
-                { "SongId", songId.ToString() }, { "IsSubmission", isSubmission.ToString() }
+                { "SongId", songId.ToString() },
+                { "IsSubmission", isSubmission.ToString() },
+                { "Burn", burn.ToString() }
             }
         };
         await channel.BasicPublishAsync("", _queue, false, properties, memoryStream.ToArray());

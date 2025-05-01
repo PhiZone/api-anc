@@ -305,7 +305,7 @@ public class SubmissionController(
 
         if (!wait)
         {
-            await songService.PublishAsync(songFile, songSubmission.Id, true);
+            await songService.PublishAsync(songFile, songSubmission.Id, true, false);
             logger.LogInformation(LogEvents.SongInfo, "Scheduled new song submission: {Title}", dto.Title);
         }
         else

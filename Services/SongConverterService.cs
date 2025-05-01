@@ -12,6 +12,7 @@ public class SongConverterService(
     ISongService songService,
     ISongRepository songRepository,
     ISongSubmissionRepository songSubmissionRepository,
+    ISeekTuneService seekTuneService,
     IFeishuService feishuService,
     IHostEnvironment env,
     ILogger<SongConverterService> logger) : BackgroundService
@@ -28,11 +29,13 @@ public class SongConverterService(
         {
             if (args.BasicProperties.Headers == null ||
                 !args.BasicProperties.Headers.TryGetValue("SongId", out var songIdObj) ||
-                !args.BasicProperties.Headers.TryGetValue("IsSubmission", out var isSubmissionObj))
+                !args.BasicProperties.Headers.TryGetValue("IsSubmission", out var isSubmissionObj) ||
+                !args.BasicProperties.Headers.TryGetValue("Burn", out var burnObj))
                 return;
 
             var songId = Encoding.UTF8.GetString((byte[])songIdObj!);
             var isSubmission = bool.Parse(Encoding.UTF8.GetString((byte[])isSubmissionObj!));
+            var burn = bool.Parse(Encoding.UTF8.GetString((byte[])burnObj!));
             var body = args.Body.ToArray();
             if (isSubmission)
             {
@@ -52,6 +55,9 @@ public class SongConverterService(
 
                     await songSubmissionRepository.UpdateSongSubmissionAsync(song);
                     await feishuService.Notify(song, FeishuResources.ContentReviewalChat);
+                    if (burn)
+                        await seekTuneService.CreateFingerprint(song.Id, song.Title, song.Edition, song.AuthorName,
+                            song.File!, true);
                     logger.LogInformation(LogEvents.SongInfo, "Completed song submission schedule: {Title}",
                         song.Title);
                 }
@@ -72,8 +78,7 @@ public class SongConverterService(
                     if (song.PreviewStart > song.PreviewEnd) song.PreviewStart = TimeSpan.Zero;
 
                     await songRepository.UpdateSongAsync(song);
-                    logger.LogInformation(LogEvents.SongInfo, "Completed song schedule: {Title}",
-                        song.Title);
+                    logger.LogInformation(LogEvents.SongInfo, "Completed song schedule: {Title}", song.Title);
                 }
             }
 

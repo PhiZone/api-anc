@@ -180,13 +180,15 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(
 builder.Services.AddSingleton<IHostedService>(provider => new MailSenderService(
     provider.GetService<IServiceScopeFactory>()!.CreateScope().ServiceProvider.GetService<IMailService>()!,
     provider.GetService<IRabbitMqService>()!, provider.GetService<IHostEnvironment>()!));
-builder.Services.AddSingleton<IHostedService>(provider => new SongConverterService(
-    provider.GetService<IRabbitMqService>()!,
-    provider.GetService<IServiceScopeFactory>()!.CreateScope().ServiceProvider.GetService<ISongService>()!,
-    provider.GetService<IServiceScopeFactory>()!.CreateScope().ServiceProvider.GetService<ISongRepository>()!,
-    provider.GetService<IServiceScopeFactory>()!.CreateScope().ServiceProvider.GetService<ISongSubmissionRepository>()!,
-    provider.GetService<IFeishuService>()!, provider.GetService<IHostEnvironment>()!,
-    provider.GetService<ILogger<SongConverterService>>()!));
+builder.Services.AddSingleton<IHostedService>(provider =>
+{
+    var scope = provider.GetService<IServiceScopeFactory>()!.CreateScope();
+    return new SongConverterService(provider.GetService<IRabbitMqService>()!,
+        scope.ServiceProvider.GetService<ISongService>()!, scope.ServiceProvider.GetService<ISongRepository>()!,
+        scope.ServiceProvider.GetService<ISongSubmissionRepository>()!, provider.GetService<ISeekTuneService>()!,
+        provider.GetService<IFeishuService>()!, provider.GetService<IHostEnvironment>()!,
+        provider.GetService<ILogger<SongConverterService>>()!);
+});
 builder.Services.AddSingleton<IHostedService>(provider => new TapRecordService(provider.GetService<IRabbitMqService>()!,
     provider.GetService<ITapGhostService>()!, provider.GetService<IHostEnvironment>()!,
     provider.GetService<ILogger<TapRecordService>>()!));
