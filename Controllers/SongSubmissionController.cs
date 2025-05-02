@@ -927,7 +927,7 @@ public class SongSubmissionController(
         var normalizedTags = songSubmission.Tags.Select(resourceService.Normalize);
         var eventDivisions = await eventDivisionRepository.GetEventDivisionsAsync(predicate: e =>
             e.Type == EventDivisionType.Song && e.Status == EventDivisionStatus.Started &&
-            normalizedTags.Contains(e.TagName));
+            normalizedTags.Contains(e.TagName) && e.DateEnded + TimeSpan.FromDays(180) >= DateTimeOffset.UtcNow);
         if (eventDivisions.Count > 0)
         {
             var eventDivision = eventDivisions.First();

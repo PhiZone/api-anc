@@ -466,7 +466,7 @@ public class SubmissionService(
         var eventDivisions = await eventDivisionRepository.GetEventDivisionsAsync(predicate: e =>
             e.Type == EventDivisionType.Chart &&
             (e.Status == EventDivisionStatus.Started || e.Status == EventDivisionStatus.Ended) &&
-            normalizedTags.Contains(e.TagName));
+            normalizedTags.Contains(e.TagName) && e.DateEnded + TimeSpan.FromDays(180) >= DateTimeOffset.UtcNow);
         if (eventDivisions.Count == 0) return (null, null);
         var eventDivision = eventDivisions.First();
         var eventTeams = await eventTeamRepository.GetEventTeamsAsync(predicate: e =>
@@ -482,7 +482,7 @@ public class SubmissionService(
         var eventDivisions = await eventDivisionRepository.GetEventDivisionsAsync(predicate: e =>
             e.Type == EventDivisionType.Song &&
             (e.Status == EventDivisionStatus.Started || e.Status == EventDivisionStatus.Ended) &&
-            normalizedTags.Contains(e.TagName));
+            normalizedTags.Contains(e.TagName) && e.DateEnded + TimeSpan.FromDays(180) >= DateTimeOffset.UtcNow);
         if (eventDivisions.Count == 0) return (null, null);
         var eventDivision = eventDivisions.First();
         var eventTeams = await eventTeamRepository.GetEventTeamsAsync(predicate: e =>

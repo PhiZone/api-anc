@@ -827,7 +827,7 @@ public class ChartSubmissionController(
         var normalizedTags = chartSubmission.Tags.Select(resourceService.Normalize);
         var eventDivisions = await eventDivisionRepository.GetEventDivisionsAsync(predicate: e =>
             e.Type == EventDivisionType.Chart && e.Status == EventDivisionStatus.Started &&
-            normalizedTags.Contains(e.TagName));
+            normalizedTags.Contains(e.TagName) && e.DateEnded + TimeSpan.FromDays(180) >= DateTimeOffset.UtcNow);
         if (eventDivisions.Count > 0)
         {
             var eventDivision = eventDivisions.First();
