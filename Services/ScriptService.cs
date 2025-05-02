@@ -31,20 +31,32 @@ public class ScriptService(IServiceProvider serviceProvider, ILogger<ScriptServi
     public async Task InitializeAsync(ApplicationDbContext context, CancellationToken cancellationToken)
     {
         foreach (var service in await context.ServiceScripts.ToListAsync(cancellationToken))
-        {
-            var script = CSharpScript.Create<ServiceResponseDto>(service.Code,
-                ScriptOptions, typeof(ServiceScriptGlobals));
-            _serviceScripts.Add(service.Id, script);
-        }
+            try
+            {
+                var script = CSharpScript.Create<ServiceResponseDto>(service.Code,
+                    ScriptOptions, typeof(ServiceScriptGlobals));
+                _serviceScripts.Add(service.Id, script);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(LogEvents.ScriptFailure, ex, "Failed to create Service {Id}",
+                    service.Id);
+            }
 
         foreach (var task in await context.EventTasks.Where(e => e.Code != null)
                      .Include(e => e.Division)
                      .ToListAsync(cancellationToken))
-        {
-            var script = CSharpScript.Create<EventTaskResponseDto?>(task.Code,
-                ScriptOptions, typeof(EventTaskScriptGlobals));
-            _eventTaskScripts.Add(task.Id, script);
-        }
+            try
+            {
+                var script = CSharpScript.Create<EventTaskResponseDto?>(task.Code,
+                    ScriptOptions, typeof(EventTaskScriptGlobals));
+                _eventTaskScripts.Add(task.Id, script);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(LogEvents.ScriptFailure, ex, "Failed to create Task {Id}",
+                    task.Id);
+            }
     }
 
     public async Task<ServiceResponseDto> RunAsync<T>(Guid id, T? target, Dictionary<string, string> parameters,
