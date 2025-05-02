@@ -29,7 +29,15 @@ public class EventTaskScheduler(IServiceProvider serviceProvider, ILogger<EventT
             .Where(e => e.Type == EventTaskType.Scheduled && e.Code != null && e.DateExecuted != null &&
                         e.DateExecuted > DateTimeOffset.UtcNow)
             .ToListAsync(cancellationToken);
-        foreach (var task in tasks) Schedule(task);
+        foreach (var task in tasks)
+            try
+            {
+                Schedule(task);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(LogEvents.SchedulerFailure, ex, "Failed to schedule Task {Id}", task.Id);
+            }
     }
 
     public Task StopAsync(CancellationToken cancellationToken)
@@ -45,8 +53,7 @@ public class EventTaskScheduler(IServiceProvider serviceProvider, ILogger<EventT
         {
             if (!replace)
             {
-                logger.LogInformation(LogEvents.SchedulerInfo, "Task \"{Name}\" is already scheduled",
-                    task.Name);
+                logger.LogInformation(LogEvents.SchedulerInfo, "Task \"{Name}\" is already scheduled", task.Name);
                 return;
             }
 
@@ -59,21 +66,18 @@ public class EventTaskScheduler(IServiceProvider serviceProvider, ILogger<EventT
         if (delay.CompareTo(TimeSpan.Zero) < 0) return;
 
         _schedules.Add(task.Id, new Timer(Execute, (task.Id, task.DivisionId), delay, Timeout.InfiniteTimeSpan));
-        logger.LogInformation(LogEvents.SchedulerInfo, "Successfully scheduled Task \"{Name}\" at {Date}",
-            task.Name,
+        logger.LogInformation(LogEvents.SchedulerInfo, "Successfully scheduled Task \"{Name}\" at {Date}", task.Name,
             task.DateExecuted.Value.LocalDateTime.ToString("yyyy-MM-dd HH:mm:ss"));
     }
 
     public void ImplicitlySchedule(EventTask task, object? target, Guid? teamId, User? user,
-        DateTimeOffset dateExecuted,
-        bool replace = false)
+        DateTimeOffset dateExecuted, bool replace = false)
     {
         if (_schedules.TryGetValue(task.Id, out var schedule))
         {
             if (!replace)
             {
-                logger.LogInformation(LogEvents.SchedulerInfo, "Task \"{Name}\" is already scheduled",
-                    task.Name);
+                logger.LogInformation(LogEvents.SchedulerInfo, "Task \"{Name}\" is already scheduled", task.Name);
                 return;
             }
 
@@ -86,10 +90,8 @@ public class EventTaskScheduler(IServiceProvider serviceProvider, ILogger<EventT
 
         _schedules.Add(task.Id,
             new Timer(ImplicitlyExecute, (task.Id, target, teamId, user), delay, Timeout.InfiniteTimeSpan));
-        logger.LogInformation(LogEvents.SchedulerInfo,
-            "Successfully implicitly scheduled Task \"{Name}\" at {Date}",
-            task.Name,
-            dateExecuted.LocalDateTime.ToString("yyyy-MM-dd HH:mm:ss"));
+        logger.LogInformation(LogEvents.SchedulerInfo, "Successfully implicitly scheduled Task \"{Name}\" at {Date}",
+            task.Name, dateExecuted.LocalDateTime.ToString("yyyy-MM-dd HH:mm:ss"));
     }
 
     public void Cancel(Guid taskId)
