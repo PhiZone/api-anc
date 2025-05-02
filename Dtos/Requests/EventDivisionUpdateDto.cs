@@ -24,10 +24,9 @@ public class EventDivisionUpdateDto
     [Range(0, 3, ErrorMessage = ResponseCodes.ValueOutOfRange)]
     public EventDivisionStatus Status { get; set; }
 
-    [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
     [MaxLength(200, ErrorMessage = ResponseCodes.ValueTooLong)]
     [UserInputValidator(ErrorMessage = ResponseCodes.ContentProhibited)]
-    public string Illustrator { get; set; } = null!;
+    public string? Illustrator { get; set; }
 
     [MaxLength(2000, ErrorMessage = ResponseCodes.ValueTooLong)]
     [UserInputValidator(ErrorMessage = ResponseCodes.ContentProhibited)]
