@@ -27,7 +27,7 @@ public class FileStorageService : IFileStorageService
         await formFile.CopyToAsync(memoryStream);
         var extension = FileTypeResolver.GetFileExtension(FileTypeResolver.GetMimeType(formFile));
         var file = new LCFile(
-            $"{typeof(T).Name}_{NormalizeFileName(fileName)}_{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}{extension}",
+            $"{typeof(T).Name}_{NormalizeFileName(fileName)}_{DateTimeOffset.UtcNow:yyyyMMdd-HHmmss}{extension}",
             memoryStream.ToArray());
         await file.Save();
         return (file.Url, (string)file.MetaData["_checksum"]);
@@ -52,7 +52,7 @@ public class FileStorageService : IFileStorageService
     public async Task<(string, string)> Upload<T>(string fileName, MemoryStream stream, string extension)
     {
         var file = new LCFile(
-            $"{typeof(T).Name}_{NormalizeFileName(fileName)}_{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}.{extension}",
+            $"{typeof(T).Name}_{NormalizeFileName(fileName)}_{DateTimeOffset.UtcNow:yyyyMMdd-HHmmss}.{extension}",
             stream.ToArray());
         await file.Save();
         return (file.Url, (string)file.MetaData["_checksum"]);
