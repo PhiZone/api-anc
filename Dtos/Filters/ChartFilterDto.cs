@@ -81,9 +81,9 @@ public class ChartFilterDto : PublicResourceFilterDto<Chart>
 
     public List<Guid>? RangeSongId { get; set; }
 
-    public int? MinPlayCount { get; set; }
+    public long? MinPlayCount { get; set; }
 
-    public int? MaxPlayCount { get; set; }
+    public long? MaxPlayCount { get; set; }
 
-    public List<int>? /* supposed to be nullable */ RangePlayCount { get; set; }
+    public List<long>? /* supposed to be nullable */ RangePlayCount { get; set; }
 }

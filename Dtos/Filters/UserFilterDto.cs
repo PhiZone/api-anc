@@ -41,17 +41,17 @@ public class UserFilterDto : FilterDto<User>
 
     public double? MaxRks { get; set; }
 
-    public int? MinFollowerCount { get; set; }
+    public long? MinFollowerCount { get; set; }
 
-    public int? MaxFollowerCount { get; set; }
+    public long? MaxFollowerCount { get; set; }
 
-    public List<int>? RangeFollowerCount { get; set; }
+    public List<long>? RangeFollowerCount { get; set; }
 
-    public int? MinFolloweeCount { get; set; }
+    public long? MinFolloweeCount { get; set; }
 
-    public int? MaxFolloweeCount { get; set; }
+    public long? MaxFolloweeCount { get; set; }
 
-    public List<int>? RangeFolloweeCount { get; set; }
+    public List<long>? RangeFolloweeCount { get; set; }
 
     public List<int>? RangeRegionId { get; set; }
 
