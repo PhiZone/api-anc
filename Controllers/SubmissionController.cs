@@ -941,7 +941,7 @@ public class SubmissionController(
         return formFile;
     }
 
-    private string GetSongPathForSeekTune(SubmissionSession session)
+    private static string GetSongPathForSeekTune(SubmissionSession session)
     {
         return Path.Exists($"{session.SongPath}.wav") ? $"{session.SongPath}.wav" : session.SongPath!;
     }
