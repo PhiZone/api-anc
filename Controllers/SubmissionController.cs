@@ -133,10 +133,10 @@ public class SubmissionController(
 
         await hubContext.Clients.Group(session.Id.ToString())
             .ReceiveFileProgress(SessionFileStatus.Analyzing, "Searching for potential song duplicates", null);
-        var songResults = await seekTuneService.FindMatches(songPath, take: 20);
+        var songResults = await seekTuneService.FindMatches(songPath, take: 5);
         await hubContext.Clients.Group(session.Id.ToString())
             .ReceiveFileProgress(SessionFileStatus.Analyzing, "Searching for potential copyright infringements", null);
-        var resourceRecordResults = await seekTuneService.FindMatches(songPath, true, 20);
+        var resourceRecordResults = await seekTuneService.FindMatches(songPath, true, 5);
 
         if (songResults == null || resourceRecordResults == null)
         {
