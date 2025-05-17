@@ -465,11 +465,10 @@ public class UserInfoController(
                     await recordRepository.CreateRecordAsync(record);
                 }
 
-                var phiRks = (await recordRepository.GetRecordsAsync(["Rks"], [true], 0, 1,
-                        r => r.OwnerId == currentUser.Id && r.Score == 1000000 && r.Chart.IsRanked)).FirstOrDefault()
-                    ?.Rks ?? 0d;
-                var best19Rks = (await recordRepository.GetPersonalBests(currentUser.Id)).Sum(r => r.Rks);
-                currentUser.Rks = (phiRks + best19Rks) / 20;
+                var phi3Rks = (await recordRepository.GetRecordsAsync(["Rks"], [true], 0, 3,
+                    r => r.OwnerId == currentUser.Id && r.Score == 1000000 && r.Chart.IsRanked)).Sum(r => r.Rks);
+                var best27Rks = (await recordRepository.GetPersonalBests(currentUser.Id)).Sum(r => r.Rks);
+                currentUser.Rks = (phi3Rks + best27Rks) / 30;
                 currentUser.Experience = Math.Max(currentUser.Experience, ghost.Experience);
             }
 
@@ -542,11 +541,10 @@ public class UserInfoController(
                 }
             } while (records is { HasNext: not null } && records.HasNext.Value);
 
-            var phiRks = (await recordRepository.GetRecordsAsync(["Rks"], [true], 0, 1,
-                    r => r.OwnerId == currentUser.Id && r.Score == 1000000 && r.Chart.IsRanked)).FirstOrDefault()
-                ?.Rks ?? 0d;
-            var best19Rks = (await recordRepository.GetPersonalBests(currentUser.Id)).Sum(r => r.Rks);
-            currentUser.Rks = (phiRks + best19Rks) / 20;
+            var phi3Rks = (await recordRepository.GetRecordsAsync(["Rks"], [true], 0, 3,
+                r => r.OwnerId == currentUser.Id && r.Score == 1000000 && r.Chart.IsRanked)).Sum(r => r.Rks);
+            var best27Rks = (await recordRepository.GetPersonalBests(currentUser.Id)).Sum(r => r.Rks);
+            currentUser.Rks = (phi3Rks + best27Rks) / 30;
             currentUser.Experience = Math.Max(currentUser.Experience, remoteUser.Experience);
 
             foreach (var link in inheritance.Links)

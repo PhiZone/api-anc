@@ -329,11 +329,10 @@ public class RecordController(
             }
         }
 
-        var phiRks = (await recordRepository.GetRecordsAsync(["Rks"], [true], 0, 1,
-                r => r.OwnerId == player.Id && r.Score == 1000000 && r.Chart.IsRanked)).FirstOrDefault()
-            ?.Rks ?? 0d;
-        var best19Rks = (await recordRepository.GetPersonalBests(player.Id)).Sum(r => r.Rks);
-        var rksAfter = (phiRks + best19Rks) / 20;
+        var phi3Rks = (await recordRepository.GetRecordsAsync(["Rks"], [true], 0, 3,
+                r => r.OwnerId == player.Id && r.Score == 1000000 && r.Chart.IsRanked)).Sum(r => r.Rks);
+        var best27Rks = (await recordRepository.GetPersonalBests(player.Id)).Sum(r => r.Rks);
+        var rksAfter = (phi3Rks + best27Rks) / 30;
 
         if (!chart.IsRanked) experienceDelta = (ulong)(experienceDelta * 0.5);
 

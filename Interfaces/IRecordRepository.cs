@@ -27,6 +27,6 @@ public interface IRecordRepository
     Task<int> CountRecordsAsync(Expression<Func<Record, bool>>? predicate = null,
         bool? showAnonymous = false);
 
-    Task<ICollection<Record>> GetPersonalBests(int ownerId, int take = 19, bool queryChart = false,
+    Task<ICollection<Record>> GetPersonalBests(int ownerId, int take = 27, bool queryChart = false,
         int? currentUserId = null);
 }

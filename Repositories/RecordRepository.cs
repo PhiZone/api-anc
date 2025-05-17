@@ -145,7 +145,7 @@ public class RecordRepository(ApplicationDbContext context, IMeilisearchService 
         return await result.CountAsync();
     }
 
-    public async Task<ICollection<Record>> GetPersonalBests(int ownerId, int take = 19, bool queryChart = false,
+    public async Task<ICollection<Record>> GetPersonalBests(int ownerId, int take = 27, bool queryChart = false,
         int? currentUserId = null)
     {
         IQueryable<Record> result = context.Records

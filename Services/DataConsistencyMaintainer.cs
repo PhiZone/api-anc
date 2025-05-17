@@ -172,11 +172,10 @@ public class DataConsistencyMaintainer(IServiceProvider serviceProvider, ILogger
                     e => e.FollowerId == user.Id && e.Type != UserRelationType.Blacklisted, _cancellationToken);
                 var followerCount = await context.UserRelations.CountAsync(
                     e => e.FolloweeId == user.Id && e.Type != UserRelationType.Blacklisted, _cancellationToken);
-                var phiRks = (await recordRepository.GetRecordsAsync(["Rks"], [true], 0, 1,
-                        r => r.OwnerId == user.Id && r.Score == 1000000 && r.Chart.IsRanked)).FirstOrDefault()
-                    ?.Rks ?? 0d;
-                var best19Rks = (await recordRepository.GetPersonalBests(user.Id)).Sum(r => r.Rks);
-                var rks = (phiRks + best19Rks) / 20;
+                var phi3Rks = (await recordRepository.GetRecordsAsync(["Rks"], [true], 0, 3,
+                    r => r.OwnerId == user.Id && r.Score == 1000000 && r.Chart.IsRanked)).Sum(r => r.Rks);
+                var best27Rks = (await recordRepository.GetPersonalBests(user.Id)).Sum(r => r.Rks);
+                var rks = (phi3Rks + best27Rks) / 30;
                 if (user.FolloweeCount != followeeCount)
                 {
                     logger.LogInformation(LogEvents.DataConsistencyMaintenance,

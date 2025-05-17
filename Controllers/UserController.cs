@@ -914,24 +914,24 @@ public class UserController(
     ///     Retrieves a user's personal bests.
     /// </summary>
     /// <param name="id">A user's ID.</param>
-    /// <returns>Phi1 and Best19.</returns>
-    /// <response code="200">Returns Phi1 and Best19.</response>
+    /// <returns>Top 3 APs and top 27 highest ranking scores.</returns>
+    /// <response code="200">Returns top 3 APs and top 27 highest ranking scores.</response>
     [HttpGet("{id:int}/personalBests")]
     [Produces("application/json")]
     [ProducesResponseType(StatusCodes.Status200OK, Type = typeof(ResponseDto<UserPersonalBestsDto>))]
     public async Task<IActionResult> GetPersonalBests([FromRoute] int id)
     {
         var currentUser = await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!);
-        var phi1 = (await recordRepository.GetRecordsAsync(["Rks"], [true], 0, 1,
-            r => r.OwnerId == id && r.Score == 1000000 && r.Chart.IsRanked, true, currentUser?.Id)).FirstOrDefault();
-        var phi1Dto = phi1 != null ? dtoMapper.MapRecord<RecordDto>(phi1) : null;
-        var b19 = await recordRepository.GetPersonalBests(id, queryChart: true, currentUserId: currentUser?.Id);
-        var b19Dto = b19.Select(e => dtoMapper.MapRecord<RecordDto>(e)).ToList();
+        var phi3 = await recordRepository.GetRecordsAsync(["Rks"], [true], 0, 3,
+            r => r.OwnerId == id && r.Score == 1000000 && r.Chart.IsRanked, true, currentUser?.Id);
+        var phi3Dto = phi3.Select(e => dtoMapper.MapRecord<RecordDto>(e)).ToList();
+        var b27 = await recordRepository.GetPersonalBests(id, queryChart: true, currentUserId: currentUser?.Id);
+        var b27Dto = b27.Select(e => dtoMapper.MapRecord<RecordDto>(e)).ToList();
         return Ok(new ResponseDto<UserPersonalBestsDto>
         {
             Status = ResponseStatus.Ok,
             Code = ResponseCodes.Ok,
-            Data = new UserPersonalBestsDto { Phi1 = phi1Dto, Best19 = b19Dto }
+            Data = new UserPersonalBestsDto { Phi3 = phi3Dto, Best27 = b27Dto }
         });
     }
 }
