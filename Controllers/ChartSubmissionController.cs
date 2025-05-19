@@ -1745,7 +1745,7 @@ public class ChartSubmissionController(
     [ProducesResponseType(StatusCodes.Status403Forbidden, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status404NotFound, Type = typeof(ResponseDto<object>))]
     [ProducesResponseType(StatusCodes.Status500InternalServerError, Type = typeof(ResponseDto<object>))]
-    public async Task<IActionResult> CheckForEvent([FromBody] StringArrayDto dto)
+    public async Task<IActionResult> CheckForEvent([FromBody] StringArrayDto dto, [FromQuery] int? userId)
     {
         var currentUser = (await userManager.FindByIdAsync(User.GetClaim(OpenIddictConstants.Claims.Subject)!))!;
         if (!resourceService.HasPermission(currentUser, UserRole.Member))
@@ -1754,7 +1754,8 @@ public class ChartSubmissionController(
                 {
                     Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InsufficientPermission
                 });
-        var result = await GetEvent(dto.Strings, currentUser);
+        var user = (await userManager.FindByIdAsync((userId ?? currentUser.Id).ToString()))!;
+        var result = await GetEvent(dto.Strings, user);
 
         if (result.Item3 != null) return result.Item3;
 
