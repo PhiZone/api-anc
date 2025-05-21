@@ -77,6 +77,7 @@ public class MailService(
         {
             return ResponseCodes.MailError;
         }
+
         return string.Empty;
     }
 

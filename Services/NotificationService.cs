@@ -29,15 +29,13 @@ public class NotificationService(
         };
         await notificationRepository.CreateNotificationAsync(notification);
         if (emailTitleKey != null)
-        {
             await mailService.PublishEmailAsync(new MailTaskDto
             {
                 EmailAddress = receiver.Email!,
                 UserName = receiver.UserName!,
                 EmailSubject = templateService.GetMessage(emailTitleKey, receiver.Language)!,
-                EmailBody = message,
+                EmailBody = message
             });
-        }
     }
 
     public async Task NotifyLike<T>(T resource, int userId, string display) where T : LikeableResource

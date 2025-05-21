@@ -330,7 +330,7 @@ public class RecordController(
         }
 
         var phi3Rks = (await recordRepository.GetRecordsAsync(["Rks"], [true], 0, 3,
-                r => r.OwnerId == player.Id && r.Score == 1000000 && r.Chart.IsRanked)).Sum(r => r.Rks);
+            r => r.OwnerId == player.Id && r.Score == 1000000 && r.Chart.IsRanked)).Sum(r => r.Rks);
         var best27Rks = (await recordRepository.GetPersonalBests(player.Id)).Sum(r => r.Rks);
         var rksAfter = (phi3Rks + best27Rks) / 30;
 
