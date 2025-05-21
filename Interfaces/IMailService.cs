@@ -9,5 +9,7 @@ public interface IMailService
 
     Task<string> PublishEmailAsync(string email, string userName, string language, EmailRequestMode mode);
 
+    Task<string> PublishEmailAsync(MailTaskDto mailDto);
+
     Task<string> SendMailAsync(MailTaskDto mailTaskDto);
 }

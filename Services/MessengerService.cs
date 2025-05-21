@@ -30,6 +30,7 @@ public class MessengerService : IMessengerService
     public async Task<HttpResponseMessage> SendMail(MailTaskDto dto)
     {
         await UpdateToken();
+        dto.EmailSubject = $"[PhiZone] {dto.EmailSubject}";
         var request = new HttpRequestMessage
         {
             Method = HttpMethod.Post,

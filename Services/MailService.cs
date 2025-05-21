@@ -49,6 +49,23 @@ public class MailService(
         var mailDto = await GenerateEmailAsync(email, userName, language, mode);
         if (mailDto == null) return ResponseCodes.RedisError;
 
+        try
+        {
+            await PublishEmailAsync(mailDto);
+        }
+        catch (Exception)
+        {
+            return ResponseCodes.MailError;
+        }
+
+        var db = redis.GetDatabase();
+        await db.StringSetAsync($"phizone:cooldown:{mode}:{email}", DateTimeOffset.UtcNow.AddMinutes(5).ToString(),
+            TimeSpan.FromMinutes(5));
+        return string.Empty;
+    }
+
+    public async Task<string> PublishEmailAsync(MailTaskDto mailDto)
+    {
         var body = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(mailDto));
 
         try
@@ -60,10 +77,6 @@ public class MailService(
         {
             return ResponseCodes.MailError;
         }
-
-        var db = redis.GetDatabase();
-        await db.StringSetAsync($"phizone:cooldown:{mode}:{email}", DateTimeOffset.UtcNow.AddMinutes(5).ToString(),
-            TimeSpan.FromMinutes(5));
         return string.Empty;
     }
 

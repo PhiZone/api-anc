@@ -6,7 +6,7 @@ public class MailTaskDto
 
     public string EmailAddress { get; set; } = null!;
 
-    public string EmailSubject { get; init; } = null!;
+    public string EmailSubject { get; set; } = null!;
 
     public string EmailBody { get; init; } = null!;
 }

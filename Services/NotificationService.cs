@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using PhiZoneApi.Dtos.Deliverers;
 using PhiZoneApi.Enums;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
@@ -8,24 +9,35 @@ namespace PhiZoneApi.Services;
 public class NotificationService(
     INotificationRepository notificationRepository,
     ITemplateService templateService,
+    IMailService mailService,
     UserManager<User> userManager,
     IUserRelationRepository userRelationRepository,
-    IResourceService resourceService)
-    : INotificationService
+    IResourceService resourceService) : INotificationService
 {
     public async Task Notify(User receiver, User? sender, NotificationType type, string key,
-        Dictionary<string, string> replacements)
+        Dictionary<string, string> replacements, string? emailTitleKey = null)
     {
+        var message = templateService.ReplacePlaceholders(templateService.GetMessage(key, receiver.Language)!,
+            replacements);
         var notification = new Notification
         {
             Type = type,
-            Content = templateService.ReplacePlaceholders(templateService.GetMessage(key, receiver.Language)!,
-                replacements),
+            Content = message,
             OwnerId = receiver.Id,
             OperatorId = sender?.Id,
             DateCreated = DateTimeOffset.UtcNow
         };
         await notificationRepository.CreateNotificationAsync(notification);
+        if (emailTitleKey != null)
+        {
+            await mailService.PublishEmailAsync(new MailTaskDto
+            {
+                EmailAddress = receiver.Email!,
+                UserName = receiver.UserName!,
+                EmailSubject = templateService.GetMessage(emailTitleKey, receiver.Language)!,
+                EmailBody = message,
+            });
+        }
     }
 
     public async Task NotifyLike<T>(T resource, int userId, string display) where T : LikeableResource
@@ -73,9 +85,7 @@ public class NotificationService(
             await Notify(user, sender, NotificationType.Mentions, "mention",
                 new Dictionary<string, string>
                 {
-                    {
-                        "User", resourceService.GetRichText<User>(sender.Id.ToString(), sender.UserName!)
-                    },
+                    { "User", resourceService.GetRichText<User>(sender.Id.ToString(), sender.UserName!) },
                     { "Content", richText }
                 });
     }

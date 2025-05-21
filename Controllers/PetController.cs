@@ -461,7 +461,7 @@ public class PetController : Controller
 
         await _notificationService.Notify(user, null, NotificationType.System,
             pair == null ? "pet-failed" : pair.Value.Key == UserRole.Volunteer ? "pet-volunteer" : "pet-qualified",
-            new Dictionary<string, string> { { "Score", petAnswer.TotalScore.ToString()! } });
+            new Dictionary<string, string> { { "Score", petAnswer.TotalScore.ToString()! } }, "pet-result");
 
         return NoContent();
     }

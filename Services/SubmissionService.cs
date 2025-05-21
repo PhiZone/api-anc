@@ -170,7 +170,7 @@ public class SubmissionService(
                     resourceService.GetRichText<SongSubmission>(songSubmission.Id.ToString(),
                         songSubmission.GetDisplay())
                 }
-            });
+            }, "submission-review-result");
 
         if (isOriginal)
         {
@@ -217,7 +217,7 @@ public class SubmissionService(
                         songSubmission.GetDisplay())
                 },
                 { "Reason", songSubmission.Message! }
-            });
+            }, "submission-review-result");
     }
 
     public async Task ApproveChart(ChartSubmission chartSubmission, Guid? songId = null)
@@ -380,7 +380,7 @@ public class SubmissionService(
                     resourceService.GetRichText<ChartSubmission>(chartSubmission.Id.ToString(),
                         await resourceService.GetDisplayName(chartSubmission))
                 }
-            });
+            }, "submission-review-result");
 
         if (!await authorshipRepository.AuthorshipExistsAsync(chart.Id, chart.OwnerId))
         {
@@ -421,7 +421,7 @@ public class SubmissionService(
                     resourceService.GetRichText<ChartSubmission>(chartSubmission.Id.ToString(),
                         await resourceService.GetDisplayName(chartSubmission))
                 }
-            });
+            }, "submission-review-result");
     }
 
     private async Task ApproveChartAsset(ChartAssetSubmission submission, Guid chartId)

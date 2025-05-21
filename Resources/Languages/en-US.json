@@ -2,21 +2,29 @@
   "Emails": [
     {
       "Mode": 0,
-      "Subject": "[PhiZone] Please confirm your email address",
+      "Subject": "Please confirm your email address",
       "Body": "Dear {UserName},\n\nPlease enter {Code} on the registration page in order to confirm your email address. This code is valid in 5 minutes.\n\nIf you did not expect to receive this email, please ignore it.\n\nPhiZone"
     },
     {
       "Mode": 1,
-      "Subject": "[PhiZone] Your password is being reset",
+      "Subject": "Your password is being reset",
       "Body": "Dear {UserName},\n\nYou've just now requested to reset your password. Please enter {Code} into the code field on the password reset page in order to continue. This code is valid in 5 minutes.\n\nIf you did not expect to receive this email, please ignore it.\n\nPhiZone"
     },
     {
       "Mode": 2,
-      "Subject": "[PhiZone] Your account is being revoked",
+      "Subject": "Your account is being revoked",
       "Body": "Dear {UserName},\n\nYou've just now requested to revoke your account. Please enter {Code} into the code field on the confirmation page in order to continue. This code is valid in 5 minutes.\n\nIf you did not expect to receive this email, please ignore it.\n\nPhiZone"
     }
   ],
   "Messages": [
+    {
+      "Key": "submission-review-result",
+      "Content": "Submission Review Result"
+    },
+    {
+      "Key": "pet-result",
+      "Content": "Your Result of the Privilege Escalation Test"
+    },
     {
       "Key": "song-submission-approval",
       "Content": "Your song submission {Song} has been approved!"
