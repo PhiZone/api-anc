@@ -14,6 +14,11 @@
       "Mode": 2,
       "Subject": "Your account is being revoked",
       "Body": "Dear {UserName},\n\nYou've just now requested to revoke your account. Please enter {Code} into the code field on the confirmation page in order to continue. This code is valid in 5 minutes.\n\nIf you did not expect to receive this email, please ignore it.\n\nPhiZone"
+    },
+    {
+      "Mode": 3,
+      "Subject": "You are updating your email address",
+      "Body": "Dear {UserName},\n\nPlease enter {Code} in the dialog in order to confirm your new email address. This code is valid in 5 minutes.\n\nIf you did not expect to receive this email, please ignore it.\n\nPhiZone"
     }
   ],
   "Messages": [

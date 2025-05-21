@@ -4,5 +4,6 @@ public enum EmailRequestMode
 {
     EmailConfirmation,
     PasswordReset,
-    AccountRevocation
+    AccountRevocation,
+    EmailAddressUpdate
 }

@@ -447,7 +447,7 @@ public class AuthenticationController(
     public async Task<IActionResult> SendEmail([FromBody] UserEmailRequestDto dto, [FromQuery] bool wait = false)
     {
         var user = await userManager.FindByEmailAsync(dto.Email);
-        if (dto.Mode != EmailRequestMode.EmailConfirmation)
+        if (dto.Mode != EmailRequestMode.EmailConfirmation && dto.Mode != EmailRequestMode.EmailAddressUpdate)
         {
             if (user == null)
                 return NotFound(new ResponseDto<object>
@@ -475,35 +475,39 @@ public class AuthenticationController(
             });
         }
 
-        if (dto.Mode == EmailRequestMode.EmailConfirmation)
+        if (dto.Mode is EmailRequestMode.EmailConfirmation or EmailRequestMode.EmailAddressUpdate)
         {
             if (user != null)
                 return BadRequest(new ResponseDto<object>
                 {
                     Status = ResponseStatus.ErrorBrief,
-                    Code = string.Equals(user.UserName, dto.UserName, StringComparison.InvariantCultureIgnoreCase)
+                    Code = dto.Mode == EmailRequestMode.EmailConfirmation && string.Equals(user.UserName,
+                        dto.UserName, StringComparison.InvariantCultureIgnoreCase)
                         ? ResponseCodes.AlreadyDone
                         : ResponseCodes.EmailOccupied
                 });
 
-            if (dto.UserName == null)
-                return BadRequest(new ResponseDto<object>
-                {
-                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidUserName
-                });
+            if (dto.Mode == EmailRequestMode.EmailConfirmation)
+            {
+                if (dto.UserName == null)
+                    return BadRequest(new ResponseDto<object>
+                    {
+                        Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidUserName
+                    });
 
-            if (dto.Language == null)
-                return BadRequest(new ResponseDto<object>
-                {
-                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidLanguageCode
-                });
+                if (dto.Language == null)
+                    return BadRequest(new ResponseDto<object>
+                    {
+                        Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidLanguageCode
+                    });
 
-            user = await userManager.FindByNameAsync(dto.UserName);
-            if (user != null)
-                return BadRequest(new ResponseDto<object>
-                {
-                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNameOccupied
-                });
+                user = await userManager.FindByNameAsync(dto.UserName);
+                if (user != null)
+                    return BadRequest(new ResponseDto<object>
+                    {
+                        Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.UserNameOccupied
+                    });
+            }
         }
 
         if (wait)
@@ -533,6 +537,49 @@ public class AuthenticationController(
             await mailService.PublishEmailAsync(dto.Email, dto.UserName ?? user!.UserName!,
                 dto.Language ?? user!.Language, dto.Mode);
 
+        return NoContent();
+    }
+
+    /// <summary>
+    ///     Updates user's email address.
+    /// </summary>
+    /// <param name="dto">Code from the address update email and the new email address.</param>
+    /// <returns>An empty body.</returns>
+    /// <response code="204">Returns an empty body.</response>
+    /// <response code="400">When the input code is invalid.</response>
+    [HttpPost("updateEmailAddress")]
+    [Consumes("application/json")]
+    [Produces("application/json")]
+    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
+    [ProducesResponseType(typeof(void), StatusCodes.Status204NoContent, "text/plain")]
+    [ProducesResponseType(StatusCodes.Status400BadRequest, Type = typeof(ResponseDto<object>))]
+    public async Task<IActionResult> UpdateEmailAddress([FromBody] UserEmailAddressUpdateDto dto)
+    {
+        var currentUser = (await userManager.FindByIdAsync(User.GetClaim(Claims.Subject)!))!;
+        var db = redis.GetDatabase();
+        var key = $"phizone:email:{EmailRequestMode.EmailAddressUpdate}:{dto.Code}";
+        if (!await db.KeyExistsAsync(key))
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidCode
+            });
+        var email = await db.StringGetAsync(key);
+        if (email != dto.NewEmailAddress)
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InvalidCode
+            });
+        db.KeyDelete(key);
+
+        var user = await userManager.FindByEmailAsync(dto.NewEmailAddress);
+        if (user != null)
+            return BadRequest(new ResponseDto<object>
+            {
+                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.EmailOccupied
+            });
+        currentUser.Email = dto.NewEmailAddress;
+
+        await userManager.UpdateAsync(currentUser);
         return NoContent();
     }
 
