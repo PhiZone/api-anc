@@ -73,6 +73,13 @@ public partial class ResourceService(IServiceProvider serviceProvider, IConfigur
         return result;
     }
 
+    public string FromRichText(string input)
+    {
+        return string.IsNullOrEmpty(input)
+            ? input
+            : GeneralRichTextRegex().Replace(input, match => match.Groups[3].Value);
+    }
+
     public async Task<bool> IsBlacklisted(int user1, int user2)
     {
         await using var scope = serviceProvider.CreateAsyncScope();
@@ -338,4 +345,7 @@ public partial class ResourceService(IServiceProvider serviceProvider, IConfigur
 
     [GeneratedRegex(@"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$")]
     private static partial Regex EmailRegex();
+
+    [GeneratedRegex(@"\[PZ([A-Za-z]+):([0-9]+):((?:(?!:PZRT\]).)*):PZRT\]", RegexOptions.IgnoreCase, "zh-CN")]
+    private static partial Regex GeneralRichTextRegex();
 }

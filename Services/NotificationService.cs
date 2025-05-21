@@ -34,7 +34,7 @@ public class NotificationService(
                 EmailAddress = receiver.Email!,
                 UserName = receiver.UserName!,
                 EmailSubject = templateService.GetMessage(emailTitleKey, receiver.Language)!,
-                EmailBody = message
+                EmailBody = resourceService.FromRichText(message)
             });
     }
 

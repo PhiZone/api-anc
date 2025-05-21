@@ -19,6 +19,8 @@ public interface IResourceService
 
     List<int> GetAuthorIds(string name);
 
+    string FromRichText(string input);
+
     Task<bool> IsBlacklisted(int user1, int user2);
 
     Task<(bool, bool)> IsPreparedOrFinished(EventTeam eventTeam);
