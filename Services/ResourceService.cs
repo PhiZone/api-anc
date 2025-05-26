@@ -254,7 +254,7 @@ public partial class ResourceService(IServiceProvider serviceProvider, IConfigur
         var httpContextAccessor = scope.ServiceProvider.GetRequiredService<IHttpContextAccessor>();
         var request = httpContextAccessor.HttpContext!.Request;
         var userId = httpContextAccessor.HttpContext!.User.GetClaim(OpenIddictConstants.Claims.Subject);
-        var user = userId != null ? userManager.FindByIdAsync(userId).Result : null;
+        var user = userId != null ? await userManager.FindByIdAsync(userId) : null;
         var messengerService = scope.ServiceProvider.GetRequiredService<IMessengerService>();
         await messengerService.SendUserInput(new UserInputDelivererDto
         {
