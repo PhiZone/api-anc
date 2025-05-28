@@ -18,8 +18,7 @@ public partial class ResourceService(IServiceProvider serviceProvider, IConfigur
 {
     private readonly ResourceDto _resourceDto = JsonConvert.DeserializeObject<ResourceDto>(File.ReadAllText(
         Path.Combine(Directory.GetCurrentDirectory(),
-            configuration.GetSection("ResourceSettings").GetValue<string>("DirectoryPath") ?? "Resources",
-            "resources.json")))!;
+            configuration.GetSection("ResourceSettings").GetValue<string>("DirectoryPath")!, "resources.json")))!;
 
     private readonly Dictionary<string, Guid> _userSubmissionSessionDictionary = new();
 
