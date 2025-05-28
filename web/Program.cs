@@ -175,8 +175,19 @@ builder.Services.AddSingleton<IAuthProvider, QqAuthProvider>();
 #pragma warning disable EF1001
 builder.Services.AddSingleton<IPluralizer, HumanizerPluralizer>();
 #pragma warning restore EF1001
-builder.Services.AddSingleton<IConnectionMultiplexer>(
-    ConnectionMultiplexer.Connect(builder.Configuration.GetValue<string>("RedisConnection") ?? "localhost"));
+
+var host = Environment.GetEnvironmentVariable("REDIS_HOST_main");
+var port = Environment.GetEnvironmentVariable("REDIS_PORT_main");
+var user = Environment.GetEnvironmentVariable("REDIS_USER_main");
+var password = Environment.GetEnvironmentVariable("REDIS_PASSWORD_main");
+var multiplexer = host != null && port != null && user != null && password != null
+    ? ConnectionMultiplexer.Connect(new ConfigurationOptions
+    {
+        EndPoints = { { host, int.Parse(port) } }, User = user, Password = password
+    })
+    : ConnectionMultiplexer.Connect(builder.Configuration.GetValue<string>("RedisConnection") ?? "localhost");
+builder.Services.AddSingleton<IConnectionMultiplexer>(multiplexer);
+
 builder.Services.AddSingleton<IHostedService>(provider => new MailSenderService(
     provider.GetService<IServiceScopeFactory>()!.CreateScope().ServiceProvider.GetService<IMailService>()!,
     provider.GetService<IRabbitMqService>()!, provider.GetService<IHostEnvironment>()!));

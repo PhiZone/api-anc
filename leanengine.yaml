@@ -1,0 +1,9 @@
+build:
+  - printenv | awk -F= '{ printf "%s=\"%s\"\n", $1, $2 }' > .env
+  - curl -L https://github.com/PhiZone/seek-tune/releases/download/v1.0.0/seektune-linux-amd64 -o seektune
+  - chmod +x seektune
+  - use: default
+run: ./seektune serve -p 2338 3>&1 1>&2 2>&3 3>&- & dotnet web/bin/Release/net9.0/web.dll
+exposeEnvironmentsOnBuild: true
+systemDependencies:
+  - ffmpeg
