@@ -8,16 +8,10 @@ public class LanguageSettings
     /// <summary>
     ///     Stores a path to language files.
     /// </summary>
-    public string DirectoryPath { get; set; } = "Resources/Languages";
+    public string DirectoryPath { get; set; } = null!;
 
     /// <summary>
     ///     Determines all supported languages for this app.
     /// </summary>
-    public List<string> SupportedLanguages { get; set; } =
-    [
-        "en-US",
-        "zh-CN",
-        "zh-TW",
-        "ja-JP"
-    ];
+    public List<string> SupportedLanguages { get; set; } = null!;
 }
