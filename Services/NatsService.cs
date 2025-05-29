@@ -3,14 +3,9 @@ using PhiZoneApi.Interfaces;
 
 namespace PhiZoneApi.Services;
 
-public class NatsService : INatsService
+public class NatsService(IConfiguration config) : INatsService
 {
-    private readonly NatsClient _client;
-
-    public NatsService(IConfiguration config)
-    {
-        _client = new NatsClient(config["NatsUrl"] ?? "nats://localhost:4222");
-    }
+    private readonly NatsClient _client = new(config["NatsUrl"] ?? "nats://localhost:4222");
 
     public NatsClient GetClient()
     {
