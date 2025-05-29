@@ -159,6 +159,7 @@ public class SubmissionController(
         await db.StringSetAsync(key, JsonConvert.SerializeObject(session), TimeSpan.FromDays(1));
         var summary = await resourceService.GenerateMatchSummary(songResults, resourceRecordResults, currentUser);
         await hubContext.Clients.Group(session.Id.ToString()).ReceiveFileProgress(SessionFileStatus.Succeeded, null, 1);
+        await hubContext.Clients.Group(session.Id.ToString()).ReceiveResult(summary);
         return StatusCode(StatusCodes.Status201Created,
             new ResponseDto<SongRecognitionSummaryDto>
                 { Status = ResponseStatus.Ok, Code = ResponseCodes.Ok, Data = summary });
