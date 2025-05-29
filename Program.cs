@@ -158,6 +158,7 @@ builder.Services.AddSingleton<ITokenService, TokenService>();
 builder.Services.AddSingleton<IResourceService, ResourceService>();
 builder.Services.AddSingleton<IFileStorageService, FileStorageService>();
 builder.Services.AddSingleton<IRabbitMqService, RabbitMqService>();
+builder.Services.AddSingleton<INatsService, NatsService>();
 builder.Services.AddSingleton<IFeishuService, FeishuService>();
 builder.Services.AddSingleton<IMessengerService, MessengerService>();
 builder.Services.AddSingleton<ITapGhostService, TapGhostService>();
@@ -183,7 +184,7 @@ builder.Services.AddSingleton<IHostedService>(provider => new MailSenderService(
 builder.Services.AddSingleton<IHostedService>(provider =>
 {
     var scope = provider.GetService<IServiceScopeFactory>()!.CreateScope();
-    return new SongConverterService(provider.GetService<IRabbitMqService>()!,
+    return new SongConverterService(provider.GetService<INatsService>()!,
         scope.ServiceProvider.GetService<ISongService>()!, scope.ServiceProvider.GetService<ISongRepository>()!,
         scope.ServiceProvider.GetService<ISongSubmissionRepository>()!, provider.GetService<ISeekTuneService>()!,
         provider.GetService<IFeishuService>()!, provider.GetService<IHostEnvironment>()!,
