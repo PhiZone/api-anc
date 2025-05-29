@@ -1,14 +1,17 @@
 ﻿using NVorbis;
 using PhiZoneApi.Constants;
+using PhiZoneApi.Dtos.Deliverers;
 using PhiZoneApi.Interfaces;
 using PhiZoneApi.Models;
-using RabbitMQ.Client;
+
+// using RabbitMQ.Client;
 
 namespace PhiZoneApi.Services;
 
 public class SongService(
     IFileStorageService fileStorageService,
-    IRabbitMqService rabbitMqService,
+    // IRabbitMqService rabbitMqService,
+    INatsService natsService,
     IMultimediaService multimediaService,
     ILogger<SongService> logger,
     IHostEnvironment env) : ISongService
@@ -56,16 +59,22 @@ public class SongService(
         await using var stream = file.OpenReadStream();
         using var memoryStream = new MemoryStream();
         await stream.CopyToAsync(memoryStream);
-        await using var channel = await rabbitMqService.GetConnection().CreateChannelAsync();
-        var properties = new BasicProperties
-        {
-            Headers = new Dictionary<string, object?>
-            {
-                { "SongId", songId.ToString() },
-                { "IsSubmission", isSubmission.ToString() },
-                { "Burn", burn.ToString() }
-            }
-        };
-        await channel.BasicPublishAsync("", _queue, false, properties, memoryStream.ToArray());
+        // await using var channel = await rabbitMqService.GetClient().CreateChannelAsync();
+        // var properties = new BasicProperties
+        // {
+        //     Headers = new Dictionary<string, object?>
+        //     {
+        //         { "SongId", songId.ToString() },
+        //         { "IsSubmission", isSubmission.ToString() },
+        //         { "Burn", burn.ToString() }
+        //     }
+        // };
+        // await channel.BasicPublishAsync("", _queue, false, properties, memoryStream.ToArray());
+        await natsService.GetClient()
+            .PublishAsync(_queue,
+                new SongTaskDto
+                {
+                    SongId = songId, IsSubmission = isSubmission, Burn = burn, Body = memoryStream.ToArray()
+                });
     }
 }
