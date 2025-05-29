@@ -1,9 +1,16 @@
 build:
   - printenv | awk -F= '{ printf "%s=\"%s\"\n", $1, $2 }' > .env
-  - curl -L https://github.com/PhiZone/seek-tune/releases/download/v1.0.0/seektune-linux-amd64 -o seektune
+  - curl -L https://res.phizone.cn/fs70wY4qVVGdnaMrd63z5V2fibaRjIIg/seektune-linux-amd64 -o seektune
   - chmod +x seektune
-  - use: default
-run: ./seektune serve -p 2338 3>&1 1>&2 2>&3 3>&- & dotnet web/bin/Release/net9.0/web.dll
+  - curl -L https://res.phizone.cn/rAcspcLWM1sc1NQauEK6nWo62OB242ZC/meilisearch-linux-amd64 -o meilisearch
+  - chmod +x meilisearch
+  - mv web/appsettings*.json .
+  - mv web/Resources .
+  - dotnet publish -c Release --property:PublishDir=release
+run: |
+  ./seektune serve -p 2338 3>&1 1>&2 2>&3 3>&- &
+  ./meilisearch --http-addr 'localhost:7770' --master-key $MEILISEARCH_MASTER_KEY 3>&1 1>&2 2>&3 3>&- &
+  dotnet web/release/web.dll
 exposeEnvironmentsOnBuild: true
 systemDependencies:
   - ffmpeg

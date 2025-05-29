@@ -28,6 +28,23 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddMvc(options => { options.Filters.Add(typeof(ModelValidationFilter)); });
 
+builder.Services.AddCors(options =>
+{
+    string[] allowedOrigins =
+    [
+        "https://www.phi.zone",
+        "https://www.phizone.cn",
+        "https://insider.phizone.cn",
+        "https://stg-www.phizone.cn",
+        "https://alpha.phizone.cn",
+        "http://localhost:5173",
+        "http://localhost:4173",
+        "http://localhost:5050"
+    ];
+    options.AddDefaultPolicy(policy =>
+        policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod().AllowCredentials());
+});
+
 builder.Services.AddControllers()
     .AddNewtonsoftJson(options =>
     {
@@ -180,12 +197,14 @@ var host = Environment.GetEnvironmentVariable("REDIS_HOST_main");
 var port = Environment.GetEnvironmentVariable("REDIS_PORT_main");
 var user = Environment.GetEnvironmentVariable("REDIS_USER_main");
 var password = Environment.GetEnvironmentVariable("REDIS_PASSWORD_main");
-var multiplexer = host != null && port != null && user != null && password != null
-    ? ConnectionMultiplexer.Connect(new ConfigurationOptions
-    {
-        EndPoints = { { host, int.Parse(port) } }, User = user, Password = password
-    })
-    : ConnectionMultiplexer.Connect(builder.Configuration.GetValue<string>("RedisConnection") ?? "localhost");
+var multiplexer =
+    !string.IsNullOrEmpty(host) && !string.IsNullOrEmpty(port) && !string.IsNullOrEmpty(user) &&
+    !string.IsNullOrEmpty(password)
+        ? ConnectionMultiplexer.Connect(new ConfigurationOptions
+        {
+            EndPoints = { { host, int.Parse(port) } }, User = user, Password = password
+        })
+        : ConnectionMultiplexer.Connect(builder.Configuration.GetValue<string>("RedisConnection") ?? "localhost");
 builder.Services.AddSingleton<IConnectionMultiplexer>(multiplexer);
 
 builder.Services.AddSingleton<IHostedService>(provider => new MailSenderService(
@@ -285,6 +304,8 @@ if (app.Environment.IsDevelopment() ||
     app.UseSwagger();
     app.UseSwaggerUI(options => { options.SwaggerEndpoint("/swagger/v2/swagger.json", "PhiZone API v2"); });
 }
+
+app.UseCors();
 
 app.UseAuthentication();
 app.UseAuthorization();

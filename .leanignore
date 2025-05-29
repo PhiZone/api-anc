@@ -4,3 +4,4 @@
 .leancloud/
 web/bin/
 web/obj/
+web/release
