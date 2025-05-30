@@ -465,8 +465,7 @@ $RECYCLE.BIN/
 
 .leancloud
 .env
-appsettings.Development.json*
-appsettings.Production.json*
+appsettings.*.json*
 deploy.sh
 web/Resources/resources.json
 web/Resources/Descriptors/
