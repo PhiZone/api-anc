@@ -464,8 +464,7 @@ $RECYCLE.BIN/
 *.lnk
 
 .env
-appsettings.Development.json*
-appsettings.Production.json*
+appsettings.*.json*
 deploy.sh
 Resources/resources.json
 Resources/Descriptors/
