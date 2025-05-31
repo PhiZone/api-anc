@@ -16,8 +16,6 @@ public class SubmissionSession
     public RecognitionResults? RecognitionResults { get; set; }
 
     public ChartSubmission? Chart { get; set; }
-
-    public List<SessionChartAsset> Assets { get; set; } = [];
 }
 
 public class RecognitionResults
