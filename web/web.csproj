@@ -15,6 +15,7 @@
         <PackageReference Include="HtmlSanitizer" Version="9.0.876"/>
         <PackageReference Include="MailKit" Version="4.11.0"/>
         <PackageReference Include="MeiliSearch" Version="0.16.0"/>
+        <PackageReference Include="Microsoft.AspNetCore.DataProtection.StackExchangeRedis" Version="9.0.5"/>
         <PackageReference Include="Microsoft.AspNetCore.Mvc.Versioning" Version="5.1.0"/>
         <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="4.8.0"/>
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.8.0"/>

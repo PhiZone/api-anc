@@ -1,4 +1,6 @@
 using System.Reflection;
+using System.Security.Cryptography.X509Certificates;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
@@ -70,6 +72,10 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseOpenIddict<int>();
 });
 
+var multiplexer =
+    ConnectionMultiplexer.Connect(builder.Configuration.GetValue<string>("RedisConnection") ?? "localhost");
+builder.Services.AddDataProtection().SetApplicationName("PhiZoneApi").PersistKeysToStackExchangeRedis(multiplexer);
+
 builder.Services.AddOpenIddict()
     .AddCore(options =>
     {
@@ -77,6 +83,10 @@ builder.Services.AddOpenIddict()
     })
     .AddServer(options =>
     {
+        var certificate = X509CertificateLoader.LoadPkcs12FromFile("server-cert.pfx",
+            builder.Configuration["CertificatePassword"],
+            X509KeyStorageFlags.MachineKeySet | X509KeyStorageFlags.EphemeralKeySet);
+
         options.SetTokenEndpointUris("/auth/token");
         options.SetRevocationEndpointUris("/auth/revoke");
         options.AllowPasswordFlow();
@@ -88,13 +98,14 @@ builder.Services.AddOpenIddict()
         //     OpenIddictConstants.Permissions.Scopes.Roles);
         options.SetAccessTokenLifetime(TimeSpan.FromHours(6));
         options.SetRefreshTokenLifetime(TimeSpan.FromDays(31));
-        options.AddDevelopmentEncryptionCertificate().AddDevelopmentSigningCertificate();
+        options.AddSigningCertificate(certificate).UseDataProtection();
         options.UseAspNetCore().EnableTokenEndpointPassthrough().DisableTransportSecurityRequirement();
     })
     .AddValidation(options =>
     {
         options.UseLocalServer();
         options.UseAspNetCore();
+        options.UseDataProtection();
     });
 
 builder.Services.AddAuthentication(options =>
@@ -305,8 +316,6 @@ if (app.Environment.IsDevelopment() ||
     app.UseSwagger();
     app.UseSwaggerUI(options => { options.SwaggerEndpoint("/swagger/v2/swagger.json", "PhiZone API v2"); });
 }
-
-app.UseCors();
 
 app.UseAuthentication();
 app.UseAuthorization();
