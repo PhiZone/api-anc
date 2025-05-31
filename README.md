@@ -36,7 +36,7 @@ A template for both `./appsettings.Development.json` and `./appsettings.Producti
   "ConnectionStrings": {
     "DefaultConnection": "Host=localhost:5432;Username=yourusername;Password=yourpassword;Database=yourdatabase"
   },
-   "CertificatePassword": "YourPasswordHere",
+  "CertificatePassword": "YourPasswordHere",
   "TapTapSettings": {
     "ClientId": "yourid",
     "ClientToken": "yourtoken",
