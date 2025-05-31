@@ -81,7 +81,9 @@ builder.Services.AddOpenIddict()
         //     OpenIddictConstants.Permissions.Scopes.Roles);
         options.SetAccessTokenLifetime(TimeSpan.FromHours(6));
         options.SetRefreshTokenLifetime(TimeSpan.FromDays(31));
-        options.AddSigningCertificate(certificate).UseDataProtection();
+        options.AddSigningCertificate(certificate);
+        options.AddEncryptionCertificate(certificate);
+        options.UseDataProtection();
         options.UseAspNetCore().EnableTokenEndpointPassthrough().DisableTransportSecurityRequirement();
     })
     .AddValidation(options =>
