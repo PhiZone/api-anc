@@ -539,12 +539,6 @@ public class SubmissionController(
             });
 
         var chartSubmission = session.Chart;
-        var assets = session.Assets;
-        if (assets.Any(e => e.Name == dto.Name))
-            return BadRequest(new ResponseDto<object>
-            {
-                Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.NameOccupied
-            });
 
         var chartAsset = new SessionChartAsset
         {
@@ -557,7 +551,7 @@ public class SubmissionController(
                         chartSubmission.SongSubmissionId!.Value)).Title), dto.File)).Item1
         };
 
-        session.Assets.Add(chartAsset);
+        await db.ListRightPushAsync($"{key}:assets", JsonConvert.SerializeObject(chartAsset));
 
         await db.StringSetAsync(key, JsonConvert.SerializeObject(session), TimeSpan.FromDays(1));
 
@@ -608,17 +602,11 @@ public class SubmissionController(
             });
 
         var chartSubmission = session.Chart;
-        var assets = session.Assets;
+        var assets = new List<SessionChartAsset>();
 
         foreach (var dto in dtos)
         {
-            if (assets.Any(e => e.Name == dto.Name))
-                return BadRequest(new ResponseDto<object>
-                {
-                    Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.NameOccupied
-                });
-
-            var chartAsset = new SessionChartAsset
+            assets.Add(new SessionChartAsset
             {
                 Type = dto.Type,
                 Name = dto.Name,
@@ -627,12 +615,10 @@ public class SubmissionController(
                         ? (await songRepository.GetSongAsync(chartSubmission.SongId.Value)).Title
                         : (await songSubmissionRepository.GetSongSubmissionAsync(chartSubmission.SongSubmissionId!
                             .Value)).Title), dto.File)).Item1
-            };
-
-            assets.Add(chartAsset);
+            });
         }
 
-        await db.StringSetAsync(key, JsonConvert.SerializeObject(session), TimeSpan.FromDays(1));
+        await db.ListRightPushAsync($"{key}:assets", assets.Select(e => (RedisValue)JsonConvert.SerializeObject(e)).ToArray());
 
         return StatusCode(StatusCodes.Status201Created);
     }
@@ -789,7 +775,9 @@ public class SubmissionController(
                 null, currentUser);
         }
 
-        foreach (var chartAsset in session.Assets.Select(asset => new ChartAssetSubmission
+        var assets = (await db.ListRangeAsync($"{key}:assets")).Select(e => JsonConvert.DeserializeObject<SessionChartAsset>(e!)!);
+
+        foreach (var chartAsset in assets.Select(asset => new ChartAssetSubmission
                  {
                      ChartSubmissionId = chartSubmission.Id,
                      Type = asset.Type,
@@ -812,6 +800,7 @@ public class SubmissionController(
                 new ResponseDto<object> { Status = ResponseStatus.ErrorBrief, Code = ResponseCodes.InternalError });
 
         await db.KeyDeleteAsync(key);
+        await db.KeyDeleteAsync($"{key}:assets");
 
         await feishuService.Notify(chartSubmission, FeishuResources.ContentReviewalChat);
 
