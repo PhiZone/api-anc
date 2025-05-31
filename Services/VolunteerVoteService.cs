@@ -74,15 +74,16 @@ public class VolunteerVoteService(
                 chartSubmission.Status = RequestStatus.Rejected;
                 await submissionService.RejectChart(chartSubmission);
             }
-            else if (score >= scoreRange.Item2 && (!chartSubmission.IsRanked || score >= scoreRange.Item3 ||
-                                                   votes.Count == _voteScoreDictionary.Last().Key))
+            else if (score >= scoreRange.Item2)
             {
+                var finalApproval = !chartSubmission.IsRanked || score >= scoreRange.Item3 ||
+                                    votes.Count == _voteScoreDictionary.Last().Key;
                 chartSubmission.IsRanked = chartSubmission.IsRanked && score >= scoreRange.Item3;
                 chartSubmission.Difficulty = Math.Round(suggestedDifficulty * 10, MidpointRounding.AwayFromZero) / 10;
-                chartSubmission.VolunteerStatus = RequestStatus.Approved;
+                if (finalApproval) chartSubmission.VolunteerStatus = RequestStatus.Approved;
                 if (chartSubmission.AdmissionStatus == RequestStatus.Approved)
                 {
-                    chartSubmission.Status = RequestStatus.Approved;
+                    if (finalApproval) chartSubmission.Status = RequestStatus.Approved;
                     await submissionService.ApproveChart(chartSubmission);
                 }
             }
