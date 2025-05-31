@@ -72,8 +72,18 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseOpenIddict<int>();
 });
 
+var host = Environment.GetEnvironmentVariable("REDIS_HOST_main");
+var port = Environment.GetEnvironmentVariable("REDIS_PORT_main");
+var user = Environment.GetEnvironmentVariable("REDIS_USER_main");
+var password = Environment.GetEnvironmentVariable("REDIS_PASSWORD_main");
 var multiplexer =
-    ConnectionMultiplexer.Connect(builder.Configuration.GetValue<string>("RedisConnection") ?? "localhost");
+    !string.IsNullOrEmpty(host) && !string.IsNullOrEmpty(port) && !string.IsNullOrEmpty(user) &&
+    !string.IsNullOrEmpty(password)
+        ? ConnectionMultiplexer.Connect(new ConfigurationOptions
+        {
+            EndPoints = { { host, int.Parse(port) } }, User = user, Password = password
+        })
+        : ConnectionMultiplexer.Connect(builder.Configuration.GetValue<string>("RedisConnection") ?? "localhost");
 builder.Services.AddDataProtection().SetApplicationName("PhiZoneApi").PersistKeysToStackExchangeRedis(multiplexer);
 
 builder.Services.AddOpenIddict()
@@ -205,18 +215,6 @@ builder.Services.AddSingleton<IAuthProvider, QqAuthProvider>();
 builder.Services.AddSingleton<IPluralizer, HumanizerPluralizer>();
 #pragma warning restore EF1001
 
-var host = Environment.GetEnvironmentVariable("REDIS_HOST_main");
-var port = Environment.GetEnvironmentVariable("REDIS_PORT_main");
-var user = Environment.GetEnvironmentVariable("REDIS_USER_main");
-var password = Environment.GetEnvironmentVariable("REDIS_PASSWORD_main");
-var multiplexer =
-    !string.IsNullOrEmpty(host) && !string.IsNullOrEmpty(port) && !string.IsNullOrEmpty(user) &&
-    !string.IsNullOrEmpty(password)
-        ? ConnectionMultiplexer.Connect(new ConfigurationOptions
-        {
-            EndPoints = { { host, int.Parse(port) } }, User = user, Password = password
-        })
-        : ConnectionMultiplexer.Connect(builder.Configuration.GetValue<string>("RedisConnection") ?? "localhost");
 builder.Services.AddSingleton<IConnectionMultiplexer>(multiplexer);
 
 builder.Services.AddSingleton<IHostedService>(provider => new MailSenderService(
