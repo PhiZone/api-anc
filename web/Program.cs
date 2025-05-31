@@ -317,6 +317,8 @@ if (app.Environment.IsDevelopment() ||
     app.UseSwaggerUI(options => { options.SwaggerEndpoint("/swagger/v2/swagger.json", "PhiZone API v2"); });
 }
 
+app.UseCors();
+
 app.UseAuthentication();
 app.UseAuthorization();
 
