@@ -220,6 +220,8 @@ public partial class ChartService(IFileStorageService fileStorageService, ILogge
                     }
                 }
 
+                line.Anchor = line.Anchor != null ? [..line.Anchor[..2]] : [0.5, 0.5];
+
                 if (line.AlphaControl != null)
                     line.AlphaControl = line.AlphaControl.Where(e => e != null).ToList();
                 else

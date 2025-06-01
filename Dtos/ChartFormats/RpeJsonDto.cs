@@ -61,6 +61,8 @@ public class JudgeLine
 
     [JsonProperty("alphaControl")] public List<AlphaControl?>? AlphaControl { get; set; }
 
+    [JsonProperty("anchor")] public List<double>? Anchor { get; set; }
+
     [JsonProperty("attachUI")] public string? AttachUi { get; set; }
 
     [JsonProperty("bpmfactor")] public double BpmFactor { get; set; }
@@ -154,14 +156,6 @@ public class ExtendedEventLayer
     [JsonProperty("textEvents")] public List<TextEvent?>? TextEvents { get; set; }
 }
 
-// Alpha event values are in fact floats and not integers lol
-// public class AlphaEvent : Event
-// {
-//     [JsonProperty("end")] public new int End { get; set; }
-//
-//     [JsonProperty("start")] public new int Start { get; set; }
-// }
-
 public class ColorEvent : Event
 {
     [JsonProperty("end")] public new List<int> End { get; set; } = null!;
@@ -214,6 +208,12 @@ public class Event : IComparable<Event>
 
 public class SpeedEvent : IComparable<SpeedEvent>
 {
+    [JsonProperty("easingLeft")] public double EasingLeft { get; set; }
+
+    [JsonProperty("easingRight")] public double EasingRight { get; set; } = 1.0;
+
+    [JsonProperty("easingType")] public int EasingType { get; set; } = 1;
+
     [JsonProperty("end")] public double End { get; set; }
 
     [JsonProperty("endTime")] public List<int> EndTime { get; set; } = null!;
