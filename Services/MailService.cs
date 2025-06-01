@@ -20,7 +20,7 @@ public class MailService(
     private readonly string _queue = env.IsProduction() ? "email" : "email-dev";
 
     public async Task<MailTaskDto?> GenerateEmailAsync(string email, string userName, string language,
-        EmailRequestMode mode)
+        EmailRequestMode mode, bool useHtml = false)
     {
         string code;
         var random = new Random();
@@ -40,7 +40,8 @@ public class MailService(
             UserName = userName,
             EmailSubject = template.Subject,
             EmailBody = templateService.ReplacePlaceholders(template.Body,
-                new Dictionary<string, string> { { "UserName", userName }, { "Code", code } })
+                new Dictionary<string, string> { { "UserName", userName }, { "Code", code } }),
+            UseHtml = false
         };
     }
 
