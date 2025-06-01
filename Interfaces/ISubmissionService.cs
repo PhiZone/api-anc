@@ -8,7 +8,7 @@ public interface ISubmissionService
 
     Task RejectSong(SongSubmission songSubmission);
 
-    Task ApproveChart(ChartSubmission chartSubmission, Guid? songId = null);
+    Task ApproveChart(ChartSubmission chartSubmission, Guid? songId = null, bool? isRanked = null);
 
     Task RejectChart(ChartSubmission chartSubmission);
 }
