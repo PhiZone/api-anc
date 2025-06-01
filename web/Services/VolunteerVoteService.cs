@@ -27,8 +27,7 @@ public class VolunteerVoteService(
         bool result;
         if (await volunteerVoteRepository.VolunteerVoteExistsAsync(chartSubmission.Id, user.Id))
         {
-            var volunteerVote =
-                await volunteerVoteRepository.GetVolunteerVoteAsync(chartSubmission.Id, user.Id);
+            var volunteerVote = await volunteerVoteRepository.GetVolunteerVoteAsync(chartSubmission.Id, user.Id);
             volunteerVote.Score = dto.Score;
             volunteerVote.SuggestedDifficulty = dto.SuggestedDifficulty;
             volunteerVote.Message = dto.Message;
@@ -78,13 +77,19 @@ public class VolunteerVoteService(
             {
                 var finalApproval = !chartSubmission.IsRanked || score >= scoreRange.Item3 ||
                                     votes.Count == _voteScoreDictionary.Last().Key;
-                chartSubmission.IsRanked = chartSubmission.IsRanked && score >= scoreRange.Item3;
+                if (finalApproval)
+                {
+                    chartSubmission.IsRanked = chartSubmission.IsRanked && score >= scoreRange.Item3;
+                    chartSubmission.VolunteerStatus = RequestStatus.Approved;
+                }
+
                 chartSubmission.Difficulty = Math.Round(suggestedDifficulty * 10, MidpointRounding.AwayFromZero) / 10;
-                if (finalApproval) chartSubmission.VolunteerStatus = RequestStatus.Approved;
                 if (chartSubmission.AdmissionStatus == RequestStatus.Approved)
                 {
                     if (finalApproval) chartSubmission.Status = RequestStatus.Approved;
-                    await submissionService.ApproveChart(chartSubmission);
+                    if (finalApproval || chartSubmission.RepresentationId == null)
+                        await submissionService.ApproveChart(chartSubmission,
+                            isRanked: chartSubmission.IsRanked && score >= scoreRange.Item3);
                 }
             }
         }

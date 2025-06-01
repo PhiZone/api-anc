@@ -220,7 +220,7 @@ public class SubmissionService(
             }, "submission-review-result");
     }
 
-    public async Task ApproveChart(ChartSubmission chartSubmission, Guid? songId = null)
+    public async Task ApproveChart(ChartSubmission chartSubmission, Guid? songId = null, bool? isRanked = null)
     {
         songId ??= chartSubmission.SongId ??
                    (await songSubmissionRepository.GetSongSubmissionAsync(chartSubmission.SongSubmissionId!.Value))
@@ -272,7 +272,7 @@ public class SubmissionService(
                 Illustrator = chartSubmission.Illustrator,
                 Description = chartSubmission.Description,
                 Accessibility = chartSubmission.Accessibility,
-                IsRanked = chartSubmission.IsRanked,
+                IsRanked = isRanked ?? chartSubmission.IsRanked,
                 IsHidden = song.IsHidden,
                 IsLocked = false,
                 NoteCount = chartSubmission.NoteCount,
