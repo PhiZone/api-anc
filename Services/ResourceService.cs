@@ -346,6 +346,6 @@ public partial class ResourceService(IServiceProvider serviceProvider, IConfigur
     [GeneratedRegex(@"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$")]
     private static partial Regex EmailRegex();
 
-    [GeneratedRegex(@"\[PZ([A-Za-z]+):([0-9]+):((?:(?!:PZRT\]).)*):PZRT\]", RegexOptions.IgnoreCase, "zh-CN")]
+    [GeneratedRegex(@"\[PZ([A-Za-z]+):([-0-9a-f]+):((?:(?!:PZRT\]).)*):PZRT\]", RegexOptions.IgnoreCase)]
     private static partial Regex GeneralRichTextRegex();
 }
