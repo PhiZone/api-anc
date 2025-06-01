@@ -31,6 +31,10 @@
       "Content": "Your Result of the Privilege Escalation Test"
     },
     {
+      "Key": "collaboration-invite",
+      "Content": "Collaboration Invitation"
+    },
+    {
       "Key": "song-submission-approval",
       "Content": "Your song submission {Song} has been approved!"
     },
