@@ -31,6 +31,10 @@
       "Content": "权限晋升测试阅卷结果"
     },
     {
+      "Key": "collaboration-invite",
+      "Content": "稿件合作邀请"
+    },
+    {
       "Key": "song-submission-approval",
       "Content": "你提交的曲目 {Song} 已通过！"
     },

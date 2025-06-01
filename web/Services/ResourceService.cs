@@ -77,7 +77,21 @@ public partial class ResourceService(IServiceProvider serviceProvider, IConfigur
     {
         return string.IsNullOrEmpty(input)
             ? input
-            : GeneralRichTextRegex().Replace(input, match => match.Groups[3].Value);
+            : GeneralRichTextRegex().Replace(input, match =>
+            {
+                var type = match.Groups[1].Value switch
+                {
+                    "User" => "user",
+                    "Song" => "songs",
+                    "Chart" => "charts",
+                    "SongSubmission" => "studio/song-submissions",
+                    "ChartSubmission" => "studio/chart-submissions",
+                    "Collaboration" => "studio/collaborations",
+                    _ => ""
+                };
+                return
+                    $"<a href=\"{configuration["WebsiteUrl"]}/{type}/{match.Groups[2].Value}\">{match.Groups[3].Value}</a>";
+            });
     }
 
     public async Task<bool> IsBlacklisted(int user1, int user2)
@@ -346,6 +360,6 @@ public partial class ResourceService(IServiceProvider serviceProvider, IConfigur
     [GeneratedRegex(@"^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$")]
     private static partial Regex EmailRegex();
 
-    [GeneratedRegex(@"\[PZ([A-Za-z]+):([0-9]+):((?:(?!:PZRT\]).)*):PZRT\]", RegexOptions.IgnoreCase, "zh-CN")]
+    [GeneratedRegex(@"\[PZ([A-Za-z]+):([-0-9a-f]+):((?:(?!:PZRT\]).)*):PZRT\]", RegexOptions.IgnoreCase)]
     private static partial Regex GeneralRichTextRegex();
 }

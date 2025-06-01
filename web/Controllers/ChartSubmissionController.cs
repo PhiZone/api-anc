@@ -1858,7 +1858,7 @@ public class ChartSubmissionController(
                     resourceService.GetRichText<Collaboration>(collaboration.Id.ToString(),
                         templateService.GetMessage("more-info", invitee.Language)!)
                 }
-            });
+            }, "collaboration-invite");
         return collaboration;
     }
 }
