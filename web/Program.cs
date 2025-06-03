@@ -336,32 +336,41 @@ if (app.Environment.IsDevelopment() ||
 
 app.Use(async (context, next) =>
 {
-    // Only consider requests that have an Origin header (browser CORS requests).
-    if (context.Request.Headers.TryGetValue("Origin", out var originValues))
+    // If there's no Origin header, just continue normally (no CORS needed).
+    if (!context.Request.Headers.TryGetValue("Origin", out var originValues))
     {
-        var origin = originValues.FirstOrDefault();
-        if (!string.IsNullOrEmpty(origin) && credentialOrigins.Contains(origin))
-        {
-            // If the Origin is in our whitelist, use the "AllowCredentialsPolicy"
-            var corsPolicyProvider = context.RequestServices.GetRequiredService<ICorsPolicyProvider>();
-            var corsPolicy = (await corsPolicyProvider.GetPolicyAsync(context, "AllowCredentialsPolicy"))!;
-            var corsService = context.RequestServices.GetRequiredService<ICorsService>();
-            corsService.ApplyResult(
-                corsService.EvaluatePolicy(context, corsPolicy),
-                context.Response);
-        }
-        else
-        {
-            // Otherwise, use the open policy (no credentials)
-            var corsPolicyProvider = context.RequestServices.GetRequiredService<ICorsPolicyProvider>();
-            var corsPolicy = (await corsPolicyProvider.GetPolicyAsync(context, "OpenNoCredentialsPolicy"))!;
-            var corsService = context.RequestServices.GetRequiredService<ICorsService>();
-            corsService.ApplyResult(
-                corsService.EvaluatePolicy(context, corsPolicy),
-                context.Response);
-        }
+        await next();
+        return;
     }
 
+    var origin = originValues.FirstOrDefault();
+    var corsPolicyProvider = context.RequestServices.GetRequiredService<ICorsPolicyProvider>();
+    var corsService = context.RequestServices.GetRequiredService<ICorsService>();
+
+    CorsPolicy policyToApply;
+    if (!string.IsNullOrEmpty(origin) && credentialOrigins.Contains(origin))
+    {
+        // Whitelisted origin → use credentials‐allowed policy
+        policyToApply = (await corsPolicyProvider.GetPolicyAsync(context, "AllowCredentialsPolicy"))!;
+    }
+    else
+    {
+        // Any other origin → use open policy (no credentials)
+        policyToApply = (await corsPolicyProvider.GetPolicyAsync(context, "OpenNoCredentialsPolicy"))!;
+    }
+
+    // Evaluate and apply the policy (sets all Access-Control‐* headers)
+    var result = corsService.EvaluatePolicy(context, policyToApply);
+    corsService.ApplyResult(result, context.Response);
+
+    // If this is a preflight (OPTIONS) request, return 200 immediately—don’t call next().
+    if (string.Equals(context.Request.Method, "OPTIONS", StringComparison.OrdinalIgnoreCase))
+    {
+        context.Response.StatusCode = StatusCodes.Status200OK;
+        return;
+    }
+
+    // Otherwise, continue to MVC/etc.
     await next();
 });
 
