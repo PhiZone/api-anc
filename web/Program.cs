@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
+using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -30,10 +31,37 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddMvc(options => { options.Filters.Add(typeof(ModelValidationFilter)); });
 
+string[] credentialOrigins =
+[
+    "https://www.phi.zone",
+    "https://www.phizone.cn",
+    "https://insider.phizone.cn",
+    "https://stg-www.phizone.cn",
+    "https://alpha.phizone.cn",
+    "http://localhost:5173",
+    "http://localhost:4173",
+    "http://localhost:5050"
+];
 builder.Services.AddCors(options =>
 {
-    options.AddDefaultPolicy(policy =>
-        policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod().AllowCredentials());
+    // Policy #1: only these origins + AllowCredentials()
+    options.AddPolicy("AllowCredentialsPolicy", policy =>
+    {
+        policy
+            .WithOrigins(credentialOrigins)
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
+
+    // Policy #2: wildcard‐open (no credentials), i.e. AllowAnyOrigin but NO .AllowCredentials()
+    options.AddPolicy("OpenNoCredentialsPolicy", policy =>
+    {
+        policy
+            .AllowAnyOrigin()      // <-- this is allowed because we do NOT call .AllowCredentials()
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
 });
 
 builder.Services.AddControllers()
@@ -306,7 +334,36 @@ if (app.Environment.IsDevelopment() ||
     app.UseSwaggerUI(options => { options.SwaggerEndpoint("/swagger/v2/swagger.json", "PhiZone API v2"); });
 }
 
-app.UseCors();
+app.Use(async (context, next) =>
+{
+    // Only consider requests that have an Origin header (browser CORS requests).
+    if (context.Request.Headers.TryGetValue("Origin", out var originValues))
+    {
+        var origin = originValues.FirstOrDefault();
+        if (!string.IsNullOrEmpty(origin) && credentialOrigins.Contains(origin))
+        {
+            // If the Origin is in our whitelist, use the "AllowCredentialsPolicy"
+            var corsPolicyProvider = context.RequestServices.GetRequiredService<ICorsPolicyProvider>();
+            var corsPolicy = (await corsPolicyProvider.GetPolicyAsync(context, "AllowCredentialsPolicy"))!;
+            var corsService = context.RequestServices.GetRequiredService<ICorsService>();
+            corsService.ApplyResult(
+                corsService.EvaluatePolicy(context, corsPolicy),
+                context.Response);
+        }
+        else
+        {
+            // Otherwise, use the open policy (no credentials)
+            var corsPolicyProvider = context.RequestServices.GetRequiredService<ICorsPolicyProvider>();
+            var corsPolicy = (await corsPolicyProvider.GetPolicyAsync(context, "OpenNoCredentialsPolicy"))!;
+            var corsService = context.RequestServices.GetRequiredService<ICorsService>();
+            corsService.ApplyResult(
+                corsService.EvaluatePolicy(context, corsPolicy),
+                context.Response);
+        }
+    }
+
+    await next();
+});
 
 app.UseAuthentication();
 app.UseAuthorization();
