@@ -32,19 +32,8 @@ builder.Services.AddMvc(options => { options.Filters.Add(typeof(ModelValidationF
 
 builder.Services.AddCors(options =>
 {
-    string[] allowedOrigins =
-    [
-        "https://www.phi.zone",
-        "https://www.phizone.cn",
-        "https://insider.phizone.cn",
-        "https://stg-www.phizone.cn",
-        "https://alpha.phizone.cn",
-        "http://localhost:5173",
-        "http://localhost:4173",
-        "http://localhost:5050"
-    ];
     options.AddDefaultPolicy(policy =>
-        policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod().AllowCredentials());
+        policy.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod().AllowCredentials());
 });
 
 builder.Services.AddControllers()
