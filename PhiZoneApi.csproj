@@ -11,36 +11,36 @@
     <ItemGroup>
         <PackageReference Include="AutoMapper" Version="14.0.0"/>
         <PackageReference Include="ComputerInfo" Version="0.2.0"/>
-        <PackageReference Include="HtmlSanitizer" Version="9.0.876"/>
-        <PackageReference Include="MailKit" Version="4.11.0"/>
+        <PackageReference Include="HtmlSanitizer" Version="9.0.884"/>
+        <PackageReference Include="MailKit" Version="4.12.1"/>
         <PackageReference Include="MeiliSearch" Version="0.16.0"/>
         <PackageReference Include="Microsoft.AspNetCore.DataProtection.StackExchangeRedis" Version="9.0.5"/>
         <PackageReference Include="Microsoft.AspNetCore.Mvc.Versioning" Version="5.1.0"/>
         <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="4.8.0"/>
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Scripting" Version="4.8.0"/>
         <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.8.0"/>
-        <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.4"/>
+        <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.5"/>
         <PackageReference Include="NATS.Net" Version="2.6.1"/>
         <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4"/>
         <PackageReference Include="NVorbis" Version="0.10.5"/>
-        <PackageReference Include="OpenIddict.AspNetCore" Version="6.1.1"/>
-        <PackageReference Include="OpenIddict.EntityFrameworkCore" Version="6.1.1"/>
+        <PackageReference Include="OpenIddict.AspNetCore" Version="6.3.0"/>
+        <PackageReference Include="OpenIddict.EntityFrameworkCore" Version="6.3.0"/>
         <PackageReference Include="Pomelo.EntityFrameworkCore.MySql" Version="9.0.0-preview.3.efcore.9.0.0"/>
-        <PackageReference Include="RabbitMQ.Client" Version="7.1.1"/>
+        <PackageReference Include="RabbitMQ.Client" Version="7.1.2"/>
         <PackageReference Include="Romanization.NET" Version="0.9.5"/>
-        <PackageReference Include="SixLabors.ImageSharp" Version="3.1.8"/>
-        <PackageReference Include="StackExchange.Redis" Version="2.8.31"/>
-        <PackageReference Include="Swashbuckle.AspNetCore" Version="8.1.1"/>
-        <PackageReference Include="Swashbuckle.AspNetCore.Newtonsoft" Version="7.3.1"/>
-        <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.8.0"/>
-        <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.4"/>
-        <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="9.0.4"/>
-        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.2"/>
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.4">
+        <PackageReference Include="SixLabors.ImageSharp" Version="3.1.9"/>
+        <PackageReference Include="StackExchange.Redis" Version="2.8.37"/>
+        <PackageReference Include="Swashbuckle.AspNetCore" Version="8.1.4"/>
+        <PackageReference Include="Swashbuckle.AspNetCore.Newtonsoft" Version="8.1.4"/>
+        <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.12.0"/>
+        <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.5"/>
+        <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="9.0.5"/>
+        <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.5"/>
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.5">
             <PrivateAssets>none</PrivateAssets>
             <!--          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>-->
         </PackageReference>
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.4">
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.5">
             <PrivateAssets>all</PrivateAssets>
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
