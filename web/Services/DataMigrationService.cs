@@ -11,7 +11,7 @@ using PhiZoneApi.Utils;
 
 namespace PhiZoneApi.Services;
 
-public class DataMigrationService(IServiceProvider serviceProvider) : IHostedService
+public class DataMigrationService(IServiceProvider serviceProvider) : IHostedService, IDisposable
 {
     private readonly List<Guid> _migratedChapters = [];
     private readonly List<Guid> _migratedCharts = [];
@@ -21,34 +21,53 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
     private IAdmissionRepository _admissionRepository = null!;
     private IApplicationRepository _applicationRepository = null!;
     private IApplicationUserRepository _applicationUserRepository = null!;
+    private CancellationToken _cancellationToken;
     private IChapterRepository _chapterRepository = null!;
     private IChartAssetRepository _chartAssetRepository = null!;
     private IChartRepository _chartRepository = null!;
     private IConfiguration _configuration = null!;
     private ILogger<DataMigrationService> _logger = null!;
     private ISongRepository _songRepository = null!;
+    private Timer? _timer;
     private IUserRepository _userRepository = null!;
 
-    public async Task StartAsync(CancellationToken cancellationToken)
+    public void Dispose()
     {
-        await using var scope = serviceProvider.CreateAsyncScope();
+        _timer?.Dispose();
+    }
 
-        _logger = scope.ServiceProvider.GetRequiredService<ILogger<DataMigrationService>>();
-        _configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
-        _applicationRepository = scope.ServiceProvider.GetRequiredService<IApplicationRepository>();
-        _chapterRepository = scope.ServiceProvider.GetRequiredService<IChapterRepository>();
-        _admissionRepository = scope.ServiceProvider.GetRequiredService<IAdmissionRepository>();
-        _songRepository = scope.ServiceProvider.GetRequiredService<ISongRepository>();
-        _chartRepository = scope.ServiceProvider.GetRequiredService<IChartRepository>();
-        _chartAssetRepository = scope.ServiceProvider.GetRequiredService<IChartAssetRepository>();
-        _userRepository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
-        _applicationUserRepository = scope.ServiceProvider.GetRequiredService<IApplicationUserRepository>();
-        scope.ServiceProvider.GetRequiredService<IPlayConfigurationRepository>();
+    public Task StartAsync(CancellationToken cancellationToken)
+    {
+        _cancellationToken = cancellationToken;
+        _timer = new Timer(Run, null, TimeSpan.Zero, TimeSpan.FromHours(6));
+        return Task.CompletedTask;
+    }
 
-        _logger.LogInformation(LogEvents.DataMigration, "Data migration started");
+    public Task StopAsync(CancellationToken cancellationToken)
+    {
+        return Task.CompletedTask;
+    }
+
+    private async void Run(object? state)
+    {
         try
         {
-            await MigrateDataAsync(cancellationToken);
+            await using var scope = serviceProvider.CreateAsyncScope();
+            _logger = scope.ServiceProvider.GetRequiredService<ILogger<DataMigrationService>>();
+            _logger.LogInformation(LogEvents.DataMigration, "Data migration started");
+
+            _configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+            _applicationRepository = scope.ServiceProvider.GetRequiredService<IApplicationRepository>();
+            _chapterRepository = scope.ServiceProvider.GetRequiredService<IChapterRepository>();
+            _admissionRepository = scope.ServiceProvider.GetRequiredService<IAdmissionRepository>();
+            _songRepository = scope.ServiceProvider.GetRequiredService<ISongRepository>();
+            _chartRepository = scope.ServiceProvider.GetRequiredService<IChartRepository>();
+            _chartAssetRepository = scope.ServiceProvider.GetRequiredService<IChartAssetRepository>();
+            _userRepository = scope.ServiceProvider.GetRequiredService<IUserRepository>();
+            _applicationUserRepository = scope.ServiceProvider.GetRequiredService<IApplicationUserRepository>();
+            scope.ServiceProvider.GetRequiredService<IPlayConfigurationRepository>();
+
+            await MigrateDataAsync(_cancellationToken);
             _logger.LogInformation(LogEvents.DataMigration, "Data migration finished");
         }
         catch (Exception ex)
@@ -57,15 +76,16 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
         }
     }
 
-    public Task StopAsync(CancellationToken cancellationToken)
-    {
-        return Task.CompletedTask;
-    }
-
     private async Task MigrateDataAsync(CancellationToken cancellationToken)
     {
-        await using var mysqlConnection =
-            new MySqlConnection(_configuration.GetConnectionString("PhigrimMySQLConnection"));
+        var host = Environment.GetEnvironmentVariable("MYSQL_HOST_phigrim");
+        var port = Environment.GetEnvironmentVariable("MYSQL_PORT_phigrim");
+        var uid = Environment.GetEnvironmentVariable("MYSQL_ADMIN_USER_phigrim");
+        var password = Environment.GetEnvironmentVariable("MYSQL_ADMIN_PASSWORD_phigrim");
+        var connectionString = host != null && port != null && uid != null && password != null
+            ? $"server={host};port={port};uid={uid};pwd={password};database=phigrim;charset=utf8mb4;"
+            : _configuration.GetConnectionString("PhigrimMySQLConnection");
+        await using var mysqlConnection = new MySqlConnection(connectionString);
         await mysqlConnection.OpenAsync(cancellationToken);
         await MigrateChapters(mysqlConnection, cancellationToken);
         await MigrateSongs(mysqlConnection, cancellationToken);
@@ -421,7 +441,8 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
         foreach (var property in properties)
         {
             if (!property.PropertyType.IsPrimitive() || property.PropertyType.IsSubclassOf(typeof(Delegate)) ||
-                (property.GetMethod != null && property.GetMethod.IsStatic) || property.Name == "DateFileUpdated")
+                (property.GetMethod != null && property.GetMethod.IsStatic) || property.Name == "LikeCount" ||
+                property.Name == "PlayCount" || property.Name == "DateFileUpdated")
                 continue;
 
             var value = property.GetValue(entry);

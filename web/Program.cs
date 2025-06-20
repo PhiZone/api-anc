@@ -58,7 +58,7 @@ builder.Services.AddCors(options =>
     options.AddPolicy("OpenNoCredentialsPolicy", policy =>
     {
         policy
-            .AllowAnyOrigin()      // <-- this is allowed because we do NOT call .AllowCredentials()
+            .AllowAnyOrigin() // <-- this is allowed because we do NOT call .AllowCredentials()
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
@@ -254,12 +254,11 @@ builder.Services.AddSingleton<IHostedService>(provider => new TapRecordService(p
 builder.Services.AddHostedService<DatabaseSeeder>();
 builder.Services.AddHostedService<Initializer>();
 builder.Services.AddHostedService<DataConsistencyMaintainer>();
+builder.Services.AddHostedService<DataMigrationService>();
 builder.Services.AddHostedService<EventTaskScheduler>();
 
 if (args.Length >= 1)
 {
-    if (string.Equals(args[0], "migrate", StringComparison.InvariantCultureIgnoreCase))
-        builder.Services.AddHostedService<DataMigrationService>();
     if (string.Equals(args[0], "chartMigrate", StringComparison.InvariantCultureIgnoreCase))
         builder.Services.AddHostedService<ChartMigrationService>();
     if (string.Equals(args[0], "fileMigrate", StringComparison.InvariantCultureIgnoreCase))
@@ -349,15 +348,11 @@ app.Use(async (context, next) =>
 
     CorsPolicy policyToApply;
     if (!string.IsNullOrEmpty(origin) && credentialOrigins.Contains(origin))
-    {
         // Whitelisted origin → use credentials‐allowed policy
         policyToApply = (await corsPolicyProvider.GetPolicyAsync(context, "AllowCredentialsPolicy"))!;
-    }
     else
-    {
         // Any other origin → use open policy (no credentials)
         policyToApply = (await corsPolicyProvider.GetPolicyAsync(context, "OpenNoCredentialsPolicy"))!;
-    }
 
     // Evaluate and apply the policy (sets all Access-Control‐* headers)
     var result = corsService.EvaluatePolicy(context, policyToApply);
