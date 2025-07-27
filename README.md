@@ -87,7 +87,8 @@ A template for both `./appsettings.Development.json` and `./appsettings.Producti
   "RedisConnection": "localhost:6379,password:yourpassword",
   "SeekTuneUrl": "http://localhost:2338", 
   "NatsUrl": "nats://localhost:4222",
-  "Proxy": "http://this-is-an-optional-field:1080"
+  "Proxy": "http://this-is-an-optional-field:1080",
+  "AutoMapperLicense": "yourlicensekey"
 }
 
 ```
