@@ -72,7 +72,8 @@ builder.Services.AddControllers()
             NamingStrategy = new CamelCaseNamingStrategy()
         };
     });
-builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+builder.Services.AddAutoMapper(cfg => cfg.LicenseKey = builder.Configuration.GetValue<string>("AutoMapperLicense"),
+    AppDomain.CurrentDomain.GetAssemblies());
 
 builder.Services.AddApiVersioning(options =>
 {
