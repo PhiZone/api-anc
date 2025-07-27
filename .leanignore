@@ -1,0 +1,7 @@
+.git/
+.DS_Store
+.avoscloud/
+.leancloud/
+web/bin/
+web/obj/
+web/release

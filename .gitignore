@@ -463,8 +463,9 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
+.leancloud
 .env
 appsettings.*.json*
 deploy.sh
-Resources/resources.json
-Resources/Descriptors/
+web/Resources/resources.json
+web/Resources/Descriptors/
