@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
+using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.HttpOverrides;
@@ -30,21 +31,37 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddMvc(options => { options.Filters.Add(typeof(ModelValidationFilter)); });
 
+string[] credentialOrigins =
+[
+    "https://www.phi.zone",
+    "https://www.phizone.cn",
+    "https://insider.phizone.cn",
+    "https://stg-www.phizone.cn",
+    "https://alpha.phizone.cn",
+    "http://localhost:5173",
+    "http://localhost:4173",
+    "http://localhost:5050"
+];
 builder.Services.AddCors(options =>
 {
-    string[] allowedOrigins =
-    [
-        "https://www.phi.zone",
-        "https://www.phizone.cn",
-        "https://insider.phizone.cn",
-        "https://stg-www.phizone.cn",
-        "https://alpha.phizone.cn",
-        "http://localhost:5173",
-        "http://localhost:4173",
-        "http://localhost:5050"
-    ];
-    options.AddDefaultPolicy(policy =>
-        policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod().AllowCredentials());
+    // Policy #1: only these origins + AllowCredentials()
+    options.AddPolicy("AllowCredentialsPolicy", policy =>
+    {
+        policy
+            .WithOrigins(credentialOrigins)
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
+
+    // Policy #2: wildcard‐open (no credentials), i.e. AllowAnyOrigin but NO .AllowCredentials()
+    options.AddPolicy("OpenNoCredentialsPolicy", policy =>
+    {
+        policy
+            .AllowAnyOrigin() // <-- this is allowed because we do NOT call .AllowCredentials()
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
 });
 
 builder.Services.AddControllers()
@@ -238,12 +255,11 @@ builder.Services.AddSingleton<IHostedService>(provider => new TapRecordService(p
 builder.Services.AddHostedService<DatabaseSeeder>();
 builder.Services.AddHostedService<Initializer>();
 builder.Services.AddHostedService<DataConsistencyMaintainer>();
+builder.Services.AddHostedService<DataMigrationService>();
 builder.Services.AddHostedService<EventTaskScheduler>();
 
 if (args.Length >= 1)
 {
-    if (string.Equals(args[0], "migrate", StringComparison.InvariantCultureIgnoreCase))
-        builder.Services.AddHostedService<DataMigrationService>();
     if (string.Equals(args[0], "chartMigrate", StringComparison.InvariantCultureIgnoreCase))
         builder.Services.AddHostedService<ChartMigrationService>();
     if (string.Equals(args[0], "fileMigrate", StringComparison.InvariantCultureIgnoreCase))
@@ -318,7 +334,41 @@ if (app.Environment.IsDevelopment() ||
     app.UseSwaggerUI(options => { options.SwaggerEndpoint("/swagger/v2/swagger.json", "PhiZone API v2"); });
 }
 
-app.UseCors();
+app.Use(async (context, next) =>
+{
+    // If there's no Origin header, just continue normally (no CORS needed).
+    if (!context.Request.Headers.TryGetValue("Origin", out var originValues))
+    {
+        await next();
+        return;
+    }
+
+    var origin = originValues.FirstOrDefault();
+    var corsPolicyProvider = context.RequestServices.GetRequiredService<ICorsPolicyProvider>();
+    var corsService = context.RequestServices.GetRequiredService<ICorsService>();
+
+    CorsPolicy policyToApply;
+    if (!string.IsNullOrEmpty(origin) && credentialOrigins.Contains(origin))
+        // Whitelisted origin → use credentials‐allowed policy
+        policyToApply = (await corsPolicyProvider.GetPolicyAsync(context, "AllowCredentialsPolicy"))!;
+    else
+        // Any other origin → use open policy (no credentials)
+        policyToApply = (await corsPolicyProvider.GetPolicyAsync(context, "OpenNoCredentialsPolicy"))!;
+
+    // Evaluate and apply the policy (sets all Access-Control‐* headers)
+    var result = corsService.EvaluatePolicy(context, policyToApply);
+    corsService.ApplyResult(result, context.Response);
+
+    // If this is a preflight (OPTIONS) request, return 200 immediately—don’t call next().
+    if (string.Equals(context.Request.Method, "OPTIONS", StringComparison.OrdinalIgnoreCase))
+    {
+        context.Response.StatusCode = StatusCodes.Status200OK;
+        return;
+    }
+
+    // Otherwise, continue to MVC/etc.
+    await next();
+});
 
 app.UseAuthentication();
 app.UseAuthorization();
