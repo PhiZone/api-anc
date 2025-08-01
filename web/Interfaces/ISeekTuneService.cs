@@ -16,4 +16,6 @@ public interface ISeekTuneService
         bool isUrl = false, bool resourceRecords = false);
 
     Task<bool> CheckIfExists(Guid id, bool resourceRecords = false);
+
+    bool Check();
 }

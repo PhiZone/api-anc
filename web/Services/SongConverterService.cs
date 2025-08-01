@@ -64,7 +64,7 @@ public class SongConverterService(
 
                 await songSubmissionRepository.UpdateSongSubmissionAsync(song);
                 await feishuService.Notify(song, FeishuResources.ContentReviewalChat);
-                if (burn)
+                if (burn && seekTuneService.Check())
                     await seekTuneService.CreateFingerprint(song.Id, song.Title, song.Edition, song.AuthorName,
                         song.File!, true);
                 logger.LogInformation(LogEvents.SongInfo, "Completed song submission schedule: {Title}", song.Title);

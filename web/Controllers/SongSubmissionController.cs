@@ -306,8 +306,10 @@ public class SongSubmissionController(
         else
         {
             await feishuService.Notify(songSubmission, FeishuResources.ContentReviewalChat);
-            await seekTuneService.CreateFingerprint(songSubmission.Id, songSubmission.Title, songSubmission.Edition,
-                songSubmission.AuthorName, songSubmission.File!, true);
+
+            if (seekTuneService.Check())
+                await seekTuneService.CreateFingerprint(songSubmission.Id, songSubmission.Title, songSubmission.Edition,
+                    songSubmission.AuthorName, songSubmission.File!, true);
         }
 
         if (eventDivision != null && eventTeam != null)
@@ -1294,7 +1296,7 @@ public class SongSubmissionController(
                     resourceService.GetRichText<Collaboration>(collaboration.Id.ToString(),
                         templateService.GetMessage("more-info", invitee.Language)!)
                 }
-            });
+            }, "collaboration-invite");
         return collaboration;
     }
 }

@@ -318,8 +318,9 @@ public class SubmissionController(
             await scriptService.RunEventTaskAsync(eventTeam.DivisionId, songSubmission, eventTeam.Id, currentUser,
                 [EventTaskType.PostSubmission]);
 
-        await seekTuneService.CreateFingerprint(songSubmission.Id, songSubmission.Title, songSubmission.Edition,
-            songSubmission.AuthorName, GetSongPathForSeekTune(session));
+        if (seekTuneService.Check())
+            await seekTuneService.CreateFingerprint(songSubmission.Id, songSubmission.Title, songSubmission.Edition,
+                songSubmission.AuthorName, GetSongPathForSeekTune(session));
 
         await db.StringSetAsync($"phizone:persistent:seektune:{songSubmission.Id}",
             JsonConvert.SerializeObject(session.RecognitionResults));
@@ -605,7 +606,6 @@ public class SubmissionController(
         var assets = new List<SessionChartAsset>();
 
         foreach (var dto in dtos)
-        {
             assets.Add(new SessionChartAsset
             {
                 Type = dto.Type,
@@ -616,9 +616,9 @@ public class SubmissionController(
                         : (await songSubmissionRepository.GetSongSubmissionAsync(chartSubmission.SongSubmissionId!
                             .Value)).Title), dto.File)).Item1
             });
-        }
 
-        await db.ListRightPushAsync($"{key}:assets", assets.Select(e => (RedisValue)JsonConvert.SerializeObject(e)).ToArray());
+        await db.ListRightPushAsync($"{key}:assets",
+            assets.Select(e => (RedisValue)JsonConvert.SerializeObject(e)).ToArray());
 
         return StatusCode(StatusCodes.Status201Created);
     }
@@ -775,7 +775,9 @@ public class SubmissionController(
                 null, currentUser);
         }
 
-        var assets = (await db.ListRangeAsync($"{key}:assets")).Select(e => JsonConvert.DeserializeObject<SessionChartAsset>(e!)!);
+        var assets =
+            (await db.ListRangeAsync($"{key}:assets")).Select(e =>
+                JsonConvert.DeserializeObject<SessionChartAsset>(e!)!);
 
         foreach (var chartAsset in assets.Select(asset => new ChartAssetSubmission
                  {
@@ -908,7 +910,7 @@ public class SubmissionController(
                     resourceService.GetRichText<Collaboration>(collaboration.Id.ToString(),
                         templateService.GetMessage("more-info", invitee.Language)!)
                 }
-            });
+            }, "collaboration-invite");
     }
 
     private static FormFile LoadFile(string filePath)

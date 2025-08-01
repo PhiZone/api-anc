@@ -9,4 +9,6 @@ public class MailTaskDto
     public string EmailSubject { get; set; } = null!;
 
     public string EmailBody { get; init; } = null!;
+
+    public bool UseHtml { get; set; }
 }

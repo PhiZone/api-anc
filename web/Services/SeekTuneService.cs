@@ -12,6 +12,8 @@ namespace PhiZoneApi.Services;
 
 public class SeekTuneService(IConfiguration config, ILogger<SeekTuneService> logger) : ISeekTuneService
 {
+    private readonly bool _check = config.GetValue<bool>("SeekTuneCheck");
+
     private readonly HttpClient _client = new()
     {
         BaseAddress = new Uri(config["SeekTuneUrl"]!), Timeout = TimeSpan.FromMinutes(15)
@@ -47,6 +49,7 @@ public class SeekTuneService(IConfiguration config, ILogger<SeekTuneService> log
     public async Task<List<SeekTuneFindResult>?> FindMatches(string pathToSong, bool resourceRecords = false,
         int take = -1)
     {
+        if (!_check) return [];
         var route = resourceRecords ? "resourceRecords" : "songs";
         var request = new HttpRequestMessage
         {
@@ -145,5 +148,10 @@ public class SeekTuneService(IConfiguration config, ILogger<SeekTuneService> log
         };
         var response = await _client.SendAsync(request);
         return response.IsSuccessStatusCode;
+    }
+
+    public bool Check()
+    {
+        return _check;
     }
 }
