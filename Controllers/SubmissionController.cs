@@ -318,8 +318,9 @@ public class SubmissionController(
             await scriptService.RunEventTaskAsync(eventTeam.DivisionId, songSubmission, eventTeam.Id, currentUser,
                 [EventTaskType.PostSubmission]);
 
-        await seekTuneService.CreateFingerprint(songSubmission.Id, songSubmission.Title, songSubmission.Edition,
-            songSubmission.AuthorName, GetSongPathForSeekTune(session));
+        if (seekTuneService.Check())
+            await seekTuneService.CreateFingerprint(songSubmission.Id, songSubmission.Title, songSubmission.Edition,
+                songSubmission.AuthorName, GetSongPathForSeekTune(session));
 
         await db.StringSetAsync($"phizone:persistent:seektune:{songSubmission.Id}",
             JsonConvert.SerializeObject(session.RecognitionResults));
