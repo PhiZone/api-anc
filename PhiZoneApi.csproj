@@ -13,7 +13,7 @@
         <PackageReference Include="ComputerInfo" Version="0.2.0"/>
         <PackageReference Include="HtmlSanitizer" Version="9.0.886"/>
         <PackageReference Include="MailKit" Version="4.13.0"/>
-        <PackageReference Include="MeiliSearch" Version="0.16.0"/>
+        <PackageReference Include="MeiliSearch" Version="0.17.0"/>
         <PackageReference Include="Microsoft.AspNetCore.DataProtection.StackExchangeRedis" Version="9.0.7"/>
         <PackageReference Include="Microsoft.AspNetCore.Mvc.Versioning" Version="5.1.0"/>
         <PackageReference Include="Microsoft.CodeAnalysis.Common" Version="4.8.0"/>
