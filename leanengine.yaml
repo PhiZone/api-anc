@@ -18,6 +18,7 @@ build:
   - mv web/appsettings*.json .
   - echo "$APPSETTINGS_PROD" | base64 --decode > ./appsettings.Production.json
   - echo "$SERVER_CERT" | base64 --decode > ./server-cert.pfx
+  - echo "$RESOURCES_JSON" | base64 --decode > ./Resources/resources.json
   - mv web/Resources .
   - dotnet publish -c Release --property:PublishDir=release
 run: |
