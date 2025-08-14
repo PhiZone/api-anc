@@ -23,7 +23,7 @@ build:
   - dotnet publish -c Release --property:PublishDir=release
 run: |
   if [ -n "${MYSQL_HOST_phigrim:-}" ] && [ -n "${MYSQL_PORT_phigrim:-}" ] && [ -n "${MYSQL_ADMIN_USER_phigrim:-}" ] && [ -n "${MYSQL_ADMIN_PASSWORD_phigrim:-}" ]; then
-    jq '.ConnectionStrings.PhigrimMySQLConnection = "server=" + env.MYSQL_HOST_phigrim + ";port=" + env.MYSQL_PORT_phigrim + ";uid=" + env.MYSQL_ADMIN_USER_phigrim + ";pwd=" + env.MYSQL_ADMIN_PASSWORD_phigrim + ";database=phigrim;"' ./appsettings.Production.json > ./appsettings.Production.json.tmp && mv ./appsettings.Production.json.tmp ./appsettings.Production.json
+    sed -i 's#"PhigrimMySQLConnection": ".*"#"PhigrimMySQLConnection": "server='"${MYSQL_HOST_phigrim}"';port='"${MYSQL_PORT_phigrim}"';uid='"${MYSQL_ADMIN_USER_phigrim}"';pwd='"${MYSQL_ADMIN_PASSWORD_phigrim}"';database=phigrim;"#' ./appsettings.Production.json && \
     echo "Successfully inserted MySQL connection environment variables into the connection string"
   fi
   ~/seektune serve -p 2338 &
