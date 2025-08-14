@@ -16,7 +16,8 @@ build:
     ./nats-server/nats-server -c nats-server/nats-server.conf -t
   - cd ~/app
   - mv web/appsettings*.json .
-  - mv web/server-cert.pfx .
+  - echo "$APPSETTINGS_PROD" | base64 --decode > ./appsettings.Production.json
+  - echo "$SERVER_CERT" | base64 --decode > ./server-cert.pfx
   - mv web/Resources .
   - dotnet publish -c Release --property:PublishDir=release
 run: |
