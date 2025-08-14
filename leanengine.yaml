@@ -1,5 +1,6 @@
 build:
   - printenv | awk -F= '{ printf "%s=\"%s\"\n", $1, $2 }' > .env
+  - echo "$RESOURCES_JSON" | base64 --decode > ./web/Resources/resources.json
   - cd ~
   - |
     curl -L https://res.phizone.cn/fs70wY4qVVGdnaMrd63z5V2fibaRjIIg/seektune-linux-amd64 -o seektune
@@ -18,7 +19,6 @@ build:
   - mv web/appsettings*.json .
   - echo "$APPSETTINGS_PROD" | base64 --decode > ./appsettings.Production.json
   - echo "$SERVER_CERT" | base64 --decode > ./server-cert.pfx
-  - echo "$RESOURCES_JSON" | base64 --decode > ./Resources/resources.json
   - mv web/Resources .
   - dotnet publish -c Release --property:PublishDir=release
 run: |
