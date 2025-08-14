@@ -18,6 +18,17 @@ build:
   - mv web/Resources .
   - mv web/appsettings*.json .
   - echo "$APPSETTINGS_PROD" | base64 --decode > ./appsettings.Production.json
+  - |
+    # Check if required MySQL environment variables exist
+    if [ -z "${MYSQL_HOST_phigrim:-}" ] || [ -z "${MYSQL_PORT_phigrim:-}" ] || [ -z "${MYSQL_ADMIN_USER_phigrim:-}" ] || [ -z "${MYSQL_ADMIN_PASSWORD_phigrim:-}" ]; then
+      echo "❌ Missing required MySQL environment variables: MYSQL_HOST_phigrim, MYSQL_PORT_phigrim, MYSQL_ADMIN_USER_phigrim, MYSQL_ADMIN_PASSWORD_phigrim"
+      exit 1
+    fi
+    echo "✅ All required MySQL environment variables are present"
+  - |
+    # Update appsettings.Production.json with PhigrimMySQLConnection
+    jq '.ConnectionStrings.PhigrimMySQLConnection = "server=" + env.MYSQL_HOST_phigrim + ";port=" + env.MYSQL_PORT_phigrim + ";uid=" + env.MYSQL_ADMIN_USER_phigrim + ";pwd=" + env.MYSQL_ADMIN_PASSWORD_phigrim + ";database=phigrim;"' ./appsettings.Production.json > ./appsettings.Production.json.tmp && mv ./appsettings.Production.json.tmp ./appsettings.Production.json
+    echo "✅ Updated PhigrimMySQLConnection in appsettings.Production.json"
   - echo "$SERVER_CERT" | base64 --decode > ./server-cert.pfx
   - echo "$RESOURCES_JSON" | base64 --decode > ./Resources/resources.json
   - dotnet publish -c Release --property:PublishDir=release
