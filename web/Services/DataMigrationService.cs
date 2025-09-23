@@ -441,8 +441,7 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
         foreach (var property in properties)
         {
             if (!property.PropertyType.IsPrimitive() || property.PropertyType.IsSubclassOf(typeof(Delegate)) ||
-                (property.GetMethod != null && property.GetMethod.IsStatic) || property.Name == "LikeCount" ||
-                property.Name == "PlayCount" || property.Name == "DateFileUpdated")
+                (property.GetMethod != null && property.GetMethod.IsStatic) || property.Name == "DateFileUpdated")
                 continue;
 
             var value = property.GetValue(entry);
@@ -474,7 +473,8 @@ public class DataMigrationService(IServiceProvider serviceProvider) : IHostedSer
         }
 
         return "INSERT INTO " + table + " (" + string.Join(", ", propertyMap.Keys) + ") VALUES (" +
-               string.Join(", ", propertyMap.Values) + ") ON DUPLICATE KEY UPDATE " +
-               string.Join(", ", propertyMap.Select(e => $"{e.Key} = {e.Value}")) + ";";
+               string.Join(", ", propertyMap.Values) + ") ON DUPLICATE KEY UPDATE " + string.Join(", ",
+                   propertyMap.Where(e => e.Key != "LikeCount" && e.Key != "PlayCount")
+                       .Select(e => $"{e.Key} = {e.Value}")) + ";";
     }
 }

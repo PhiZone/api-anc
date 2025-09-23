@@ -15,11 +15,17 @@ build:
     echo "max_pending: 512M" >> nats-server/nats-server.conf
     ./nats-server/nats-server -c nats-server/nats-server.conf -t
   - cd ~/app
-  - mv web/appsettings*.json .
-  - mv web/server-cert.pfx .
   - mv web/Resources .
+  - mv web/appsettings*.json .
+  - echo "$APPSETTINGS_PROD" | base64 --decode > ./appsettings.Production.json
+  - echo "$SERVER_CERT" | base64 --decode > ./server-cert.pfx
+  - echo "$RESOURCES_JSON" | base64 --decode > ./Resources/resources.json
   - dotnet publish -c Release --property:PublishDir=release
 run: |
+  if [ -n "${MYSQL_HOST_phigrim:-}" ] && [ -n "${MYSQL_PORT_phigrim:-}" ] && [ -n "${MYSQL_ADMIN_USER_phigrim:-}" ] && [ -n "${MYSQL_ADMIN_PASSWORD_phigrim:-}" ]; then
+    sed -i 's#"PhigrimMySQLConnection": ".*"#"PhigrimMySQLConnection": "server='"${MYSQL_HOST_phigrim}"';port='"${MYSQL_PORT_phigrim}"';uid='"${MYSQL_ADMIN_USER_phigrim}"';pwd='"${MYSQL_ADMIN_PASSWORD_phigrim}"';database=phigrim;"#' ./appsettings.Production.json && \
+    echo "Successfully inserted MySQL connection environment variables into the connection string"
+  fi
   ~/seektune serve -p 2338 &
   ~/meilisearch --http-addr 'localhost:7770' --master-key $MEILISEARCH_MASTER_KEY 3>&1 1>&2 2>&3 3>&- &
   ~/nats-server/nats-server -c ~/nats-server/nats-server.conf 3>&1 1>&2 2>&3 3>&- &
@@ -27,3 +33,4 @@ run: |
 exposeEnvironmentsOnBuild: true
 systemDependencies:
   - ffmpeg
+
