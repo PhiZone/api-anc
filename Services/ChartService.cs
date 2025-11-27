@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.IO.Compression;
+using System.Text;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using PhiZoneApi.Constants;
@@ -32,22 +33,58 @@ public partial class ChartService(IFileStorageService fileStorageService, ILogge
 
     public async Task<(ChartFormat, ChartFormatDto, int)?> Validate(IFormFile file)
     {
-        using var reader = new StreamReader(file.OpenReadStream());
+        using var stream = new MemoryStream();
+        await file.CopyToAsync(stream);
+        stream.Position = 0;
+
+        try
+        {
+            using var zipArchive = new ZipArchive(stream, ZipArchiveMode.Read, true);
+            var milthm = ReadMilthm(zipArchive);
+            if (milthm != null)
+                return new ValueTuple<ChartFormat, ChartFormatDto, int>(ChartFormat.Milthm, milthm, CountNotes(milthm));
+        }
+        catch (InvalidDataException)
+        {
+        }
+        catch (Exception)
+        {
+            // ignored
+        }
+
+        stream.Position = 0;
+        using var reader = new StreamReader(stream);
         var content = await reader.ReadToEndAsync();
         var rpeJson = ReadRpe(content);
         if (rpeJson != null)
             return new ValueTuple<ChartFormat, ChartFormatDto, int>(ChartFormat.RpeJson, rpeJson, CountNotes(rpeJson));
         var pec = ReadPec(content);
         if (pec != null) return new ValueTuple<ChartFormat, ChartFormatDto, int>(ChartFormat.Pec, pec, CountNotes(pec));
+        var milthmString = ReadMilthm(content);
+        if (milthmString != null)
+            return new ValueTuple<ChartFormat, ChartFormatDto, int>(ChartFormat.Milthm, milthmString, CountNotes(milthmString));
         return null;
     }
 
     public async Task<(string, string, ChartFormat, int)> Upload((ChartFormat, ChartFormatDto, int) validationResult,
         string fileName, bool anonymizeChart = false, bool anonymizeSong = false)
     {
-        var serialized = validationResult.Item1 == ChartFormat.RpeJson
-            ? Serialize(Standardize((RpeJsonDto)validationResult.Item2, anonymizeChart, anonymizeSong))
-            : Serialize(Standardize((PecDto)validationResult.Item2));
+        string serialized;
+        switch (validationResult.Item1)
+        {
+            case ChartFormat.RpeJson:
+                serialized = Serialize(Standardize((RpeJsonDto)validationResult.Item2, anonymizeChart, anonymizeSong));
+                break;
+            case ChartFormat.Pec:
+                serialized = Serialize(Standardize((PecDto)validationResult.Item2));
+                break;
+            case ChartFormat.Milthm:
+                serialized = Serialize(Standardize((MilthmDto)validationResult.Item2));
+                break;
+            default:
+                throw new ArgumentOutOfRangeException();
+        }
+
         var stream = new MemoryStream(Encoding.UTF8.GetBytes(serialized));
         var uploadResult =
             await fileStorageService.Upload<Chart>(fileName, stream, GetExtension(validationResult.Item1));
@@ -62,6 +99,9 @@ public partial class ChartService(IFileStorageService fileStorageService, ILogge
             return new ValueTuple<ChartFormat, ChartFormatDto, int>(ChartFormat.RpeJson, rpeJson, CountNotes(rpeJson));
         var pec = ReadPec(content);
         if (pec != null) return new ValueTuple<ChartFormat, ChartFormatDto, int>(ChartFormat.Pec, pec, CountNotes(pec));
+        var milthm = ReadMilthm(content);
+        if (milthm != null)
+            return new ValueTuple<ChartFormat, ChartFormatDto, int>(ChartFormat.Milthm, milthm, CountNotes(milthm));
         return null;
     }
 
@@ -112,6 +152,11 @@ public partial class ChartService(IFileStorageService fileStorageService, ILogge
         dto.DurationalMoveCommands.Sort();
         dto.DurationalRotationCommands.Sort();
         dto.DurationalAlphaCommands.Sort();
+        return dto;
+    }
+
+    public MilthmDto Standardize(MilthmDto dto)
+    {
         return dto;
     }
 
@@ -196,6 +241,30 @@ public partial class ChartService(IFileStorageService fileStorageService, ILogge
     public int CountNotes(PecDto dto)
     {
         return dto.NoteCommands.Count(command => !command.IsFake);
+    }
+
+    public int CountNotes(MilthmDto dto)
+    {
+        try
+        {
+            var count = 0;
+            if (dto.Content?.lines == null) return 0;
+            foreach (var line in dto.Content.lines)
+            {
+                if (line.notes != null) count += line.notes.Count;
+            }
+
+            return count;
+        }
+        catch
+        {
+            return 0;
+        }
+    }
+
+    public string Serialize(MilthmDto dto)
+    {
+        return JsonConvert.SerializeObject(dto.Content);
     }
 
     public RpeJsonDto? ReadRpe(string input)
@@ -596,6 +665,122 @@ public partial class ChartService(IFileStorageService fileStorageService, ILogge
         }
     }
 
+    public MilthmDto? ReadMilthm(string input)
+    {
+        try
+        {
+            var chartJson = JsonConvert.DeserializeObject<dynamic>(input);
+            if (chartJson == null || chartJson.lines == null) return null;
+
+            return new MilthmDto
+            {
+                Content = chartJson,
+                Music = null,
+                Image = null
+            };
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public MilthmDto? ReadMilthm(ZipArchive zip)
+    {
+        var metaEntry = zip.Entries
+            .Where(e => e.Name.Equals("meta.json", StringComparison.OrdinalIgnoreCase))
+            .OrderBy(e => e.FullName.Count(c => c == '/' || c == '\\'))
+            .FirstOrDefault();
+
+        if (metaEntry != null)
+        {
+            using var metaReader = new StreamReader(metaEntry.Open());
+            var metaContent = metaReader.ReadToEnd();
+            MilthmMetaDto? meta;
+            try
+            {
+                meta = JsonConvert.DeserializeObject<MilthmMetaDto>(metaContent);
+            }
+            catch
+            {
+                meta = null;
+            }
+
+            if (!string.IsNullOrWhiteSpace(meta?.Chart))
+            {
+                var metaDirectory = metaEntry.FullName.Length > metaEntry.Name.Length
+                    ? metaEntry.FullName[..^metaEntry.Name.Length]
+                    : string.Empty;
+
+                var chartPath = meta.Chart.Replace('\\', '/').TrimStart('/');
+                var fullChartPath = Path.Combine(metaDirectory, chartPath).Replace('\\', '/');
+
+                var chartEntry = zip.Entries.FirstOrDefault(e =>
+                    e.FullName.Replace('\\', '/').Equals(fullChartPath, StringComparison.OrdinalIgnoreCase));
+
+                if (chartEntry == null)
+                {
+                    var chartFileName = Path.GetFileName(chartPath);
+                    chartEntry = zip.Entries.FirstOrDefault(e =>
+                        e.Name.Equals(chartFileName, StringComparison.OrdinalIgnoreCase) &&
+                        (string.IsNullOrEmpty(metaDirectory) ||
+                         e.FullName.StartsWith(metaDirectory, StringComparison.OrdinalIgnoreCase))
+                    );
+                }
+
+                if (chartEntry != null)
+                {
+                    using var chartReader = new StreamReader(chartEntry.Open());
+                    var chartContent = chartReader.ReadToEnd();
+                    dynamic? chartJson;
+                    try
+                    {
+                        chartJson = JsonConvert.DeserializeObject<dynamic>(chartContent);
+                    }
+                    catch
+                    {
+                        chartJson = null;
+                    }
+
+                    if (chartJson != null)
+                    {
+                        return new MilthmDto
+                        {
+                            Content = chartJson,
+                            Music = meta.Music,
+                            Image = meta.Image
+                        };
+                    }
+                }
+            }
+        }
+
+        foreach (var entry in zip.Entries.Where(e => e.Name.EndsWith(".json", StringComparison.OrdinalIgnoreCase)))
+        {
+            try
+            {
+                using var reader = new StreamReader(entry.Open());
+                var content = reader.ReadToEnd();
+                var chartJson = JsonConvert.DeserializeObject<dynamic>(content);
+                if (chartJson != null && chartJson.lines != null)
+                {
+                    return new MilthmDto
+                    {
+                        Content = chartJson,
+                        Music = null,
+                        Image = null
+                    };
+                }
+            }
+            catch
+            {
+                // ignored
+            }
+        }
+
+        return null;
+    }
+
     private static string GetExtension(ChartFormat format)
     {
         return format switch
@@ -604,6 +789,7 @@ public partial class ChartService(IFileStorageService fileStorageService, ILogge
             ChartFormat.Pec => "pec",
             ChartFormat.Phigrim => "json",
             ChartFormat.PhiZone => "json",
+            ChartFormat.Milthm => "json",
             ChartFormat.Unsupported => string.Empty,
             _ => throw new ArgumentOutOfRangeException(nameof(format), format, null)
         };

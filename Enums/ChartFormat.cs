@@ -6,5 +6,6 @@ public enum ChartFormat
     Pec,
     PhiZone,
     Phigrim,
+    Milthm,
     Unsupported
 }
