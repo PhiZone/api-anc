@@ -8,5 +8,9 @@ public enum ChartLevel
     HD,
     IN,
     AT,
-    SP
+    SP,
+    Drizzle,
+    Sprinkle,
+    Cloudburst,
+    Clear
 }
