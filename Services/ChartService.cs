@@ -53,7 +53,7 @@ public partial class ChartService(IFileStorageService fileStorageService, ILogge
         }
 
         stream.Position = 0;
-        using var reader = new StreamReader(stream);
+        using var reader = new StreamReader(stream, leaveOpen: true);
         var content = await reader.ReadToEndAsync();
         var rpeJson = ReadRpe(content);
         if (rpeJson != null)
