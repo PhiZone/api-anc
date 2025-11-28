@@ -306,7 +306,7 @@ public class SubmissionController(
 
         if (!wait)
         {
-            await songService.PublishAsync(songFile, songSubmission.Id, true, false);
+            await songService.PublishAsync(songFile, songSubmission.Id, true, false, session.SongPath);
             logger.LogInformation(LogEvents.SongInfo, "Scheduled new song submission: {Title}", dto.Title);
         }
         else
@@ -432,19 +432,51 @@ public class SubmissionController(
         var (eventDivision, _, response) = await GetEvent(dto.Tags, currentUser, true);
         if (response != null) return response;
 
-        var illustrationUrl = dto.Illustration != null
-            ? (await fileStorageService.UploadImage<Chart>(
-                dto.Title ?? (song != null ? song.Title : songSubmission!.Title), dto.Illustration, (16, 9))).Item1
-            : null;
+        string? illustrationUrl = null;
+        if (dto.Illustration != null)
+        {
+            try
+            {
+                illustrationUrl = (await fileStorageService.UploadImage<Chart>(
+                    dto.Title ?? (song != null ? song.Title : songSubmission!.Title), dto.Illustration, (16, 9))).Item1;
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to upload illustration");
+                return BadRequest(new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorWithMessage,
+                    Code = ResponseCodes.InvalidData,
+                    Message = $"Failed to upload illustration: {ex.Message}"
+                });
+            }
+        }
+
         if (illustrationUrl != null)
             await fileStorageService.SendUserInput(illustrationUrl, "Illustration", Request, currentUser);
 
-        var chartSubmissionInfo = dto.File != null
-            ? await chartService.Upload(dto.Title ?? (song != null ? song.Title : songSubmission!.Title), dto.File,
-                eventDivision is { Anonymization: true },
-                eventDivision is { Anonymization: true } && (song is { IsOriginal: true } ||
-                                                             songSubmission is { OriginalityProof: not null }))
-            : null;
+        (string, string, ChartFormat, int)? chartSubmissionInfo = null;
+        if (dto.File != null)
+        {
+            try
+            {
+                chartSubmissionInfo = await chartService.Upload(
+                    dto.Title ?? (song != null ? song.Title : songSubmission!.Title), dto.File,
+                    eventDivision is { Anonymization: true },
+                    eventDivision is { Anonymization: true } && (song is { IsOriginal: true } ||
+                                                                 songSubmission is { OriginalityProof: not null }));
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to upload chart");
+                return BadRequest(new ResponseDto<object>
+                {
+                    Status = ResponseStatus.ErrorWithMessage,
+                    Code = ResponseCodes.InvalidData,
+                    Message = $"Failed to upload chart: {ex.Message}"
+                });
+            }
+        }
 
         if (dto.File != null && chartSubmissionInfo == null)
             return BadRequest(new ResponseDto<object>

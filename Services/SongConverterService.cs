@@ -47,10 +47,16 @@ public class SongConverterService(
             var isSubmission = msg.Data!.IsSubmission;
             var burn = msg.Data!.Burn;
             var body = msg.Data!.Body;
+            var filePath = msg.Data!.FilePath;
             if (isSubmission)
             {
                 var song = await songSubmissionRepository.GetSongSubmissionAsync( /*Guid.Parse(*/songId /*)*/);
-                var result = await songService.UploadAsync(song.Title, body);
+                (string, string, TimeSpan)? result;
+                if (filePath != null)
+                    result = await songService.UploadAsync(song.Title, filePath);
+                else
+                    result = await songService.UploadAsync(song.Title, body);
+
                 if (result == null) continue;
                 song.File = result.Value.Item1;
                 song.FileChecksum = result.Value.Item2;
@@ -72,7 +78,12 @@ public class SongConverterService(
             else
             {
                 var song = await songRepository.GetSongAsync( /*Guid.Parse(*/songId /*)*/);
-                var result = await songService.UploadAsync(song.Title, body);
+                (string, string, TimeSpan)? result;
+                if (filePath != null)
+                    result = await songService.UploadAsync(song.Title, filePath);
+                else
+                    result = await songService.UploadAsync(song.Title, body);
+
                 if (result == null) continue;
                 song.File = result.Value.Item1;
                 song.FileChecksum = result.Value.Item2;
