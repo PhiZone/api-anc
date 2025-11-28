@@ -670,7 +670,7 @@ public partial class ChartService(IFileStorageService fileStorageService, ILogge
         try
         {
             var chartJson = JsonConvert.DeserializeObject<dynamic>(input);
-            if (chartJson == null || chartJson.lines == null) return null;
+            if (chartJson == null || chartJson!.lines == null) return null;
 
             return new MilthmDto
             {
@@ -712,7 +712,7 @@ public partial class ChartService(IFileStorageService fileStorageService, ILogge
                     ? metaEntry.FullName[..^metaEntry.Name.Length]
                     : string.Empty;
 
-                var chartPath = meta.Chart.Replace('\\', '/').TrimStart('/');
+                var chartPath = meta!.Chart.Replace('\\', '/').TrimStart('/');
                 var fullChartPath = Path.Combine(metaDirectory, chartPath).Replace('\\', '/');
 
                 var chartEntry = zip.Entries.FirstOrDefault(e =>
@@ -747,8 +747,8 @@ public partial class ChartService(IFileStorageService fileStorageService, ILogge
                         return new MilthmDto
                         {
                             Content = chartJson,
-                            Music = meta.Music,
-                            Image = meta.Image
+                            Music = meta!.Music,
+                            Image = meta!.Image
                         };
                     }
                 }

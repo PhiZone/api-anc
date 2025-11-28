@@ -12,7 +12,7 @@ public class ChartSubmissionCreationDto
     public string? Title { get; set; }
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
-    [Range(0, 4, ErrorMessage = ResponseCodes.ValueOutOfRange)]
+    [Range(0, 8, ErrorMessage = ResponseCodes.ValueOutOfRange)]
     public ChartLevel LevelType { get; set; }
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]

@@ -9,4 +9,6 @@ public interface IMultimediaService
     Task<MemoryStream?> ConvertAudio(IFormFile file);
 
     Task<MemoryStream?> ConvertAudio(byte[] buffer);
+
+    Task<MemoryStream?> ConvertAudio(string filePath);
 }

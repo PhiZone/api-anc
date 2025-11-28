@@ -62,6 +62,19 @@ public class MultimediaService(ILogger<MultimediaService> logger) : IMultimediaS
         }
     }
 
+    public Task<MemoryStream?> ConvertAudio(string filePath)
+    {
+        try
+        {
+            return Task.FromResult<MemoryStream?>(ConvertToStream(filePath));
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(LogEvents.AudioFailure, ex, "Failed to convert audio from file {File}", filePath);
+            return Task.FromResult<MemoryStream?>(null);
+        }
+    }
+
     private static MemoryStream CropImage(Image image, (int, int) aspectRatio)
     {
         var originalWidth = image.Width;
