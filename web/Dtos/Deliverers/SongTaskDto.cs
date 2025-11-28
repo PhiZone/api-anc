@@ -8,5 +8,7 @@ public class SongTaskDto
 
     public bool Burn { get; set; }
 
+    public string? FilePath { get; set; }
+
     public byte[] Body { get; set; } = null!;
 }
