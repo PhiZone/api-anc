@@ -64,6 +64,14 @@ A template for both `./appsettings.Development.json` and `./appsettings.Producti
       "recruitmentreviewal"
     ]
   },
+  "MailSettings": {
+    "Server": "xxx",
+    "Port": 465,
+    "SenderName": "xx",
+    "SenderAddress": "xxx",
+    "UserName": "xxx",
+    "Password": "xxx"
+  },
    "MessengerSettings": {
       "ApiUrl": "https://msgapi.example.com",
       "ClientId": "yourid",

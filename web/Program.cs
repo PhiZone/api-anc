@@ -271,6 +271,7 @@ builder.Services.Configure<ApiBehaviorOptions>(options => { options.SuppressMode
 builder.Services.Configure<DataSettings>(builder.Configuration.GetSection("DataSettings"));
 builder.Services.Configure<TapTapSettings>(builder.Configuration.GetSection("TapTapSettings"));
 builder.Services.Configure<FeishuSettings>(builder.Configuration.GetSection("FeishuSettings"));
+builder.Services.Configure<MailSettings>(builder.Configuration.GetSection("MailSettings"));
 builder.Services.Configure<MessengerSettings>(builder.Configuration.GetSection("MessengerSettings"));
 builder.Services.Configure<TapGhostSettings>(builder.Configuration.GetSection("TapGhostSettings"));
 builder.Services.Configure<PhigrimSettings>(builder.Configuration.GetSection("PhigrimSettings"));
