@@ -469,6 +469,3 @@ appsettings.*.json*
 deploy.sh
 web/Resources/resources.json
 web/Resources/Descriptors/
-
-# AI Tools
-.codegraph/

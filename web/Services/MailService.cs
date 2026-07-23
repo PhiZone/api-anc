@@ -1,10 +1,5 @@
 ﻿using System.Text;
-using MailKit.Net.Smtp;
-using MailKit.Security;
-using Microsoft.Extensions.Options;
-using MimeKit;
 using Newtonsoft.Json;
-using PhiZoneApi.Configurations;
 using PhiZoneApi.Constants;
 using PhiZoneApi.Dtos.Deliverers;
 using PhiZoneApi.Enums;
@@ -18,7 +13,7 @@ public class MailService(
     ITemplateService templateService,
     IRabbitMqService rabbitMqService,
     IConnectionMultiplexer redis,
-    IOptions<MailSettings> mailSettings,
+    IMessengerService messengerService,
     IHostEnvironment env,
     ILogger<MailService> logger) : IMailService
 {
@@ -91,20 +86,15 @@ public class MailService(
     {
         try
         {
-            var settings = mailSettings.Value;
-            var message = new MimeMessage();
-            message.From.Add(new MailboxAddress(settings.SenderName, settings.SenderAddress));
-            message.To.Add(MailboxAddress.Parse(mailTaskDto.EmailAddress));
-            message.Subject = $"[PhiZone] {mailTaskDto.EmailSubject}";
-            message.Body = mailTaskDto.UseHtml
-                ? new BodyBuilder { HtmlBody = mailTaskDto.EmailBody }.ToMessageBody()
-                : new TextPart("plain") { Text = mailTaskDto.EmailBody };
-
-            using var client = new SmtpClient();
-            await client.ConnectAsync(settings.Server, settings.Port, SecureSocketOptions.Auto);
-            await client.AuthenticateAsync(settings.UserName, settings.Password);
-            await client.SendAsync(message);
-            await client.DisconnectAsync(true);
+            var response = await messengerService.SendMail(mailTaskDto);
+            if (!response.IsSuccessStatusCode)
+            {
+                logger.LogWarning(LogEvents.MailFailure,
+                    "Failed to send an email to {Email} for {User}:\n{Content}",
+                    mailTaskDto.EmailAddress, mailTaskDto.UserName,
+                    await response.Content.ReadAsStringAsync());
+                return response.StatusCode.ToString();
+            }
         }
         catch (Exception ex)
         {
