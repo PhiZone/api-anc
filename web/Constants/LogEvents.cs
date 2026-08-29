@@ -15,6 +15,7 @@ public static class LogEvents
     public const int PhigrimInfo = 1010;
     public const int SeekTuneInfo = 1011;
     public const int SubmissionHubInfo = 1012;
+    public const int TokenPruningInfo = 1013;
 
     public const int AudioFailure = 2000;
     public const int MailFailure = 2001;
@@ -26,6 +27,7 @@ public static class LogEvents
     public const int InitializerFailure = 2007;
     public const int SeekTuneFailure = 2008;
     public const int SchedulerFailure = 2009;
+    public const int TokenPruningFailure = 2010;
 
     public const int RecordDebug = 3000;
     public const int MessengerDebug = 3001;

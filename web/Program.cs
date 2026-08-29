@@ -257,6 +257,7 @@ builder.Services.AddHostedService<Initializer>();
 builder.Services.AddHostedService<DataConsistencyMaintainer>();
 builder.Services.AddHostedService<DataMigrationService>();
 builder.Services.AddHostedService<EventTaskScheduler>();
+builder.Services.AddHostedService<TokenPruningService>();
 
 if (args.Length >= 1)
 {
@@ -269,6 +270,7 @@ if (args.Length >= 1)
 
 builder.Services.Configure<ApiBehaviorOptions>(options => { options.SuppressModelStateInvalidFilter = true; });
 builder.Services.Configure<DataSettings>(builder.Configuration.GetSection("DataSettings"));
+builder.Services.Configure<TokenPruningSettings>(builder.Configuration.GetSection("TokenPruning"));
 builder.Services.Configure<TapTapSettings>(builder.Configuration.GetSection("TapTapSettings"));
 builder.Services.Configure<FeishuSettings>(builder.Configuration.GetSection("FeishuSettings"));
 builder.Services.Configure<MessengerSettings>(builder.Configuration.GetSection("MessengerSettings"));
