@@ -47,6 +47,6 @@ public class UserRegistrationBriefDto
     public DateTimeOffset? DateOfBirth { get; set; }
 
     [Required(ErrorMessage = ResponseCodes.FieldEmpty)]
-    [MaxLength(6, ErrorMessage = ResponseCodes.ValueTooLong)]
+    [MaxLength(36, ErrorMessage = ResponseCodes.ValueTooLong)]
     public string EmailConfirmationCode { get; set; } = null!;
 }

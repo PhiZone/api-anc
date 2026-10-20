@@ -23,11 +23,10 @@ public class MailService(
         EmailRequestMode mode, bool useHtml = false)
     {
         string code;
-        var random = new Random();
         var db = redis.GetDatabase();
         do
         {
-            code = random.Next(1000000, 2000000).ToString()[1..];
+            code = Guid.NewGuid().ToString("D");
         } while (await db.KeyExistsAsync($"phizone:email:{mode}:{code}"));
 
         if (!await db.StringSetAsync($"phizone:email:{mode}:{code}", email, TimeSpan.FromSeconds(305))) return null;
